@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getBrand, getBrands } from "@/lib/queries";
+import FavoriteButton from "@/components/FavoriteButton";
+import PostCard from "@/components/PostCard";
+import ProductCard from "@/components/ProductCard";
+import { getBrand, getBrands, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
+import { isFavorite } from "@/lib/favorites";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -27,6 +31,12 @@ export default async function BrandPage({ params }: Props) {
   const brand = await getBrand(slug);
   if (!brand) notFound();
 
+  const [products, posts, favorited] = await Promise.all([
+    getProductsByBrand(brand.id),
+    getPostsByBrand(brand.id),
+    isFavorite(brand.id),
+  ]);
+
   const facts: [string, string | null][] = [
     ["Origine", [brand.city, brand.country].filter(Boolean).join(", ") || null],
     ["Fondée en", brand.founded_year ? String(brand.founded_year) : null],
@@ -35,8 +45,11 @@ export default async function BrandPage({ params }: Props) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-[var(--pad)] py-12">
-      <Link href="/marques" className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/65 transition hover:text-white">
+    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
+      <Link
+        href="/marques"
+        className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/65 transition hover:text-white"
+      >
         ← Toutes les marques
       </Link>
 
@@ -47,9 +60,12 @@ export default async function BrandPage({ params }: Props) {
           </h1>
           {brand.featured && <span className="badge">À la une</span>}
         </div>
-        <p className="m-0 mt-3 text-[clamp(15px,4vw,19px)] leading-relaxed text-white/88">
+        <p className="m-0 mt-3 max-w-2xl text-[clamp(15px,4vw,19px)] leading-relaxed text-white/88">
           {brand.tagline}
         </p>
+        <div className="mt-5">
+          <FavoriteButton brandId={brand.id} initial={favorited} />
+        </div>
       </header>
 
       <div className="glass rise rise-1 mt-8 p-6 sm:p-8">
@@ -70,15 +86,16 @@ export default async function BrandPage({ params }: Props) {
 
         <div className="mt-7 flex flex-wrap gap-1.5">
           {brand.categories.map((c) => (
-            <span key={c} className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/85">
+            <span
+              key={c}
+              className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/85"
+            >
               {c}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Sortie vers la marque. C'est ici que se branchera le lien d'affiliation :
-          on passera l'URL par /api/go?brand=slug pour compter le clic. */}
       {(brand.shop_url || brand.website_url) && (
         <a
           href={brand.shop_url ?? brand.website_url ?? "#"}
@@ -96,6 +113,34 @@ export default async function BrandPage({ params }: Props) {
           </span>
           <span className="relative z-3 text-[20px] font-black text-[#3a2470]">→</span>
         </a>
+      )}
+
+      {/* ---------- pieces de la marque ---------- */}
+      {products.length > 0 && (
+        <section className="mt-14">
+          <h2 className="m-0 mb-5 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+            Les pièces
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- posts lies ---------- */}
+      {posts.length > 0 && (
+        <section className="mt-14">
+          <h2 className="m-0 mb-5 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+            Nos posts sur {brand.name}
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((p) => (
+              <PostCard key={p.id} post={p} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

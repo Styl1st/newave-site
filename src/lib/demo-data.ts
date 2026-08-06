@@ -1,4 +1,4 @@
-import type { Article, Brand } from "./types";
+import type { Brand, Post, Product } from "./types";
 
 /**
  * Donnees de demonstration.
@@ -52,31 +52,84 @@ export const DEMO_BRANDS: Brand[] = [
   },
 ];
 
-export const DEMO_ARTICLES: Article[] = [
+const brandRef = (b: Brand) => ({ id: b.id, slug: b.slug, name: b.name });
+
+export const DEMO_PRODUCTS: Product[] = [
   {
-    id: "demo-a1",
-    slug: "pourquoi-les-series-limitees",
-    title: "Pourquoi les séries limitées changent tout",
-    excerpt:
-      "Produire moins n'est pas qu'un argument écologique. C'est aussi ce qui permet à une marque naissante de survivre à sa première année.",
-    cover_url: null,
-    body: "",
-    brand_slug: "engineered-by-aryes",
-    reading_minutes: 4,
+    id: "demo-p1",
+    brand_id: "demo-aryes",
+    name: "Chemise structurée, coton lavé",
+    price_cents: 14500,
+    currency: "EUR",
+    image_url: null,
+    shop_url: "https://shoparyes.fr",
+    categories: ["Chemise"],
+    featured: true,
     status: "published",
-    published_at: "2026-07-28",
+    position: 0,
+    brand: brandRef(DEMO_BRANDS[0]),
   },
   {
-    id: "demo-a2",
-    slug: "dans-l-atelier-de-pollen-fabrics",
-    title: "Dans l'atelier de Pollen Fabrics",
-    excerpt:
-      "Trois mois pour une coupe. On est allés voir comment se fabrique un pantalon quand personne ne presse le bouton.",
-    cover_url: null,
-    body: "",
-    brand_slug: "pollen-fabrics",
-    reading_minutes: 6,
+    id: "demo-p2",
+    brand_id: "demo-aryes",
+    name: "Collier argent 925",
+    price_cents: 8900,
+    currency: "EUR",
+    image_url: null,
+    shop_url: "https://shoparyes.fr",
+    categories: ["Bijoux"],
+    featured: false,
+    status: "published",
+    position: 1,
+    brand: brandRef(DEMO_BRANDS[0]),
+  },
+  {
+    id: "demo-p3",
+    brand_id: "demo-pollen",
+    name: "Write Denim Pant",
+    price_cents: 11000,
+    currency: "EUR",
+    image_url: null,
+    shop_url: "https://www.instagram.com/pollenfabrics/",
+    categories: ["Denim"],
+    featured: true,
+    status: "published",
+    position: 0,
+    brand: brandRef(DEMO_BRANDS[1]),
+  },
+];
+
+export const DEMO_POSTS: Post[] = [
+  {
+    id: "demo-po1",
+    slug: "premiere-selection-aryes",
+    title: "La sélection Aryes",
+    caption:
+      "Trois pièces qui résument la démarche : une coupe, une matière, aucun logo.",
+    image_url: null,
+    image_alt: "",
+    keywords: ["minimalisme", "made in france", "maille"],
+    brand_id: "demo-aryes",
+    instagram_url: "https://www.instagram.com/newave.sphere/",
+    tiktok_url: null,
+    status: "published",
+    published_at: "2026-07-28",
+    brand: brandRef(DEMO_BRANDS[0]),
+  },
+  {
+    id: "demo-po2",
+    slug: "pollen-le-denim-brut",
+    title: "Pollen, le denim brut",
+    caption:
+      "Ce que ça change de porter un denim qui n'a pas été lavé quinze fois avant toi.",
+    image_url: null,
+    image_alt: "",
+    keywords: ["denim", "streetwear", "marque indé"],
+    brand_id: "demo-pollen",
+    instagram_url: "https://www.instagram.com/newave.sphere/",
+    tiktok_url: null,
     status: "published",
     published_at: "2026-07-11",
+    brand: brandRef(DEMO_BRANDS[1]),
   },
 ];

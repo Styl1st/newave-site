@@ -1,15 +1,23 @@
 import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
-import { getArticles, getBrands } from "@/lib/queries";
+import PostCard from "@/components/PostCard";
+import ProductCard from "@/components/ProductCard";
+import { getBrands, getPosts, getProducts } from "@/lib/queries";
 
 export default async function HomePage() {
-  const [brands, articles] = await Promise.all([getBrands(), getArticles(3)]);
-  const featured = brands.filter((b) => b.featured).slice(0, 3);
+  const [brands, posts, products] = await Promise.all([
+    getBrands(),
+    getPosts(3),
+    getProducts(),
+  ]);
+  const featuredBrands = brands.filter((b) => b.featured).slice(0, 3);
+  const featuredProducts = products.slice(0, 4);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)]">
       {/* ---------- manifeste ---------- */}
       <section className="flex flex-col items-center py-14 text-center sm:py-20">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/logo-white.webp"
           alt="NEWAVE SPHERE"
@@ -34,10 +42,10 @@ export default async function HomePage() {
             </span>
           </Link>
           <Link
-            href="/journal"
+            href="/posts"
             className="rounded-[var(--radius)] border border-white/40 px-6 py-3.5 text-[14px] font-extrabold text-white transition hover:bg-white/12"
           >
-            Lire le journal
+            Voir les posts
           </Link>
         </div>
       </section>
@@ -57,39 +65,58 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((b) => (
+          {featuredBrands.map((b) => (
             <BrandCard key={b.id} brand={b} />
           ))}
         </div>
       </section>
 
-      {/* ---------- journal ---------- */}
-      <section className="py-14">
+      {/* ---------- pieces ---------- */}
+      {featuredProducts.length > 0 && (
+        <section className="py-14">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow m-0">La sélection</p>
+              <h2 className="m-0 mt-2 text-[clamp(22px,5vw,30px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
+                Pièces repérées
+              </h2>
+            </div>
+            <Link href="/pieces" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
+              Tout voir
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.map((p) => (
+              <ProductCard key={p.id} product={p} showBrand />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- posts ---------- */}
+      <section className="py-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="eyebrow m-0">Le journal</p>
+            <p className="eyebrow m-0">Les publications</p>
             <h2 className="m-0 mt-2 text-[clamp(22px,5vw,30px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
-              Derniers articles
+              Derniers posts
             </h2>
           </div>
-          <Link href="/journal" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
+          <Link href="/posts" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
             Tout voir
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {articles.map((a) => (
-            <Link key={a.id} href={`/journal/${a.slug}`} className="glass block p-6 transition hover:border-white/50">
-              <p className="eyebrow m-0">{a.reading_minutes} min de lecture</p>
-              <h3 className="m-0 mt-3 text-[17px] font-extrabold leading-snug text-white">{a.title}</h3>
-              <p className="m-0 mt-2 text-[14px] leading-relaxed text-white/78">{a.excerpt}</p>
-            </Link>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {posts.map((p) => (
+            <PostCard key={p.id} post={p} />
           ))}
         </div>
       </section>
 
       {/* ---------- appel aux marques ---------- */}
-      <section className="glass mb-6 p-8 text-center sm:p-12">
+      <section className="glass mt-14 mb-6 p-8 text-center sm:p-12">
         <h2 className="m-0 text-[clamp(20px,4.6vw,26px)] font-extrabold leading-tight text-white">
           Tu crées une marque ?
         </h2>

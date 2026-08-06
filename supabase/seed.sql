@@ -1,5 +1,5 @@
--- Deux marques et deux articles pour demarrer.
--- A lancer APRES schema.sql.
+-- Donnees de depart. A lancer APRES schema.sql.
+-- Rejouable : relancer ne cree pas de doublons.
 
 insert into public.brands
   (slug, name, tagline, description, country, city, founded_year,
@@ -22,18 +22,25 @@ values
    true, 'published', now())
 on conflict (slug) do nothing;
 
-insert into public.articles
-  (slug, title, excerpt, body, brand_slug, reading_minutes, status, published_at)
-values
-  ('pourquoi-les-series-limitees',
-   'Pourquoi les séries limitées changent tout',
-   'Produire moins n''est pas qu''un argument écologique. C''est aussi ce qui permet à une marque naissante de survivre à sa première année.',
-   'Corps de l''article, à écrire.',
-   'engineered-by-aryes', 4, 'published', now()),
+-- Deux posts d'exemple, sans visuel : tu les remplaceras depuis /admin.
+insert into public.posts
+  (slug, title, caption, keywords, brand_id, status, published_at)
+select
+  'premiere-selection-aryes',
+  'La sélection Aryes',
+  'Trois pièces qui résument la démarche : une coupe, une matière, aucun logo.',
+  array['minimalisme','made in france','maille'],
+  b.id, 'published', now()
+from public.brands b where b.slug = 'engineered-by-aryes'
+on conflict (slug) do nothing;
 
-  ('dans-l-atelier-de-pollen-fabrics',
-   'Dans l''atelier de Pollen Fabrics',
-   'Trois mois pour une coupe. On est allés voir comment se fabrique un pantalon quand personne ne presse le bouton.',
-   'Corps de l''article, à écrire.',
-   'pollen-fabrics', 6, 'published', now())
+insert into public.posts
+  (slug, title, caption, keywords, brand_id, status, published_at)
+select
+  'pollen-le-denim-brut',
+  'Pollen, le denim brut',
+  'Ce que ça change de porter un denim qui n''a pas été lavé quinze fois avant toi.',
+  array['denim','streetwear','marque indé'],
+  b.id, 'published', now()
+from public.brands b where b.slug = 'pollen-fabrics'
 on conflict (slug) do nothing;
