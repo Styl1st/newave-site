@@ -26,11 +26,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Le layout racine n'a aucun moyen de connaitre l'URL demandee.
+  // On la lui transmet par un en-tete, ce qui lui permet de masquer
+  // la navigation sur la page d'acces.
+  const headers = new Headers(request.headers);
+  headers.set("x-chemin", path);
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return withNoIndex(NextResponse.next(), Boolean(gate));
+  if (!url || !key) {
+    return withNoIndex(NextResponse.next({ request: { headers } }), Boolean(gate));
+  }
 
-  let response = NextResponse.next({ request });
+  let response = NextResponse.next({ request: { headers } });
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -39,7 +47,7 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: { headers } });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
         );

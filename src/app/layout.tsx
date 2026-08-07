@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Archivo } from "next/font/google";
 import Background from "@/components/Background";
 import Header from "@/components/Header";
@@ -39,14 +40,19 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // La page d'acces se passe de navigation : proposer des liens qui
+  // renvoient tous vers elle-meme n'aide personne.
+  const chemin = (await headers()).get("x-chemin") ?? "";
+  const nu = chemin === "/acces";
+
   return (
     <html lang="fr" className={archivo.variable}>
       <body className="font-sans">
         <Background />
-        <Header />
-        <main className="relative z-10 flex-1">{children}</main>
-        <Footer />
+        {!nu && <Header />}
+        <main className="relative z-10 flex flex-1 flex-col">{children}</main>
+        {!nu && <Footer />}
       </body>
     </html>
   );
