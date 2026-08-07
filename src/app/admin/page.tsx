@@ -7,7 +7,6 @@ export default async function AdminHome() {
   const cards = [
     { href: "/admin/posts", label: "Posts", value: c.posts, note: c.postsDraft ? `${c.postsDraft} en brouillon` : "tous publiés" },
     { href: "/admin/marques", label: "Marques", value: c.brands, note: c.brandsDraft ? `${c.brandsDraft} en brouillon` : "toutes publiées" },
-    { href: "/admin/pieces", label: "Pièces", value: c.products, note: "toutes marques" },
     { href: "/admin/candidatures", label: "Candidatures", value: c.applications, note: c.applicationsNew ? `${c.applicationsNew} à traiter` : "rien de nouveau" },
   ];
 
@@ -44,9 +43,6 @@ export default async function AdminHome() {
           </Link>
           <Link href="/admin/marques/nouveau" className="card-light px-5 py-3">
             <span className="relative z-3 text-[13.5px] font-extrabold">Nouvelle marque</span>
-          </Link>
-          <Link href="/admin/pieces/nouveau" className="card-light px-5 py-3">
-            <span className="relative z-3 text-[13.5px] font-extrabold">Nouvelle pièce</span>
           </Link>
         </div>
       </div>

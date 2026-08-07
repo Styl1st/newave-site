@@ -31,6 +31,17 @@ export default async function AdminApplications() {
                     {a.contact_name} · {a.email}
                     {a.instagram && ` · ${a.instagram}`}
                   </p>
+                  {a.user_id ? (
+                    <p className="m-0 mt-1.5 text-[12px] font-bold text-white/78">
+                      Compte créé sur le site — tu peux la rattacher à sa fiche depuis
+                      Marques, avec l&apos;adresse ci-dessus.
+                    </p>
+                  ) : (
+                    <p className="m-0 mt-1.5 text-[12px] text-white/50">
+                      Candidature déposée sans compte. Demande-lui d&apos;en créer un
+                      avant de lui donner les droits.
+                    </p>
+                  )}
                 </div>
                 <span className="badge shrink-0">{APPLICATION_STATUS_LABEL[a.status]}</span>
               </div>

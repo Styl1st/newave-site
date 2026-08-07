@@ -2,19 +2,29 @@ import Link from "next/link";
 import type { Post } from "@/lib/types";
 
 export default function PostCard({ post }: { post: Post }) {
+  const cover = post.images?.[0] ?? post.image_url;
+  const extra = Math.max((post.images?.length ?? 0) - 1, 0);
+
   return (
     <Link href={`/posts/${post.slug}`} className="card-light group block overflow-hidden">
       <div className="relative z-3">
         {/* Format 4:5, celui d'Instagram : tes visuels tombent juste. */}
         <div className="relative aspect-4/5 w-full overflow-hidden bg-[#e6dcfb]">
-          {post.image_url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={post.image_url}
-              alt={post.image_alt || post.title}
-              loading="lazy"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-            />
+          {cover ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cover}
+                alt={post.image_alt || post.title}
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              />
+              {extra > 0 && (
+                <span className="absolute right-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-[10.5px] font-black text-white backdrop-blur-sm">
+                  +{extra}
+                </span>
+              )}
+            </>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a7bab]">

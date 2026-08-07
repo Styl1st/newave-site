@@ -1,17 +1,11 @@
 import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
 import PostCard from "@/components/PostCard";
-import ProductCard from "@/components/ProductCard";
-import { getBrands, getPosts, getProducts } from "@/lib/queries";
+import { getBrands, getPosts } from "@/lib/queries";
 
 export default async function HomePage() {
-  const [brands, posts, products] = await Promise.all([
-    getBrands(),
-    getPosts(3),
-    getProducts(),
-  ]);
+  const [brands, posts] = await Promise.all([getBrands(), getPosts(3)]);
   const featuredBrands = brands.filter((b) => b.featured).slice(0, 3);
-  const featuredProducts = products.slice(0, 4);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)]">
@@ -70,29 +64,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* ---------- pieces ---------- */}
-      {featuredProducts.length > 0 && (
-        <section className="py-14">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow m-0">La sélection</p>
-              <h2 className="m-0 mt-2 text-[clamp(22px,5vw,30px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
-                Pièces repérées
-              </h2>
-            </div>
-            <Link href="/pieces" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
-              Tout voir
-            </Link>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.map((p) => (
-              <ProductCard key={p.id} product={p} showBrand />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ---------- posts ---------- */}
       <section className="py-6">

@@ -10,6 +10,15 @@ import type { Brand, Post, Product } from "./types";
 
 const BRAND_REF = "brand:brands(id,slug,name)";
 
+/**
+ * Une requete qui echoue ne doit pas se transformer en "il n'y a rien".
+ * On retombe sur une liste vide pour ne pas casser la page, mais on
+ * ecrit la raison dans la console du serveur.
+ */
+function report(where: string, error: { message: string } | null) {
+  if (error) console.error(`[newave] ${where} : ${error.message}`);
+}
+
 /* ---------------- marques ---------------- */
 
 export async function getBrands(): Promise<Brand[]> {
@@ -23,6 +32,7 @@ export async function getBrands(): Promise<Brand[]> {
     .order("featured", { ascending: false })
     .order("published_at", { ascending: false });
 
+  report("annuaire des marques", error);
   if (error || !data) return DEMO_BRANDS;
   return data as Brand[];
 }
@@ -55,10 +65,16 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
     .eq("status", "published")
     .order("position", { ascending: true });
 
+  report("pièces de la marque", error);
   if (error || !data) return [];
   return data as Product[];
 }
 
+/**
+ * Toutes les pieces, marques confondues.
+ * Plus utilisee depuis la suppression de la page /pieces : gardee pour
+ * le jour ou tu voudras une vitrine globale ou la marketplace.
+ */
 export async function getProducts(): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return DEMO_PRODUCTS;
@@ -72,6 +88,35 @@ export async function getProducts(): Promise<Product[]> {
 
   if (error || !data) return DEMO_PRODUCTS;
   return data as unknown as Product[];
+}
+
+/** Une piece precise, par son adresse au sein d'une marque. */
+export async function getProduct(
+  brandSlug: string,
+  productSlug: string
+): Promise<{ product: Product; brand: Brand } | null> {
+  const brand = await getBrand(brandSlug);
+  if (!brand) return null;
+
+  const supabase = await createClient();
+  if (!supabase) {
+    const demo = DEMO_PRODUCTS.find(
+      (p) => p.brand_id === brand.id && p.slug === productSlug
+    );
+    return demo ? { product: demo, brand } : null;
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("brand_id", brand.id)
+    .eq("slug", productSlug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  report("fiche de la pièce", error);
+  if (!data) return null;
+  return { product: data as Product, brand };
 }
 
 /* ---------------- posts ---------------- */
@@ -88,6 +133,7 @@ export async function getPosts(limit?: number): Promise<Post[]> {
   if (limit) q = q.limit(limit);
 
   const { data, error } = await q;
+  report("liste des posts", error);
   if (error || !data) return DEMO_POSTS.slice(0, limit);
   return data as unknown as Post[];
 }
@@ -118,6 +164,7 @@ export async function getPostsByBrand(brandId: string): Promise<Post[]> {
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
+  report("posts de la marque", error);
   if (error || !data) return [];
   return data as unknown as Post[];
 }

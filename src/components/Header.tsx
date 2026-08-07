@@ -3,7 +3,6 @@ import { getProfile } from "@/lib/auth";
 
 const NAV = [
   { href: "/marques", label: "Marques" },
-  { href: "/pieces", label: "Pièces" },
   { href: "/posts", label: "Posts" },
 ];
 
@@ -39,9 +38,14 @@ export default async function Header() {
           )}
 
           {profile ? (
-            <Link href="/favoris" className={link}>
-              Favoris
-            </Link>
+            <>
+              <Link href="/espace-marque" className={link}>
+                Espace marque
+              </Link>
+              <Link href="/favoris" className={link}>
+                Favoris
+              </Link>
+            </>
           ) : (
             <Link href="/connexion" className={link}>
               Connexion

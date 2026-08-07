@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
 import DeleteButton from "@/components/admin/DeleteButton";
 import ImageUploader from "@/components/admin/ImageUploader";
-import { Area, Check, Select, Text } from "@/components/admin/fields";
+import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
+import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { deleteBrand, saveBrand } from "../../actions";
-import { adminGetBrand } from "@/lib/admin-queries";
+import BrandManagers from "@/components/admin/BrandManagers";
+import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -14,6 +16,7 @@ export default async function EditBrand({ params }: Props) {
   const isNew = id === "nouveau";
   const brand = isNew ? null : await adminGetBrand(id);
   if (!isNew && !brand) notFound();
+  const managers = isNew ? [] : await adminGetBrandManagers(brand!.id);
 
   return (
     <>
@@ -27,12 +30,20 @@ export default async function EditBrand({ params }: Props) {
           </h1>
         </div>
         {!isNew && (
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={`/espace-marque/${brand!.slug}`}
+              className="rounded-full border border-white/35 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-white/12"
+            >
+              Gérer les pièces
+            </Link>
           <DeleteButton
             action={deleteBrand}
             id={brand!.id}
             label="Supprimer cette marque"
             confirmText="Supprimer la marque supprimera aussi ses pièces. Continuer ?"
           />
+          </div>
         )}
       </header>
 
@@ -65,12 +76,12 @@ export default async function EditBrand({ params }: Props) {
           <Text name="founded_year" label="Année de création" type="number" min={1900} max={2100} defaultValue={brand?.founded_year ?? ""} />
         </div>
 
-        <Text
+        <CheckGroup
           name="categories"
           label="Catégories"
-          hint="Séparées par des virgules. Elles servent de filtres dans l'annuaire."
-          defaultValue={brand?.categories.join(", ")}
-          placeholder="Denim, Streetwear"
+          hint="Elles servent de filtres dans l'annuaire. Une marque peut en avoir plusieurs."
+          options={withExisting(BRAND_CATEGORIES, brand?.categories)}
+          selected={brand?.categories}
         />
 
         <Select name="price_tier" label="Gamme de prix" defaultValue={brand?.price_tier ?? "intermediaire"}>
@@ -104,6 +115,8 @@ export default async function EditBrand({ params }: Props) {
 
         {brand?.published_at && <input type="hidden" name="published_at" value={brand.published_at} />}
       </AdminForm>
+
+      {!isNew && <BrandManagers brandId={brand!.id} managers={managers} />}
     </>
   );
 }

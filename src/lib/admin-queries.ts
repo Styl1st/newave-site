@@ -1,5 +1,5 @@
 import { createClient } from "./supabase/server";
-import type { Application, Brand, Post, Product } from "./types";
+import type { Application, Brand, Post, Profile } from "./types";
 
 /**
  * Lectures cote administration : contrairement a queries.ts, on renvoie
@@ -41,23 +41,6 @@ export async function adminGetBrand(id: string): Promise<Brand | null> {
   return (data as Brand) ?? null;
 }
 
-export async function adminGetProducts(): Promise<Product[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
-  const { data } = await supabase
-    .from("products")
-    .select(`*, ${BRAND_REF}`)
-    .order("created_at", { ascending: false });
-  return (data as unknown as Product[]) ?? [];
-}
-
-export async function adminGetProduct(id: string): Promise<Product | null> {
-  const supabase = await createClient();
-  if (!supabase) return null;
-  const { data } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-  return (data as Product) ?? null;
-}
-
 export async function adminGetApplications(): Promise<Application[]> {
   const supabase = await createClient();
   if (!supabase) return [];
@@ -69,10 +52,9 @@ export async function adminGetApplications(): Promise<Application[]> {
 }
 
 export async function adminCounts() {
-  const [posts, brands, products, applications] = await Promise.all([
+  const [posts, brands, applications] = await Promise.all([
     adminGetPosts(),
     adminGetBrands(),
-    adminGetProducts(),
     adminGetApplications(),
   ]);
   return {
@@ -80,8 +62,20 @@ export async function adminCounts() {
     postsDraft: posts.filter((p) => p.status === "draft").length,
     brands: brands.length,
     brandsDraft: brands.filter((b) => b.status === "draft").length,
-    products: products.length,
     applications: applications.length,
     applicationsNew: applications.filter((a) => a.status === "nouvelle").length,
   };
+}
+
+/** Les comptes rattaches a une marque. */
+export async function adminGetBrandManagers(brandId: string): Promise<Profile[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("brand_managers")
+    .select("profile:profiles(id, email, display_name, role)")
+    .eq("brand_id", brandId);
+  return (data ?? [])
+    .map((row) => (row as unknown as { profile: Profile | null }).profile)
+    .filter((p): p is Profile => Boolean(p));
 }

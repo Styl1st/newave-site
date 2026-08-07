@@ -38,7 +38,15 @@ export default function ApplicationForm() {
       return;
     }
 
-    const { error } = await supabase.from("applications").insert(payload);
+    // Si la marque est connectee, on retient son compte : ca permettra de
+    // lui donner les droits sur sa fiche en un clic apres validation.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from("applications")
+      .insert({ ...payload, user_id: user?.id ?? null });
 
     if (error) {
       setState("error");

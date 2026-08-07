@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
 import DeleteButton from "@/components/admin/DeleteButton";
 import ImageUploader from "@/components/admin/ImageUploader";
-import { Area, Select, Text } from "@/components/admin/fields";
+import { Area, CheckGroup, Select, Text } from "@/components/admin/fields";
+import { POST_KEYWORDS, withExisting } from "@/lib/taxonomy";
 import { deletePost, savePost } from "../../actions";
 import { adminGetBrands, adminGetPost } from "@/lib/admin-queries";
 
@@ -64,12 +65,12 @@ export default async function EditPost({ params }: Props) {
           rows={7}
         />
 
-        <Text
+        <CheckGroup
           name="keywords"
           label="Mots-clés"
-          hint="Séparés par des virgules. Ce sont eux qui filtrent la page Posts."
-          defaultValue={post?.keywords.join(", ")}
-          placeholder="denim, made in france, streetwear"
+          hint="Ce sont eux qui filtrent la page Posts. Coche ce qui s'applique."
+          options={withExisting(POST_KEYWORDS, post?.keywords)}
+          selected={post?.keywords}
         />
 
         <Select name="brand_id" label="Marque associée" defaultValue={post?.brand_id ?? ""}>

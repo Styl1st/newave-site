@@ -15,8 +15,8 @@ npm run dev
 
 Puis ouvre http://localhost:3000
 
-**Le site tourne sans Supabase.** Tant que `.env.local` est absent, il affiche des marques,
-des pièces et des posts de démonstration (`src/lib/demo-data.ts`). C'est fait exprès : tu peux
+**Le site tourne sans Supabase.** Tant que `.env.local` est absent, il affiche des marques
+et des posts de démonstration (`src/lib/demo-data.ts`). C'est fait exprès : tu peux
 travailler le design avant de t'occuper de la base. En revanche les comptes et l'admin
 ont besoin de Supabase.
 
@@ -42,16 +42,17 @@ Tu as deux marques et deux posts de départ.
 
 ### 3. Récupérer tes clés
 
-**Project Settings → API**. Tu as besoin de deux valeurs :
+Le bouton vert **Connect**, en haut du tableau de bord, affiche les deux valeurs :
 
 - **Project URL**
-- **anon public**
+- **Publishable key**, de la forme `sb_publishable_…`
 
 Duplique `.env.local.example` en `.env.local`, colle les deux, puis relance `npm run dev`.
 
-La clé `anon` est publique par nature, elle est faite pour être dans le navigateur.
+La clé publishable est publique par nature, elle est faite pour être dans le navigateur.
 Ce qui protège tes données, ce sont les règles RLS du fichier `schema.sql`.
-**Ne mets jamais la clé `service_role` dans ce projet.**
+**Ne mets jamais la Secret key (`sb_secret_…`) dans ce projet** : elle contourne toutes
+ces règles.
 
 ### 4. Créer ton compte
 
@@ -82,7 +83,7 @@ Recharge le site : le lien **Admin** apparaît dans le menu.
 |---|---|---|
 | Mettre des marques en favori | oui | oui |
 | Voir les brouillons | non | oui |
-| Créer et publier posts, marques, pièces | non | oui |
+| Créer et publier posts et marques | non | oui |
 | Lire les candidatures reçues | non | oui |
 | Envoyer des images | non | oui |
 
@@ -99,8 +100,6 @@ de la table `profiles`. Les règles RLS s'appuient sur la fonction `is_admin()`.
   liens vers l'original. Les mots-clés servent de filtres sur la page publique.
 - **Marques** — la fiche complète : description, origine, catégories, gamme de prix,
   liens, logo, mise à la une.
-- **Pièces** — les vêtements d'une marque : nom, prix, visuel, lien vers la boutique.
-  Tu saisis le prix en euros, la base stocke des centimes.
 - **Candidatures** — les dossiers reçus via `/candidature`, avec un statut à faire évoluer.
 
 Tout ce qui est créé part en **brouillon**. Rien n'est public tant que tu ne passes
@@ -116,8 +115,7 @@ Les images partent dans le bucket `media` de Supabase. Seul un admin peut en env
 src/
   app/
     page.tsx              accueil
-    marques/              annuaire + fiche marque (pièces et posts liés)
-    pieces/               toutes les pièces, filtrables
+    marques/              annuaire + fiche marque (posts liés)
     posts/                grille de posts + page de post
     candidature/          formulaire des marques
     favoris/              les favoris du membre connecté
@@ -130,10 +128,10 @@ src/
     Background.tsx        dégradé animé, glyphes, blobs chromés
     BrandDirectory.tsx    recherche + filtres de l'annuaire
     PostGrid.tsx          filtre par mot-clé
-    ProductGrid.tsx       filtres marque / catégorie / prix
     FavoriteButton.tsx
     admin/                champs de formulaire, envoi d'images
   lib/
+    taxonomy.ts           ← catégories et mots-clés : LE fichier à éditer
     queries.ts            lectures publiques, avec repli sur la démo
     admin-queries.ts      lectures admin, brouillons inclus
     favorites.ts          favoris
@@ -153,7 +151,7 @@ public/brand/             logo, marque, blobs chromés
 
 1. Pousse sur GitHub.
 2. Sur [vercel.com](https://vercel.com) : **Add New → Project**, choisis le dépôt.
-3. **Environment Variables** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+3. **Environment Variables** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
    et `NEXT_PUBLIC_SITE_URL` avec l'adresse réelle du site.
 4. Deploy.
 
@@ -174,4 +172,6 @@ servi par GitHub Pages et Vercel en même temps.
 - `/api/go` : redirection tracée pour compter les clics sortants vers les marques
   (la table `outbound_clicks` est déjà prête)
 - newsletter branchée sur un vrai service
-- affiliation : le champ `shop_url` des pièces accueillera tes liens trackés
+- les pièces : la table `products` et son affichage sur la fiche marque sont prêts,
+  mais la gestion depuis `/admin` a été retirée. À réactiver quand tu voudras
+  montrer des vêtements, avec l'affiliation via le champ `shop_url`.

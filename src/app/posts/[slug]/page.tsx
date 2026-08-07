@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPost, getPosts } from "@/lib/queries";
+import Carousel from "@/components/Carousel";
+import { getPost } from "@/lib/queries";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  const posts = await getPosts();
-  return posts.map((p) => ({ slug: p.slug }));
-}
+/**
+ * Rendue a la demande : un post publie depuis /admin doit apparaitre
+ * tout de suite, sans attendre un redeploiement.
+ */
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -20,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: post.title,
       description: post.caption.slice(0, 160),
-      images: post.image_url ? [post.image_url] : undefined,
+      images: post.images?.[0] ?? post.image_url ?? undefined,
     },
   };
 }
@@ -29,6 +31,8 @@ export default async function PostPage({ params }: Props) {
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) notFound();
+
+  const images = post.images?.length ? post.images : post.image_url ? [post.image_url] : [];
 
   return (
     <article className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
@@ -61,15 +65,10 @@ export default async function PostPage({ params }: Props) {
         </h1>
       </header>
 
-      {post.image_url && (
+      {images.length > 0 && (
         <div className="card-light rise rise-1 mt-8 overflow-hidden">
           <div className="relative z-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.image_url}
-              alt={post.image_alt || post.title}
-              className="block w-full"
-            />
+            <Carousel images={images} alt={post.image_alt || post.title} />
           </div>
         </div>
       )}
