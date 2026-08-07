@@ -26,19 +26,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Le layout racine n'a aucun moyen de connaitre l'URL demandee.
-  // On la lui transmet par un en-tete, ce qui lui permet de masquer
-  // la navigation sur la page d'acces.
-  const headers = new Headers(request.headers);
-  headers.set("x-chemin", path);
+  /**
+   * Le layout racine n'a aucun moyen de connaitre l'URL demandee : on
+   * la lui transmet par un en-tete, pour qu'il masque la navigation
+   * sur la page d'acces.
+   *
+   * Les en-tetes sont reconstruits A CHAQUE APPEL, jamais reutilises :
+   * Supabase reecrit les cookies de session sur la requete quand il
+   * rafraichit un jeton, et une copie prise trop tot transporterait
+   * les anciens cookies jusqu'aux composants serveur.
+   */
+  const withPath = () => {
+    const headers = new Headers(request.headers);
+    headers.set("x-chemin", path);
+    return NextResponse.next({ request: { headers } });
+  };
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) {
-    return withNoIndex(NextResponse.next({ request: { headers } }), Boolean(gate));
-  }
+  if (!url || !key) return withNoIndex(withPath(), Boolean(gate));
 
-  let response = NextResponse.next({ request: { headers } });
+  let response = withPath();
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -47,7 +55,7 @@ export async function middleware(request: NextRequest) {
       },
       setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request: { headers } });
+        response = withPath();
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
         );

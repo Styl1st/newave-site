@@ -52,12 +52,38 @@ export default function AuthForm({ suite }: { suite: string }) {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setPending(false);
+
     if (error) {
-      setNote("Email ou mot de passe incorrect.");
+      // On traduit ce qu'on sait traduire, et on montre le reste tel
+      // quel : masquer la vraie raison derriere "mot de passe
+      // incorrect" fait chercher au mauvais endroit pendant une heure.
+      const brut = error.message.toLowerCase();
+      if (brut.includes("invalid login credentials")) {
+        setNote("Email ou mot de passe incorrect.");
+      } else if (brut.includes("email not confirmed")) {
+        setNote(
+          "Ce compte n'a jamais été confirmé. Désactive « Confirm email » dans Supabase, ou confirme le compte depuis Authentication → Users."
+        );
+      } else if (brut.includes("rate limit") || brut.includes("too many")) {
+        setNote("Trop de tentatives. Attends quelques minutes avant de réessayer.");
+      } else {
+        setNote(`Supabase répond : ${error.message}`);
+      }
       return;
     }
+
+    // Une connexion sans session, c'est un cookie qui n'a pas pu
+    // s'ecrire : le dire plutot que de rediriger vers une page qui
+    // renverra ici.
+    if (!data.session) {
+      setNote(
+        "Connexion acceptée mais la session n'a pas pu être enregistrée. Vérifie que les cookies ne sont pas bloqués pour ce site."
+      );
+      return;
+    }
+
     router.push(suite);
     router.refresh();
   }
