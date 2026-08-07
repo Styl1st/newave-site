@@ -135,9 +135,9 @@ export default async function PiecePage({ params }: Props) {
 
           {/* ---------- achat ---------- */}
           <a
-            href={product.shop_url}
+            href={`/api/go/piece/${product.id}`}
             target="_blank"
-            rel="noopener noreferrer sponsored"
+            rel="noopener noreferrer sponsored nofollow"
             className="card-light flex items-center justify-between gap-4 px-6 py-5"
           >
             <span className="relative z-3">

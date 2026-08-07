@@ -48,7 +48,8 @@ export default function ProductCard({
 
   const slug = brandSlug ?? product.brand?.slug;
   const internal = Boolean(slug && product.slug);
-  const href = internal ? `/marques/${slug}/${product.slug}` : product.shop_url;
+  // Sans fiche interne, on sort par le compteur de clics.
+  const href = internal ? `/marques/${slug}/${product.slug}` : `/api/go/piece/${product.id}`;
 
   return (
     <div className="card-light group overflow-hidden">

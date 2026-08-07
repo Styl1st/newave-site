@@ -22,6 +22,12 @@ export default function Footer() {
             <a href="mailto:contact@newavesphere.fr" className="transition hover:text-white">
               contact@newavesphere.fr
             </a>
+            <Link href="/a-propos" className="transition hover:text-white">
+              À propos
+            </Link>
+            <Link href="/confidentialite" className="transition hover:text-white">
+              Confidentialité
+            </Link>
             <Link href="/mentions-legales" className="transition hover:text-white">
               Mentions légales
             </Link>

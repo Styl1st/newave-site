@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/espace-marque", "/api"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/espace-marque", "/compte", "/favoris", "/api", "/acces", "/reinitialisation"] },
     sitemap: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://newavesphere.fr"}/sitemap.xml`,
   };
 }

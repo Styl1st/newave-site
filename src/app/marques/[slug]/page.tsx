@@ -155,9 +155,9 @@ export default async function BrandPage({ params }: Props) {
 
       {(brand.shop_url || brand.website_url) && (
         <a
-          href={brand.shop_url ?? brand.website_url ?? "#"}
+          href={`/api/go/marque/${brand.id}`}
           target="_blank"
-          rel="noopener noreferrer sponsored"
+          rel="noopener noreferrer sponsored nofollow"
           className="card-light mt-8 flex items-center justify-between gap-4 px-6 py-5"
         >
           <span className="relative z-3">
