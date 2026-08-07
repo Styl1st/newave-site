@@ -1,0 +1,102 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { DisplayNameForm, LogoutButton, PasswordForm } from "@/components/AccountForms";
+import { requireUser } from "@/lib/auth";
+import { getManagedBrands } from "@/lib/brand-space";
+import { getFavoriteBrands } from "@/lib/favorites";
+
+export const metadata: Metadata = { title: "Mon compte" };
+export const dynamic = "force-dynamic";
+
+export default async function ComptePage() {
+  const profile = await requireUser();
+  const [brands, favorites] = await Promise.all([getManagedBrands(), getFavoriteBrands()]);
+
+  const isAdmin = profile.role === "admin";
+  const raccourcis = [
+    {
+      href: "/favoris",
+      label: "Mes favoris",
+      note: favorites.length
+        ? `${favorites.length} marque${favorites.length > 1 ? "s" : ""}`
+        : "Aucune pour l'instant",
+      show: true,
+    },
+    {
+      href: "/espace-marque",
+      label: "Espace marque",
+      note: brands.length
+        ? `${brands.length} marque${brands.length > 1 ? "s" : ""} à gérer`
+        : "Aucune marque rattachée",
+      show: brands.length > 0 || isAdmin,
+    },
+    {
+      href: "/admin",
+      label: "Administration",
+      note: "Posts, marques, candidatures",
+      show: isAdmin,
+    },
+  ].filter((r) => r.show);
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
+      <header className="rise mb-9">
+        <p className="eyebrow m-0">Ton compte</p>
+        <h1 className="m-0 mt-2 text-[clamp(26px,6vw,40px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+          {profile.display_name ?? "Mon compte"}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="m-0 text-[14.5px] text-white/78">{profile.email}</p>
+          {isAdmin && <span className="badge">Administrateur</span>}
+        </div>
+      </header>
+
+      {/* ---------- raccourcis ---------- */}
+      <div className="rise rise-1 grid gap-4 sm:grid-cols-2">
+        {raccourcis.map((r) => (
+          <Link key={r.href} href={r.href} className="card-light p-5">
+            <div className="relative z-3 flex items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-[15px] font-extrabold text-[var(--color-ink)]">
+                  {r.label}
+                </span>
+                <span className="mt-0.5 block truncate text-[12px] font-semibold text-[#6a5a92]">
+                  {r.note}
+                </span>
+              </span>
+              <span className="text-[18px] font-black text-[#3a2470]">→</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ---------- identite ---------- */}
+      <section className="glass rise rise-2 mt-8 p-6 sm:p-8">
+        <h2 className="m-0 text-[17px] font-extrabold text-white">Ton identité</h2>
+        <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
+          Ton adresse email ne peut pas être changée ici — elle identifie ton compte.
+          Écris-nous à contact@newavesphere.fr si tu en as besoin.
+        </p>
+        <DisplayNameForm current={profile.display_name ?? ""} />
+      </section>
+
+      {/* ---------- securite ---------- */}
+      <section className="glass rise rise-3 mt-6 p-6 sm:p-8">
+        <h2 className="m-0 text-[17px] font-extrabold text-white">Mot de passe</h2>
+        <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
+          Le changement prend effet tout de suite. Tes autres appareils resteront
+          connectés jusqu&apos;à expiration de leur session.
+        </p>
+        <PasswordForm />
+      </section>
+
+      {/* ---------- sortie ---------- */}
+      <section className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-8">
+        <p className="m-0 text-[13px] text-white/60">
+          Connecté en tant que {profile.email}
+        </p>
+        <LogoutButton />
+      </section>
+    </div>
+  );
+}

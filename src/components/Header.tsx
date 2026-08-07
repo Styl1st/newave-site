@@ -38,14 +38,16 @@ export default async function Header() {
           )}
 
           {profile ? (
-            <>
-              <Link href="/espace-marque" className={link}>
-                Espace marque
-              </Link>
-              <Link href="/favoris" className={link}>
-                Favoris
-              </Link>
-            </>
+            <Link
+              href="/compte"
+              className="ml-1 flex items-center gap-2 rounded-full bg-white/12 py-1.5 pl-1.5 pr-3.5 text-[12.5px] font-bold text-white transition hover:bg-white/22"
+            >
+              {/* L'initiale suffit a se reconnaitre, et tient sur mobile. */}
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-[12px] font-black text-[var(--color-ink)]">
+                {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+              </span>
+              <span className="hidden sm:inline">Mon compte</span>
+            </Link>
           ) : (
             <Link href="/connexion" className={link}>
               Connexion
