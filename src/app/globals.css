@@ -204,6 +204,16 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   to   { opacity: 1; transform: none; }
 }
 .rise { animation: rise .7s cubic-bezier(.2,.7,.3,1) both; }
+
+/* ---------- panneau d'aperçu ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
 .rise-1 { animation-delay: .07s; }
 .rise-2 { animation-delay: .14s; }
 .rise-3 { animation-delay: .21s; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import BrandCard from "./BrandCard";
+import BrandGrid from "./BrandGrid";
 import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
@@ -85,11 +85,7 @@ export default function BrandDirectory({ brands }: { brands: Brand[] }) {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((b) => (
-            <BrandCard key={b.id} brand={b} />
-          ))}
-        </div>
+        <BrandGrid brands={results} />
       )}
     </>
   );
