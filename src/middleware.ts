@@ -18,10 +18,13 @@ export async function middleware(request: NextRequest) {
     const expected = await fingerprint(gate);
 
     if (given !== expected) {
+      // On garde la query string dans "suite" : un lien de
+      // confirmation vide de ses parametres ne sert plus a rien.
+      const destination = path + request.nextUrl.search;
       const url = request.nextUrl.clone();
       url.pathname = "/acces";
       url.search = "";
-      url.searchParams.set("suite", path);
+      url.searchParams.set("suite", destination);
       return NextResponse.redirect(url);
     }
   }

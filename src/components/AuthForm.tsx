@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type Mode = "connexion" | "inscription";
+type Mode = "connexion" | "inscription" | "oubli";
 
 const FIELD =
   "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
@@ -31,6 +31,22 @@ export default function AuthForm({ suite }: { suite: string }) {
     if (!supabase) {
       setPending(false);
       setNote("Supabase n'est pas encore branché. Remplis .env.local et relance le serveur.");
+      return;
+    }
+
+    if (mode === "oubli") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        // On passe par /auth/callback : c'est lui qui echange le jeton
+        // du lien contre une vraie session, sans quoi la page de
+        // reinitialisation s'ouvrirait sans droits.
+        redirectTo: `${window.location.origin}/auth/callback?suite=/reinitialisation`,
+      });
+      setPending(false);
+      if (error) {
+        setNote(`Supabase répond : ${error.message}`);
+        return;
+      }
+      setDone(true);
       return;
     }
 
@@ -93,8 +109,13 @@ export default function AuthForm({ suite }: { suite: string }) {
       <div className="glass p-8 text-center">
         <h2 className="m-0 text-[19px] font-extrabold text-white">Vérifie tes emails</h2>
         <p className="m-0 mt-3 text-[14.5px] leading-relaxed text-white/84">
-          On vient de t&apos;envoyer un lien de confirmation. Clique dessus et ton compte
-          sera actif. Regarde dans les spams si rien n&apos;arrive.
+          {mode === "oubli"
+            ? "Si un compte existe avec cette adresse, un lien vient de partir. Il n'est valable qu'une fois et pour peu de temps."
+            : "On vient de t'envoyer un lien de confirmation. Clique dessus et ton compte sera actif."}
+        </p>
+        <p className="m-0 mt-3 text-[13px] leading-relaxed text-white/60">
+          Regarde dans les spams si rien n&apos;arrive. L&apos;expéditeur intégré de
+          Supabase est limité à deux messages par heure.
         </p>
       </div>
     );
@@ -108,7 +129,7 @@ export default function AuthForm({ suite }: { suite: string }) {
         <button
           type="button"
           onClick={() => { setMode("connexion"); setNote(null); }}
-          className={`${tab} ${mode === "connexion" ? "bg-white text-[var(--color-ink)]" : "text-white/75 hover:text-white"}`}
+          className={`${tab} ${mode !== "inscription" ? "bg-white text-[var(--color-ink)]" : "text-white/75 hover:text-white"}`}
         >
           J&apos;ai un compte
         </button>
@@ -133,19 +154,21 @@ export default function AuthForm({ suite }: { suite: string }) {
         <input className={FIELD} id="email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.fr" />
       </div>
 
-      <div>
-        <label className={LABEL} htmlFor="password">Mot de passe</label>
-        <input
-          className={FIELD}
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete={mode === "inscription" ? "new-password" : "current-password"}
-          placeholder="8 caractères minimum"
-        />
-      </div>
+      {mode !== "oubli" && (
+        <div>
+          <label className={LABEL} htmlFor="password">Mot de passe</label>
+          <input
+            className={FIELD}
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete={mode === "inscription" ? "new-password" : "current-password"}
+            placeholder="8 caractères minimum"
+          />
+        </div>
+      )}
 
       {note && (
         <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] leading-relaxed text-white">
@@ -155,9 +178,33 @@ export default function AuthForm({ suite }: { suite: string }) {
 
       <button type="submit" disabled={pending} className="card-light px-7 py-3.5 disabled:opacity-60">
         <span className="relative z-3 text-[14px] font-extrabold">
-          {pending ? "…" : mode === "connexion" ? "Se connecter" : "Créer mon compte"}
+          {pending
+            ? "…"
+            : mode === "connexion"
+              ? "Se connecter"
+              : mode === "inscription"
+                ? "Créer mon compte"
+                : "Recevoir un lien"}
         </span>
       </button>
+
+      {mode === "connexion" ? (
+        <button
+          type="button"
+          onClick={() => { setMode("oubli"); setNote(null); }}
+          className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
+        >
+          Mot de passe oublié ?
+        </button>
+      ) : mode === "oubli" ? (
+        <button
+          type="button"
+          onClick={() => { setMode("connexion"); setNote(null); }}
+          className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
+        >
+          Retour à la connexion
+        </button>
+      ) : null}
     </form>
   );
 }

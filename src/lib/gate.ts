@@ -29,6 +29,9 @@ export function isOpenPath(pathname: string): boolean {
   return (
     pathname === "/acces" ||
     pathname.startsWith("/api/acces") ||
+    // Les liens recus par email arrivent ici. Les bloquer consommerait
+    // le jeton a usage unique sans jamais l'echanger.
+    pathname.startsWith("/auth/") ||
     pathname.startsWith("/brand/") ||
     pathname === "/robots.txt" ||
     pathname === "/favicon-32.png" ||
