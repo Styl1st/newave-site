@@ -62,7 +62,7 @@ export default function CatalogueImport({
       {/* ---- adresse de la boutique ---- */}
       <div className="glass p-6 sm:p-8">
         <Label htmlFor="boutique" hint="shoparyes.fr, ou le lien direct d'une pièce. Les deux fonctionnent.">
-          Adresse de ta boutique ou d'une pièce
+          Adresse de ta boutique ou d&aposune pièce
         </Label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
