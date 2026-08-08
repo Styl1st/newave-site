@@ -1,8 +1,7 @@
-import { setApplicationStatus } from "../actions";
+import ApplicationActions from "@/components/admin/ApplicationActions";
+import { IconExternal, IconInbox } from "@/components/Icons";
 import { adminGetApplications } from "@/lib/admin-queries";
-import { APPLICATION_STATUS_LABEL, type Application } from "@/lib/types";
-
-const STATUSES: Application["status"][] = ["nouvelle", "en_cours", "acceptee", "refusee"];
+import { APPLICATION_STATUS_LABEL } from "@/lib/types";
 
 export default async function AdminApplications() {
   const applications = await adminGetApplications();
@@ -10,7 +9,9 @@ export default async function AdminApplications() {
   return (
     <>
       <header className="mb-7">
-        <p className="eyebrow m-0">Boîte de réception</p>
+        <p className="eyebrow m-0 flex items-center gap-2">
+          <IconInbox /> Boîte de réception
+        </p>
         <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
           Candidatures
         </h1>
@@ -23,7 +24,7 @@ export default async function AdminApplications() {
       ) : (
         <div className="flex flex-col gap-4">
           {applications.map((a) => (
-            <article key={a.id} className="glass p-6">
+            <article key={a.id} className="glass p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="m-0 text-[17px] font-extrabold text-white">{a.brand_name}</h2>
@@ -31,17 +32,6 @@ export default async function AdminApplications() {
                     {a.contact_name} · {a.email}
                     {a.instagram && ` · ${a.instagram}`}
                   </p>
-                  {a.user_id ? (
-                    <p className="m-0 mt-1.5 text-[12px] font-bold text-white/78">
-                      Compte créé sur le site — tu peux la rattacher à sa fiche depuis
-                      Marques, avec l&apos;adresse ci-dessus.
-                    </p>
-                  ) : (
-                    <p className="m-0 mt-1.5 text-[12px] text-white/50">
-                      Candidature déposée sans compte. Demande-lui d&apos;en créer un
-                      avant de lui donner les droits.
-                    </p>
-                  )}
                 </div>
                 <span className="badge shrink-0">{APPLICATION_STATUS_LABEL[a.status]}</span>
               </div>
@@ -50,35 +40,27 @@ export default async function AdminApplications() {
                 {a.pitch}
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
-                {a.website && (
+              <div className="mt-5 flex flex-col gap-4 border-t border-white/15 pt-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-wrap gap-2">
+                  {a.website && (
+                    <a
+                      href={a.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/8 px-3.5 py-2 text-[11.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white"
+                    >
+                      <IconExternal /> Le site
+                    </a>
+                  )}
                   <a
-                    href={a.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-full border border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/85 transition hover:bg-white/12 hover:text-white"
+                    href={`mailto:${a.email}?subject=${encodeURIComponent(`NEWAVE SPHERE — ${a.brand_name}`)}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/8 px-3.5 py-2 text-[11.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white"
                   >
-                    Voir le site
+                    Répondre
                   </a>
-                )}
-                <a
-                  href={`mailto:${a.email}?subject=${encodeURIComponent(`NEWAVE SPHERE — ${a.brand_name}`)}`}
-                  className="rounded-full border border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/85 transition hover:bg-white/12 hover:text-white"
-                >
-                  Répondre
-                </a>
+                </div>
 
-                <span className="ml-auto flex flex-wrap gap-1.5">
-                  {STATUSES.filter((s) => s !== a.status).map((s) => (
-                    <form key={s} action={setApplicationStatus}>
-                      <input type="hidden" name="id" value={a.id} />
-                      <input type="hidden" name="status" value={s} />
-                      <button className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-white/80 transition hover:bg-white/22 hover:text-white">
-                        {APPLICATION_STATUS_LABEL[s]}
-                      </button>
-                    </form>
-                  ))}
-                </span>
+                <ApplicationActions id={a.id} status={a.status} />
               </div>
             </article>
           ))}

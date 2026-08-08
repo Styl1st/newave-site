@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconPencil } from "./Icons";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice } from "@/lib/types";
 
@@ -35,11 +36,14 @@ export default function ProductCard({
   product,
   brandSlug,
   showBrand = false,
+  canManage = false,
 }: {
   product: Product;
   /** Slug de la marque, pour construire le lien vers la fiche. */
   brandSlug?: string;
   showBrand?: boolean;
+  /** Affiche le crayon d'édition. Réservé à l'admin et aux gérants. */
+  canManage?: boolean;
 }) {
   const price = formatPrice(product.price_cents, product.currency);
   const was = formatPrice(product.compare_at_cents, product.currency);
@@ -78,12 +82,23 @@ export default function ProductCard({
               </span>
             )}
             {!product.available && (
-              <span className="absolute right-2.5 top-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
                 Épuisé
               </span>
             )}
           </div>
         </ProductLink>
+
+        {canManage && brandSlug && (
+          <Link
+            href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
+            aria-label={`Modifier ${product.name}`}
+            title="Modifier cette pièce"
+            className="absolute right-2.5 top-2.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.95)] active:scale-95"
+          >
+            <IconPencil className="h-4 w-4" />
+          </Link>
+        )}
 
         <div className="p-4">
           {showBrand && product.brand && (

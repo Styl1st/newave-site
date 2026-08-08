@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
 import { getPost } from "@/lib/queries";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,12 +37,7 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <article className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
-      <Link
-        href="/posts"
-        className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/65 transition hover:text-white"
-      >
-        ← Tous les posts
-      </Link>
+      <BackLink href="/posts">Tous les posts</BackLink>
 
       <header className="rise mt-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -100,7 +96,7 @@ export default async function PostPage({ params }: Props) {
             href={post.instagram_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-[var(--radius)] border border-white/40 px-6 py-3.5 text-center text-[13.5px] font-extrabold text-white transition hover:bg-white/12"
+            className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-6 py-3.5 text-center text-[13.5px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
           >
             Voir sur Instagram
           </a>
@@ -110,7 +106,7 @@ export default async function PostPage({ params }: Props) {
             href={post.tiktok_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-[var(--radius)] border border-white/40 px-6 py-3.5 text-center text-[13.5px] font-extrabold text-white transition hover:bg-white/12"
+            className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-6 py-3.5 text-center text-[13.5px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
           >
             Voir sur TikTok
           </a>

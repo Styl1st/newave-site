@@ -67,10 +67,14 @@ export default async function BrandPresentation({ params }: Props) {
           <option value="premium">Premium</option>
         </Select>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Text name="shop_url" label="Boutique" type="url" defaultValue={brand.shop_url ?? ""} placeholder="https://" />
-          <Text name="website_url" label="Site" type="url" defaultValue={brand.website_url ?? ""} placeholder="https://" />
-        </div>
+        <Text
+          name="shop_url"
+          label="Boutique ou site officiel"
+          hint="Une seule adresse : celle où l'on peut acheter tes pièces."
+          type="url"
+          defaultValue={brand.shop_url ?? brand.website_url ?? ""}
+          placeholder="https://"
+        />
 
         <Text name="instagram" label="Instagram" hint="Sans l'arobase." defaultValue={brand.instagram ?? ""} placeholder="tamarque" />
 

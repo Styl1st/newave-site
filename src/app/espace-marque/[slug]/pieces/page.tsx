@@ -24,7 +24,7 @@ export default async function BrandProducts({ params }: Props) {
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/espace-marque/${slug}/import`}
-            className="rounded-[var(--radius)] border border-white/40 px-5 py-3 text-[13.5px] font-extrabold text-white transition hover:bg-white/12"
+            className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-5 py-3 text-[13.5px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
           >
             Importer depuis ma boutique
           </Link>

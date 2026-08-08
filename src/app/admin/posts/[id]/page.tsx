@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
 import DeleteButton from "@/components/admin/DeleteButton";
@@ -7,6 +6,7 @@ import { Area, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { POST_KEYWORDS, withExisting } from "@/lib/taxonomy";
 import { deletePost, savePost } from "../../actions";
 import { adminGetBrands, adminGetPost } from "@/lib/admin-queries";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,9 +24,7 @@ export default async function EditPost({ params }: Props) {
     <>
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/admin/posts" className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/60 hover:text-white">
-            ← Posts
-          </Link>
+          <BackLink href="/admin/posts">Posts</BackLink>
           <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
             {isNew ? "Nouveau post" : post!.title}
           </h1>

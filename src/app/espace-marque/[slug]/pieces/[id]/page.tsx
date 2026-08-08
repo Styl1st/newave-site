@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
 import BrandSpaceNav from "@/components/BrandSpaceNav";
@@ -8,6 +7,7 @@ import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields
 import { deleteBrandProduct, saveBrandProduct } from "../../../actions";
 import { getBrandProduct, requireManagedBrand } from "@/lib/brand-space";
 import { PRODUCT_CATEGORIES, withExisting } from "@/lib/taxonomy";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -30,12 +30,7 @@ export default async function EditBrandProduct({ params }: Props) {
 
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link
-            href={`/espace-marque/${slug}/pieces`}
-            className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/60 hover:text-white"
-          >
-            ← Pièces
-          </Link>
+          <BackLink href={`/espace-marque/${slug}/pieces`}>Pièces</BackLink>
           <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
             {isNew ? "Nouvelle pièce" : product!.name}
           </h1>

@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getProductsByBrand } from "@/lib/queries";
+import { getCatalogueInsight } from "@/lib/brand-space";
+import { IconPencil } from "@/components/Icons";
 import { discountPercent, formatPrice } from "@/lib/types";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string; piece: string }> };
 
@@ -47,18 +50,27 @@ export default async function PiecePage({ params }: Props) {
   const off = discountPercent(product);
 
   // Les autres pièces de la marque, sans celle qu'on regarde.
-  const siblings = (await getProductsByBrand(brand.id))
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+  const [siblingsAll, insight] = await Promise.all([
+    getProductsByBrand(brand.id),
+    getCatalogueInsight(brand.id),
+  ]);
+  const siblings = siblingsAll.filter((p) => p.id !== product.id).slice(0, 4);
+  const canManage = Boolean(insight);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
-      <Link
-        href={`/marques/${brand.slug}`}
-        className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/65 transition hover:text-white"
-      >
-        ← {brand.name}
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BackLink href={`/marques/${brand.slug}`}>{brand.name}</BackLink>
+
+        {canManage && (
+          <Link
+            href={`/espace-marque/${brand.slug}/pieces/${product.id}`}
+            className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/8 px-4 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97]"
+          >
+            <IconPencil /> Modifier cette pièce
+          </Link>
+        )}
+      </div>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
         {/* ---------- visuels ---------- */}
@@ -190,7 +202,7 @@ export default async function PiecePage({ params }: Props) {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {siblings.map((p) => (
-              <ProductCard key={p.id} product={p} brandSlug={brand.slug} />
+              <ProductCard key={p.id} product={p} brandSlug={brand.slug} canManage={canManage} />
             ))}
           </div>
         </section>

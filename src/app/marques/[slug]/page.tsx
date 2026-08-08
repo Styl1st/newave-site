@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import CatalogueNotice from "@/components/CatalogueNotice";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -9,6 +8,7 @@ import { getBrand, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
 import { isFavorite } from "@/lib/favorites";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { PRICE_TIER_LABEL } from "@/lib/types";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -52,12 +52,7 @@ export default async function BrandPage({ params }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
-      <Link
-        href="/marques"
-        className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/65 transition hover:text-white"
-      >
-        ← Toutes les marques
-      </Link>
+      <BackLink href="/marques">Toutes les marques</BackLink>
 
       <header className="rise mt-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -143,7 +138,7 @@ export default async function BrandPage({ params }: Props) {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} brandSlug={brand.slug} />
+              <ProductCard key={p.id} product={p} brandSlug={brand.slug} canManage={Boolean(insight)} />
             ))}
           </div>
 

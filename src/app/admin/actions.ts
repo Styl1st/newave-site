@@ -11,7 +11,7 @@ import { requireAdmin } from "@/lib/auth";
  * protegent la base. Les deux, pas l'une ou l'autre.
  */
 
-type Result = { ok: boolean; error?: string };
+type Result = { ok: boolean; error?: string; message?: string };
 
 /**
  * Relit toutes les cases cochees portant le meme nom.
@@ -221,4 +221,94 @@ export async function removeBrandManager(formData: FormData): Promise<void> {
     .eq("user_id", toText(formData.get("id")));
 
   revalidatePath(`/admin/marques/${brandId}`);
+}
+
+/**
+ * Accepte une candidature en un geste.
+ *
+ * Trois choses d'un coup, parce que les faire separement c'est trois
+ * occasions d'en oublier une :
+ *   1. creer la fiche marque, en brouillon, pre-remplie avec le dossier
+ *   2. rattacher le compte du candidat comme gerant, s'il en a un
+ *   3. passer la candidature en "acceptee"
+ *
+ * La marque reste en brouillon : accepter un dossier n'est pas la
+ * publier. Tu gardes la main sur ce qui parait.
+ */
+export async function acceptApplication(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const id = toText(formData.get("id"));
+
+  const { data: appRow } = await supabase
+    .from("applications")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  const application = appRow as {
+    id: string;
+    brand_name: string;
+    email: string;
+    instagram: string | null;
+    website: string | null;
+    pitch: string;
+    user_id: string | null;
+    brand_id: string | null;
+  } | null;
+
+  if (!application) return { ok: false, error: "Candidature introuvable." };
+
+  let brandId = application.brand_id;
+
+  if (!brandId) {
+    // Le slug doit etre unique : on suffixe plutot que d'echouer.
+    let slug = slugify(application.brand_name);
+    const { data: clash } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (clash) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const { data: created, error: createError } = await supabase
+      .from("brands")
+      .insert({
+        slug,
+        name: application.brand_name,
+        description: application.pitch,
+        instagram: application.instagram?.replace(/^@/, "") ?? null,
+        shop_url: application.website,
+        status: "draft",
+      })
+      .select("id")
+      .single();
+
+    if (createError) return { ok: false, error: createError.message };
+    brandId = (created as { id: string }).id;
+  }
+
+  if (application.user_id) {
+    await supabase
+      .from("brand_managers")
+      .upsert({ brand_id: brandId, user_id: application.user_id });
+  }
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ status: "acceptee", brand_id: brandId })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/candidatures");
+  revalidatePath("/admin/marques");
+  return {
+    ok: true,
+    message: application.user_id
+      ? "Marque créée en brouillon, et le compte du candidat en est gérant."
+      : "Marque créée en brouillon. Le candidat n'avait pas de compte : rattache-le depuis sa fiche quand il en aura un.",
+  };
 }

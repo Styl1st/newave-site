@@ -30,7 +30,7 @@ export default function BrandSpaceNav({
         {published ? (
           <Link
             href={`/marques/${slug}`}
-            className="rounded-full border border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white transition hover:bg-white/12"
+            className="rounded-full border border-white/35 bg-white/8 px-4 py-2 text-[11.5px] font-bold text-white transition hover:border-white/60 hover:bg-white/18 active:scale-[.97]"
           >
             Voir la page
           </Link>

@@ -18,7 +18,7 @@ export default function NotFound() {
         </Link>
         <Link
           href="/"
-          className="rounded-[var(--radius)] border border-white/40 px-6 py-3.5 text-[14px] font-extrabold text-white transition hover:bg-white/12"
+          className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-6 py-3.5 text-[14px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
         >
           Retour à l&apos;accueil
         </Link>

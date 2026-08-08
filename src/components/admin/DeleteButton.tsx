@@ -27,7 +27,7 @@ export default function DeleteButton({
       ))}
       <button
         type="submit"
-        className="rounded-full border border-white/35 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/12 hover:text-white"
+        className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97]"
       >
         {label}
       </button>

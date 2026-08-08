@@ -148,7 +148,7 @@ export function LogoutButton() {
     >
       <button
         type="submit"
-        className="rounded-full border border-white/40 px-6 py-3 text-[13px] font-extrabold text-white transition hover:bg-white/12"
+        className="rounded-full border border-white/40 bg-white/8 px-6 py-3 text-[13px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
       >
         Se déconnecter
       </button>

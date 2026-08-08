@@ -8,6 +8,7 @@ import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { deleteBrand, saveBrand } from "../../actions";
 import BrandManagers from "@/components/admin/BrandManagers";
 import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
+import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -22,9 +23,7 @@ export default async function EditBrand({ params }: Props) {
     <>
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/admin/marques" className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/60 hover:text-white">
-            ← Marques
-          </Link>
+          <BackLink href="/admin/marques">Marques</BackLink>
           <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
             {isNew ? "Nouvelle marque" : brand!.name}
           </h1>
@@ -90,10 +89,14 @@ export default async function EditBrand({ params }: Props) {
           <option value="premium">Premium</option>
         </Select>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Text name="shop_url" label="Boutique" type="url" defaultValue={brand?.shop_url ?? ""} placeholder="https://" />
-          <Text name="website_url" label="Site" type="url" defaultValue={brand?.website_url ?? ""} placeholder="https://" />
-        </div>
+        <Text
+          name="shop_url"
+          label="Boutique ou site officiel"
+          hint="Une seule adresse : celle où l'on peut acheter, ou à défaut celle de la marque."
+          type="url"
+          defaultValue={brand?.shop_url ?? brand?.website_url ?? ""}
+          placeholder="https://"
+        />
 
         <Text
           name="instagram"
