@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "@/components/BackLink";
 import BrandManagers from "@/components/admin/BrandManagers";
+import BrandPrefill from "@/components/admin/BrandPrefill";
+import PublishToggle from "@/components/admin/PublishToggle";
 import DeleteButton from "@/components/admin/DeleteButton";
 import ImageUploader from "@/components/admin/ImageUploader";
 import StepForm, { type Etape } from "@/components/admin/StepForm";
@@ -114,7 +116,16 @@ export default async function EditBrand({ params }: Props) {
 
           <Check name="featured" label="Mettre à la une sur l'accueil" defaultChecked={brand?.featured} />
 
-          <Select name="status" label="État" defaultValue={brand?.status ?? "draft"}>
+          <Select
+            name="status"
+            label="État"
+            hint={
+              isNew
+                ? "Une nouvelle fiche part en brouillon. Tu la publieras depuis le bouton en haut de page."
+                : "Le bouton en haut de page fait la même chose, sans repasser par le formulaire."
+            }
+            defaultValue={brand?.status ?? "draft"}
+          >
             <option value="draft">Brouillon</option>
             <option value="published">Publié</option>
           </Select>
@@ -128,13 +139,31 @@ export default async function EditBrand({ params }: Props) {
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <BackLink href="/admin/marques">Marques</BackLink>
-          <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
-            {isNew ? "Nouvelle marque" : brand!.name}
-          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="m-0 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+              {isNew ? "Nouvelle marque" : brand!.name}
+            </h1>
+            {!isNew && (
+              <span
+                className={
+                  brand!.status === "published"
+                    ? "rounded-full bg-white px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--color-ink)]"
+                    : "rounded-full bg-white/15 px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-white/80"
+                }
+              >
+                {brand!.status === "published" ? "En ligne" : "Brouillon"}
+              </span>
+            )}
+          </div>
         </div>
 
         {!isNew && (
           <div className="flex flex-wrap items-center gap-3">
+            <PublishToggle
+              brandId={brand!.id}
+              brandName={brand!.name}
+              published={brand!.status === "published"}
+            />
             <Link
               href={`/espace-marque/${brand!.slug}/stats`}
               className="rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
@@ -156,6 +185,8 @@ export default async function EditBrand({ params }: Props) {
           </div>
         )}
       </header>
+
+      <BrandPrefill modeCreation={isNew} />
 
       <StepForm action={saveBrand} etapes={etapes} submitLabel={isNew ? "Créer la marque" : "Enregistrer"}>
         {!isNew && <input type="hidden" name="id" value={brand!.id} />}

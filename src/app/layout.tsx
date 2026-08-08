@@ -5,6 +5,9 @@ import Background from "@/components/Background";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Tracker from "@/components/Tracker";
+import PageTransition from "@/components/PageTransition";
+import Reveal from "@/components/Reveal";
+import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -48,12 +51,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nu = chemin === "/acces";
 
   return (
-    <html lang="fr" className={archivo.variable}>
+    /* Le script ci-dessous pose des couleurs sur <html> avant que React
+       n'arrive : l'écart entre le HTML du serveur et le DOM réel est ici
+       voulu, on demande donc à React de ne pas s'en alarmer. La consigne
+       ne vaut que pour cette balise, pas pour le reste de la page. */
+    <html lang="fr" className={archivo.variable} suppressHydrationWarning>
+      <head>
+        {/* Applique les couleurs enregistrées avant le premier rendu :
+            sans ça, le fond NEWAVE apparaîtrait une fraction de seconde
+            avant de basculer sur celui du visiteur. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />
+      </head>
       <body className="font-sans">
         <Background />
         <Tracker />
+        <Reveal />
         {!nu && <Header />}
-        <main className="relative z-10 flex flex-1 flex-col">{children}</main>
+        <main className="relative z-10 flex flex-1 flex-col">
+          <PageTransition>{children}</PageTransition>
+        </main>
         {!nu && <Footer />}
       </body>
     </html>

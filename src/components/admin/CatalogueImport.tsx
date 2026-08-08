@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
-import { importShopifySelection } from "@/app/espace-marque/actions";
+import { importCatalogueSelection } from "@/app/espace-marque/actions";
 import { formatPrice } from "@/lib/types";
 import { FIELD, Label } from "./fields";
-import type { ShopifyItem } from "@/lib/shopify";
+import { SOURCE_LABEL, type CatalogueItem, type Source } from "@/lib/catalogue";
 
-type Result = { ok: true; items: ShopifyItem[] } | { ok: false; error: string } | null;
+type Result = { ok: true; source: Source; items: CatalogueItem[] } | { ok: false; error: string } | null;
 
 function SubmitCount({ count }: { count: number }) {
   const { pending } = useFormStatus();
@@ -29,7 +29,7 @@ function SubmitCount({ count }: { count: number }) {
   );
 }
 
-export default function ShopifyImport({
+export default function CatalogueImport({
   slug,
   defaultShopUrl,
   result,
@@ -41,6 +41,7 @@ export default function ShopifyImport({
   alreadyImported: string[];
 }) {
   const router = useRouter();
+  const [analyse, lancerAnalyse] = useTransition();
   const [shopUrl, setShopUrl] = useState(defaultShopUrl);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +61,8 @@ export default function ShopifyImport({
     <div className="flex flex-col gap-6">
       {/* ---- adresse de la boutique ---- */}
       <div className="glass p-6 sm:p-8">
-        <Label htmlFor="boutique" hint="Par exemple shoparyes.fr — l'adresse d'accueil suffit.">
-          Adresse de ta boutique
+        <Label htmlFor="boutique" hint="shoparyes.fr, ou le lien direct d'une pièce. Les deux fonctionnent.">
+          Adresse de ta boutique ou d'une pièce
         </Label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
@@ -73,22 +74,62 @@ export default function ShopifyImport({
           />
           <button
             type="button"
-            onClick={() => router.push(`/espace-marque/${slug}/import?boutique=${encodeURIComponent(shopUrl)}`)}
-            className="shrink-0 rounded-[13px] border border-white/40 px-6 py-3 text-[13.5px] font-extrabold text-white transition hover:bg-white/12"
+            disabled={analyse || !shopUrl.trim()}
+            onClick={() =>
+              lancerAnalyse(() =>
+                router.push(`/espace-marque/${slug}/import?boutique=${encodeURIComponent(shopUrl)}`)
+              )
+            }
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[13px] bg-white px-6 py-3 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.42)] active:scale-[.97] disabled:opacity-55"
           >
-            Analyser
+            {analyse ? (
+              <>
+                {/* Un anneau qui tourne : l'analyse peut prendre
+                    plusieurs secondes quand on parcourt un plan de
+                    site, et un bouton inerte laisserait croire que le
+                    clic n'a pas pris. */}
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(23,10,51,0.25)] border-t-[var(--color-ink)]" />
+                Analyse en cours…
+              </>
+            ) : (
+              "Analyser"
+            )}
           </button>
         </div>
       </div>
 
+      {/* ---- analyse en cours ---- */}
+      {analyse && (
+        <div className="glass p-6 sm:p-8">
+          <p className="m-0 mb-1 text-[14px] font-extrabold text-white">
+            On lit {shopUrl.replace(/^https?:\/\//, "")}
+          </p>
+          <p className="m-0 mb-5 text-[13px] leading-relaxed text-white/65">
+            On essaie Shopify, WooCommerce et Big Cartel, puis les données publiées
+            pour Google, et enfin le plan du site. Cette dernière méthode va chercher
+            les pages une par une — compte une dizaine de secondes.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <div className="skeleton aspect-square w-full" style={{ animationDelay: `${i * 110}ms` }} />
+                <div className="skeleton h-3 w-3/4" style={{ animationDelay: `${i * 110 + 60}ms` }} />
+                <div className="skeleton h-3 w-1/3" style={{ animationDelay: `${i * 110 + 120}ms` }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ---- resultat ---- */}
-      {result && !result.ok && (
+      {!analyse && result && !result.ok && (
         <div className="glass p-6">
           <p className="m-0 text-[14.5px] leading-relaxed text-white/88">{result.error}</p>
         </div>
       )}
 
-      {result?.ok && result.items.length === 0 && (
+      {!analyse && result?.ok && result.items.length === 0 && (
         <div className="glass p-6">
           <p className="m-0 text-[14.5px] text-white/88">
             La boutique répond, mais son catalogue est vide.
@@ -96,11 +137,11 @@ export default function ShopifyImport({
         </div>
       )}
 
-      {result?.ok && result.items.length > 0 && (
+      {!analyse && result?.ok && result.items.length > 0 && (
         <form
           action={async (formData: FormData) => {
             setError(null);
-            const res = await importShopifySelection(formData);
+            const res = await importCatalogueSelection(formData);
             if (res && !res.ok) setError(res.error ?? "L'import a échoué.");
           }}
           className="flex flex-col gap-5"
@@ -112,6 +153,9 @@ export default function ShopifyImport({
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
               {result.items.length} pièce{result.items.length > 1 ? "s" : ""} trouvée
               {result.items.length > 1 ? "s" : ""}
+              <span className="ml-2 font-semibold normal-case tracking-normal text-white/45">
+                via {SOURCE_LABEL[result.source]}
+              </span>
             </p>
             <button
               type="button"

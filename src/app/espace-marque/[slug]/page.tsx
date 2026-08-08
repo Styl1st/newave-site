@@ -1,4 +1,7 @@
 import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BrandPrefill from "@/components/admin/BrandPrefill";
+import ImportHighlight from "@/components/ImportHighlight";
+import { getBrandProducts } from "@/lib/brand-space";
 import ImageUploader from "@/components/admin/ImageUploader";
 import StepForm, { type Etape } from "@/components/admin/StepForm";
 import { Area, CheckGroup, Select, Text } from "@/components/admin/fields";
@@ -11,6 +14,7 @@ type Props = { params: Promise<{ slug: string }> };
 export default async function BrandPresentation({ params }: Props) {
   const { slug } = await params;
   const { brand, isAdmin } = await requireManagedBrand(slug);
+  const pieces = await getBrandProducts(brand.id);
 
   const etapes: Etape[] = [
     {
@@ -129,6 +133,11 @@ export default async function BrandPresentation({ params }: Props) {
           restent gérés par la rédaction.
         </p>
       </header>
+
+      {/* Le nom n'est pas modifiable ici : il reste géré par la rédaction. */}
+      <BrandPrefill modeCreation={false} />
+
+      <ImportHighlight slug={slug} shopUrl={brand.shop_url} vide={pieces.length === 0} />
 
       <StepForm action={saveBrandPresentation} etapes={etapes} submitLabel="Enregistrer ma page">
         <input type="hidden" name="slug" value={slug} />

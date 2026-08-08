@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-10">
-      <div className="glass mb-8 flex flex-wrap items-center justify-between gap-4 p-4 sm:px-6">
+      <div data-no-reveal className="glass mb-8 flex flex-wrap items-center justify-between gap-4 p-4 sm:px-6">
         <nav className="-mx-1 flex items-center gap-1 overflow-x-auto md:mx-0 md:flex-wrap [&::-webkit-scrollbar]:hidden">
           {NAV.map(({ href, label, Icon }) => (
             <Link

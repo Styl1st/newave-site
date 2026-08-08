@@ -1,8 +1,15 @@
 import BrandSpaceNav from "@/components/BrandSpaceNav";
-import ShopifyImport from "@/components/admin/ShopifyImport";
+import CatalogueImport from "@/components/admin/CatalogueImport";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { fetchShopifyCatalogue } from "@/lib/shopify";
+import { fetchCatalogue } from "@/lib/catalogue";
 import { getBrandProducts } from "@/lib/brand-space";
+
+/**
+ * Parcourir un plan de site demande une trentaine de requêtes : la
+ * limite par défaut de Vercel, dix secondes, ne suffirait pas et la
+ * page se couperait en plein milieu.
+ */
+export const maxDuration = 60;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -15,7 +22,7 @@ export default async function ImportPage({ params, searchParams }: Props) {
   const { brand, isAdmin } = await requireManagedBrand(slug);
 
   const shopUrl = boutique ?? brand.shop_url ?? brand.website_url ?? "";
-  const result = shopUrl ? await fetchShopifyCatalogue(shopUrl) : null;
+  const result = shopUrl ? await fetchCatalogue(shopUrl) : null;
   const existing = await getBrandProducts(brand.id);
   const alreadyImported = new Set(
     existing.map((p) => p.source_id).filter((v): v is string => Boolean(v))
@@ -31,17 +38,20 @@ export default async function ImportPage({ params, searchParams }: Props) {
           Importer ton catalogue
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-          Si ta boutique est sur Shopify, on peut lire son catalogue public et
-          reprendre les noms, prix et photos. Tu choisis ce que tu gardes, et tout
-          arrive en brouillon — rien ne s&apos;affiche avant que tu l&apos;aies relu.
+          Colle l&apos;adresse de ta boutique, ou celle d&apos;une page produit. On lit
+          ce qu&apos;elle publie et on reprend les noms, prix et photos. Tu choisis ce
+          que tu gardes, et tout arrive en brouillon — rien ne s&apos;affiche avant que
+          tu l&apos;aies relu.
         </p>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-          Si ta boutique est ailleurs, ce n&apos;est pas grave : la saisie à la main
-          fonctionne exactement pareil.
+          Shopify, WooCommerce et Big Cartel sont lus directement. Pour les autres,
+          on se rabat sur les données que la boutique publie déjà pour Google —
+          ça fonctionne dans la plupart des cas. Et si rien ne passe, la saisie à la
+          main fonctionne exactement pareil.
         </p>
       </header>
 
-      <ShopifyImport
+      <CatalogueImport
         slug={slug}
         defaultShopUrl={shopUrl}
         result={result}

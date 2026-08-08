@@ -1,0 +1,386 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { IconCheck, IconPlus, IconTrash } from "./Icons";
+import {
+  MOUVEMENT_DEFAUT,
+  PREFERENCES_DEFAUT,
+  PRESETS,
+  PRESETS_MOUVEMENT,
+  THEME_DEFAUT,
+  appliquerMouvement,
+  appliquerTheme,
+  decrire,
+  ecrire,
+  lire,
+  type Ambiance,
+  type Preferences,
+  type PresetMouvement,
+  type Theme,
+} from "@/lib/theme";
+
+const LABELS = ["Départ", "Transition", "Cœur", "Pic", "Retour", "Fin"];
+
+
+function memeTheme(a: Theme, b: Theme) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function Vignette({ theme }: { theme: Theme }) {
+  return (
+    <span
+      className="block h-14 w-full"
+      style={{ background: `linear-gradient(140deg, ${theme.bg.join(", ")})` }}
+    />
+  );
+}
+
+export default function ThemePicker() {
+  const [prefs, setPrefs] = useState<Preferences>(PREFERENCES_DEFAUT);
+  const [charge, setCharge] = useState(false);
+  const [nomEnCours, setNomEnCours] = useState<string | null>(null);
+  const [nomMouvement, setNomMouvement] = useState<string | null>(null);
+  const [systemeReduit, setSystemeReduit] = useState(false);
+
+  useEffect(() => {
+    setPrefs(lire());
+    setSystemeReduit(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    setCharge(true);
+  }, []);
+
+  /** Enregistre et applique d'un même geste : l'aperçu doit être immédiat. */
+  function poser(next: Preferences) {
+    setPrefs(next);
+    appliquerTheme(next.theme, document.documentElement);
+    appliquerMouvement(next.mouvement, document.documentElement, true);
+    ecrire(next);
+  }
+
+  function enregistrerAmbiance(nom: string) {
+    const propre = nom.trim().slice(0, 30);
+    if (!propre) return;
+    const ambiance: Ambiance = {
+      id: `perso-${Date.now()}`,
+      nom: propre,
+      theme: prefs.theme,
+    };
+    poser({ ...prefs, ambiances: [...prefs.ambiances, ambiance] });
+    setNomEnCours(null);
+  }
+
+  function enregistrerMouvement(nom: string) {
+    const propre = nom.trim().slice(0, 24);
+    if (!propre) return;
+    const preset: PresetMouvement = {
+      id: `mvt-${Date.now()}`,
+      nom: propre,
+      mouvement: prefs.mouvement,
+    };
+    poser({ ...prefs, mouvements: [...prefs.mouvements, preset] });
+    setNomMouvement(null);
+  }
+
+  if (!charge) return <div className="skeleton h-64 w-full" />;
+
+  const toutes = [...PRESETS, ...prefs.ambiances];
+  const dejaEnregistre = toutes.some((a) => memeTheme(a.theme, prefs.theme));
+
+  const chip =
+    "rounded-full px-4 py-2 text-[12px] font-bold transition active:scale-[.97]";
+
+  return (
+    <div className="flex flex-col gap-7">
+      {/* ---- mouvement ---- */}
+      <div>
+        <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
+
+        {systemeReduit && (
+          <p className="m-0 mb-3 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white">
+            Ton système demande de réduire les animations. On respecte ce réglage par
+            défaut — mais si tu choisis un mouvement ici, c&apos;est le tien qui
+            s&apos;applique.
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {[...PRESETS_MOUVEMENT, ...prefs.mouvements].map((p) => {
+            const actif =
+              Math.abs(p.mouvement.vitesse - prefs.mouvement.vitesse) < 0.02 &&
+              Math.abs(p.mouvement.amplitude - prefs.mouvement.amplitude) < 0.02;
+            const perso = p.id.startsWith("mvt-");
+            return (
+              <span key={p.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => poser({ ...prefs, mouvement: p.mouvement })}
+                  className={`${chip} ${
+                    actif
+                      ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)]"
+                      : "border border-white/30 bg-white/8 text-white/85 hover:border-white/60 hover:bg-white/18"
+                  } ${perso ? "pr-8" : ""}`}
+                >
+                  {p.nom}
+                </button>
+                {perso && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      poser({ ...prefs, mouvements: prefs.mouvements.filter((x) => x.id !== p.id) })
+                    }
+                    aria-label={`Supprimer le réglage ${p.nom}`}
+                    className="absolute right-1.5 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-black/25 text-white transition hover:bg-[#c2273f]"
+                  >
+                    <IconTrash className="h-3 w-3" />
+                  </button>
+                )}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* ---- réglage fin du mouvement ---- */}
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-2">
+            <span className="flex items-baseline justify-between text-[12.5px] font-bold text-white/85">
+              Vitesse
+              <span className="text-[11.5px] font-semibold text-white/50">
+                ×{prefs.mouvement.vitesse.toFixed(2)}
+              </span>
+            </span>
+            <input
+              type="range"
+              min={0.1}
+              max={3}
+              step={0.05}
+              value={prefs.mouvement.vitesse}
+              onChange={(e) =>
+                poser({
+                  ...prefs,
+                  mouvement: { ...prefs.mouvement, vitesse: Number(e.target.value) },
+                })
+              }
+              className="w-full accent-white"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="flex items-baseline justify-between text-[12.5px] font-bold text-white/85">
+              Ampleur
+              <span className="text-[11.5px] font-semibold text-white/50">
+                ×{prefs.mouvement.amplitude.toFixed(2)}
+              </span>
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.05}
+              value={prefs.mouvement.amplitude}
+              onChange={(e) =>
+                poser({
+                  ...prefs,
+                  mouvement: { ...prefs.mouvement, amplitude: Number(e.target.value) },
+                })
+              }
+              className="w-full accent-white"
+            />
+          </label>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 text-[12.5px] text-white/55">{decrire(prefs.mouvement)}</p>
+
+          {nomMouvement === null ? (
+            <button
+              type="button"
+              onClick={() => setNomMouvement("")}
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/75 transition hover:border-white/70 hover:text-white active:scale-[.97]"
+            >
+              <IconPlus className="h-3.5 w-3.5" /> Garder ce réglage
+            </button>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <input
+                autoFocus
+                value={nomMouvement}
+                onChange={(e) => setNomMouvement(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") enregistrerMouvement(nomMouvement);
+                  if (e.key === "Escape") setNomMouvement(null);
+                }}
+                placeholder="Son nom…"
+                maxLength={24}
+                className="w-36 rounded-[9px] border border-white/50 bg-white/94 px-2.5 py-1.5 text-[12px] font-bold text-[var(--color-ink)]"
+              />
+              <button
+                type="button"
+                onClick={() => enregistrerMouvement(nomMouvement)}
+                className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black text-[var(--color-ink)]"
+              >
+                Garder
+              </button>
+              <button
+                type="button"
+                onClick={() => setNomMouvement(null)}
+                className="rounded-full border border-white/40 px-3 py-1.5 text-[11px] font-bold text-white/80"
+              >
+                Annuler
+              </button>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ---- ambiances ---- */}
+      <div>
+        <p className="eyebrow m-0 mb-3">Ambiances</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {toutes.map((a) => {
+            const actif = memeTheme(a.theme, prefs.theme);
+            const perso = a.id.startsWith("perso-");
+            return (
+              <div key={a.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => poser({ ...prefs, theme: a.theme })}
+                  className={`w-full overflow-hidden rounded-[14px] border transition active:scale-[.97] ${
+                    actif ? "border-white ring-2 ring-white/50" : "border-white/25 hover:border-white/60"
+                  }`}
+                >
+                  <Vignette theme={a.theme} />
+                  <span className="flex items-center justify-center gap-1.5 bg-white/8 py-2 text-[11.5px] font-bold text-white">
+                    {actif && <IconCheck className="h-3 w-3" />}
+                    <span className="truncate px-1">{a.nom}</span>
+                  </span>
+                </button>
+
+                {perso && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      poser({
+                        ...prefs,
+                        ambiances: prefs.ambiances.filter((x) => x.id !== a.id),
+                      })
+                    }
+                    aria-label={`Supprimer l'ambiance ${a.nom}`}
+                    className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[#c2273f]"
+                  >
+                    <IconTrash className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {/* ---- créer la sienne ---- */}
+          {nomEnCours === null ? (
+            <button
+              type="button"
+              onClick={() => setNomEnCours("")}
+              title="Enregistrer les couleurs actuelles sous un nom"
+              className="flex h-[86px] flex-col items-center justify-center gap-1.5 rounded-[14px] border border-dashed border-white/35 text-white/70 transition hover:border-white/70 hover:bg-white/8 hover:text-white active:scale-[.97]"
+            >
+              <IconPlus className="h-5 w-5" />
+              <span className="text-[11.5px] font-bold">Nouvelle ambiance</span>
+            </button>
+          ) : (
+            <div className="flex h-[86px] flex-col justify-center gap-2 rounded-[14px] border border-white/45 bg-white/10 p-2">
+              <input
+                autoFocus
+                value={nomEnCours}
+                onChange={(e) => setNomEnCours(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") enregistrerAmbiance(nomEnCours);
+                  if (e.key === "Escape") setNomEnCours(null);
+                }}
+                placeholder="Son nom…"
+                maxLength={30}
+                className="w-full rounded-[9px] border border-white/50 bg-white/94 px-2.5 py-1.5 text-[12.5px] font-bold text-[var(--color-ink)]"
+              />
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => enregistrerAmbiance(nomEnCours)}
+                  className="flex-1 rounded-full bg-white py-1.5 text-[11px] font-black text-[var(--color-ink)]"
+                >
+                  Garder
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNomEnCours(null)}
+                  className="rounded-full border border-white/40 px-3 py-1.5 text-[11px] font-bold text-white/80"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/55">
+          Compose tes couleurs ci-dessous, puis enregistre-les sous un nom. Elles
+          resteront dans cette liste, à côté des nôtres.
+          {dejaEnregistre && " Les couleurs actuelles correspondent déjà à une ambiance existante — tu peux quand même les garder sous un autre nom."}
+        </p>
+      </div>
+
+      {/* ---- réglage fin ---- */}
+      <div>
+        <p className="eyebrow m-0 mb-1">Composer</p>
+        <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/60">
+          Six teintes qui se fondent de haut en bas, puis trois accents pour les nappes
+          qui dérivent par-dessus.
+        </p>
+
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {prefs.theme.bg.map((couleur, i) => (
+            <label key={i} className="flex flex-col items-center gap-1.5">
+              <input
+                type="color"
+                value={couleur}
+                onChange={(e) => {
+                  const bg = [...prefs.theme.bg] as Theme["bg"];
+                  bg[i] = e.target.value;
+                  poser({ ...prefs, theme: { ...prefs.theme, bg } });
+                }}
+                className="h-12 w-full cursor-pointer rounded-[11px] border border-white/25 bg-transparent"
+              />
+              <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/50">
+                {LABELS[i]}
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {prefs.theme.accents.map((couleur, i) => (
+            <label key={i} className="flex flex-col items-center gap-1.5">
+              <input
+                type="color"
+                value={couleur}
+                onChange={(e) => {
+                  const accents = [...prefs.theme.accents] as Theme["accents"];
+                  accents[i] = e.target.value;
+                  poser({ ...prefs, theme: { ...prefs.theme, accents } });
+                }}
+                className="h-12 w-full cursor-pointer rounded-[11px] border border-white/25 bg-transparent"
+              />
+              <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/50">
+                Nappe {i + 1}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => poser({ ...prefs, theme: THEME_DEFAUT, mouvement: MOUVEMENT_DEFAUT })}
+        className="self-start rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97]"
+      >
+        Revenir aux réglages NEWAVE
+      </button>
+    </div>
+  );
+}

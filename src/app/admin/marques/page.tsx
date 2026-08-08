@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ListRow } from "@/components/admin/ListRow";
+import PublishToggle from "@/components/admin/PublishToggle";
 import { adminGetBrands } from "@/lib/admin-queries";
 
 export default async function AdminBrands() {
@@ -33,6 +34,14 @@ export default async function AdminBrands() {
               subtitle={b.tagline || null}
               status={b.status}
               thumb={b.logo_url ?? b.cover_url}
+              action={
+                <PublishToggle
+                  brandId={b.id}
+                  brandName={b.name}
+                  published={b.status === "published"}
+                  taille="compacte"
+                />
+              }
             />
           ))}
         </div>

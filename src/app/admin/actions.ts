@@ -407,3 +407,189 @@ export async function deleteUserAccount(formData: FormData): Promise<Result> {
   revalidatePath("/admin/utilisateurs");
   return { ok: true, message: "Compte supprimé." };
 }
+
+/**
+ * Revendication d'une marque par son fondateur.
+ *
+ * On ne donne AUCUN droit ici : la demande arrive dans les
+ * candidatures, rattachee a la fiche existante et au compte du
+ * demandeur. C'est l'admin qui tranche, avec le bouton Accepter, et
+ * lui seul. Sans ce passage, n'importe qui pourrait s'emparer de la
+ * page d'une marque en cliquant un bouton.
+ */
+export async function claimBrand(formData: FormData): Promise<Result> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Connecte-toi d'abord." };
+
+  const brandId = toText(formData.get("brand_id"));
+  const brandName = toText(formData.get("brand_name"));
+  const contact = toText(formData.get("contact_name"));
+  const pitch = toText(formData.get("pitch"));
+
+  if (!brandId || !contact || !pitch) {
+    return { ok: false, error: "Il manque ton nom ou ta preuve." };
+  }
+
+  // Une demande en attente suffit : inutile d'en empiler trois.
+  const { data: dejaLa } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("brand_id", brandId)
+    .eq("user_id", user.id)
+    .eq("status", "nouvelle")
+    .maybeSingle();
+
+  if (dejaLa) {
+    return { ok: false, error: "Tu as déjà une demande en attente sur cette marque." };
+  }
+
+  const { error } = await supabase.from("applications").insert({
+    brand_id: brandId,
+    user_id: user.id,
+    relationship: "proprietaire",
+    brand_name: brandName,
+    contact_name: contact,
+    email: user.email ?? "",
+    pitch,
+    status: "nouvelle",
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/candidatures");
+  return {
+    ok: true,
+    message:
+      "Demande envoyée. On vérifie que tu es bien à la tête de cette marque, puis on t'ouvre l'accès à sa page.",
+  };
+}
+
+/**
+ * Rattache un compte a une marque depuis la fiche du compte.
+ *
+ * Meme effet que le bloc "Gerants" cote marque, pris par l'autre bout :
+ * quand on a la personne sous les yeux, chercher sa marque est plus
+ * naturel que l'inverse.
+ */
+export async function attachUserToBrand(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const userId = toText(formData.get("user_id"));
+  const brandId = toText(formData.get("brand_id"));
+  if (!userId || !brandId) return { ok: false, error: "Compte ou marque manquant." };
+
+  const { error } = await supabase
+    .from("brand_managers")
+    .upsert({ brand_id: brandId, user_id: userId });
+
+  if (error) return { ok: false, error: error.message };
+
+  // Le role suit le rattachement, sans jamais retrograder un admin.
+  await supabase
+    .from("profiles")
+    .update({ role: "createur" })
+    .eq("id", userId)
+    .eq("role", "membre");
+
+  revalidatePath(`/admin/utilisateurs/${userId}`);
+  revalidatePath(`/admin/marques/${brandId}`);
+  return { ok: true, message: "Marque rattachée." };
+}
+
+/**
+ * Retire l'acces d'un compte a une marque.
+ *
+ * On ne retire pas le role "createur" au passage : la personne peut
+ * gerer d'autres marques, et l'admin voit de toute facon un
+ * avertissement sur les createurs sans rattachement.
+ */
+export async function detachUserFromBrand(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const userId = toText(formData.get("user_id"));
+  const brandId = toText(formData.get("brand_id"));
+
+  const { error } = await supabase
+    .from("brand_managers")
+    .delete()
+    .eq("brand_id", brandId)
+    .eq("user_id", userId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/utilisateurs/${userId}`);
+  revalidatePath(`/admin/marques/${brandId}`);
+  return { ok: true, message: "Accès retiré." };
+}
+
+/**
+ * Publie ou retire une marque, en un geste.
+ *
+ * Le formulaire garde son menu « État » — il sert quand on remplit une
+ * fiche d'un bout à l'autre. Mais publier ne devrait jamais demander
+ * de traverser quatre étapes : c'est l'action la plus fréquente de
+ * l'administration.
+ */
+export async function toggleBrandStatus(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const id = toText(formData.get("id"));
+  const publier = toText(formData.get("publier")) === "1";
+
+  const { data: brand } = await supabase
+    .from("brands")
+    .select("name, tagline, description, published_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  const fiche = brand as {
+    name: string;
+    tagline: string;
+    description: string;
+    published_at: string | null;
+  } | null;
+  if (!fiche) return { ok: false, error: "Marque introuvable." };
+
+  // Publier une fiche vide dessert la marque autant que nous.
+  if (publier && !fiche.tagline.trim() && !fiche.description.trim()) {
+    return {
+      ok: false,
+      error:
+        "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("brands")
+    .update({
+      status: publier ? "published" : "draft",
+      // On garde la date de première publication : elle ordonne
+      // l'annuaire, et la remettre à zéro remonterait artificiellement
+      // une vieille marque simplement republiée.
+      published_at: publier ? (fiche.published_at ?? new Date().toISOString()) : null,
+    })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/marques");
+  revalidatePath(`/admin/marques/${id}`);
+  revalidatePath("/marques");
+  return {
+    ok: true,
+    message: publier
+      ? `${fiche.name} est en ligne.`
+      : `${fiche.name} est repassée en brouillon.`,
+  };
+}

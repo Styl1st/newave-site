@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandSpaceNav from "@/components/BrandSpaceNav";
+import ImportHighlight from "@/components/ImportHighlight";
 import ProductBulkList from "@/components/admin/ProductBulkList";
 import { getBrandProducts, requireManagedBrand } from "@/lib/brand-space";
 
@@ -34,11 +35,13 @@ export default async function BrandProducts({ params }: Props) {
         </div>
       </header>
 
+      <ImportHighlight slug={slug} shopUrl={brand.shop_url} vide={products.length === 0} />
+
       {products.length === 0 ? (
         <div className="glass p-8 text-center">
           <p className="m-0 text-[15px] leading-relaxed text-white/85">
-            Aucune pièce pour l&apos;instant. Si ta boutique est sur Shopify,
-            l&apos;import te fera gagner une heure.
+            Aucune pièce pour l&apos;instant. Utilise l&apos;import ci-dessus, ou
+            crée-les une par une.
           </p>
         </div>
       ) : (

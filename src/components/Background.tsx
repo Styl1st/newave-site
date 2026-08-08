@@ -19,6 +19,8 @@ export default function Background() {
   return (
     <>
       <div className="bg" aria-hidden="true" />
+      <div className="bg-nappe" aria-hidden="true" />
+      <div className="bg-lueur" aria-hidden="true" />
       <Track seq={GLYPHS_L} side="left" />
       <Track seq={GLYPHS_R} side="right" />
 

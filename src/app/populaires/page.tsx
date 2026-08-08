@@ -43,7 +43,7 @@ export default async function PopulairesPage() {
       ) : (
         <div className="rise rise-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {classement.map(({ product, likes }, i) => (
-            <div key={product.id} className="relative">
+            <div key={product.id} className="relative h-full">
               {/* Les trois premières places méritent d'être vues de loin. */}
               {i < 3 && (
                 <span className="absolute -left-1 -top-1 z-20 grid h-8 w-8 place-items-center rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.4)]">

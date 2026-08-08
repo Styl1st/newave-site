@@ -59,9 +59,11 @@ export default function ProductCard({
   // Sans fiche interne, on sort par le compteur de clics.
   const href = internal ? `/marques/${slug}/${product.slug}` : `/api/go/piece/${product.id}`;
 
+  // Hauteur pleine et colonne : sans ça, un nom sur deux lignes
+  // décalait le prix et le cœur d'une carte à l'autre.
   return (
-    <div className="card-light group overflow-hidden">
-      <div className="relative z-3">
+    <div className="card-light group flex h-full flex-col overflow-hidden">
+      <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">
           <div className="relative aspect-square w-full overflow-hidden bg-[#e6dcfb]">
             {cover ? (
@@ -104,7 +106,7 @@ export default function ProductCard({
           </Link>
         )}
 
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4">
           {showBrand && product.brand && (
             <Link
               href={`/marques/${product.brand.slug}`}
@@ -115,12 +117,12 @@ export default function ProductCard({
           )}
 
           <ProductLink href={href} external={!internal}>
-            <h3 className="m-0 mt-1 text-[14px] font-extrabold leading-snug tracking-[-0.01em] text-[var(--color-ink)]">
+            <h3 className="m-0 mt-1 line-clamp-2 text-[14px] font-extrabold leading-snug tracking-[-0.01em] text-[var(--color-ink)]">
               {product.name}
             </h3>
           </ProductLink>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
             <span className="flex flex-wrap items-baseline gap-2">
               <span className="text-[13.5px] font-extrabold text-[var(--color-ink)]">
                 {price ?? "Prix sur la boutique"}

@@ -4,11 +4,12 @@ import CatalogueNotice from "@/components/CatalogueNotice";
 import FavoriteButton from "@/components/FavoriteButton";
 import PostCard from "@/components/PostCard";
 import ProductCard from "@/components/ProductCard";
-import { getBrand, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
+import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
 import { isFavorite } from "@/lib/favorites";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { PRICE_TIER_LABEL } from "@/lib/types";
+import Link from "next/link";
 import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -34,8 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BrandPage({ params }: Props) {
   const { slug } = await params;
-  const brand = await getBrand(slug);
+
+  // Publiée pour tout le monde, sinon en brouillon pour qui en a le
+  // droit — ce sont les règles RLS qui décident, pas ce fichier.
+  const brand = (await getBrand(slug)) ?? (await getBrandBrouillon(slug));
   if (!brand) notFound();
+
+  const enApercu = brand.status !== "published";
 
   const [products, posts, favorited, insight] = await Promise.all([
     getProductsByBrand(brand.id),
@@ -56,6 +62,22 @@ export default async function BrandPage({ params }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
+      {enApercu && (
+        <div className="glass mb-6 flex flex-wrap items-center justify-between gap-3 border-white/45 p-4 sm:px-5">
+          <p className="m-0 text-[13.5px] leading-relaxed text-white/88">
+            <strong className="font-extrabold text-white">Aperçu.</strong> Voici ce que
+            verra la communauté. Cette page n&apos;est pas encore publique — personne
+            d&apos;autre que toi ne peut y accéder.
+          </p>
+          <Link
+            href={`/espace-marque/${brand.slug}`}
+            className="shrink-0 rounded-full border border-white/40 bg-white/8 px-4 py-2 text-[12px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
+          >
+            Continuer à modifier
+          </Link>
+        </div>
+      )}
+
       <BackLink href="/marques">Toutes les marques</BackLink>
 
       <header className="rise mt-6">
@@ -167,7 +189,9 @@ export default async function BrandPage({ params }: Props) {
         >
           <span className="relative z-3">
             <span className="block text-[15px] font-extrabold tracking-[-0.01em]">
-              {products.length > 0 ? "Voir toute la boutique" : "Découvrir la boutique"}
+              {products.length > 0
+                ? `Voir toute la boutique ${brand.name}`
+                : `Découvrir la boutique ${brand.name}`}
             </span>
             <span className="mt-0.5 block text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
               Tu quittes NEWAVE SPHERE
@@ -175,6 +199,25 @@ export default async function BrandPage({ params }: Props) {
           </span>
           <span className="relative z-3 text-[20px] font-black text-[#3a2470]">→</span>
         </a>
+      )}
+
+      {/* ---------- revendication ----------
+          Visible seulement pour qui ne gère pas déjà la marque : le
+          fondateur qui découvre sa page doit pouvoir la réclamer sans
+          chercher notre adresse email. */}
+      {!insight && (
+        <section className="glass mt-10 flex flex-wrap items-center justify-between gap-4 p-5 sm:px-6">
+          <p className="m-0 max-w-xl text-[13.5px] leading-relaxed text-white/72">
+            Tu es à la tête de {brand.name} ? Reprends la main sur cette page —
+            présentation, visuels, catalogue.
+          </p>
+          <Link
+            href={`/marques/${brand.slug}/revendiquer`}
+            className="shrink-0 rounded-full border border-white/40 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
+          >
+            C&apos;est ma marque
+          </Link>
+        </section>
       )}
 
       {/* ---------- posts lies ---------- */}

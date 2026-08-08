@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "@/components/BackLink";
+import AttachBrand from "@/components/admin/AttachBrand";
 import DangerZone from "@/components/admin/DangerZone";
 import { IconExternal, IconPencil, IconTag } from "@/components/Icons";
 import { requireAdmin } from "@/lib/auth";
 import {
+  adminGetBrands,
   adminGetProfile,
   adminGetUserApplications,
   adminGetUserBrands,
@@ -18,11 +20,24 @@ export default async function AdminUserDetail({ params }: Props) {
   const profile = await adminGetProfile(id);
   if (!profile) notFound();
 
-  const [brands, applications, me] = await Promise.all([
+  const [brands, applications, me, toutesLesMarques] = await Promise.all([
     adminGetUserBrands(id),
     adminGetUserApplications(id),
     requireAdmin(),
+    adminGetBrands(),
   ]);
+
+  const dejaGerees = new Set(brands.map((b) => b.brand.id));
+  const enOption = (b: { id: string; name: string; slug: string; status: string; cover_url: string | null; logo_url: string | null }) => ({
+    id: b.id,
+    name: b.name,
+    slug: b.slug,
+    status: b.status,
+    visuel: b.cover_url ?? b.logo_url,
+  });
+
+  const disponibles = toutesLesMarques.filter((b) => !dejaGerees.has(b.id)).map(enOption);
+  const rattachees = brands.map(({ brand }) => enOption(brand));
 
   const bloque =
     profile.id === me.id
@@ -90,8 +105,8 @@ export default async function AdminUserDetail({ params }: Props) {
         {brands.length === 0 ? (
           <div className="glass p-6">
             <p className="m-0 text-[14.5px] leading-relaxed text-white/80">
-              Ce compte ne gère aucune marque. Pour lui en confier une, va sur la fiche
-              de la marque concernée et rattache son adresse email.
+              Ce compte ne gère aucune marque. Utilise la recherche ci-dessous pour lui
+              en confier une.
             </p>
           </div>
         ) : (
@@ -148,6 +163,8 @@ export default async function AdminUserDetail({ params }: Props) {
           </div>
         )}
       </section>
+
+      <AttachBrand userId={profile.id} disponibles={disponibles} rattachees={rattachees} />
 
       <DangerZone userId={profile.id} email={profile.email ?? "ce compte"} bloque={bloque} />
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { fetchShopifyCatalogue } from "@/lib/shopify";
+import { fetchCatalogue } from "@/lib/catalogue";
 
 /**
  * Ecritures de l'espace marque.
@@ -233,7 +233,7 @@ export async function bulkProductAction(formData: FormData): Promise<Result> {
 
 /* ---------------- import Shopify ---------------- */
 
-export async function importShopifySelection(formData: FormData): Promise<Result> {
+export async function importCatalogueSelection(formData: FormData): Promise<Result> {
   const slug = text(formData, "slug");
   const { brand } = await requireManagedBrand(slug);
 
@@ -244,7 +244,7 @@ export async function importShopifySelection(formData: FormData): Promise<Result
   const chosen = new Set(list(formData, "chosen"));
   if (chosen.size === 0) return { ok: false, error: "Aucune pièce sélectionnée." };
 
-  const result = await fetchShopifyCatalogue(shopUrl);
+  const result = await fetchCatalogue(shopUrl);
   if (!result.ok) return { ok: false, error: result.error };
 
   // On relit le catalogue plutot que de faire confiance au formulaire :

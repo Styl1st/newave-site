@@ -52,6 +52,27 @@ export async function getBrand(slug: string): Promise<Brand | null> {
   return (data as Brand) ?? null;
 }
 
+/**
+ * La fiche d'une marque non publiée, pour son aperçu.
+ *
+ * Aucune vérification de droits ici, et c'est volontaire : la requête
+ * ne filtre pas sur le statut, donc ce sont les règles RLS qui
+ * tranchent. Un visiteur reçoit null, un gérant reçoit sa marque, un
+ * admin reçoit tout. La sécurité est en base, pas dans ce fichier.
+ */
+export async function getBrandBrouillon(slug: string): Promise<Brand | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  return (data as Brand) ?? null;
+}
+
 /* ---------------- pieces ---------------- */
 
 export async function getProductsByBrand(brandId: string): Promise<Product[]> {

@@ -26,12 +26,20 @@ export async function GET(
   let brandId: string | null = null;
   let productId: string | null = null;
 
+  /**
+   * On ne filtre plus sur "published" ici.
+   *
+   * Les règles RLS s'en chargent déjà, et mieux : un visiteur ne voit
+   * que le publié, un gérant voit sa marque, un admin voit tout. Le
+   * filtre en dur, lui, cassait le bouton « Voir la boutique » sur une
+   * fiche en brouillon — celui qui la prépare ne pouvait pas vérifier
+   * son propre lien.
+   */
   if (type === "piece") {
     const { data } = await supabase
       .from("products")
       .select("shop_url, brand_id")
       .eq("id", id)
-      .eq("status", "published")
       .maybeSingle();
     const row = data as { shop_url: string; brand_id: string } | null;
     if (row) {
@@ -44,7 +52,6 @@ export async function GET(
       .from("brands")
       .select("shop_url, website_url")
       .eq("id", id)
-      .eq("status", "published")
       .maybeSingle();
     const row = data as { shop_url: string | null; website_url: string | null } | null;
     if (row) {

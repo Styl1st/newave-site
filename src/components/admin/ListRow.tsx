@@ -18,16 +18,28 @@ export function ListRow({
   subtitle,
   status,
   thumb,
+  action,
 }: {
   href: string;
   title: string;
   subtitle?: string | null;
   status?: "draft" | "published";
   thumb?: string | null;
+  /** Bouton facultatif, posé au bout de la ligne. */
+  action?: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="card-light flex items-center gap-4 p-4">
-      <div className="relative z-3 flex w-full items-center gap-4">
+    /*
+     * Toute la ligne mène à la fiche, mais un bouton posé dessus doit
+     * garder son propre clic. Un <button> ne peut pas vivre dans un <a>
+     * (le navigateur refuse cette imbrication, et React s'en plaint) :
+     * le lien passe donc DERRIÈRE la ligne, en calque, et seul le
+     * bouton reprend la main sur le curseur.
+     */
+    <div className="card-light relative flex items-center gap-4 p-4">
+      <Link href={href} aria-label={title} data-calque="" className="absolute inset-0 z-2" />
+
+      <div className="pointer-events-none relative z-3 flex w-full items-center gap-4">
         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[11px] bg-[#e6dcfb]">
           {thumb && (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -41,8 +53,9 @@ export function ListRow({
           )}
         </div>
         {status && <StatusPill status={status} />}
+        {action && <div className="pointer-events-auto shrink-0">{action}</div>}
         <span className="text-[18px] font-black text-[#3a2470]">→</span>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -45,6 +45,12 @@
 
   /* Teinte du voile sombre, dérivée de la première couleur. */
   --voile: 44, 16, 100;
+
+  /* ---------- réglages de mouvement ----------
+     --vit  : multiplicateur de vitesse (2 = deux fois plus rapide)
+     --amp  : multiplicateur d'amplitude (0 = immobile) */
+  --vit: 1;
+  --amp: 1;
 }
 
 * { box-sizing: border-box; }
@@ -65,67 +71,179 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- fond : degrade mesh anime ---------- */
+/* ---------- fond : degrade mesh anime ----------
+   Le mouvement se joue sur trois echelles : le degrade de fond qui
+   se deplace lentement, trois nappes de couleur qui derivent vite, et
+   une lueur qui balaie l'ecran. Une seule de ces couches suffirait a
+   passer inapercue ; ensemble, elles donnent une image qui ne se fige
+   jamais tout a fait. */
 .bg {
   position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
   background: linear-gradient(168deg,
     var(--bg-1) 0%,
-    var(--bg-2) 24%,
-    var(--bg-3) 46%,
-    var(--bg-4) 64%,
-    var(--bg-5) 84%,
+    var(--bg-2) 22%,
+    var(--bg-3) 44%,
+    var(--bg-4) 62%,
+    var(--bg-5) 82%,
     var(--bg-6) 100%);
-  background-size: 100% 180%;
-  /* Le dégradé lui-même respire : sans ça, seules les nappes
-     bougeaient et le fond gardait un air de papier peint. */
-  animation: respire 34s ease-in-out infinite alternate;
+  /* Le dégradé est plus grand que l'écran et se déplace : sans
+     no-repeat, le navigateur le répète, et la couture entre la
+     dernière teinte et la première dessine une ligne droite en
+     diagonale. C'est le trait net qu'on voyait passer.
+
+     La taille reste supérieure à 100 % dans les deux axes, donc la
+     tuile couvre l'écran quelle que soit sa position : rien ne peut
+     laisser apparaître le vide. */
+  background-repeat: no-repeat;
+  background-color: var(--bg-1);
+  background-size: 180% 220%;
+  animation:
+    respire calc(18s / var(--vit)) ease-in-out infinite alternate,
+    teinte calc(41s / var(--vit)) ease-in-out infinite alternate;
 }
 
 @keyframes respire {
-  from { background-position: 50% 0%; }
-  to   { background-position: 50% 100%; }
+  from { background-position: 0% 0%; }
+  to   { background-position: 100% 100%; }
+}
+
+/* ---------- la dérive des couleurs ----------
+   Faire glisser les couches ne suffisait pas : chaque teinte restait
+   la même à sa place, et l'ensemble gardait un air de décor peint.
+   Une rotation de teinte lente fait vraiment respirer la palette.
+
+   L'amplitude reste volontairement faible — au-delà d'une quinzaine
+   de degrés, un violet vire au bleu franc et la personnalisation
+   choisie n'a plus de sens. */
+@keyframes teinte {
+  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94); }
+  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08); }
+  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1); }
+}
+
+/* Mêmes dérives, avec le flou : réservées aux nappes. Le dégradé de
+   fond, lui, n'est pas flouté — il n'a pas de bord à cacher. */
+@keyframes teinteFloue {
+  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94) blur(34px); }
+  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08) blur(30px); }
+  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1) blur(38px); }
+}
+
+/* Les nappes dérivent en sens inverse : les deux mouvements se
+   croisent au lieu de se superposer, ce qui multiplie les teintes
+   traversées sans jamais s'éloigner de la couleur de départ. */
+@keyframes teinteInverseFloue {
+  0%   { filter: hue-rotate(calc(6deg * var(--amp))) saturate(1.05) blur(32px); }
+  50%  { filter: hue-rotate(calc(-5deg * var(--amp))) saturate(0.96) blur(36px); }
+  100% { filter: hue-rotate(calc(-12deg * var(--amp))) saturate(1.1) blur(30px); }
 }
 
 .bg::before, .bg::after {
-  content: ''; position: absolute; inset: -35%; will-change: transform;
+  content: ''; position: absolute; inset: -45%;
+  will-change: transform, opacity;
 }
+
 .bg::before {
   background:
-    radial-gradient(circle at 30% 26%, rgba(var(--accent-1), .72) 0%, transparent 44%),
-    radial-gradient(circle at 74% 60%, rgba(var(--accent-2), .78) 0%, transparent 44%),
-    radial-gradient(circle at 48% 94%, rgba(var(--accent-3), .68) 0%, transparent 42%);
-  animation: nappe1 28s ease-in-out infinite alternate;
+    radial-gradient(circle at 30% 26%, rgba(var(--accent-1), .8) 0%, transparent 42%),
+    radial-gradient(circle at 74% 60%, rgba(var(--accent-2), .85) 0%, transparent 42%),
+    radial-gradient(circle at 48% 94%, rgba(var(--accent-3), .75) 0%, transparent 40%);
+  background-repeat: no-repeat;
+  animation:
+    nappe1 calc(13s / var(--vit)) ease-in-out infinite alternate,
+    teinteInverseFloue calc(37s / var(--vit)) ease-in-out infinite alternate;
 }
 .bg::after {
   background:
-    radial-gradient(circle at 70% 20%, rgba(var(--accent-2), .74) 0%, transparent 42%),
-    radial-gradient(circle at 20% 70%, rgba(var(--accent-1), .66) 0%, transparent 44%),
-    radial-gradient(circle at 86% 86%, rgba(var(--accent-3), .70) 0%, transparent 42%);
-  animation: nappe2 39s ease-in-out infinite alternate;
+    radial-gradient(circle at 70% 20%, rgba(var(--accent-2), .8) 0%, transparent 40%),
+    radial-gradient(circle at 20% 70%, rgba(var(--accent-1), .72) 0%, transparent 42%),
+    radial-gradient(circle at 86% 86%, rgba(var(--accent-3), .78) 0%, transparent 40%);
+  background-repeat: no-repeat;
+  animation:
+    nappe2 calc(17s / var(--vit)) ease-in-out infinite alternate,
+    teinteFloue calc(31s / var(--vit)) ease-in-out infinite alternate;
 }
 
-/* Troisième nappe, période volontairement différente des deux autres :
-   des durées non multiples empêchent le motif de se répéter à l'œil. */
 .bg-nappe {
-  position: fixed; inset: -40%; z-index: 0; pointer-events: none;
-  will-change: transform;
+  position: fixed; inset: -50%; z-index: 0; pointer-events: none;
+  will-change: transform, opacity;
   background:
-    radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .5) 0%, transparent 38%),
-    radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .44) 0%, transparent 40%);
-  animation: nappe3 53s ease-in-out infinite alternate;
+    radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .6) 0%, transparent 36%),
+    radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .55) 0%, transparent 38%),
+    radial-gradient(circle at 85% 70%, rgba(var(--accent-1), .5) 0%, transparent 36%);
+  background-repeat: no-repeat;
+  animation:
+    nappe3 calc(23s / var(--vit)) ease-in-out infinite alternate,
+    teinteInverseFloue calc(29s / var(--vit)) ease-in-out infinite alternate;
 }
 
+/* Lueur qui traverse l'ecran en diagonale. C'est elle qu'on remarque
+   en premier, et celle qui empeche le fond de paraitre imprime. */
+.bg-lueur {
+  position: fixed; inset: -60%; z-index: 1; pointer-events: none;
+  /* Aucune animation de filtre sur cette couche : le flou peut donc
+     être posé une fois pour toutes. */
+  filter: blur(40px);
+  will-change: transform;
+  background: radial-gradient(
+    ellipse 42% 34% at 50% 50%,
+    rgba(255, 255, 255, .13) 0%,
+    rgba(255, 255, 255, .05) 45%,
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+  animation:
+    balayage calc(21s / var(--vit)) ease-in-out infinite alternate,
+    pulseLueur calc(9s / var(--vit)) ease-in-out infinite alternate;
+}
+
+/* Des amplitudes larges : deplacer une nappe de 9 % ne se voit pas,
+   la deplacer de 30 % se voit sans distraire. */
 @keyframes nappe1 {
-  from { transform: translate3d(-9%,-7%,0) scale(1) rotate(0deg); }
-  to   { transform: translate3d(11%,9%,0) scale(1.30) rotate(14deg); }
+  0%   { transform: translate3d(calc(-22% * var(--amp)), calc(-16% * var(--amp)), 0) scale(1) rotate(0deg); opacity: .9; }
+  50%  { transform: translate3d(calc(6% * var(--amp)), calc(10% * var(--amp)), 0) scale(1.25) rotate(calc(6deg * var(--amp))); opacity: 1; }
+  100% { transform: translate3d(calc(24% * var(--amp)), calc(20% * var(--amp)), 0) scale(1.4) rotate(calc(11deg * var(--amp))); opacity: .85; }
 }
 @keyframes nappe2 {
-  from { transform: translate3d(9%,7%,0) scale(1.24) rotate(0deg); }
-  to   { transform: translate3d(-11%,-9%,0) scale(1) rotate(-16deg); }
+  0%   { transform: translate3d(calc(20% * var(--amp)), calc(18% * var(--amp)), 0) scale(1.3) rotate(0deg); opacity: .85; }
+  50%  { transform: translate3d(calc(-4% * var(--amp)), calc(-6% * var(--amp)), 0) scale(1.05) rotate(calc(-7deg * var(--amp))); opacity: 1; }
+  100% { transform: translate3d(calc(-26% * var(--amp)), calc(-22% * var(--amp)), 0) scale(1.35) rotate(calc(-13deg * var(--amp))); opacity: .9; }
 }
 @keyframes nappe3 {
-  from { transform: translate3d(6%,-10%,0) scale(1.1) rotate(-8deg); }
-  to   { transform: translate3d(-8%,12%,0) scale(1.35) rotate(10deg); }
+  0%   { transform: translate3d(calc(14% * var(--amp)), calc(-24% * var(--amp)), 0) scale(1.1) rotate(calc(-10deg * var(--amp))); opacity: .7; }
+  50%  { transform: translate3d(calc(-10% * var(--amp)), calc(4% * var(--amp)), 0) scale(1.45) rotate(calc(6deg * var(--amp))); opacity: .95; }
+  100% { transform: translate3d(calc(-18% * var(--amp)), calc(26% * var(--amp)), 0) scale(1.2) rotate(calc(6deg * var(--amp))); opacity: .75; }
+}
+@keyframes pulseLueur {
+  from { opacity: calc(.45 + .55 * var(--amp)); }
+  to   { opacity: calc(.9 + .1 * var(--amp)); }
+}
+
+@keyframes balayage {
+  0%   { transform: translate3d(calc(-38% * var(--amp)), calc(-28% * var(--amp)), 0) scale(1); }
+  50%  { transform: translate3d(calc(10% * var(--amp)), calc(14% * var(--amp)), 0) scale(1.3); }
+  100% { transform: translate3d(calc(40% * var(--amp)), calc(30% * var(--amp)), 0) scale(1.05); }
+}
+
+/* ---------- garantie : aucune arête droite ----------
+   J'ai cherché la cause du trait deux fois, et deux fois à côté. Plutôt
+   qu'une troisième hypothèse, on supprime la possibilité : chaque
+   couche animée est masquée par une ellipse qui s'éteint bien avant son
+   propre bord.
+
+   Une couche translatée, tournée et agrandie a forcément un bord
+   rectangulaire quelque part. Tant qu'il portait de la couleur, il
+   pouvait traverser l'écran. Avec ce masque, le bord est transparent
+   par construction — quelle que soit la transformation appliquée.
+
+   Le flou léger achève le travail : un contour net ne peut pas
+   survivre à un flou de 30 pixels. */
+.bg::before,
+.bg::after,
+.bg-nappe,
+.bg-lueur {
+  -webkit-mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, #000 30%, rgba(0,0,0,.55) 58%, transparent 82%);
+  mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, #000 30%, rgba(0,0,0,.55) 58%, transparent 82%);
 }
 
 /* voile sombre : garde le texte blanc lisible sur les zones claires */
@@ -220,6 +338,16 @@ a.card-light:hover, button.card-light:hover {
 a.card-light:hover::before, button.card-light:hover::before { background-position: 100% 100%; }
 a.card-light:hover::after, button.card-light:hover::after { animation: sweep .75s ease forwards; }
 a.card-light:active { transform: translateY(-1px) scale(.988); }
+/* Ligne dont le lien est posé en calque par-dessous (voir ListRow) :
+   sans ces regles, survoler la ligne ne produirait plus rien, alors
+   qu'elle reste entierement cliquable. */
+.card-light:has(> a[data-calque]:hover) {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(52,18,110,.34), inset 0 1px 0 #fff;
+}
+.card-light:has(> a[data-calque]:hover)::before { background-position: 100% 100%; }
+.card-light:has(> a[data-calque]:hover)::after { animation: sweep .75s ease forwards; }
+.card-light:has(> a[data-calque]:active) { transform: translateY(-1px) scale(.988); }
 @keyframes sweep {
   0% { left: -60%; opacity: 0; }
   12% { opacity: 1; }
@@ -266,8 +394,14 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 
 :focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
+/* Le réglage système « réduire les animations » reste la valeur par
+   défaut. Mais si le visiteur a explicitement demandé du mouvement
+   depuis « Mon compte → Apparence », on respecte SON choix : c'est
+   une décision consciente, pas un défaut qu'on écrase. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  html:not([data-anim-choisi="1"]) *,
+  html:not([data-anim-choisi="1"]) *::before,
+  html:not([data-anim-choisi="1"]) *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
@@ -300,4 +434,101 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   background: rgba(255,255,255,.10);
   border-radius: var(--radius);
   animation: pulseDoux 1.6s ease-in-out infinite;
+}
+
+/* ---------- mouvement figé ----------
+   Amplitude nulle : on coupe franchement plutôt que d'animer vers
+   zéro, ce qui ferait tourner le processeur pour rien. */
+[data-fige="1"] .bg,
+[data-fige="1"] .bg::before,
+[data-fige="1"] .bg::after,
+[data-fige="1"] .bg-nappe,
+[data-fige="1"] .bg-lueur,
+[data-fige="1"] .glyph-track,
+[data-fige="1"] .chrome img {
+  animation: none !important;
+}
+
+/* ---------- arrivée des éléments ----------
+   Posé et retiré par le composant Reveal. Rien n'est masqué en CSS
+   seul : sans JavaScript, la page reste entièrement lisible. */
+.reveal { opacity: 0; }
+
+.reveal.vu {
+  animation: glisse .62s cubic-bezier(.19, .84, .3, 1) both;
+}
+
+/* Une translation verticale, un très léger recul et un soupçon de
+   flou : c'est le flou qui donne la sensation d'un objet qui arrive
+   plutôt que d'un calque dont on monte l'opacité. */
+@keyframes glisse {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 30px, 0) scale(.975);
+    filter: blur(6px);
+  }
+  60% { filter: blur(0); }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+/* Le titre et le chapeau d'une page entrent avant le reste. */
+.page-in > * > header,
+.page-in > * > * > header {
+  animation: glisseTitre .55s cubic-bezier(.19, .84, .3, 1) both;
+}
+
+@keyframes glisseTitre {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- défilement en cylindre ----------
+   L'élément est lié à sa position dans l'écran, pas déclenché une
+   fois : il grandit en montant vers le centre, puis rapetisse en
+   sortant par le haut. Le mouvement est donc réversible — remonter
+   défait exactement ce que descendre avait fait.
+
+   La bascule sur l'axe X donne l'impression que la page est enroulée
+   autour d'un cylindre horizontal.
+
+   Tout est calculé par le navigateur, sans une ligne de JavaScript à
+   l'exécution : aucun événement de défilement à écouter, donc aucun
+   à-coup possible même sur une longue grille. */
+@supports (animation-timeline: view()) {
+  .cylindre {
+    animation: cylindre linear both;
+    animation-timeline: view();
+    animation-range: entry 0% exit 100%;
+    will-change: transform, opacity;
+    transform-origin: center center;
+  }
+}
+
+@keyframes cylindre {
+  0% {
+    opacity: calc(1 - .45 * var(--amp));
+    transform:
+      perspective(1200px)
+      rotateX(calc(11deg * var(--amp)))
+      scale(calc(1 - .13 * var(--amp)))
+      translateY(calc(22px * var(--amp)));
+  }
+  /* Un long plateau au centre : l'élément qu'on lit reste net et
+     droit, il ne bouge que quand on ne le regarde plus. */
+  38%, 62% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) scale(1) translateY(0);
+  }
+  100% {
+    opacity: calc(1 - .45 * var(--amp));
+    transform:
+      perspective(1200px)
+      rotateX(calc(-11deg * var(--amp)))
+      scale(calc(1 - .13 * var(--amp)))
+      translateY(calc(-22px * var(--amp)));
+  }
 }

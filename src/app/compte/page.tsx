@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DisplayNameForm, LogoutButton, PasswordForm } from "@/components/AccountForms";
+import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABEL } from "@/lib/types";
 import { getManagedBrands } from "@/lib/brand-space";
@@ -89,6 +90,17 @@ export default async function ComptePage() {
           connectés jusqu&apos;à expiration de leur session.
         </p>
         <PasswordForm />
+      </section>
+
+      {/* ---------- apparence ---------- */}
+      <section className="glass rise rise-3 mt-6 p-6 sm:p-8">
+        <h2 className="m-0 text-[17px] font-extrabold text-white">Apparence</h2>
+        <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
+          Le fond du site, à ton goût. Le réglage est enregistré dans ce navigateur —
+          il ne te suit pas d&apos;un appareil à l&apos;autre, et personne d&apos;autre
+          ne le voit.
+        </p>
+        <ThemePicker />
       </section>
 
       {/* ---------- sortie ---------- */}
