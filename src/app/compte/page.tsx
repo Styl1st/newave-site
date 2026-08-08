@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DisplayNameForm, LogoutButton, PasswordForm } from "@/components/AccountForms";
 import { requireUser } from "@/lib/auth";
+import { ROLE_LABEL } from "@/lib/types";
 import { getManagedBrands } from "@/lib/brand-space";
 import { getFavoriteBrands } from "@/lib/favorites";
 
@@ -28,7 +29,7 @@ export default async function ComptePage() {
       note: brands.length
         ? `${brands.length} marque${brands.length > 1 ? "s" : ""} à gérer`
         : "Aucune marque rattachée",
-      show: brands.length > 0 || isAdmin,
+      show: brands.length > 0 || isAdmin || profile.role === "createur",
     },
     {
       href: "/admin",
@@ -47,7 +48,7 @@ export default async function ComptePage() {
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <p className="m-0 text-[14.5px] text-white/78">{profile.email}</p>
-          {isAdmin && <span className="badge">Administrateur</span>}
+          {profile.role !== "membre" && <span className="badge">{ROLE_LABEL[profile.role]}</span>}
         </div>
       </header>
 

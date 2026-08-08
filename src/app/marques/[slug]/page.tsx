@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import { getBrand, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
 import { isFavorite } from "@/lib/favorites";
 import { getCatalogueInsight } from "@/lib/brand-space";
+import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import BackLink from "@/components/BackLink";
 
@@ -42,6 +43,9 @@ export default async function BrandPage({ params }: Props) {
     isFavorite(brand.id),
     getCatalogueInsight(brand.id),
   ]);
+
+  const ids = products.map((p) => p.id);
+  const [likeCounts, myLikes] = await Promise.all([getLikeCounts(ids), getMyLikes(ids)]);
 
   const facts: [string, string | null][] = [
     ["Origine", [brand.city, brand.country].filter(Boolean).join(", ") || null],
@@ -138,7 +142,13 @@ export default async function BrandPage({ params }: Props) {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} brandSlug={brand.slug} canManage={Boolean(insight)} />
+              <ProductCard
+                key={p.id}
+                product={p}
+                brandSlug={brand.slug}
+                canManage={Boolean(insight)}
+                likes={{ count: likeCounts.get(p.id) ?? 0, liked: myLikes.has(p.id) }}
+              />
             ))}
           </div>
 

@@ -26,6 +26,25 @@
   --radius: 20px;
   --chrome-edge: linear-gradient(140deg, #ffffff 0%, #c9c9d4 14%, #7e7e91 32%, #f4f4f8 47%,
                  #9d9daf 62%, #e9e9f1 76%, #6f6f82 89%, #ffffff 100%);
+
+  /* ---------- le fond, entièrement pilotable ----------
+     Ces six teintes composent le dégradé, et les trois accents les
+     nappes qui dérivent par-dessus. Une préférence enregistrée les
+     remplace au chargement : c'est ce qui rend la personnalisation
+     possible sans recompiler quoi que ce soit. */
+  --bg-1: #33217f;
+  --bg-2: #4e5bc0;
+  --bg-3: #9e63d6;
+  --bg-4: #c255c4;
+  --bg-5: #5a54c8;
+  --bg-6: #31217c;
+
+  --accent-1: 232, 111, 216;
+  --accent-2: 90, 114, 224;
+  --accent-3: 180, 122, 234;
+
+  /* Teinte du voile sombre, dérivée de la première couleur. */
+  --voile: 44, 16, 100;
 }
 
 * { box-sizing: border-box; }
@@ -42,38 +61,60 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--color-creme);
-  background: #33217f;
+  background: var(--bg-1);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- fond : degrade mesh violet / lavande / rose ---------- */
+/* ---------- fond : degrade mesh anime ---------- */
 .bg {
   position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
   background: linear-gradient(168deg,
-    #33217f 0%,
-    #4e5bc0 24%,
-    #9e63d6 46%,
-    #c255c4 64%,
-    #5a54c8 84%,
-    #31217c 100%);
+    var(--bg-1) 0%,
+    var(--bg-2) 24%,
+    var(--bg-3) 46%,
+    var(--bg-4) 64%,
+    var(--bg-5) 84%,
+    var(--bg-6) 100%);
+  background-size: 100% 180%;
+  /* Le dégradé lui-même respire : sans ça, seules les nappes
+     bougeaient et le fond gardait un air de papier peint. */
+  animation: respire 34s ease-in-out infinite alternate;
 }
+
+@keyframes respire {
+  from { background-position: 50% 0%; }
+  to   { background-position: 50% 100%; }
+}
+
 .bg::before, .bg::after {
   content: ''; position: absolute; inset: -35%; will-change: transform;
 }
 .bg::before {
   background:
-    radial-gradient(circle at 30% 26%, rgba(232,111,216,.72) 0%, transparent 44%),
-    radial-gradient(circle at 74% 60%, rgba(90,114,224,.78) 0%, transparent 44%),
-    radial-gradient(circle at 48% 94%, rgba(180,122,234,.68) 0%, transparent 42%);
+    radial-gradient(circle at 30% 26%, rgba(var(--accent-1), .72) 0%, transparent 44%),
+    radial-gradient(circle at 74% 60%, rgba(var(--accent-2), .78) 0%, transparent 44%),
+    radial-gradient(circle at 48% 94%, rgba(var(--accent-3), .68) 0%, transparent 42%);
   animation: nappe1 28s ease-in-out infinite alternate;
 }
 .bg::after {
   background:
-    radial-gradient(circle at 70% 20%, rgba(126,143,234,.74) 0%, transparent 42%),
-    radial-gradient(circle at 20% 70%, rgba(212,96,206,.66) 0%, transparent 44%),
-    radial-gradient(circle at 86% 86%, rgba(158,99,214,.7) 0%, transparent 42%);
+    radial-gradient(circle at 70% 20%, rgba(var(--accent-2), .74) 0%, transparent 42%),
+    radial-gradient(circle at 20% 70%, rgba(var(--accent-1), .66) 0%, transparent 44%),
+    radial-gradient(circle at 86% 86%, rgba(var(--accent-3), .70) 0%, transparent 42%);
   animation: nappe2 39s ease-in-out infinite alternate;
 }
+
+/* Troisième nappe, période volontairement différente des deux autres :
+   des durées non multiples empêchent le motif de se répéter à l'œil. */
+.bg-nappe {
+  position: fixed; inset: -40%; z-index: 0; pointer-events: none;
+  will-change: transform;
+  background:
+    radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .5) 0%, transparent 38%),
+    radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .44) 0%, transparent 40%);
+  animation: nappe3 53s ease-in-out infinite alternate;
+}
+
 @keyframes nappe1 {
   from { transform: translate3d(-9%,-7%,0) scale(1) rotate(0deg); }
   to   { transform: translate3d(11%,9%,0) scale(1.30) rotate(14deg); }
@@ -82,17 +123,21 @@ body {
   from { transform: translate3d(9%,7%,0) scale(1.24) rotate(0deg); }
   to   { transform: translate3d(-11%,-9%,0) scale(1) rotate(-16deg); }
 }
+@keyframes nappe3 {
+  from { transform: translate3d(6%,-10%,0) scale(1.1) rotate(-8deg); }
+  to   { transform: translate3d(-8%,12%,0) scale(1.35) rotate(10deg); }
+}
 
 /* voile sombre : garde le texte blanc lisible sur les zones claires */
 .scrim {
   position: fixed; inset: 0; z-index: 4; pointer-events: none;
   background:
     linear-gradient(180deg,
-      rgba(44,16,100,.52) 0%, rgba(44,16,100,0) 26%,
-      rgba(44,16,100,0) 72%, rgba(44,16,100,.60) 100%),
+      rgba(var(--voile), .52) 0%, rgba(var(--voile), 0) 26%,
+      rgba(var(--voile), 0) 72%, rgba(var(--voile), .60) 100%),
     radial-gradient(ellipse 68% 58% at 50% 48%,
-      rgba(44,16,100,.34) 0%, rgba(44,16,100,.22) 45%,
-      rgba(44,16,100,.08) 75%, rgba(44,16,100,0) 100%);
+      rgba(var(--voile), .34) 0%, rgba(var(--voile), .22) 45%,
+      rgba(var(--voile), .08) 75%, rgba(var(--voile), 0) 100%);
 }
 
 /* ---------- blobs chromes ---------- */
@@ -228,4 +273,31 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- transitions de page ---------- */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.page-in { animation: pageIn .42s cubic-bezier(.2,.8,.3,1) both; }
+
+/* Barre de chargement en haut, pendant une navigation. */
+.progress {
+  position: fixed; top: 0; left: 0; z-index: 200; height: 2.5px;
+  background: linear-gradient(90deg, rgba(255,255,255,.4), #fff);
+  box-shadow: 0 0 12px rgba(255,255,255,.7);
+  transition: width .25s ease, opacity .3s ease;
+  pointer-events: none;
+}
+
+/* ---------- squelettes de chargement ---------- */
+@keyframes pulseDoux {
+  0%, 100% { opacity: .55; }
+  50% { opacity: .9; }
+}
+.skeleton {
+  background: rgba(255,255,255,.10);
+  border-radius: var(--radius);
+  animation: pulseDoux 1.6s ease-in-out infinite;
 }

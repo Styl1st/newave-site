@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Portal from "./Portal";
 import { discountPercent, formatPrice } from "@/lib/types";
 
 export type PreviewProduct = {
@@ -64,12 +65,13 @@ export default function BrandPreview({
   }, [onClose]);
 
   return (
+    <Portal>
     <div
       role="dialog"
       aria-modal="true"
       aria-label={data ? `Pièces de ${data.brand.name}` : "Aperçu des pièces"}
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
       style={{ animation: "fadeIn .18s ease both" }}
     >
       <div className="absolute inset-0 bg-[rgba(20,8,50,0.72)] backdrop-blur-md" />
@@ -190,5 +192,6 @@ export default function BrandPreview({
         )}
       </div>
     </div>
+    </Portal>
   );
 }

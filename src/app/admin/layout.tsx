@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { IconGrid, IconImage, IconInbox, IconTag } from "@/components/Icons";
+import { IconGrid, IconImage, IconInbox, IconTag, IconUser } from "@/components/Icons";
 
 const NAV = [
   { href: "/admin", label: "Tableau de bord", Icon: IconGrid },
   { href: "/admin/posts", label: "Posts", Icon: IconImage },
   { href: "/admin/marques", label: "Marques", Icon: IconTag },
   { href: "/admin/candidatures", label: "Candidatures", Icon: IconInbox },
+  { href: "/admin/utilisateurs", label: "Comptes", Icon: IconUser },
 ];
 
 export const dynamic = "force-dynamic";

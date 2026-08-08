@@ -12,14 +12,15 @@ const SECTIONS = [
       "**Si tu crées un compte** : ton adresse email et le nom que tu choisis d'afficher. Ton mot de passe n'est jamais stocké en clair — nous ne pouvons pas le lire.",
       "**Si tu mets une marque en favori** : le lien entre ton compte et cette marque.",
       "**Si tu proposes une marque** : les informations que tu remplis dans le formulaire, et ton compte s'il existe.",
-      "**À chaque visite** : rien. Pas de traceur publicitaire, pas de mesure d'audience, pas de profilage.",
+      "**À chaque visite** : la page consultée et, le cas échéant, le site depuis lequel tu es arrivé — au domaine près, jamais l'adresse complète. Rien d'autre : ni adresse IP, ni empreinte de navigateur, ni identifiant. Deux de tes visites sont indiscernables de deux visiteurs différents, donc rien ne permet de te suivre.",
+      "Aucun traceur publicitaire, aucun profilage, aucune revente. Ces chiffres nous servent uniquement à savoir quelles marques intéressent, et à le montrer à celles qu'on référence.",
     ],
   },
   {
     titre: "Les cookies",
     contenu: [
       "Deux cookies seulement, et tous deux strictement nécessaires au fonctionnement : celui qui te garde connecté, et celui du mot de passe d'accès pendant la phase de test.",
-      "Aucun cookie publicitaire ni de mesure d'audience. C'est pour cette raison qu'aucune bannière de consentement ne t'est imposée : la réglementation ne l'exige que pour les traceurs non essentiels.",
+      "La mesure de fréquentation, elle, ne pose **aucun** cookie et ne dépose rien dans ton navigateur. C'est pour cette raison qu'aucune bannière de consentement ne t'est imposée : la réglementation ne l'exige que pour les traceurs qui suivent les personnes.",
     ],
   },
   {

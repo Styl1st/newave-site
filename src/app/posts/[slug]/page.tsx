@@ -61,8 +61,25 @@ export default async function PostPage({ params }: Props) {
         </h1>
       </header>
 
-      {images.length > 0 && (
+      {/* La vidéo passe avant les images : c'est elle qu'on est venu
+          voir, et elle se lit ici plutôt que sur Instagram. */}
+      {post.video_url && (
         <div className="card-light rise rise-1 mt-8 overflow-hidden">
+          <div className="relative z-3">
+            <video
+              src={post.video_url}
+              poster={post.video_poster ?? post.images?.[0] ?? undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="block w-full"
+            />
+          </div>
+        </div>
+      )}
+
+      {images.length > 0 && (
+        <div className="card-light rise rise-1 mt-6 overflow-hidden">
           <div className="relative z-3">
             <Carousel images={images} alt={post.image_alt || post.title} />
           </div>

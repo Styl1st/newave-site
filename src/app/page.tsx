@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
-import PostCard from "@/components/PostCard";
+import PostMosaic from "@/components/PostMosaic";
 import { getBrands, getPosts } from "@/lib/queries";
 
 export default async function HomePage() {
@@ -79,11 +79,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
+        <PostMosaic posts={posts} />
       </section>
 
       {/* ---------- appel aux marques ---------- */}

@@ -2,29 +2,42 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { acceptApplication, setApplicationStatus } from "@/app/admin/actions";
-import { IconCheck, IconClock, IconCross } from "@/components/Icons";
+import {
+  acceptApplication,
+  deleteApplication,
+  setApplicationStatus,
+} from "@/app/admin/actions";
+import { IconCheck, IconCross, IconTrash } from "@/components/Icons";
 
 /**
  * Décision sur une candidature.
- * Accepter fait le travail complet : fiche marque créée en brouillon
- * et droits attribués au compte du candidat.
+ *
+ * Accepter fait le travail complet : fiche marque créée en brouillon,
+ * et droits accordés au candidat — mais seulement s'il dirige la marque.
  */
 export default function ApplicationActions({
   id,
   status,
+  brandName,
 }: {
   id: string;
   status: "nouvelle" | "en_cours" | "acceptee" | "refusee";
+  brandName: string;
 }) {
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  function run(intent: "accepter" | "refuser" | "en_cours") {
+  function run(intent: "accepter" | "refuser" | "supprimer") {
     if (intent === "accepter") {
       const ok = window.confirm(
-        "Accepter ce dossier créera une fiche marque en brouillon et donnera les droits au compte du candidat. Continuer ?"
+        `Accepter « ${brandName} » créera une fiche marque en brouillon. Continuer ?`
+      );
+      if (!ok) return;
+    }
+    if (intent === "supprimer") {
+      const ok = window.confirm(
+        `Effacer définitivement la candidature de « ${brandName} » ? La marque déjà créée, s'il y en a une, ne sera pas touchée.`
       );
       if (!ok) return;
     }
@@ -40,8 +53,10 @@ export default function ApplicationActions({
             ? { ok: true, text: res.message ?? "Candidature acceptée." }
             : { ok: false, text: res.error ?? "L'opération a échoué." }
         );
+      } else if (intent === "supprimer") {
+        await deleteApplication(formData);
       } else {
-        formData.set("status", intent === "refuser" ? "refusee" : "en_cours");
+        formData.set("status", "refusee");
         await setApplicationStatus(formData);
         setNote(null);
       }
@@ -50,11 +65,11 @@ export default function ApplicationActions({
   }
 
   const btn =
-    "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-extrabold transition disabled:opacity-50 active:scale-[.97]";
+    "inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[12px] font-extrabold transition disabled:opacity-50 active:scale-[.97]";
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex flex-col items-start gap-2 sm:items-end">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
         {status !== "acceptee" && (
           <button
             type="button"
@@ -65,31 +80,31 @@ export default function ApplicationActions({
             <IconCheck /> Accepter
           </button>
         )}
-        {status !== "en_cours" && status !== "acceptee" && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run("en_cours")}
-            className={`${btn} border border-white/35 text-white hover:bg-white/12`}
-          >
-            <IconClock /> En cours
-          </button>
-        )}
-        {status !== "refusee" && (
+        {status !== "refusee" && status !== "acceptee" && (
           <button
             type="button"
             disabled={pending}
             onClick={() => run("refuser")}
-            className={`${btn} border border-white/22 text-white/70 hover:border-white/50 hover:text-white`}
+            className={`${btn} border border-white/35 bg-white/8 text-white hover:border-white/70 hover:bg-white/20`}
           >
             <IconCross /> Refuser
           </button>
         )}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run("supprimer")}
+          aria-label="Supprimer la candidature"
+          title="Supprimer définitivement"
+          className={`${btn} border border-white/20 text-white/60 hover:border-white/50 hover:text-white`}
+        >
+          <IconTrash />
+        </button>
       </div>
 
       {note && (
         <p
-          className={`m-0 max-w-md text-right text-[12.5px] leading-relaxed ${
+          className={`m-0 max-w-md text-[12.5px] leading-relaxed sm:text-right ${
             note.ok ? "text-white/85" : "text-white"
           }`}
         >

@@ -4,6 +4,7 @@ import { Archivo } from "next/font/google";
 import Background from "@/components/Background";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Tracker from "@/components/Tracker";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" className={archivo.variable}>
       <body className="font-sans">
         <Background />
+        <Tracker />
         {!nu && <Header />}
         <main className="relative z-10 flex flex-1 flex-col">{children}</main>
         {!nu && <Footer />}

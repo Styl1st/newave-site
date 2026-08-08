@@ -52,10 +52,11 @@ export async function adminGetApplications(): Promise<Application[]> {
 }
 
 export async function adminCounts() {
-  const [posts, brands, applications] = await Promise.all([
+  const [posts, brands, applications, profiles] = await Promise.all([
     adminGetPosts(),
     adminGetBrands(),
     adminGetApplications(),
+    adminGetProfiles(),
   ]);
   return {
     posts: posts.length,
@@ -64,6 +65,8 @@ export async function adminCounts() {
     brandsDraft: brands.filter((b) => b.status === "draft").length,
     applications: applications.length,
     applicationsNew: applications.filter((a) => a.status === "nouvelle").length,
+    users: profiles.length,
+    admins: profiles.filter((p) => p.role === "admin").length,
   };
 }
 
@@ -78,4 +81,66 @@ export async function adminGetBrandManagers(brandId: string): Promise<Profile[]>
   return (data ?? [])
     .map((row) => (row as unknown as { profile: Profile | null }).profile)
     .filter((p): p is Profile => Boolean(p));
+}
+
+/* ---------------- comptes ---------------- */
+
+export async function adminGetProfiles(): Promise<Profile[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, role")
+    .order("created_at", { ascending: false });
+  return (data as Profile[]) ?? [];
+}
+
+export async function adminGetProfile(id: string): Promise<Profile | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, role")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as Profile) ?? null;
+}
+
+/** Les marques qu'un compte gere, avec le compte de leurs pieces. */
+export async function adminGetUserBrands(
+  userId: string
+): Promise<{ brand: Brand; pieces: number }[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("brand_managers")
+    .select("brand:brands(*)")
+    .eq("user_id", userId);
+
+  const brands = (data ?? [])
+    .map((row) => (row as unknown as { brand: Brand | null }).brand)
+    .filter((b): b is Brand => Boolean(b));
+
+  return Promise.all(
+    brands.map(async (brand) => {
+      const { count } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("brand_id", brand.id);
+      return { brand, pieces: count ?? 0 };
+    })
+  );
+}
+
+/** Les candidatures deposees par un compte. */
+export async function adminGetUserApplications(userId: string): Promise<Application[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("applications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return (data as Application[]) ?? [];
 }

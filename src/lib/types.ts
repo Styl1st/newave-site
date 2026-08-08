@@ -1,6 +1,6 @@
 export type PriceTier = "accessible" | "intermediaire" | "premium";
 export type Status = "draft" | "published";
-export type Role = "membre" | "admin";
+export type Role = "membre" | "createur" | "admin";
 
 export type Brand = {
   id: string;
@@ -62,6 +62,10 @@ export type Post = {
   image_url: string | null;
   /** Le carrousel. image_url reste la vignette des listes. */
   images: string[];
+  /** MP4 hebergé chez nous. Un Reel ne se lit pas depuis un site tiers. */
+  video_url: string | null;
+  /** Image affichée avant lecture. */
+  video_poster: string | null;
   image_alt: string;
   keywords: string[];
   brand_id: string | null;
@@ -86,10 +90,14 @@ export type BrandManager = {
   profile?: Profile | null;
 };
 
+/** Le candidat dirige-t-il la marque, ou la recommande-t-il ? */
+export type Relationship = "proprietaire" | "decouvreur";
+
 export type Application = {
   id: string;
   user_id: string | null;
   brand_id: string | null;
+  relationship: Relationship;
   brand_name: string;
   contact_name: string;
   email: string;
@@ -111,6 +119,17 @@ export const APPLICATION_STATUS_LABEL: Record<Application["status"], string> = {
   en_cours: "En cours",
   acceptee: "Acceptée",
   refusee: "Refusée",
+};
+
+export const RELATIONSHIP_LABEL: Record<Relationship, string> = {
+  proprietaire: "C'est sa marque",
+  decouvreur: "Recommandation",
+};
+
+export const ROLE_LABEL: Record<Role, string> = {
+  membre: "Membre",
+  createur: "Créateur",
+  admin: "Administrateur",
 };
 
 /** Affiche un prix en centimes sous forme lisible. */

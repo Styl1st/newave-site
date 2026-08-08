@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type State = "idle" | "sending" | "sent" | "error";
+type Relationship = "proprietaire" | "decouvreur";
 
 const FIELD =
   "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
@@ -12,6 +13,8 @@ const LABEL = "eyebrow mb-2 block";
 export default function ApplicationForm() {
   const [state, setState] = useState<State>("idle");
   const [message, setMessage] = useState("");
+  const [relationship, setRelationship] = useState<Relationship>("proprietaire");
+  const proprietaire = relationship === "proprietaire";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,6 +28,7 @@ export default function ApplicationForm() {
       instagram: String(form.get("instagram") ?? "").trim() || null,
       website: String(form.get("website") ?? "").trim() || null,
       pitch: String(form.get("pitch") ?? "").trim(),
+      relationship,
     };
 
     const supabase = createClient();
@@ -64,8 +68,9 @@ export default function ApplicationForm() {
       <div className="glass p-8 text-center">
         <h2 className="m-0 text-[20px] font-extrabold text-white">C&apos;est reçu.</h2>
         <p className="m-0 mt-3 text-[15px] leading-relaxed text-white/84">
-          On lit chaque dossier nous-mêmes. Compte quelques jours, et une réponse
-          arrivera à l&apos;adresse que tu as laissée — même si c&apos;est un non.
+          {proprietaire
+            ? "On lit chaque dossier nous-mêmes. Compte quelques jours, et une réponse arrivera à l'adresse que tu as laissée — même si c'est un non."
+            : "Merci pour la recommandation. On va regarder cette marque, et on la contactera directement si son travail nous parle."}
         </p>
       </div>
     );
@@ -73,6 +78,64 @@ export default function ApplicationForm() {
 
   return (
     <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-6 sm:p-8">
+      {/* Le choix conditionne tout le reste : les libellés, ce qu'on
+          demande, et surtout les droits accordés en cas d'acceptation. */}
+      <fieldset className="m-0 border-0 p-0">
+        <legend className="eyebrow mb-3 p-0">Tu es…</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(
+            [
+              {
+                value: "proprietaire" as const,
+                titre: "À la tête de cette marque",
+                texte: "Tu la fondes ou la diriges. Si le dossier est retenu, tu pourras gérer ta page toi-même.",
+              },
+              {
+                value: "decouvreur" as const,
+                titre: "Tu la recommandes",
+                texte: "Tu n'en fais pas partie, tu trouves son travail juste. On la contactera nous-mêmes.",
+              },
+            ]
+          ).map((choix) => {
+            const actif = relationship === choix.value;
+            return (
+              <label
+                key={choix.value}
+                className={`cursor-pointer rounded-[var(--radius)] border p-4 transition ${
+                  actif
+                    ? "border-white bg-white/18"
+                    : "border-white/25 bg-white/6 hover:border-white/50 hover:bg-white/12"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="relationship"
+                  value={choix.value}
+                  checked={actif}
+                  onChange={() => setRelationship(choix.value)}
+                  className="sr-only"
+                />
+                <span className="flex items-start gap-2.5">
+                  <span
+                    className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 ${
+                      actif ? "border-white" : "border-white/45"
+                    }`}
+                  >
+                    {actif && <span className="h-2 w-2 rounded-full bg-white" />}
+                  </span>
+                  <span>
+                    <span className="block text-[14px] font-extrabold text-white">{choix.titre}</span>
+                    <span className="mt-1 block text-[12.5px] leading-relaxed text-white/70">
+                      {choix.texte}
+                    </span>
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className={LABEL} htmlFor="brand_name">Nom de la marque *</label>
@@ -107,7 +170,11 @@ export default function ApplicationForm() {
           id="pitch"
           name="pitch"
           required
-          placeholder="Ce que tu fabriques, comment, et pourquoi. Trois phrases honnêtes valent mieux qu'une page de communication."
+          placeholder={
+            proprietaire
+              ? "Ce que tu fabriques, comment, et pourquoi. Trois phrases honnêtes valent mieux qu'une page de communication."
+              : "Pourquoi cette marque mérite d'être connue. Ce qui t'a marqué chez elle."
+          }
         />
       </div>
 
@@ -119,7 +186,7 @@ export default function ApplicationForm() {
 
       <button type="submit" disabled={state === "sending"} className="card-light self-start px-7 py-3.5 disabled:opacity-60">
         <span className="relative z-3 text-[14px] font-extrabold">
-          {state === "sending" ? "Envoi…" : "Envoyer mon dossier"}
+          {state === "sending" ? "Envoi…" : proprietaire ? "Envoyer mon dossier" : "Recommander cette marque"}
         </span>
       </button>
 

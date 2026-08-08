@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { IconPencil } from "./Icons";
+import LikeButton from "./LikeButton";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice } from "@/lib/types";
 
@@ -37,6 +38,7 @@ export default function ProductCard({
   brandSlug,
   showBrand = false,
   canManage = false,
+  likes,
 }: {
   product: Product;
   /** Slug de la marque, pour construire le lien vers la fiche. */
@@ -44,6 +46,8 @@ export default function ProductCard({
   showBrand?: boolean;
   /** Affiche le crayon d'édition. Réservé à l'admin et aux gérants. */
   canManage?: boolean;
+  /** Coups de cœur. Absent = le bouton ne s'affiche pas. */
+  likes?: { count: number; liked: boolean };
 }) {
   const price = formatPrice(product.price_cents, product.currency);
   const was = formatPrice(product.compare_at_cents, product.currency);
@@ -116,12 +120,23 @@ export default function ProductCard({
             </h3>
           </ProductLink>
 
-          <div className="mt-2 flex flex-wrap items-baseline gap-2">
-            <span className="text-[13.5px] font-extrabold text-[var(--color-ink)]">
-              {price ?? "Prix sur la boutique"}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex flex-wrap items-baseline gap-2">
+              <span className="text-[13.5px] font-extrabold text-[var(--color-ink)]">
+                {price ?? "Prix sur la boutique"}
+              </span>
+              {was && off !== null && (
+                <span className="text-[12px] font-semibold text-[#8a7bab] line-through">{was}</span>
+              )}
             </span>
-            {was && off !== null && (
-              <span className="text-[12px] font-semibold text-[#8a7bab] line-through">{was}</span>
+
+            {likes && (
+              <LikeButton
+                productId={product.id}
+                initialLiked={likes.liked}
+                initialCount={likes.count}
+                taille="compact"
+              />
             )}
           </div>
         </div>

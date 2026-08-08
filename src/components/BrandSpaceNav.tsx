@@ -19,6 +19,7 @@ export default function BrandSpaceNav({
       <div className="flex flex-wrap items-center gap-1">
         <Link href="/espace-marque" className={link}>← Mes marques</Link>
         <Link href={`/espace-marque/${slug}`} className={link}>Présentation</Link>
+        <Link href={`/espace-marque/${slug}/stats`} className={link}>Statistiques</Link>
         <Link href={`/espace-marque/${slug}/pieces`} className={link}>Pièces</Link>
         <Link href={`/espace-marque/${slug}/import`} className={link}>Importer</Link>
       </div>

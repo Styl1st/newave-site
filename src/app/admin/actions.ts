@@ -58,11 +58,16 @@ export async function savePost(formData: FormData): Promise<Result> {
 
   const status = toText(formData.get("status")) === "published" ? "published" : "draft";
 
+  const images = toArray(formData, "images");
+
   const payload = {
     slug: toText(formData.get("slug")) || slugify(title),
     title,
     caption: toText(formData.get("caption")),
-    image_url: toNullable(formData.get("image_url")),
+    image_url: images[0] ?? toNullable(formData.get("image_url")),
+    images,
+    video_url: toNullable(formData.get("video_url")),
+    video_poster: toNullable(formData.get("video_poster")),
     image_alt: toText(formData.get("image_alt")),
     keywords: toArray(formData, "keywords"),
     brand_id: toNullable(formData.get("brand_id")),
@@ -257,6 +262,7 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
     pitch: string;
     user_id: string | null;
     brand_id: string | null;
+    relationship: "proprietaire" | "decouvreur";
   } | null;
 
   if (!application) return { ok: false, error: "Candidature introuvable." };
@@ -290,10 +296,22 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
     brandId = (created as { id: string }).id;
   }
 
-  if (application.user_id) {
+  // On ne donne les cles de la fiche qu'a quelqu'un qui dirige la
+  // marque. Une recommandation ne confere aucun droit sur le travail
+  // d'autrui, meme faite de bonne foi.
+  const estProprietaire = application.relationship === "proprietaire";
+  if (estProprietaire && application.user_id) {
     await supabase
       .from("brand_managers")
       .upsert({ brand_id: brandId, user_id: application.user_id });
+
+    // Le role suit le rattachement, sans jamais retrograder un admin
+    // qui candidaterait pour sa propre marque.
+    await supabase
+      .from("profiles")
+      .update({ role: "createur" })
+      .eq("id", application.user_id)
+      .eq("role", "membre");
   }
 
   const { error } = await supabase
@@ -305,10 +323,87 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
 
   revalidatePath("/admin/candidatures");
   revalidatePath("/admin/marques");
-  return {
-    ok: true,
-    message: application.user_id
-      ? "Marque créée en brouillon, et le compte du candidat en est gérant."
-      : "Marque créée en brouillon. Le candidat n'avait pas de compte : rattache-le depuis sa fiche quand il en aura un.",
-  };
+  let message: string;
+  if (!estProprietaire) {
+    message =
+      "Marque créée en brouillon. Aucun droit accordé : il s'agissait d'une recommandation, pas de la marque du candidat.";
+  } else if (application.user_id) {
+    message = "Marque créée en brouillon. Le candidat passe créateur et en devient gérant.";
+  } else {
+    message =
+      "Marque créée en brouillon. Le candidat n'avait pas de compte : rattache-le depuis sa fiche quand il en aura un.";
+  }
+
+  return { ok: true, message };
+}
+
+/** Efface une candidature. Sans retour possible. */
+export async function deleteApplication(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return;
+  await supabase.from("applications").delete().eq("id", toText(formData.get("id")));
+  revalidatePath("/admin/candidatures");
+}
+
+/* ========================= COMPTES ========================= */
+
+/**
+ * Change le role d'un compte.
+ *
+ * Deux verrous en plus de requireAdmin() : on ne peut pas se
+ * retrograder soi-meme, ce qui fermerait la porte de l'administration
+ * a clé de l'interieur, et le declencheur en base refuse tout
+ * changement de role venant d'un non-admin.
+ */
+export async function updateUserRole(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const userId = toText(formData.get("user_id"));
+  const role = toText(formData.get("role"));
+
+  if (role !== "membre" && role !== "createur" && role !== "admin") {
+    return { ok: false, error: "Rôle inconnu." };
+  }
+  if (userId === me.id && role !== "admin") {
+    return {
+      ok: false,
+      error: "Tu ne peux pas retirer ton propre rôle d'administrateur — plus personne ne pourrait entrer.",
+    };
+  }
+
+  const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/utilisateurs");
+  revalidatePath(`/admin/utilisateurs/${userId}`);
+  return { ok: true, message: "Rôle mis à jour." };
+}
+
+/**
+ * Supprime definitivement un compte.
+ *
+ * Passe par la fonction delete_user_account de la base : la table
+ * auth.users est inaccessible depuis la cle publique, et c'est cette
+ * fonction qui verifie les droits, refuse l'auto-suppression et
+ * protege les autres administrateurs.
+ *
+ * Le profil, les favoris, les coups de cœur et les rattachements
+ * partent avec. Les marques restent : elles appartiennent au site.
+ */
+export async function deleteUserAccount(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const userId = toText(formData.get("user_id"));
+  if (!userId) return { ok: false, error: "Compte introuvable." };
+
+  const { error } = await supabase.rpc("delete_user_account", { target: userId });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/utilisateurs");
+  return { ok: true, message: "Compte supprimé." };
 }

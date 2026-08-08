@@ -1,14 +1,17 @@
 import Link from "next/link";
-import { IconImage, IconInbox, IconPlus, IconTag } from "@/components/Icons";
+import { IconImage, IconInbox, IconPlus, IconTag, IconUser } from "@/components/Icons";
+import StatsPanel from "@/components/admin/StatsPanel";
 import { adminCounts } from "@/lib/admin-queries";
+import { getStats } from "@/lib/stats";
 
 export default async function AdminHome() {
-  const c = await adminCounts();
+  const [c, stats] = await Promise.all([adminCounts(), getStats()]);
 
   const cards = [
     { href: "/admin/posts", label: "Posts", value: c.posts, note: c.postsDraft ? `${c.postsDraft} en brouillon` : "tous publiés", Icon: IconImage },
     { href: "/admin/marques", label: "Marques", value: c.brands, note: c.brandsDraft ? `${c.brandsDraft} en brouillon` : "toutes publiées", Icon: IconTag },
     { href: "/admin/candidatures", label: "Candidatures", value: c.applications, note: c.applicationsNew ? `${c.applicationsNew} à traiter` : "rien de nouveau", Icon: IconInbox },
+    { href: "/admin/utilisateurs", label: "Comptes", value: c.users, note: c.admins > 1 ? `${c.admins} administrateurs` : "1 administrateur", Icon: IconUser },
   ];
 
   return (
@@ -35,6 +38,8 @@ export default async function AdminHome() {
           </Link>
         ))}
       </div>
+
+      {stats && <StatsPanel stats={stats} />}
 
       <div className="glass mt-8 p-6 sm:p-8">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Actions rapides</h2>

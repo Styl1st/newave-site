@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PostGrid from "@/components/PostGrid";
+import PostMosaic from "@/components/PostMosaic";
 import { getPosts } from "@/lib/queries";
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default async function PostsPage() {
       </header>
 
       <div className="rise rise-1">
-        <PostGrid posts={posts} />
+        <PostMosaic posts={posts} />
       </div>
     </div>
   );
