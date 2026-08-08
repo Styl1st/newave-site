@@ -46,7 +46,7 @@ export default async function AdminUserDetail({ params }: Props) {
         ? "Ce compte est administrateur. Repasse-le en membre ou créateur avant de pouvoir le supprimer."
         : undefined;
 
-  const estCreateur = profile.role === "createur" || profile.role === "admin";
+  // const estCreateur = profile.role === "createur" || profile.role === "admin";
   // Un créateur sans marque rattachée ne peut rien modifier : le rôle
   // est une étiquette, ce sont les rattachements qui ouvrent les portes.
   const incoherent = profile.role === "createur" && brands.length === 0;
