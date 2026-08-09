@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleBrandStatus } from "@/app/admin/actions";
 import { IconCheck, IconEye } from "@/components/Icons";
+import { useConfirmation } from "@/lib/confirmation";
 
 /**
  * Publier ou retirer une marque, sans passer par le formulaire.
@@ -27,14 +28,13 @@ export default function PublishToggle({
   const [note, setNote] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { arme, demander, desarmer } = useConfirmation();
 
   function basculer() {
-    if (published) {
-      const ok = window.confirm(
-        `Retirer ${brandName} de l'annuaire ? Sa page ne sera plus accessible au public, mais rien n'est supprimé.`
-      );
-      if (!ok) return;
-    }
+    // Retirer une marque de l'annuaire se demande deux fois. Publier,
+    // non : c'est l'action qu'on vient chercher, et elle se défait.
+    if (published && !demander()) return;
+    desarmer();
 
     const formData = new FormData();
     formData.set("id", brandId);
@@ -62,20 +62,43 @@ export default function PublishToggle({
       ? "inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97] disabled:opacity-50"
       : "inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-50"
 
-  const libelle = compacte
-    ? published
-      ? "Retirer"
-      : "Publier"
-    : published
-      ? "Retirer de l'annuaire"
-      : "Publier la marque";
+  const libelle = arme
+    ? compacte
+      ? "Confirmer"
+      : "Confirmer le retrait"
+    : compacte
+      ? published
+        ? "Retirer"
+        : "Publier"
+      : published
+        ? "Retirer de l'annuaire"
+        : "Publier la marque";
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <button type="button" disabled={pending} onClick={basculer} className={styleBouton}>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={basculer}
+        onBlur={desarmer}
+        className={arme ? `${styleBouton} ring-2 ring-white/70` : styleBouton}
+      >
         {published ? <IconEye /> : <IconCheck />}
         {pending ? "…" : libelle}
       </button>
+
+      {arme && (
+        <p
+          className={
+            compacte
+              ? "m-0 max-w-[220px] text-right text-[11px] leading-snug text-[#6a5a92]"
+              : "m-0 max-w-xs text-right text-[12px] leading-snug text-white/70"
+          }
+        >
+          {brandName} redevient un brouillon : sa page quitte l&apos;annuaire, rien
+          n&apos;est supprimé.
+        </p>
+      )}
 
       {note && (
         <p

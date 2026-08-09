@@ -1,7 +1,7 @@
 import BrandSpaceNav from "@/components/BrandSpaceNav";
 import CatalogueImport from "@/components/admin/CatalogueImport";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { fetchCatalogue } from "@/lib/catalogue";
+import { cleLien, fetchCatalogue } from "@/lib/catalogue";
 import { getBrandProducts } from "@/lib/brand-space";
 
 /**
@@ -24,28 +24,38 @@ export default async function ImportPage({ params, searchParams }: Props) {
   const shopUrl = boutique ?? brand.shop_url ?? brand.website_url ?? "";
   const result = shopUrl ? await fetchCatalogue(shopUrl) : null;
   const existing = await getBrandProducts(brand.id);
+
+  /*
+   * Les repères qui disent « cette pièce est déjà chez toi ».
+   *
+   * On garde l'identifiant de la boutique ET l'adresse de la pièce :
+   * une même pièce lue par deux méthodes différentes n'a pas le même
+   * identifiant, mais son adresse, elle, ne change pas.
+   */
   const alreadyImported = new Set(
-    existing.map((p) => p.source_id).filter((v): v is string => Boolean(v))
+    existing
+      .flatMap((p) => [p.source_id ?? "", cleLien(p.shop_url)])
+      .filter(Boolean)
   );
 
   return (
     <>
       <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
 
-      <header className="mb-7">
+      <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Gain de temps</p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
           Importer ton catalogue
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
           Colle l&apos;adresse de ta boutique, ou celle d&apos;une page produit. On lit
           ce qu&apos;elle publie et on reprend les noms, prix et photos. Tu choisis ce
-          que tu gardes, et tout arrive en brouillon — rien ne s&apos;affiche avant que
+          que tu gardes, et tout arrive en brouillon, donc rien ne s&apos;affiche avant que
           tu l&apos;aies relu.
         </p>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
           Shopify, WooCommerce et Big Cartel sont lus directement. Pour les autres,
-          on se rabat sur les données que la boutique publie déjà pour Google —
+          on se rabat sur les données que la boutique publie déjà pour Google, et
           ça fonctionne dans la plupart des cas. Et si rien ne passe, la saisie à la
           main fonctionne exactement pareil.
         </p>

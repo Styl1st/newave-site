@@ -21,11 +21,11 @@ export default function Error({
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-[var(--pad)] py-24 text-center">
       <p className="eyebrow m-0">Incident</p>
-      <h1 className="m-0 mt-3 text-[clamp(26px,6.4vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+      <h1 className="m-0 mt-3 text-[clamp(22px,5.1vw,33px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
         Quelque chose a lâché
       </h1>
       <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/82">
-        Ce n&apos;est pas de ton fait. Réessaie dans un instant — et si ça persiste,
+        Ce n&apos;est pas de ton fait. Réessaie dans un instant. Et si ça persiste,
         écris-nous, on ira voir.
       </p>
 

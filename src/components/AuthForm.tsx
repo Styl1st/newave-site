@@ -124,7 +124,7 @@ export default function AuthForm({ suite }: { suite: string }) {
   const tab = "flex-1 rounded-full py-2 text-[12px] font-extrabold uppercase tracking-[0.08em] transition";
 
   return (
-    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-6 sm:p-8">
+    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-4 sm:p-7">
       <div className="flex gap-1.5 rounded-full bg-white/10 p-1.5">
         <button
           type="button"

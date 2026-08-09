@@ -88,7 +88,23 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
 
   report("pièces de la marque", error);
   if (error || !data) return [];
-  return data as Product[];
+
+  /*
+   * Ce qui est encore en vente d'abord, ce qui a été retiré ensuite.
+   *
+   * Ce tri se fait ici, et non dans la requête, à dessein. Demander à
+   * la base de trier sur `retired_at` la rend obligatoire : tant que la
+   * migration correspondante n'est pas passée, la requête entière
+   * échoue et la marque paraît n'avoir aucune pièce. Un simple ordre
+   * d'affichage ne mérite pas de faire tomber toute une page.
+   *
+   * `select("*")` ramène la colonne quand elle existe ; sinon la valeur
+   * est absente, tout est considéré comme en vente, et l'ordre reste
+   * celui des positions. Le site fonctionne avant comme après.
+   */
+  return (data as Product[])
+    .slice()
+    .sort((a, b) => Number(Boolean(a.retired_at)) - Number(Boolean(b.retired_at)));
 }
 
 /**

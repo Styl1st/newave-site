@@ -37,7 +37,7 @@ export default function ClaimForm({
   }
 
   return (
-    <form action={formAction} className="glass flex flex-col gap-6 p-6 sm:p-8">
+    <form action={formAction} className="glass flex flex-col gap-6 p-4 sm:p-7">
       <input type="hidden" name="brand_id" value={brandId} />
       <input type="hidden" name="brand_name" value={brandName} />
 

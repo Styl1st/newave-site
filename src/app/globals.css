@@ -22,8 +22,22 @@
 }
 
 :root {
-  --pad: clamp(20px, 5.5vw, 34px);
+  /* Marge latérale des pages. Resserrée : sur un téléphone, trente
+     pixels de chaque côté, c'est un sixième de l'écran perdu, et tout
+     le contenu descend d'autant. */
+  --pad: clamp(14px, 4vw, 28px);
   --radius: 20px;
+
+  /* Hauteur de l'en-tête, qui n'est pas fixe : elle occupe de la place
+     dans le flux, il faut donc la retrancher pour qu'un écran « plein »
+     le soit vraiment. */
+  --haut-entete: 68px;
+
+  /* Amplitude du défilement en cylindre. Sur un petit écran, la même
+     bascule qu'en grand rend le texte flou et donne le tournis : on la
+     réduit de moitié plutôt que de couper l'effet, sinon certains
+     blocs bougeraient et d'autres non. */
+  --cyl: 1;
   --chrome-edge: linear-gradient(140deg, #ffffff 0%, #c9c9d4 14%, #7e7e91 32%, #f4f4f8 47%,
                  #9d9daf 62%, #e9e9f1 76%, #6f6f82 89%, #ffffff 100%);
 
@@ -449,15 +463,6 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   animation: none !important;
 }
 
-/* ---------- arrivée des éléments ----------
-   Posé et retiré par le composant Reveal. Rien n'est masqué en CSS
-   seul : sans JavaScript, la page reste entièrement lisible. */
-.reveal { opacity: 0; }
-
-.reveal.vu {
-  animation: glisse .62s cubic-bezier(.19, .84, .3, 1) both;
-}
-
 /* Une translation verticale, un très léger recul et un soupçon de
    flou : c'est le flou qui donne la sensation d'un objet qui arrive
    plutôt que d'un calque dont on monte l'opacité. */
@@ -486,49 +491,202 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   to   { opacity: 1; transform: none; }
 }
 
-/* ---------- défilement en cylindre ----------
-   L'élément est lié à sa position dans l'écran, pas déclenché une
-   fois : il grandit en montant vers le centre, puis rapetisse en
-   sortant par le haut. Le mouvement est donc réversible — remonter
-   défait exactement ce que descendre avait fait.
+/* ---------- défilement animé ----------
 
-   La bascule sur l'axe X donne l'impression que la page est enroulée
-   autour d'un cylindre horizontal.
+   TOUT est piloté par un seul attribut, `data-defilement`, posé sur
+   <html>. Aucune classe n'est ajoutée aux éléments.
 
-   Tout est calculé par le navigateur, sans une ligne de JavaScript à
-   l'exécution : aucun événement de défilement à écouter, donc aucun
-   à-coup possible même sur une longue grille. */
+   Ce n'est pas un détail d'écriture. La version précédente parcourait
+   la page en JavaScript pour poser une classe sur chaque bloc. Or Next
+   envoie le HTML par morceaux et React l'adopte progressivement :
+   quelle que soit la précaution prise sur le moment du passage, il
+   restait des blocs pas encore adoptés, qui se retrouvaient avec une
+   classe que React ne connaissait pas. D'où l'avertissement
+   d'hydratation, impossible à faire disparaître durablement tant qu'on
+   touchait au DOM.
+
+   Ici, le navigateur choisit lui-même les éléments concernés à partir
+   du sélecteur ci-dessous. React n'a plus rien à comparer.
+
+   Ce qu'on écarte, et pourquoi :
+     .rise              — a déjà sa propre entrée
+     [data-no-reveal]   — exclusion posée à la main
+     [data-reveal] *    — ce qui vit DANS un bloc déjà animé. Sans ça,
+                          une carte et le badge posé par-dessus
+                          bougeaient chacun de leur côté, et le badge
+                          se retrouvait à flotter au-dessus de la
+                          carte du dessus
+     :has(nav)          — une barre de navigation penchée se vise mal
+     les commandes      — un lien ou un bouton fait de texte seul. Ils
+                          vivent souvent côte à côte : en animer un et
+                          pas l'autre les désalignait. Une carte, elle,
+                          contient une image ou un titre, et c'est ce
+                          qui la distingue d'un bouton.
+
+   Un bandeau large, du genre « Acheter chez X », est un bouton pour le
+   navigateur mais un bloc pour l'œil. Il lui suffit de porter
+   `data-reveal` pour être animé comme tel : la règle générale reste
+   simple, et l'exception se lit à l'endroit où elle s'applique. */
+
 @supports (animation-timeline: view()) {
-  .cylindre {
+  html[data-defilement="1"] main
+    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
     animation: cylindre linear both;
     animation-timeline: view();
     animation-range: entry 0% exit 100%;
     will-change: transform, opacity;
     transform-origin: center center;
+
+    /* Un bloc dans lequel on écrit se fige : c'est ce qui permet
+       d'animer aussi les formulaires. */
+    &:focus-within {
+      animation: none;
+      transform: none;
+      opacity: 1;
+    }
   }
 }
 
+/* Navigateurs sans timeline de défilement : une arrivée en cascade,
+   une seule fois. Moins spectaculaire, mais aucune saccade. */
+@supports not (animation-timeline: view()) {
+  html[data-defilement="1"] main
+    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
+    animation: glisse .62s cubic-bezier(.19, .84, .3, 1) both;
+
+    &:nth-child(2) { animation-delay: .06s; }
+    &:nth-child(3) { animation-delay: .12s; }
+    &:nth-child(4) { animation-delay: .18s; }
+    &:nth-child(n+5) { animation-delay: .24s; }
+  }
+}
+
+/* La bascule sur l'axe X donne l'impression que la page est enroulée
+   autour d'un cylindre horizontal. Elle s'inverse quand on remonte :
+   c'est le navigateur qui calcule tout, sans un seul événement de
+   défilement à écouter.
+
+   Le plateau central est LARGE, et c'est le réglage qui compte.
+
+   Entre 25 % et 75 % de la traversée, l'élément est parfaitement droit
+   et opaque : autrement dit, tout ce qui occupe la moitié centrale de
+   l'écran ne bouge pas d'un pixel. La déformation est réservée aux
+   deux bords, là où l'on ne lit pas encore ou plus.
+
+   Avec un plateau étroit, un bloc au milieu de l'écran restait
+   légèrement penché et légèrement pâle en permanence. Ce n'était pas
+   franc : ni animé, ni net. */
 @keyframes cylindre {
   0% {
-    opacity: calc(1 - .45 * var(--amp));
+    opacity: calc(1 - .4 * var(--amp) * var(--cyl));
     transform:
       perspective(1200px)
-      rotateX(calc(11deg * var(--amp)))
-      scale(calc(1 - .13 * var(--amp)))
-      translateY(calc(22px * var(--amp)));
+      rotateX(calc(10deg * var(--amp) * var(--cyl)))
+      scale(calc(1 - .11 * var(--amp) * var(--cyl)))
+      translateY(calc(20px * var(--amp) * var(--cyl)));
   }
-  /* Un long plateau au centre : l'élément qu'on lit reste net et
-     droit, il ne bouge que quand on ne le regarde plus. */
-  38%, 62% {
+  25%, 75% {
     opacity: 1;
     transform: perspective(1200px) rotateX(0deg) scale(1) translateY(0);
   }
   100% {
-    opacity: calc(1 - .45 * var(--amp));
+    opacity: calc(1 - .4 * var(--amp) * var(--cyl));
     transform:
       perspective(1200px)
-      rotateX(calc(-11deg * var(--amp)))
-      scale(calc(1 - .13 * var(--amp)))
-      translateY(calc(-22px * var(--amp)));
+      rotateX(calc(-10deg * var(--amp) * var(--cyl)))
+      scale(calc(1 - .11 * var(--amp) * var(--cyl)))
+      translateY(calc(-20px * var(--amp) * var(--cyl)));
   }
+}
+
+
+
+/* ---------- arrivée en cascade d'une grille ----------
+   Utilisé quand une liste entière apparaît d'un coup : le décalage
+   donne à l'œil le temps de suivre, là où un affichage simultané
+   ressemble à un à-coup. */
+@keyframes arrive {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+.arrive { animation: arrive .45s cubic-bezier(.2,.8,.3,1) both; }
+
+/* ---------- grille serrée ----------
+   Plus de colonnes ne suffit pas : à quatre ou six par ligne, les
+   marges d'origine mangent la vignette. On resserre le texte, et le
+   nom de la marque s'efface — dans une grille de la marque, il était
+   de toute façon répété à l'identique partout. */
+.grille-serre .piece-infos { padding: 8px 9px 10px; }
+.grille-serre .piece-infos h3 { font-size: 12px; }
+.grille-serre .piece-infos .prix { font-size: 12px; }
+.grille-serre .piece-infos > .pied { padding-top: 6px; }
+
+@media (max-width: 639px) {
+  .grille-serre .piece-infos { padding: 6px 7px 8px; }
+  .grille-serre .piece-infos h3 { font-size: 11px; }
+  .grille-serre .piece-infos .prix { font-size: 11px; }
+}
+
+/* ---------- premier écran ----------
+   Le manifeste occupe exactement la hauteur visible, ni plus ni moins.
+   Sans ça, la section suivante dépassait de quelques centimètres en bas
+   de l'écran : ni cachée ni lisible, juste en travers.
+
+   Deux déclarations, ce n'est pas une étourderie : `svh` est la hauteur
+   visible quand les barres du navigateur mobile sont déployées, donc le
+   pire cas. Les navigateurs qui l'ignorent gardent `vh`. */
+@media (min-width: 640px) {
+  :root { --haut-entete: 82px; }
+}
+
+.premier-ecran {
+  min-height: calc(100vh - var(--haut-entete));
+  min-height: calc(100svh - var(--haut-entete));
+}
+
+/* La flèche qui invite à descendre. Discrète, et immobile si la
+   personne a demandé moins d'animations — la règle générale plus haut
+   s'en charge. */
+@keyframes invite {
+  0%, 100% { transform: translateY(0); opacity: .5; }
+  50% { transform: translateY(7px); opacity: 1; }
+}
+.invite { animation: invite 2.1s ease-in-out infinite; }
+
+/* ---------- ruban qui défile tout seul ----------
+   La piste contient deux fois la même liste et glisse d'exactement une
+   moitié : au rebouclage, la seconde copie occupe la position de la
+   première, donc la couture ne se voit pas.
+
+   De -50% vers 0 : les vignettes vont de la gauche vers la droite. */
+.ruban { overflow: hidden; }
+.piste {
+  animation: ruban linear infinite;
+  will-change: transform;
+}
+/* On s'arrête quand quelqu'un regarde de près, ou navigue au clavier :
+   un nom qui s'échappe pendant qu'on tend le doigt est agaçant. */
+.ruban:hover .piste,
+.ruban:focus-within .piste,
+.piste:active { animation-play-state: paused; }
+
+@keyframes ruban {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+/* ---------- fond des visuels pendant leur chargement ----------
+   Un carré blanc puis l'image qui surgit, c'est ce qui donne la
+   sensation que le site rame. Ce dégradé, aux couleurs de la marque,
+   occupe la place jusqu'à ce que la photo se peigne par-dessus. */
+.visuel {
+  background:
+    linear-gradient(115deg, #e6dcfb 0%, #f2ecff 45%, #ddd0f8 100%);
+  background-size: 220% 100%;
+  animation: attente 1.4s ease-in-out infinite;
+}
+.visuel > img { position: relative; z-index: 1; }
+@keyframes attente {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
 }

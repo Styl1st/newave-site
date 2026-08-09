@@ -11,7 +11,7 @@ const PRINCIPES = [
   {
     titre: "On ne vend rien",
     texte:
-      "Les achats se font chez les marques. On montre, on raconte, on renvoie — mais on n'encaisse pas, on ne stocke pas, et on n'a aucun intérêt à te pousser vers une pièce plutôt qu'une autre.",
+      "Les achats se font chez les marques. On montre, on raconte, on renvoie. Mais on n'encaisse pas, on ne stocke pas, et on n'a aucun intérêt à te pousser vers une pièce plutôt qu'une autre.",
   },
   {
     titre: "Aucune place ne s'achète",
@@ -21,7 +21,7 @@ const PRINCIPES = [
   {
     titre: "On répond à tout le monde",
     texte:
-      "Chaque dossier reçu est lu par un humain, et reçoit une réponse — même quand c'est non. Le nombre d'abonnés n'entre pas dans la décision.",
+      "Chaque dossier reçu est lu par un humain, et reçoit une réponse, même quand c'est non. Le nombre d'abonnés n'entre pas dans la décision.",
   },
   {
     titre: "Les marques gardent la main",
@@ -32,10 +32,10 @@ const PRINCIPES = [
 
 export default function AProposPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise">
         <p className="eyebrow m-0">Le projet</p>
-        <h1 className="m-0 mt-2 text-[clamp(28px,7vw,44px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
           À propos
         </h1>
         <p className="m-0 mt-5 text-[clamp(16px,4.2vw,19px)] leading-relaxed text-white/90">
@@ -44,11 +44,12 @@ export default function AProposPage() {
         </p>
       </header>
 
-      <div className="glass rise rise-1 mt-8 p-6 sm:p-8">
+      <div className="glass rise rise-1 mt-8 p-4 sm:p-7">
         <p className="m-0 text-[15.5px] leading-[1.7] text-white/92">
           Il se fabrique beaucoup de vêtements, et il s&apos;en raconte peu. Les marques
-          qui prennent le temps — séries courtes, matières choisies, ateliers qu&apos;on
-          peut nommer — n&apos;ont ni le budget ni le réflexe de se mettre en avant. Elles
+          qui prennent le temps, celles des séries courtes, des matières choisies et des
+          ateliers qu&apos;on peut nommer, n&apos;ont ni le budget ni le réflexe de se
+          mettre en avant. Elles
           existent sur un compte Instagram, une boutique en ligne, et rien d&apos;autre.
         </p>
         <p className="m-0 mt-4 text-[15.5px] leading-[1.7] text-white/92">
@@ -59,8 +60,8 @@ export default function AProposPage() {
         </p>
       </div>
 
-      <section className="mt-12">
-        <h2 className="m-0 mb-6 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+      <section className="mt-8 sm:mt-11">
+        <h2 className="m-0 mb-6 text-[clamp(17px,3.8vw,23px)] font-extrabold tracking-[-0.02em] text-white">
           Ce à quoi on tient
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -73,8 +74,8 @@ export default function AProposPage() {
         </div>
       </section>
 
-      <section className="glass mt-12 p-8 text-center sm:p-10">
-        <h2 className="m-0 text-[clamp(19px,4.4vw,24px)] font-extrabold text-white">
+      <section className="glass mt-8 sm:mt-11 p-8 text-center sm:p-10">
+        <h2 className="m-0 text-[clamp(16.5px,3.6vw,21px)] font-extrabold text-white">
           Une marque, une question, une collab ?
         </h2>
         <p className="m-0 mt-3 text-[15px] leading-relaxed text-white/84">

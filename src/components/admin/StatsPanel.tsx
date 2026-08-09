@@ -16,7 +16,7 @@ function Graphique({ jours }: { jours: Stats["jours"] }) {
   const largeur = 100 / jours.length;
 
   return (
-    <div className="glass p-5 sm:p-6">
+    <div className="glass p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <p className="eyebrow m-0">Pages vues, 30 derniers jours</p>
         <p className="m-0 text-[12px] font-bold text-white/55">Maximum : {max} / jour</p>
@@ -29,7 +29,7 @@ function Graphique({ jours }: { jours: Stats["jours"] }) {
           return (
             <div
               key={j.date}
-              title={`${date} — ${j.vues} vue${j.vues > 1 ? "s" : ""}`}
+              title={`${date} : ${j.vues} vue${j.vues > 1 ? "s" : ""}`}
               style={{ width: `${largeur}%`, height: `${Math.max(hauteur, 1.5)}%` }}
               className="rounded-t-[3px] bg-linear-to-t from-white/35 to-white/85 transition hover:from-white/60 hover:to-white"
             />
@@ -49,7 +49,7 @@ function Classement({ titre, lignes, vide }: { titre: string; lignes: Ligne[]; v
   const max = Math.max(...lignes.map((l) => l.valeur), 1);
 
   return (
-    <div className="glass p-5 sm:p-6">
+    <div className="glass p-4 sm:p-5">
       <p className="eyebrow m-0 mb-4">{titre}</p>
 
       {lignes.length === 0 ? (
@@ -84,7 +84,7 @@ export default function StatsPanel({ stats }: { stats: Stats }) {
 
   return (
     <section className="mt-10">
-      <h2 className="m-0 mb-5 text-[clamp(19px,4.4vw,24px)] font-extrabold tracking-[-0.02em] text-white">
+      <h2 className="m-0 mb-5 text-[clamp(16.5px,3.6vw,21px)] font-extrabold tracking-[-0.02em] text-white">
         Fréquentation
       </h2>
 
@@ -94,7 +94,7 @@ export default function StatsPanel({ stats }: { stats: Stats }) {
         <Chiffre
           label="Clics vers les marques"
           valeur={stats.clics30}
-          note="sur 30 jours — ce que tu leur apportes"
+          note="sur 30 jours, ce que tu leur apportes"
         />
         <Chiffre label="Nouveaux comptes" valeur={stats.comptes30} note="sur 30 jours" />
       </div>

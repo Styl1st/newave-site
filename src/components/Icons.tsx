@@ -75,3 +75,10 @@ export const IconDownload = (p: Props) => (
 export const IconUser = (p: Props) => (
   <Svg {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Svg>
 );
+/* L'entonnoir : le dessin que tout le monde reconnaît comme « filtrer ». */
+export const IconFiltre = (p: Props) => (
+  <Svg {...p}><path d="M3 5h18l-7 8v6l-4 2v-8Z" /></Svg>
+);
+export const IconChevron = (p: Props) => (
+  <Svg {...p}><path d="m6 9 6 6 6-6" /></Svg>
+);

@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function CandidaturePage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise mb-9">
         <p className="eyebrow m-0">Candidature</p>
-        <h1 className="m-0 mt-2 text-[clamp(28px,7vw,44px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
           Proposer sa marque
         </h1>
         <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">

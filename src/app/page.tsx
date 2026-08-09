@@ -1,5 +1,8 @@
 import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
+import Decouverte from "@/components/Decouverte";
+import Grille from "@/components/Grille";
+import { IconChevron } from "@/components/Icons";
 import PostMosaic from "@/components/PostMosaic";
 import { getBrands, getPosts } from "@/lib/queries";
 
@@ -9,8 +12,11 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)]">
-      {/* ---------- manifeste ---------- */}
-      <section className="flex flex-col items-center py-14 text-center sm:py-20">
+      {/* ---------- manifeste ----------
+          Il occupe le premier écran à lui seul. Ce qui vient ensuite
+          se mérite d'un coup de pouce : c'est la différence entre une
+          page d'accueil et une liste. */}
+      <section className="premier-ecran relative flex flex-col items-center justify-center py-10 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/logo-white.webp"
@@ -42,14 +48,23 @@ export default async function HomePage() {
             Voir les posts
           </Link>
         </div>
+
+        <a
+          href="#la-suite"
+          aria-label="Descendre vers l'annuaire"
+          className="mt-10 inline-flex flex-col items-center gap-1 text-white/70 transition hover:text-white sm:mt-14"
+        >
+          <span className="text-[10px] font-black uppercase tracking-[0.18em]">La suite</span>
+          <IconChevron className="invite h-5 w-5" />
+        </a>
       </section>
 
       {/* ---------- marques a la une ---------- */}
-      <section className="py-6">
+      <section id="la-suite" className="scroll-mt-6 py-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="eyebrow m-0">L&apos;annuaire</p>
-            <h2 className="m-0 mt-2 text-[clamp(22px,5vw,30px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
+            <h2 className="m-0 mt-2 text-[clamp(19px,4.1vw,26px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
               Marques à la une
             </h2>
           </div>
@@ -58,19 +73,22 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Grille variante="marques" memoire="accueil">
           {featuredBrands.map((b) => (
             <BrandCard key={b.id} brand={b} />
           ))}
-        </div>
+        </Grille>
       </section>
+
+      {/* ---------- découverte au hasard ---------- */}
+      <Decouverte brands={brands} />
 
       {/* ---------- posts ---------- */}
       <section className="py-6">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <p className="eyebrow m-0">Les publications</p>
-            <h2 className="m-0 mt-2 text-[clamp(22px,5vw,30px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
+            <h2 className="m-0 mt-2 text-[clamp(19px,4.1vw,26px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
               Derniers posts
             </h2>
           </div>
@@ -83,12 +101,12 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- appel aux marques ---------- */}
-      <section className="glass mt-14 mb-6 p-8 text-center sm:p-12">
-        <h2 className="m-0 text-[clamp(20px,4.6vw,26px)] font-extrabold leading-tight text-white">
+      <section className="glass mt-9 sm:mt-12 mb-6 p-8 text-center sm:p-12">
+        <h2 className="m-0 text-[clamp(17px,3.8vw,23px)] font-extrabold leading-tight text-white">
           Tu crées une marque ?
         </h2>
         <p className="mx-auto m-0 mt-3 max-w-xl text-[15px] leading-relaxed text-white/84">
-          On lit chaque dossier. Si ton travail a du sens, on lui donne une place —
+          On lit chaque dossier. Si ton travail a du sens, on lui donne une place,
           gratuitement, sans commission à l&apos;entrée.
         </p>
         <Link href="/candidature" className="card-light mt-7 inline-block px-7 py-3.5">

@@ -101,7 +101,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-6 sm:p-8">
+    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-4 sm:p-7">
       <div>
         <Label htmlFor="password" hint="Huit caractères minimum.">
           Nouveau mot de passe

@@ -24,7 +24,7 @@ export default function AdminForm({
   );
 
   return (
-    <form action={formAction} className="glass flex flex-col gap-6 p-6 sm:p-8">
+    <form action={formAction} className="glass flex flex-col gap-6 p-4 sm:p-7">
       {children}
 
       {state?.error && (

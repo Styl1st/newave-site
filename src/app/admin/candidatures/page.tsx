@@ -8,7 +8,7 @@ function Carte({ a }: { a: Application }) {
   const proprietaire = a.relationship === "proprietaire";
 
   return (
-    <article className="glass p-5 sm:p-6">
+    <article className="glass p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="m-0 text-[17px] font-extrabold text-white">{a.brand_name}</h3>
@@ -48,7 +48,7 @@ function Carte({ a }: { a: Application }) {
             </a>
           )}
           <a
-            href={`mailto:${a.email}?subject=${encodeURIComponent(`NEWAVE SPHERE — ${a.brand_name}`)}`}
+            href={`mailto:${a.email}?subject=${encodeURIComponent(`NEWAVE SPHERE : ${a.brand_name}`)}`}
             className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/8 px-3.5 py-2 text-[11.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white"
           >
             Répondre
@@ -112,7 +112,7 @@ export default async function AdminApplications() {
         <p className="eyebrow m-0 flex items-center gap-2">
           <IconInbox /> Boîte de réception
         </p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
           Candidatures
         </h1>
       </header>

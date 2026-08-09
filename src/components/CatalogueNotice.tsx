@@ -30,7 +30,7 @@ export default function CatalogueNotice({
   } else if (published === 0) {
     title = `${drafts} pièce${drafts > 1 ? "s" : ""} en brouillon, aucune publiée`;
     body =
-      "L'import range toujours les pièces en brouillon pour que tu les relises. Elles n'apparaîtront ici qu'une fois publiées — le bouton « Publier » de l'onglet Pièces les passe toutes d'un coup.";
+      "L'import range toujours les pièces en brouillon pour que tu les relises. Elles n'apparaîtront ici qu'une fois publiées, et le bouton « Publier » de l'onglet Pièces les passe toutes d'un coup.";
   } else if (!brandPublished) {
     title = "La marque elle-même est en brouillon";
     body = `${published} pièce${published > 1 ? "s sont publiées" : " est publiée"}, mais une fiche en brouillon n'affiche pas son catalogue. Passe la marque en « Publié » depuis l'administration.`;

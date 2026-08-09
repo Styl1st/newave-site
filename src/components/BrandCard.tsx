@@ -1,13 +1,44 @@
 import Link from "next/link";
+import FavoriteButton from "./FavoriteButton";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
-export default function BrandCard({ brand }: { brand: Brand }) {
+export default function BrandCard({
+  brand,
+  favori,
+}: {
+  brand: Brand;
+  /** Présent = on affiche le cœur, avec son état de départ. */
+  favori?: { initial: boolean };
+}) {
   const visual = brand.cover_url ?? brand.logo_url;
 
+  /*
+   * Une photo de couverture se recadre sans dommage : on cherche une
+   * ambiance, pas un cadrage précis. Un logo, non — c'est une marque
+   * déposée, dessinée dans un format choisi. Le rogner pour remplir un
+   * rectangle en coupe le nom, ce qui est à la fois laid et une petite
+   * trahison. On l'affiche donc en entier, quitte à laisser du vide
+   * autour.
+   */
+  const estUnLogo = !brand.cover_url && Boolean(brand.logo_url);
+
   return (
-    <Link href={`/marques/${brand.slug}`} className="card-light group block overflow-hidden">
-      <div className="relative z-3 flex h-full flex-col">
+    /*
+     * Le lien passe DERRIÈRE la carte, en calque, plutôt que de
+     * l'entourer. Un <button> ne peut pas vivre dans un <a> : le
+     * navigateur refuse cette imbrication, et le cœur ci-dessous doit
+     * garder son propre clic. Toute la carte reste cliquable.
+     */
+    <div className="card-light group relative flex h-full flex-col overflow-hidden">
+      <Link
+        href={`/marques/${brand.slug}`}
+        aria-label={brand.name}
+        data-calque=""
+        className="absolute inset-0 z-2"
+      />
+
+      <div className="pointer-events-none relative z-3 flex h-full flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
             un aplat plutot qu'un trou : la grille reste alignee. */}
         <div className="relative aspect-16/10 w-full overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
@@ -15,9 +46,12 @@ export default function BrandCard({ brand }: { brand: Brand }) {
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={visual}
-              alt=""
+              alt={estUnLogo ? brand.name : ""}
               loading="lazy"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              decoding="async"
+              className={`h-full w-full transition duration-500 group-hover:scale-[1.04] ${
+                estUnLogo ? "object-contain p-6" : "object-cover"
+              }`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -27,8 +61,20 @@ export default function BrandCard({ brand }: { brand: Brand }) {
             </div>
           )}
 
-          {brand.featured && (
-            <span className="badge absolute left-3 top-3">À la une</span>
+          {brand.featured && <span className="badge absolute left-3 top-3">À la une</span>}
+
+          {/* En bas à droite du visuel : le haut est déjà occupé par le
+              badge « À la une » et par le bouton d'aperçu, et sur une
+              carte étroite les trois se marchaient dessus. */}
+          {favori && (
+            <div className="pointer-events-auto absolute bottom-3 right-3">
+              <FavoriteButton
+                brandId={brand.id}
+                initial={favori.initial}
+                etiquette={brand.name}
+                taille="compacte"
+              />
+            </div>
           )}
         </div>
 
@@ -59,6 +105,6 @@ export default function BrandCard({ brand }: { brand: Brand }) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import Tracker from "@/components/Tracker";
 import PageTransition from "@/components/PageTransition";
 import Reveal from "@/components/Reveal";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
+import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -22,8 +23,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://newavesphere.fr";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "NEWAVE SPHERE — Média de marques & d'artistes indépendants",
-    template: "%s — NEWAVE SPHERE",
+    default: "NEWAVE SPHERE, média de marques & d'artistes indépendants",
+    template: "%s · NEWAVE SPHERE",
   },
   description:
     "Média indépendant qui met en lumière celles et ceux qui créent en dehors des circuits classiques : marques naissantes, pièces uniques, démarches qui prennent le temps de bien faire.",
@@ -50,17 +51,35 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const chemin = (await headers()).get("x-chemin") ?? "";
   const nu = chemin === "/acces";
 
+  /*
+   * L'apparence choisie suit le compte.
+   *
+   * On la peint donc ici, dans le HTML lui-même : sur un téléphone où
+   * l'on vient de se connecter, le navigateur ne connaît encore rien
+   * du réglage, et attendre le JavaScript ferait apparaître le violet
+   * NEWAVE avant de basculer. Le stockage local ne sert plus qu'aux
+   * visiteurs sans compte.
+   */
+  const apparence = await lireApparenceDuCompte();
+  const style = styleDuCompte(apparence);
+
   return (
-    /* Le script ci-dessous pose des couleurs sur <html> avant que React
-       n'arrive : l'écart entre le HTML du serveur et le DOM réel est ici
-       voulu, on demande donc à React de ne pas s'en alarmer. La consigne
-       ne vaut que pour cette balise, pas pour le reste de la page. */
-    <html lang="fr" className={archivo.variable} suppressHydrationWarning>
+    /* Les couleurs sont écrites sur <html> avant que React n'arrive,
+       par le script ci-dessous ou par le serveur : l'écart entre le
+       HTML rendu et le DOM réel est ici voulu, on demande donc à React
+       de ne pas s'en alarmer. La consigne ne vaut que pour cette
+       balise, pas pour le reste de la page. */
+    <html
+      lang="fr"
+      className={archivo.variable}
+      style={style}
+      data-anim-choisi={apparence ? "1" : undefined}
+      data-fige={apparence && apparence.mouvement.amplitude <= 0.02 ? "1" : undefined}
+      suppressHydrationWarning
+    >
       <head>
-        {/* Applique les couleurs enregistrées avant le premier rendu :
-            sans ça, le fond NEWAVE apparaîtrait une fraction de seconde
-            avant de basculer sur celui du visiteur. */}
-        <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />
+        {/* Sans compte, on relit ce que ce navigateur avait retenu. */}
+        {!apparence && <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />}
       </head>
       <body className="font-sans">
         <Background />

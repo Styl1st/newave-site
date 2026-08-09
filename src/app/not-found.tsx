@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-[var(--pad)] py-24 text-center">
       <p className="eyebrow m-0">Erreur 404</p>
-      <h1 className="m-0 mt-3 text-[clamp(28px,7vw,44px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+      <h1 className="m-0 mt-3 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
         Cette page n&apos;existe pas
       </h1>
       <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/82">

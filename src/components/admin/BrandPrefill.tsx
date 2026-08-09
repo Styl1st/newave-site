@@ -115,7 +115,7 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
 
       const phrases: string[] = [];
       if (remplis.length) phrases.push(`Repris du site : ${remplis.join(", ")}.`);
-      if (devines.length) phrases.push(`Deviné : ${devines.join(", ")} — à vérifier.`);
+      if (devines.length) phrases.push(`Deviné, à vérifier : ${devines.join(", ")}.`);
       if (identite.indices.pieces > 0) {
         phrases.push(`${identite.indices.pieces} pièces lues pour établir ces suppositions.`);
       }
@@ -142,7 +142,7 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
             </h2>
             <p className="m-0 mt-1.5 max-w-lg text-[13.5px] leading-relaxed text-[#4a3a78]">
               Colle l&apos;adresse du site de la marque. On reprend {modeCreation && "le nom, "}
-              la description, le logo, la ville et les réseaux — et on devine l&apos;année,
+              la description, le logo, la ville et les réseaux, et on devine l&apos;année,
               la gamme de prix et les catégories à partir du catalogue. Tout reste
               modifiable ensuite.
             </p>
@@ -196,7 +196,7 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
         {modeCreation && (
           <p className="m-0 mt-3 text-[12px] leading-relaxed text-[#6a5a92]">
             Les pièces s&apos;importent après, depuis l&apos;onglet Importer de la
-            marque — elle doit exister avant qu&apos;on puisse y rattacher un catalogue.
+            marque : elle doit exister avant qu&apos;on puisse y rattacher un catalogue.
           </p>
         )}
       </div>

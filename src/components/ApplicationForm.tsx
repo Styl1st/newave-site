@@ -69,7 +69,7 @@ export default function ApplicationForm() {
         <h2 className="m-0 text-[20px] font-extrabold text-white">C&apos;est reçu.</h2>
         <p className="m-0 mt-3 text-[15px] leading-relaxed text-white/84">
           {proprietaire
-            ? "On lit chaque dossier nous-mêmes. Compte quelques jours, et une réponse arrivera à l'adresse que tu as laissée — même si c'est un non."
+            ? "On lit chaque dossier nous-mêmes. Compte quelques jours, et une réponse arrivera à l'adresse que tu as laissée, même si c'est un non."
             : "Merci pour la recommandation. On va regarder cette marque, et on la contactera directement si son travail nous parle."}
         </p>
       </div>
@@ -77,7 +77,7 @@ export default function ApplicationForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-6 sm:p-8">
+    <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-4 sm:p-7">
       {/* Le choix conditionne tout le reste : les libellés, ce qu'on
           demande, et surtout les droits accordés en cas d'acceptation. */}
       <fieldset className="m-0 border-0 p-0">

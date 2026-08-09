@@ -18,7 +18,7 @@ export default async function AdminHome() {
     <>
       <header className="mb-8">
         <p className="eyebrow m-0">Administration</p>
-        <h1 className="m-0 mt-2 text-[clamp(26px,6vw,38px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(22px,4.9vw,33px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
           Tableau de bord
         </h1>
       </header>
@@ -41,7 +41,7 @@ export default async function AdminHome() {
 
       {stats && <StatsPanel stats={stats} />}
 
-      <div className="glass mt-8 p-6 sm:p-8">
+      <div className="glass mt-8 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Actions rapides</h2>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/admin/posts/nouveau" className="card-light px-5 py-3">

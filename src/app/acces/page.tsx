@@ -27,7 +27,7 @@ export default async function AccesPage({ searchParams }: Props) {
       <form
         action="/api/acces"
         method="post"
-        className="glass rise rise-1 mt-8 flex flex-col gap-5 p-6 sm:p-8"
+        className="glass rise rise-1 mt-8 flex flex-col gap-5 p-4 sm:p-7"
       >
         <input type="hidden" name="suite" value={suite ?? "/"} />
 

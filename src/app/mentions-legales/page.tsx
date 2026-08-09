@@ -4,8 +4,8 @@ export const metadata: Metadata = { title: "Mentions légales" };
 
 export default function LegalPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-12">
-      <h1 className="m-0 text-[clamp(26px,6vw,38px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-7 sm:py-11">
+      <h1 className="m-0 text-[clamp(22px,4.9vw,33px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
         Mentions légales
       </h1>
 
@@ -13,7 +13,7 @@ export default function LegalPage() {
         <section>
           <h2 className="m-0 text-[16px] font-extrabold text-white">Éditeur</h2>
           <p className="m-0 mt-2">
-            NEWAVE SPHERE — contact@newavesphere.fr
+            NEWAVE SPHERE, contact@newavesphere.fr
             <br />
             <span className="text-white/60">
               À compléter : statut juridique, adresse, numéro SIREN, directeur de la publication.

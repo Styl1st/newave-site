@@ -26,7 +26,7 @@ function Chiffre({
 function Graphique({ jours }: { jours: Jour[] }) {
   const max = Math.max(...jours.map((j) => j.vues), 1);
   return (
-    <div className="glass p-5 sm:p-6">
+    <div className="glass p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <p className="eyebrow m-0">Vues de ta page, 30 derniers jours</p>
         <p className="m-0 text-[12px] font-bold text-white/55">Maximum : {max} / jour</p>
@@ -35,7 +35,7 @@ function Graphique({ jours }: { jours: Jour[] }) {
         {jours.map((j) => (
           <div
             key={j.date}
-            title={`${new Date(j.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} — ${j.vues}`}
+            title={`${new Date(j.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} : ${j.vues}`}
             style={{ width: `${100 / jours.length}%`, height: `${Math.max((j.vues / max) * 100, 1.5)}%` }}
             className="rounded-t-[3px] bg-linear-to-t from-white/35 to-white/85 transition hover:from-white/60 hover:to-white"
           />
@@ -48,7 +48,7 @@ function Graphique({ jours }: { jours: Jour[] }) {
 function Classement({ titre, lignes, vide }: { titre: string; lignes: Ligne[]; vide: string }) {
   const max = Math.max(...lignes.map((l) => l.valeur), 1);
   return (
-    <div className="glass p-5 sm:p-6">
+    <div className="glass p-4 sm:p-5">
       <p className="eyebrow m-0 mb-4">{titre}</p>
       {lignes.length === 0 ? (
         <p className="m-0 text-[13.5px] text-white/55">{vide}</p>
@@ -80,9 +80,9 @@ export default async function BrandStatsPage({ params }: Props) {
     <>
       <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
 
-      <header className="mb-7">
+      <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Ton audience</p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
           Statistiques
         </h1>
       </header>
@@ -119,7 +119,7 @@ export default async function BrandStatsPage({ params }: Props) {
             />
             <Chiffre
               label="Taux de sortie"
-              valeur={stats.tauxSortie === null ? "—" : `${stats.tauxSortie} %`}
+              valeur={stats.tauxSortie === null ? "Pas encore de donnée" : `${stats.tauxSortie} %`}
               note="visiteurs partis acheter chez toi"
             />
           </div>
@@ -152,7 +152,7 @@ export default async function BrandStatsPage({ params }: Props) {
           <p className="m-0 mt-5 text-[12.5px] leading-relaxed text-white/50">
             Ces chiffres comptent des pages vues, pas des personnes : aucun cookie ni
             identifiant n&apos;est posé sur nos visiteurs. Le taux de sortie est le
-            rapport entre les clics vers ta boutique et les vues de tes pages — c&apos;est
+            rapport entre les clics vers ta boutique et les vues de tes pages. C&apos;est
             la mesure la plus honnête de ce que NEWAVE SPHERE t&apos;apporte.
           </p>
         </>

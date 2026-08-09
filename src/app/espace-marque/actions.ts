@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireManagedBrand } from "@/lib/brand-space";
 import { fetchCatalogue } from "@/lib/catalogue";
+import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 
 /**
  * Ecritures de l'espace marque.
@@ -162,6 +163,19 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
   redirect(`/espace-marque/${slug}/pieces`);
 }
 
+/**
+ * Une pièce aimée ne s'efface pas, elle s'archive.
+ *
+ * Effacer la ligne emporterait avec elle les coups de cœur reçus. Or
+ * ces coups de cœur ne nous appartiennent pas : ils disent ce que des
+ * gens ont aimé, ils font partie de l'histoire de la marque, et ils
+ * continuent de lui donner de la visibilité longtemps après que la
+ * pièce a quitté l'étal. On la marque donc comme retirée, et la fiche
+ * l'explique.
+ *
+ * Une pièce que personne n'a jamais aimée, elle, part vraiment : la
+ * garder n'apprendrait rien à personne.
+ */
 export async function deleteBrandProduct(formData: FormData): Promise<void> {
   const slug = text(formData, "slug");
   const { brand } = await requireManagedBrand(slug);
@@ -169,11 +183,22 @@ export async function deleteBrandProduct(formData: FormData): Promise<void> {
   const supabase = await createClient();
   if (!supabase) return;
 
-  await supabase
-    .from("products")
-    .delete()
-    .eq("id", text(formData, "id"))
-    .eq("brand_id", brand.id);
+  const id = text(formData, "id");
+
+  const { count } = await supabase
+    .from("product_likes")
+    .select("product_id", { count: "exact", head: true })
+    .eq("product_id", id);
+
+  if ((count ?? 0) > 0) {
+    await supabase
+      .from("products")
+      .update({ retired_at: new Date().toISOString(), available: false })
+      .eq("id", id)
+      .eq("brand_id", brand.id);
+  } else {
+    await supabase.from("products").delete().eq("id", id).eq("brand_id", brand.id);
+  }
 
   revalidatePath(`/espace-marque/${slug}/pieces`);
   revalidatePath(`/marques/${slug}`);
@@ -215,11 +240,32 @@ export async function bulkProductAction(formData: FormData): Promise<Result> {
       .in("id", ids)
       .eq("brand_id", brand.id));
   } else if (intent === "delete") {
-    ({ error } = await supabase
-      .from("products")
-      .delete()
-      .in("id", ids)
-      .eq("brand_id", brand.id));
+    // Même règle qu'à l'unité : ce qui a été aimé s'archive, le reste
+    // s'efface. On demande d'abord lesquelles portent des coups de cœur.
+    const { data: aimees } = await supabase
+      .from("product_likes")
+      .select("product_id")
+      .in("product_id", ids);
+
+    const aArchiver = new Set(
+      ((aimees ?? []) as { product_id: string }[]).map((l) => l.product_id)
+    );
+    const aEffacer = ids.filter((id) => !aArchiver.has(id));
+
+    if (aArchiver.size > 0) {
+      ({ error } = await supabase
+        .from("products")
+        .update({ retired_at: new Date().toISOString(), available: false })
+        .in("id", Array.from(aArchiver))
+        .eq("brand_id", brand.id));
+    }
+    if (!error && aEffacer.length > 0) {
+      ({ error } = await supabase
+        .from("products")
+        .delete()
+        .in("id", aEffacer)
+        .eq("brand_id", brand.id));
+    }
   } else {
     return { ok: false, error: "Action inconnue." };
   }
@@ -249,39 +295,17 @@ export async function importCatalogueSelection(formData: FormData): Promise<Resu
 
   // On relit le catalogue plutot que de faire confiance au formulaire :
   // sinon n'importe qui pourrait envoyer les prix et images de son choix.
-  const rows = result.items
-    .filter((item) => chosen.has(item.source_id))
-    .map((item, index) => ({
-      brand_id: brand.id,
-      source_id: item.source_id,
-      // Le "handle" Shopify est deja unique dans la boutique : il fait
-      // une adresse propre sans risque de collision.
-      slug: item.slug || slugify(item.name),
-      name: item.name,
-      description: item.description,
-      price_cents: item.price_cents,
-      compare_at_cents: item.compare_at_cents,
-      currency: item.currency,
-      sizes: item.sizes,
-      size_label: item.size_label,
-      images: item.images,
-      image_url: item.images[0] ?? null,
-      shop_url: item.shop_url,
-      available: item.available,
-      categories: [] as string[],
-      status: "draft" as const,
-      position: index,
-    }));
+  const choisies = result.items.filter((item) => chosen.has(item.source_id));
+  if (choisies.length === 0) {
+    return { ok: false, error: "Ces pièces n'existent plus dans le catalogue." };
+  }
 
-  if (rows.length === 0) return { ok: false, error: "Ces pièces n'existent plus dans le catalogue." };
-
-  // Reimporter met a jour au lieu de dupliquer, grace a l'index unique
-  // sur (brand_id, source_id).
-  const { error } = await supabase
-    .from("products")
-    .upsert(rows, { onConflict: "brand_id,source_id" });
-
-  if (error) return { ok: false, error: error.message };
+  // Import manuel : les nouvelles pièces arrivent en brouillon, pour
+  // que la personne les relise avant qu'elles ne s'affichent.
+  const bilan = await synchroniserCatalogue(supabase, brand.id, choisies, {
+    statutDesNouvelles: "draft",
+  });
+  if (bilan.erreur) return { ok: false, error: bilan.erreur };
 
   revalidatePath(`/espace-marque/${slug}/pieces`);
   revalidatePath(`/marques/${slug}`);

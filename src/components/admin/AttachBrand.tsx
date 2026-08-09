@@ -60,7 +60,7 @@ export default function AttachBrand({
   }
 
   return (
-    <section className="glass mt-6 p-6 sm:p-8">
+    <section className="glass mt-6 p-4 sm:p-7">
       <h2 className="m-0 text-[17px] font-extrabold text-white">Rattacher une marque</h2>
       <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/72">
         Ce compte pourra modifier la présentation et les pièces des marques rattachées.
@@ -153,7 +153,7 @@ export default function AttachBrand({
 
       {!query && disponibles.length > 6 && (
         <p className="m-0 mt-3 text-[12px] text-white/45">
-          {disponibles.length} marques disponibles — tape pour filtrer.
+          {disponibles.length} marques disponibles. Tape pour filtrer.
         </p>
       )}
 

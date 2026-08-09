@@ -85,7 +85,7 @@ export default function BrandPreview({
         <div className="flex items-start justify-between gap-4 border-b border-white/15 p-6 sm:px-8">
           <div className="min-w-0">
             <p className="eyebrow m-0">Aperçu</p>
-            <h2 className="m-0 mt-1.5 truncate text-[clamp(19px,4.4vw,25px)] font-extrabold tracking-[-0.02em] text-white">
+            <h2 className="m-0 mt-1.5 truncate text-[clamp(16.5px,3.6vw,22px)] font-extrabold tracking-[-0.02em] text-white">
               {data?.brand.name ?? "…"}
             </h2>
             {data && (
@@ -104,7 +104,7 @@ export default function BrandPreview({
         </div>
 
         {/* ---- contenu ---- */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-7">
           {failed && (
             <p className="m-0 text-center text-[14.5px] text-white/80">
               Impossible de charger les pièces pour l&apos;instant.
@@ -166,7 +166,7 @@ export default function BrandPreview({
                       {p.name}
                     </p>
                     <p className="m-0 mt-0.5 flex items-baseline gap-1.5 text-[12px]">
-                      <span className="font-extrabold text-white/90">{price ?? "—"}</span>
+                      <span className="font-extrabold text-white/90">{price ?? "Prix sur la boutique"}</span>
                       {was && off !== null && (
                         <span className="text-white/45 line-through">{was}</span>
                       )}

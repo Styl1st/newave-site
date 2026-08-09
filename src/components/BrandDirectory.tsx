@@ -2,15 +2,34 @@
 
 import { useMemo, useState } from "react";
 import BrandGrid from "./BrandGrid";
+import { IconChevron, IconFiltre } from "./Icons";
 import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
-export default function BrandDirectory({ brands }: { brands: Brand[] }) {
+export default function BrandDirectory({
+  brands,
+  favoris,
+}: {
+  brands: Brand[];
+  /** Les marques déjà suivies, pour allumer la bonne étoile. */
+  favoris?: string[];
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [tier, setTier] = useState<PriceTier | null>(null);
+  const [ouvert, setOuvert] = useState(false);
+
+  // Le compteur sur le bouton : sans lui, un filtre actif derrière un
+  // panneau replié devient invisible, et la liste paraît incomplète
+  // sans qu'on comprenne pourquoi.
+  const actifs = (category ? 1 : 0) + (tier ? 1 : 0);
+
+  function reinitialiser() {
+    setCategory(null);
+    setTier(null);
+  }
 
   const categories = useMemo(
     () => Array.from(new Set(brands.flatMap((b) => b.categories))).sort(),
@@ -38,41 +57,95 @@ export default function BrandDirectory({ brands }: { brands: Brand[] }) {
 
   return (
     <>
-      <div className="glass rise rise-1 mb-8 p-5 sm:p-6">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Chercher une marque, une matière, un style…"
-          className="w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
-        />
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button onClick={() => setCategory(null)} className={`${chip} ${category === null ? chipOn : chipOff}`}>
-            Toutes
+      <div className="glass rise rise-1 mb-8 p-4 sm:p-5">
+        {/* La recherche reste toujours là : c'est le geste le plus
+            fréquent. Les filtres, eux, se déplient — affichés en
+            permanence, ils occupaient la moitié d'un écran de
+            téléphone avant qu'on ait vu la première marque. */}
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Chercher une marque, un style…"
+            className="min-w-0 flex-1 rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+          />
+          <button
+            type="button"
+            onClick={() => setOuvert((v) => !v)}
+            aria-expanded={ouvert}
+            aria-controls="filtres"
+            className={`inline-flex shrink-0 items-center gap-2 rounded-[13px] px-4 py-3 text-[13px] font-extrabold transition active:scale-[.97] ${
+              actifs > 0 || ouvert
+                ? "bg-white text-[var(--color-ink)]"
+                : "border border-white/40 bg-white/8 text-white hover:bg-white/18"
+            }`}
+          >
+            <IconFiltre />
+            <span className="hidden sm:inline">Filtres</span>
+            {actifs > 0 && (
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--color-ink)] px-1 text-[10.5px] font-black text-white">
+                {actifs}
+              </span>
+            )}
+            <IconChevron className={`h-3.5 w-3.5 transition-transform ${ouvert ? "rotate-180" : ""}`} />
           </button>
-          {categories.map((c) => (
-            <button key={c} onClick={() => setCategory(c)} className={`${chip} ${category === c ? chipOn : chipOff}`}>
-              {c}
-            </button>
-          ))}
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button onClick={() => setTier(null)} className={`${chip} ${tier === null ? chipOn : chipOff}`}>
-            Tous les prix
-          </button>
-          {TIERS.map((t) => (
-            <button key={t} onClick={() => setTier(t)} className={`${chip} ${tier === t ? chipOn : chipOff}`}>
-              {PRICE_TIER_LABEL[t]}
+        {actifs > 0 && !ouvert && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {category && (
+              <span className={`${chip} ${chipOn}`}>{category}</span>
+            )}
+            {tier && <span className={`${chip} ${chipOn}`}>{PRICE_TIER_LABEL[tier]}</span>}
+            <button
+              type="button"
+              onClick={reinitialiser}
+              className="text-[12px] font-bold text-white/70 underline underline-offset-2 hover:text-white"
+            >
+              Tout effacer
             </button>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {ouvert && (
+          <div id="filtres" className="mt-4 border-t border-white/15 pt-4">
+            <p className="eyebrow m-0 mb-2">Catégorie</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setCategory(null)} className={`${chip} ${category === null ? chipOn : chipOff}`}>
+                Toutes
+              </button>
+              {categories.map((c) => (
+                <button key={c} onClick={() => setCategory(c)} className={`${chip} ${category === c ? chipOn : chipOff}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            <p className="eyebrow m-0 mb-2 mt-4">Gamme de prix</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setTier(null)} className={`${chip} ${tier === null ? chipOn : chipOff}`}>
+                Tous les prix
+              </button>
+              {TIERS.map((t) => (
+                <button key={t} onClick={() => setTier(t)} className={`${chip} ${tier === t ? chipOn : chipOff}`}>
+                  {PRICE_TIER_LABEL[t]}
+                </button>
+              ))}
+            </div>
+
+            {actifs > 0 && (
+              <button
+                type="button"
+                onClick={reinitialiser}
+                className="mt-4 text-[12.5px] font-bold text-white/75 underline underline-offset-2 hover:text-white"
+              >
+                Tout effacer
+              </button>
+            )}
+          </div>
+        )}
       </div>
-
-      <p className="mb-5 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
-        {results.length} marque{results.length > 1 ? "s" : ""}
-      </p>
 
       {results.length === 0 ? (
         <div className="glass p-8 text-center">
@@ -85,7 +158,16 @@ export default function BrandDirectory({ brands }: { brands: Brand[] }) {
           </p>
         </div>
       ) : (
-        <BrandGrid brands={results} />
+        <BrandGrid
+          brands={results}
+          favoris={favoris}
+          memoire="annuaire"
+          aside={
+            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
+              {results.length} marque{results.length > 1 ? "s" : ""}
+            </p>
+          }
+        />
       )}
     </>
   );

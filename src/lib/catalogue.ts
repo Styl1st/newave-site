@@ -16,26 +16,10 @@
  * fait, et il nous sert de filet.
  */
 
-export type Source = "shopify" | "woocommerce" | "bigcartel" | "donnees-structurees" | "plan-du-site";
+import type { CatalogueItem, Resultat, Source } from "./catalogue-commun";
 
-export type CatalogueItem = {
-  source_id: string;
-  slug: string;
-  name: string;
-  description: string;
-  price_cents: number | null;
-  compare_at_cents: number | null;
-  currency: string;
-  sizes: { label: string; available: boolean }[];
-  size_label: string;
-  images: string[];
-  shop_url: string;
-  available: boolean;
-};
-
-export type Resultat =
-  | { ok: true; source: Source; items: CatalogueItem[] }
-  | { ok: false; error: string };
+export { cleLien, SOURCE_LABEL } from "./catalogue-commun";
+export type { CatalogueItem, Resultat, Source } from "./catalogue-commun";
 
 /* ---------------- utilitaires ---------------- */
 
@@ -88,6 +72,23 @@ function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 70);
+}
+
+/**
+ * Le premier candidat qui contient vraiment quelque chose.
+ *
+ * `a ?? b` ne retient que null et undefined : une boutique qui publie
+ * un `sku` PRÉSENT MAIS VIDE passait au travers, et toutes ses pièces
+ * repartaient avec le même identifiant — vide. À l'import, chacune
+ * écrasait donc la précédente. D'où cette fonction, qui traite la
+ * chaîne vide comme une absence.
+ */
+function identifiant(...candidats: unknown[]): string {
+  for (const candidat of candidats) {
+    const valeur = String(candidat ?? "").trim();
+    if (valeur && valeur !== "undefined" && valeur !== "null") return valeur;
+  }
+  return "";
 }
 
 /** "80,00 €" ou "80.00" -> 8000 centimes. */
@@ -153,7 +154,7 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
     const maxBarre = barres.length ? Math.max(...barres) : null;
 
     return {
-      source_id: String(p.id),
+      source_id: identifiant(p.id, p.handle, p.title),
       slug: p.handle,
       name: p.title,
       description: stripHtml(p.body_html ?? "").slice(0, 1200),
@@ -221,7 +222,7 @@ async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
     );
 
     return {
-      source_id: String(p.id),
+      source_id: identifiant(p.id, p.slug, p.name),
       slug: p.slug || slugify(p.name),
       name: p.name,
       description: stripHtml(p.description || p.short_description || "").slice(0, 1200),
@@ -268,7 +269,7 @@ async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
     const chemin = p.url ?? (p.permalink ? `/product/${p.permalink}` : "");
     const options = p.options ?? [];
     return {
-      source_id: String(p.id),
+      source_id: identifiant(p.id, p.permalink, p.name),
       slug: p.permalink || slugify(p.name),
       name: p.name,
       description: stripHtml(p.description ?? "").slice(0, 1200),
@@ -360,7 +361,7 @@ async function viaDonneesStructurees(url: string): Promise<CatalogueItem[] | nul
     const dispo = String(offre?.availability ?? "").toLowerCase();
 
     return {
-      source_id: String(p.sku ?? p.url ?? `${slugify(p.name ?? "piece")}-${i}`),
+      source_id: identifiant(p.sku, p.url, `${url}#${slugify(p.name ?? "piece")}-${i}`),
       slug: slugify(p.name ?? `piece-${i}`),
       name: p.name ?? "Sans nom",
       description: stripHtml(p.description ?? "").slice(0, 1200),
@@ -433,7 +434,7 @@ async function lirePage(url: string): Promise<CatalogueItem | null> {
     const dispo = String(offre?.availability ?? "").toLowerCase();
 
     return {
-      source_id: String(p.sku ?? url),
+      source_id: identifiant(p.sku, url),
       slug: slugify(p.name ?? url),
       name: p.name ?? "Sans nom",
       description: stripHtml(p.description ?? "").slice(0, 1200),
@@ -599,24 +600,16 @@ export async function fetchCatalogue(entree: string): Promise<Resultat> {
     return {
       ok: false,
       error:
-        "Cette boutique construit ses pages dans le navigateur : son serveur renvoie la même coquille vide pour toutes les adresses, sans nom de pièce ni prix. Rien n'est lisible depuis l'extérieur — même Google ne voit que la page d'accueil. Demande à la marque un export de son catalogue, ou saisis les pièces à la main.",
+        "Cette boutique construit ses pages dans le navigateur : son serveur renvoie la même coquille vide pour toutes les adresses, sans nom de pièce ni prix. Rien n'est lisible depuis l'extérieur, et même Google ne voit que la page d'accueil. Demande à la marque un export de son catalogue, ou saisis les pièces à la main.",
     };
   }
 
   return {
     ok: false,
     error:
-      "Rien n'a pu être lu à cette adresse. Essaie le lien direct d'une page produit — sinon la saisie à la main reste le plus sûr.",
+      "Rien n'a pu être lu à cette adresse. Essaie le lien direct d'une page produit. Sinon la saisie à la main reste le plus sûr.",
   };
 }
-
-export const SOURCE_LABEL: Record<Source, string> = {
-  shopify: "Shopify",
-  woocommerce: "WooCommerce",
-  bigcartel: "Big Cartel",
-  "donnees-structurees": "données publiées pour Google",
-  "plan-du-site": "plan du site",
-};
 
 
 /* ============================================================

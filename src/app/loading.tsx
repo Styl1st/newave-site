@@ -5,7 +5,7 @@
  */
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
       <div className="skeleton mb-4 h-4 w-32" />
       <div className="skeleton mb-8 h-10 w-2/3 max-w-md" />
 

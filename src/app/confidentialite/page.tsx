@@ -9,10 +9,10 @@ const SECTIONS = [
   {
     titre: "Ce qu'on collecte, et rien d'autre",
     contenu: [
-      "**Si tu crées un compte** : ton adresse email et le nom que tu choisis d'afficher. Ton mot de passe n'est jamais stocké en clair — nous ne pouvons pas le lire.",
+      "**Si tu crées un compte** : ton adresse email et le nom que tu choisis d'afficher. Ton mot de passe n'est jamais stocké en clair, et nous ne pouvons donc pas le lire.",
       "**Si tu mets une marque en favori** : le lien entre ton compte et cette marque.",
       "**Si tu proposes une marque** : les informations que tu remplis dans le formulaire, et ton compte s'il existe.",
-      "**À chaque visite** : la page consultée et, le cas échéant, le site depuis lequel tu es arrivé — au domaine près, jamais l'adresse complète. Rien d'autre : ni adresse IP, ni empreinte de navigateur, ni identifiant. Deux de tes visites sont indiscernables de deux visiteurs différents, donc rien ne permet de te suivre.",
+      "**À chaque visite** : la page consultée et, le cas échéant, le site depuis lequel tu es arrivé. Nous en gardons le domaine, jamais l'adresse complète. Rien d'autre : ni adresse IP, ni empreinte de navigateur, ni identifiant. Deux de tes visites sont indiscernables de deux visiteurs différents, donc rien ne permet de te suivre.",
       "Aucun traceur publicitaire, aucun profilage, aucune revente. Ces chiffres nous servent uniquement à savoir quelles marques intéressent, et à le montrer à celles qu'on référence.",
     ],
   },
@@ -35,7 +35,7 @@ const SECTIONS = [
     titre: "Les liens sortants",
     contenu: [
       "Quand tu cliques vers la boutique d'une marque, tu quittes NEWAVE SPHERE et les règles du site d'arrivée s'appliquent.",
-      "Nous comptons ces clics de façon anonyme — la marque concernée et la page d'origine, sans aucune donnée permettant de t'identifier. Cela nous sert à savoir quelles marques intéressent, et à justifier notre travail auprès d'elles.",
+      "Nous comptons ces clics de façon anonyme. Nous retenons la marque concernée et la page d'origine, sans aucune donnée permettant de t'identifier. Cela nous sert à savoir quelles marques intéressent, et à justifier notre travail auprès d'elles.",
     ],
   },
   {
@@ -70,10 +70,10 @@ function riche(texte: string) {
 
 export default function ConfidentialitePage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise">
         <p className="eyebrow m-0">Données personnelles</p>
-        <h1 className="m-0 mt-2 text-[clamp(26px,6.4vw,40px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(22px,5.1vw,34px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
           Confidentialité
         </h1>
         <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/82">
@@ -82,7 +82,7 @@ export default function ConfidentialitePage() {
         </p>
       </header>
 
-      <div className="glass rise rise-1 mt-8 flex flex-col gap-8 p-6 sm:p-8">
+      <div className="glass rise rise-1 mt-8 flex flex-col gap-8 p-4 sm:p-7">
         {SECTIONS.map((s) => (
           <section key={s.titre}>
             <h2 className="m-0 text-[16.5px] font-extrabold text-white">{s.titre}</h2>

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CatalogueNotice from "@/components/CatalogueNotice";
 import FavoriteButton from "@/components/FavoriteButton";
+import Grille from "@/components/Grille";
+import SectionAvis from "@/components/SectionAvis";
 import PostCard from "@/components/PostCard";
 import ProductCard from "@/components/ProductCard";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
@@ -61,12 +63,12 @@ export default async function BrandPage({ params }: Props) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-7 sm:py-11">
       {enApercu && (
         <div className="glass mb-6 flex flex-wrap items-center justify-between gap-3 border-white/45 p-4 sm:px-5">
           <p className="m-0 text-[13.5px] leading-relaxed text-white/88">
             <strong className="font-extrabold text-white">Aperçu.</strong> Voici ce que
-            verra la communauté. Cette page n&apos;est pas encore publique — personne
+            verra la communauté. Cette page n&apos;est pas encore publique. Personne
             d&apos;autre que toi ne peut y accéder.
           </p>
           <Link
@@ -82,7 +84,7 @@ export default async function BrandPage({ params }: Props) {
 
       <header className="rise mt-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="m-0 text-[clamp(28px,7vw,46px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+          <h1 className="m-0 text-[clamp(24px,5.6vw,39px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
             {brand.name}
           </h1>
           {brand.featured && <span className="badge">À la une</span>}
@@ -108,7 +110,7 @@ export default async function BrandPage({ params }: Props) {
         </div>
       )}
 
-      <div className="glass rise rise-1 mt-6 p-6 sm:p-8">
+      <div className="glass rise rise-1 mt-6 p-4 sm:p-7">
         <p className="m-0 whitespace-pre-line text-[15.5px] leading-[1.7] text-white/92">
           {brand.description}
         </p>
@@ -149,20 +151,25 @@ export default async function BrandPage({ params }: Props) {
           C'est ce que le visiteur est venu voir. La sortie vers la
           boutique arrive apres, une fois qu'il a vu de quoi il s'agit. */}
       {products.length > 0 && (
-        <section className="rise rise-2 mt-12">
+        <section className="rise rise-2 mt-8 sm:mt-11">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow m-0">Le catalogue</p>
-              <h2 className="m-0 mt-2 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+              <h2 className="m-0 mt-2 text-[clamp(17px,3.8vw,23px)] font-extrabold tracking-[-0.02em] text-white">
                 Les pièces
               </h2>
             </div>
-            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-              {products.length} pièce{products.length > 1 ? "s" : ""}
-            </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Grille
+            variante="pieces"
+            memoire="pieces-marque"
+            aside={
+              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
+                {products.length} pièce{products.length > 1 ? "s" : ""}
+              </p>
+            }
+          >
             {products.map((p) => (
               <ProductCard
                 key={p.id}
@@ -172,7 +179,7 @@ export default async function BrandPage({ params }: Props) {
                 likes={{ count: likeCounts.get(p.id) ?? 0, liked: myLikes.has(p.id) }}
               />
             ))}
-          </div>
+          </Grille>
 
           <p className="m-0 mt-5 text-[12.5px] leading-relaxed text-white/55">
             L&apos;achat se fait directement chez {brand.name}. NEWAVE SPHERE ne vend rien.
@@ -185,6 +192,7 @@ export default async function BrandPage({ params }: Props) {
           href={`/api/go/marque/${brand.id}`}
           target="_blank"
           rel="noopener noreferrer sponsored nofollow"
+          data-reveal
           className="card-light mt-8 flex items-center justify-between gap-4 px-6 py-5"
         >
           <span className="relative z-3">
@@ -208,7 +216,7 @@ export default async function BrandPage({ params }: Props) {
       {!insight && (
         <section className="glass mt-10 flex flex-wrap items-center justify-between gap-4 p-5 sm:px-6">
           <p className="m-0 max-w-xl text-[13.5px] leading-relaxed text-white/72">
-            Tu es à la tête de {brand.name} ? Reprends la main sur cette page —
+            Tu es à la tête de {brand.name} ? Reprends la main sur cette page :
             présentation, visuels, catalogue.
           </p>
           <Link
@@ -220,10 +228,17 @@ export default async function BrandPage({ params }: Props) {
         </section>
       )}
 
+      <SectionAvis
+        cible="marque"
+        cibleId={brand.id}
+        nom={brand.name}
+        chemin={`/marques/${brand.slug}`}
+      />
+
       {/* ---------- posts lies ---------- */}
       {posts.length > 0 && (
-        <section className="mt-14">
-          <h2 className="m-0 mb-5 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+        <section className="mt-9 sm:mt-12">
+          <h2 className="m-0 mb-5 text-[clamp(17px,3.8vw,23px)] font-extrabold tracking-[-0.02em] text-white">
             Nos posts sur {brand.name}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

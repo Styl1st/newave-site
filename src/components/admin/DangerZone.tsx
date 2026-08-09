@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirmation } from "@/lib/confirmation";
 import { deleteUserAccount } from "@/app/admin/actions";
 import { IconTrash } from "@/components/Icons";
 
@@ -19,12 +20,16 @@ export default function DangerZone({
   const [note, setNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { arme, demander, desarmer } = useConfirmation();
 
   function supprimer() {
-    const ok = window.confirm(
-      `Supprimer définitivement le compte de ${email} ?\n\nSes favoris, coups de cœur et rattachements de marque partiront avec. Les marques elles-mêmes resteront. C'est irréversible.`
-    );
-    if (!ok) return;
+    if (!demander()) {
+      setNote(
+        `Appuie encore pour supprimer définitivement le compte de ${email}. Ses favoris, coups de cœur et rattachements partiront avec ; les marques resteront.`
+      );
+      return;
+    }
+    desarmer();
 
     const formData = new FormData();
     formData.set("user_id", userId);
@@ -58,9 +63,15 @@ export default function DangerZone({
           type="button"
           disabled={pending}
           onClick={supprimer}
-          className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#c2273f]/60 bg-[rgba(194,39,63,0.14)] px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#c2273f] disabled:opacity-50 active:scale-[.97]"
+          onBlur={desarmer}
+          className={`mt-5 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-[12.5px] font-bold text-white transition disabled:opacity-50 active:scale-[.97] ${
+            arme
+              ? "border-[#ff9db0] bg-[rgba(194,39,63,0.4)]"
+              : "border-[#c2273f]/60 bg-[rgba(194,39,63,0.14)] hover:bg-[#c2273f]"
+          }`}
         >
-          <IconTrash /> {pending ? "Suppression…" : "Supprimer définitivement"}
+          <IconTrash />{" "}
+          {pending ? "Suppression…" : arme ? "Confirmer la suppression" : "Supprimer définitivement"}
         </button>
       )}
 

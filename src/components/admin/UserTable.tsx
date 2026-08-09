@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirmationCle } from "@/lib/confirmation";
 import { deleteUserAccount, updateUserRole } from "@/app/admin/actions";
 import { IconArrow, IconTrash, IconUser } from "@/components/Icons";
 import { ROLE_LABEL, type Profile, type Role } from "@/lib/types";
@@ -20,6 +21,7 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
   const [note, setNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { cle, demander, desarmer } = useConfirmationCle();
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,10 +36,13 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
   }, [users, query, filter]);
 
   function supprimer(user: Row) {
-    const ok = window.confirm(
-      `Supprimer définitivement le compte de ${user.email} ?\n\nSes favoris, coups de cœur et rattachements de marque partiront avec. Les marques elles-mêmes resteront. C'est irréversible.`
-    );
-    if (!ok) return;
+    if (!demander(user.id)) {
+      setNote(
+        `Appuie encore pour supprimer définitivement le compte de ${user.email}. Ses favoris, coups de cœur et rattachements partiront avec ; les marques resteront.`
+      );
+      return;
+    }
+    desarmer();
 
     const formData = new FormData();
     formData.set("user_id", user.id);
@@ -113,7 +118,7 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
                   <span className="block truncate text-[14.5px] font-extrabold text-[var(--color-ink)]">
                     {u.display_name ?? u.email}
                     {u.id === meId && (
-                      <span className="ml-2 text-[11px] font-bold text-[#6a5a92]">— toi</span>
+                      <span className="ml-2 text-[11px] font-bold text-[#6a5a92]">(toi)</span>
                     )}
                   </span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] font-semibold text-[#6a5a92]">
@@ -153,11 +158,17 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
                     type="button"
                     disabled={pending}
                     onClick={() => supprimer(u)}
+                    onBlur={desarmer}
                     aria-label={`Supprimer le compte de ${u.email}`}
-                    title="Supprimer ce compte"
-                    className="grid h-9 w-9 place-items-center rounded-full bg-[rgba(194,39,63,0.1)] text-[#c2273f] transition hover:bg-[#c2273f] hover:text-white disabled:opacity-40"
+                    title={cle === u.id ? "Appuie encore pour confirmer" : "Supprimer ce compte"}
+                    className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full transition disabled:opacity-40 ${
+                      cle === u.id
+                        ? "bg-[#c2273f] px-3 text-[11.5px] font-black text-white"
+                        : "w-9 bg-[rgba(194,39,63,0.1)] text-[#c2273f] hover:bg-[#c2273f] hover:text-white"
+                    }`}
                   >
                     <IconTrash className="h-4 w-4" />
+                    {cle === u.id && <span>Confirmer</span>}
                   </button>
                 )}
               </div>

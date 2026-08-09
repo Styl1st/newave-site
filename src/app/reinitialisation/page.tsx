@@ -10,10 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default function ReinitialisationPage() {
   return (
-    <div className="mx-auto w-full max-w-md px-[var(--pad)] py-16">
+    <div className="mx-auto w-full max-w-md px-[var(--pad)] py-9 sm:py-14">
       <header className="rise mb-8 text-center">
         <p className="eyebrow m-0">Ton compte</p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,32px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.5vw,28px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
           Nouveau mot de passe
         </h1>
       </header>

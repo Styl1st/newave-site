@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirmationCle } from "@/lib/confirmation";
 import { bulkProductAction } from "@/app/espace-marque/actions";
 import { formatPrice, type Product } from "@/lib/types";
 import { StatusPill } from "./ListRow";
@@ -23,6 +24,7 @@ export default function ProductBulkList({
   const [note, setNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { cle, demander, desarmer } = useConfirmationCle();
 
   const drafts = useMemo(() => products.filter((p) => p.status === "draft"), [products]);
   const allSelected = selected.size === products.length && products.length > 0;
@@ -37,12 +39,16 @@ export default function ProductBulkList({
   }
 
   function run(intent: "publish" | "draft" | "delete") {
-    if (intent === "delete") {
-      const ok = window.confirm(
-        `Supprimer définitivement ${selected.size} pièce${selected.size > 1 ? "s" : ""} ? C'est irréversible.`
+    // Deuxième appui = confirmation. Une boîte de dialogue native se
+    // fait escamoter par les navigateurs mobiles, et le bouton semblait
+    // alors ne rien faire.
+    if (intent === "delete" && !demander("delete")) {
+      setNote(
+        `Appuie encore sur Supprimer pour effacer définitivement ${selected.size} pièce${selected.size > 1 ? "s" : ""}.`
       );
-      if (!ok) return;
+      return;
     }
+    desarmer();
 
     const formData = new FormData();
     formData.set("slug", slug);
@@ -115,9 +121,14 @@ export default function ProductBulkList({
             type="button"
             disabled={selected.size === 0 || pending}
             onClick={() => run("delete")}
-            className={`${barBtn} border border-white/25 text-white/70 hover:border-white/50 hover:text-white`}
+            onBlur={desarmer}
+            className={
+              cle === "delete"
+                ? `${barBtn} border border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white`
+                : `${barBtn} border border-white/25 text-white/70 hover:border-white/50 hover:text-white`
+            }
           >
-            Supprimer
+            {cle === "delete" ? "Confirmer" : "Supprimer"}
           </button>
         </div>
       </div>

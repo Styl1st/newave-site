@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
+import LikeButton from "@/components/LikeButton";
+import SectionAvis from "@/components/SectionAvis";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getProductsByBrand } from "@/lib/queries";
 import { getCatalogueInsight } from "@/lib/brand-space";
+import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { IconPencil } from "@/components/Icons";
 import { discountPercent, formatPrice } from "@/lib/types";
 import BackLink from "@/components/BackLink";
@@ -23,10 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const price = formatPrice(product.price_cents, product.currency);
 
   return {
-    title: `${product.name} — ${brand.name}`,
+    title: `${product.name}, par ${brand.name}`,
     description: product.description.slice(0, 160) || `${product.name}, ${brand.name}${price ? `, ${price}` : ""}`,
     openGraph: {
-      title: `${product.name} — ${brand.name}`,
+      title: `${product.name}, par ${brand.name}`,
       description: product.description.slice(0, 160),
       images: product.images?.[0] ?? product.image_url ?? undefined,
     },
@@ -57,8 +60,16 @@ export default async function PiecePage({ params }: Props) {
   const siblings = siblingsAll.filter((p) => p.id !== product.id).slice(0, 4);
   const canManage = Boolean(insight);
 
+  // Le cœur manquait ici : on pouvait aimer une pièce depuis la fiche
+  // de la marque, mais pas depuis les suggestions au bas d'une pièce.
+  const idsCoeurs = [product.id, ...siblings.map((p) => p.id)];
+  const [coeurs, mesCoeurs] = await Promise.all([
+    getLikeCounts(idsCoeurs),
+    getMyLikes(idsCoeurs),
+  ]);
+
   return (
-    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-7 sm:py-11">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <BackLink href={`/marques/${brand.slug}`}>{brand.name}</BackLink>
 
@@ -74,7 +85,9 @@ export default async function PiecePage({ params }: Props) {
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
         {/* ---------- visuels ---------- */}
-        <div className="card-light rise overflow-hidden lg:sticky lg:top-6">
+        {/* Collant : il a déjà sa propre logique de position, une
+            animation de défilement par-dessus le ferait vibrer. */}
+        <div data-no-reveal className="card-light rise overflow-hidden lg:sticky lg:top-6">
           <div className="relative z-3">
             {images.length > 0 ? (
               <Carousel images={images} alt={product.name} />
@@ -97,12 +110,12 @@ export default async function PiecePage({ params }: Props) {
             >
               {brand.name}
             </Link>
-            <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,36px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
+            <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,31px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
               {product.name}
             </h1>
 
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
-              <span className="text-[clamp(20px,4.5vw,26px)] font-extrabold text-white">
+              <span className="text-[clamp(17px,3.8vw,23px)] font-extrabold text-white">
                 {price ?? "Prix sur la boutique"}
               </span>
               {was && off !== null && (
@@ -113,17 +126,49 @@ export default async function PiecePage({ params }: Props) {
                   </span>
                 </>
               )}
-              {!product.available && (
+              {!product.retired_at && !product.available && (
                 <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-white/80">
                   Épuisé
                 </span>
               )}
             </div>
+
+            {/* Le bandeau qui explique. On ne laisse pas quelqu'un
+                cliquer vers une page qui n'existe plus sans l'avoir
+                prévenu, et on dit pourquoi la fiche est encore là. */}
+            {product.retired_at && (
+              <div className="mt-5 rounded-[var(--radius)] border border-white/35 bg-white/12 p-4 sm:px-5">
+                <p className="m-0 text-[14px] font-extrabold leading-snug text-white">
+                  Cette pièce a été retirée et n&apos;est plus disponible sur le site de{" "}
+                  {brand.name}.
+                </p>
+                <p className="m-0 mt-2 text-[13px] leading-relaxed text-white/72">
+                  On garde sa fiche : elle fait partie de ce que la marque a créé, et les
+                  coups de cœur qu&apos;elle a reçus lui appartiennent. Retirée le{" "}
+                  {new Date(product.retired_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  .
+                </p>
+              </div>
+            )}
+
+            {/* Aimer la pièce depuis sa propre fiche : c'est l'endroit
+                le plus évident, et il manquait. */}
+            <div className="mt-4">
+              <LikeButton
+                productId={product.id}
+                initialLiked={mesCoeurs.has(product.id)}
+                initialCount={coeurs.get(product.id) ?? 0}
+              />
+            </div>
           </header>
 
           {/* ---------- tailles ---------- */}
           {product.sizes.length > 0 && (
-            <section className="glass p-5 sm:p-6">
+            <section className="glass p-4 sm:p-5">
               <p className="eyebrow m-0">{product.size_label}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
@@ -145,16 +190,24 @@ export default async function PiecePage({ params }: Props) {
             </section>
           )}
 
-          {/* ---------- achat ---------- */}
+          {/* ---------- achat ----------
+              Une pièce retirée n'a plus de page chez la marque : on
+              renvoie vers la boutique en général plutôt que vers un
+              lien qui finirait sur une erreur. */}
           <a
-            href={`/api/go/piece/${product.id}`}
+            href={product.retired_at ? `/api/go/marque/${brand.id}` : `/api/go/piece/${product.id}`}
             target="_blank"
             rel="noopener noreferrer sponsored nofollow"
+            data-reveal
             className="card-light flex items-center justify-between gap-4 px-6 py-5"
           >
             <span className="relative z-3">
               <span className="block text-[15px] font-extrabold tracking-[-0.01em]">
-                {product.available ? `Acheter chez ${brand.name}` : "Voir la fiche chez la marque"}
+                {product.retired_at
+                  ? `Voir ce que propose ${brand.name} aujourd'hui`
+                  : product.available
+                    ? `Acheter chez ${brand.name}`
+                    : "Voir la fiche chez la marque"}
               </span>
               <span className="mt-0.5 block text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
                 Tu quittes NEWAVE SPHERE
@@ -165,7 +218,7 @@ export default async function PiecePage({ params }: Props) {
 
           {/* ---------- description ---------- */}
           {product.description && (
-            <section className="glass p-5 sm:p-6">
+            <section className="glass p-4 sm:p-5">
               <p className="eyebrow m-0">La pièce</p>
               <p className="m-0 mt-3 whitespace-pre-line text-[15px] leading-[1.7] text-white/90">
                 {product.description}
@@ -188,21 +241,34 @@ export default async function PiecePage({ params }: Props) {
 
           <p className="m-0 text-[12.5px] leading-relaxed text-white/55">
             Le prix, les tailles et la disponibilité sont ceux communiqués par
-            {" "}{brand.name}. Ils peuvent avoir changé depuis notre dernière mise à jour —
+            {" "}{brand.name}. Ils peuvent avoir changé depuis notre dernière mise à jour, et
             la boutique fait foi.
           </p>
         </div>
       </div>
 
+      <SectionAvis
+        cible="piece"
+        cibleId={product.id}
+        nom={product.name}
+        chemin={`/marques/${brand.slug}/${product.slug}`}
+      />
+
       {/* ---------- autres pièces ---------- */}
       {siblings.length > 0 && (
-        <section className="mt-16">
-          <h2 className="m-0 mb-5 text-[clamp(20px,4.6vw,26px)] font-extrabold tracking-[-0.02em] text-white">
+        <section className="mt-10 sm:mt-14">
+          <h2 className="m-0 mb-5 text-[clamp(17px,3.8vw,23px)] font-extrabold tracking-[-0.02em] text-white">
             Aussi chez {brand.name}
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {siblings.map((p) => (
-              <ProductCard key={p.id} product={p} brandSlug={brand.slug} canManage={canManage} />
+              <ProductCard
+                key={p.id}
+                product={p}
+                brandSlug={brand.slug}
+                canManage={canManage}
+                likes={{ count: coeurs.get(p.id) ?? 0, liked: mesCoeurs.has(p.id) }}
+              />
             ))}
           </div>
         </section>

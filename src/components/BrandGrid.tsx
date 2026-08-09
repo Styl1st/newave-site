@@ -3,6 +3,7 @@
 import { useState } from "react";
 import BrandCard from "./BrandCard";
 import BrandPreview from "./BrandPreview";
+import Grille from "./Grille";
 import type { Brand } from "@/lib/types";
 
 /**
@@ -12,15 +13,32 @@ import type { Brand } from "@/lib/types";
  * un panneau qui surgit tout seul pendant qu'on parcourt la liste
  * interrompt plus qu'il n'aide.
  */
-export default function BrandGrid({ brands }: { brands: Brand[] }) {
+export default function BrandGrid({
+  brands,
+  memoire = "marques",
+  aside,
+  favoris,
+}: {
+  brands: Brand[];
+  /** Sous quel nom retenir la densité choisie pour cette liste. */
+  memoire?: string;
+  aside?: React.ReactNode;
+  /** Les marques déjà suivies. Absent = on n'affiche pas l'étoile. */
+  favoris?: string[];
+}) {
+  const suivies = new Set(favoris ?? []);
   const [open, setOpen] = useState<string | null>(null);
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Grille variante="marques" memoire={memoire} aside={aside}>
         {brands.map((b) => (
-          <div key={b.id} className="relative">
-            <BrandCard brand={b} />
+          /* `data-reveal` déplace l'animation de défilement sur
+             l'ensemble carte + bouton. Quand seule la carte bougeait,
+             le bouton restait en place et venait flotter au-dessus de
+             la carte de la ligne du dessus. */
+          <div key={b.id} data-reveal className="relative h-full">
+            <BrandCard brand={b} favori={favoris ? { initial: suivies.has(b.id) } : undefined} />
 
             <button
               type="button"
@@ -32,7 +50,7 @@ export default function BrandGrid({ brands }: { brands: Brand[] }) {
             </button>
           </div>
         ))}
-      </div>
+      </Grille>
 
       {open && <BrandPreview slug={open} onClose={() => setOpen(null)} />}
     </>

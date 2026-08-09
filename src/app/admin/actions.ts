@@ -370,7 +370,7 @@ export async function updateUserRole(formData: FormData): Promise<Result> {
   if (userId === me.id && role !== "admin") {
     return {
       ok: false,
-      error: "Tu ne peux pas retirer ton propre rôle d'administrateur — plus personne ne pourrait entrer.",
+      error: "Tu ne peux pas retirer ton propre rôle d'administrateur, sinon plus personne ne pourrait entrer.",
     };
   }
 

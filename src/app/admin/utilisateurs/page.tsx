@@ -17,11 +17,11 @@ export default async function AdminUsers() {
 
   return (
     <>
-      <header className="mb-7">
+      <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0 flex items-center gap-2">
           <IconUser /> La communauté
         </p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
           Comptes
         </h1>
       </header>

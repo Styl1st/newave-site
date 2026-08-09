@@ -107,13 +107,27 @@ export async function toggleLike(
   return { ok: true, liked: true };
 }
 
-/** Le classement des pièces les plus aimées. */
-export async function getMostLiked(limite = 24): Promise<{ product: Product; likes: number }[]> {
+/**
+ * Le classement des pièces les plus aimées.
+ *
+ * Deux lectures de la MÊME table, et c'est important : aucun coup de
+ * cœur n'est jamais supprimé. « semaine » ne compte que les sept
+ * derniers jours — c'est la tendance du moment. « toujours » compte
+ * tout depuis le début.
+ *
+ * La limite est haute et non pas trois : tant qu'une pièce a été
+ * aimée, elle a sa place dans le classement. Un podium qui s'arrête à
+ * la troisième marche ne donne envie à personne d'être quatrième.
+ */
+export async function getMostLiked(
+  limite = 120,
+  periode: "semaine" | "toujours" = "semaine"
+): Promise<{ product: Product; likes: number }[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
   const { data: counts } = await supabase
-    .from("product_like_counts")
+    .from(periode === "toujours" ? "product_like_counts_total" : "product_like_counts")
     .select("product_id, likes")
     .order("likes", { ascending: false })
     .limit(limite);

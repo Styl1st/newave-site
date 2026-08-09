@@ -24,12 +24,12 @@ export default async function RevendiquerPage({ params }: Props) {
   if (insight) redirect(`/espace-marque/${slug}`);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-7 sm:py-11">
       <BackLink href={`/marques/${slug}`}>{brand.name}</BackLink>
 
       <header className="rise mt-6 mb-8">
         <p className="eyebrow m-0">Cette marque est la tienne ?</p>
-        <h1 className="m-0 mt-2 text-[clamp(26px,6.4vw,38px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(22px,5.1vw,33px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
           Revendiquer {brand.name}
         </h1>
         <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/84">

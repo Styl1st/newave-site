@@ -65,14 +65,17 @@ export default function ProductCard({
     <div className="card-light group flex h-full flex-col overflow-hidden">
       <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">
-          <div className="relative aspect-square w-full overflow-hidden bg-[#e6dcfb]">
+          <div className="visuel relative aspect-square w-full overflow-hidden">
             {cover ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={cover}
                 alt={product.name}
                 loading="lazy"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                decoding="async"
+                className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${
+                  product.retired_at ? "opacity-70 grayscale-[.35]" : ""
+                }`}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
@@ -87,10 +90,18 @@ export default function ProductCard({
                 −{off}%
               </span>
             )}
-            {!product.available && (
-              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                Épuisé
+            {/* Retirée l'emporte sur épuisée : une pièce qui n'est plus
+                sur la boutique ne reviendra pas en stock. */}
+            {product.retired_at ? (
+              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.9)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+                Retirée
               </span>
+            ) : (
+              !product.available && (
+                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+                  Épuisé
+                </span>
+              )
             )}
           </div>
         </ProductLink>
@@ -106,7 +117,10 @@ export default function ProductCard({
           </Link>
         )}
 
-        <div className="flex flex-1 flex-col p-4">
+        {/* `piece-infos` sert de prise au mode grille serrée : c'est le
+            CSS qui resserre ce bloc, la carte n'a pas à savoir dans
+            quelle densité elle est affichée. */}
+        <div className="piece-infos flex flex-1 flex-col p-4">
           {showBrand && product.brand && (
             <Link
               href={`/marques/${product.brand.slug}`}
@@ -122,9 +136,9 @@ export default function ProductCard({
             </h3>
           </ProductLink>
 
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
+          <div className="pied mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
             <span className="flex flex-wrap items-baseline gap-2">
-              <span className="text-[13.5px] font-extrabold text-[var(--color-ink)]">
+              <span className="prix text-[13.5px] font-extrabold text-[var(--color-ink)]">
                 {price ?? "Prix sur la boutique"}
               </span>
               {was && off !== null && (

@@ -49,6 +49,13 @@ export type Product = {
   position: number;
   /** Identifiant Shopify d'origine, pour eviter les doublons a l'import. */
   source_id: string | null;
+  /**
+   * Date a laquelle la piece a disparu de la boutique de la marque.
+   * La fiche reste consultable : elle porte des coups de cœur, et ceux-ci
+   * racontent ce que la marque a fait. On dit simplement que la piece
+   * n'est plus en vente.
+   */
+  retired_at: string | null;
   /** Rempli par les requetes qui joignent la marque. */
   brand?: Pick<Brand, "id" | "slug" | "name"> | null;
 };

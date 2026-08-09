@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { enregistrerApparence } from "@/app/apparence-actions";
 import { IconCheck, IconPlus, IconTrash } from "./Icons";
 import {
   MOUVEMENT_DEFAUT,
@@ -35,25 +36,56 @@ function Vignette({ theme }: { theme: Theme }) {
   );
 }
 
-export default function ThemePicker() {
-  const [prefs, setPrefs] = useState<Preferences>(PREFERENCES_DEFAUT);
+export default function ThemePicker({
+  /** Ce qui est enregistré sur le compte, s'il y en a un. */
+  duCompte = null,
+  connecte = false,
+}: {
+  duCompte?: Preferences | null;
+  connecte?: boolean;
+}) {
+  const [prefs, setPrefs] = useState<Preferences>(duCompte ?? PREFERENCES_DEFAUT);
   const [charge, setCharge] = useState(false);
   const [nomEnCours, setNomEnCours] = useState<string | null>(null);
   const [nomMouvement, setNomMouvement] = useState<string | null>(null);
   const [systemeReduit, setSystemeReduit] = useState(false);
+  const [etat, setEtat] = useState<"repos" | "envoi" | "garde">("repos");
+  const differe = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setPrefs(lire());
+    // Le compte fait foi : c'est le réglage de la personne, pas celui
+    // de la machine sur laquelle elle se trouve. Le stockage local ne
+    // reprend la main que pour un visiteur sans compte.
+    setPrefs(duCompte ?? lire());
     setSystemeReduit(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setCharge(true);
-  }, []);
+  }, [duCompte]);
+
+  useEffect(() => () => { if (differe.current) clearTimeout(differe.current); }, []);
 
   /** Enregistre et applique d'un même geste : l'aperçu doit être immédiat. */
   function poser(next: Preferences) {
     setPrefs(next);
     appliquerTheme(next.theme, document.documentElement);
     appliquerMouvement(next.mouvement, document.documentElement, true);
+
+    // On garde toujours une copie locale : c'est elle qui peint les
+    // bonnes couleurs avant même que le JavaScript démarre.
     ecrire(next);
+
+    if (!connecte) return;
+
+    /*
+     * Vers le compte, on temporise. Un curseur de vitesse envoie une
+     * douzaine de valeurs par seconde : sans ce délai, chaque petit
+     * mouvement du doigt deviendrait une écriture en base.
+     */
+    if (differe.current) clearTimeout(differe.current);
+    setEtat("envoi");
+    differe.current = setTimeout(async () => {
+      const res = await enregistrerApparence(next);
+      setEtat(res.ok ? "garde" : "repos");
+    }, 700);
   }
 
   function enregistrerAmbiance(nom: string) {
@@ -90,6 +122,27 @@ export default function ThemePicker() {
 
   return (
     <div className="flex flex-col gap-7">
+      {/* Dire où va le réglage évite de le refaire sur chaque appareil
+          en croyant qu'il ne s'enregistre pas. */}
+      <p className="m-0 rounded-[13px] bg-white/10 px-4 py-3 text-[12.5px] leading-relaxed text-white/80">
+        {connecte ? (
+          <>
+            Ces réglages sont liés à ton compte : tu les retrouveras sur ton téléphone
+            comme sur ton ordinateur.{" "}
+            {etat === "envoi" && <span className="text-white/55">Enregistrement…</span>}
+            {etat === "garde" && <span className="font-bold text-white">Enregistré.</span>}
+          </>
+        ) : (
+          <>
+            Ces réglages ne valent que pour ce navigateur.{" "}
+            <a href="/connexion" className="font-bold text-white underline underline-offset-2">
+              Connecte-toi
+            </a>{" "}
+            pour les retrouver sur tous tes appareils.
+          </>
+        )}
+      </p>
+
       {/* ---- mouvement ---- */}
       <div>
         <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
@@ -97,7 +150,7 @@ export default function ThemePicker() {
         {systemeReduit && (
           <p className="m-0 mb-3 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white">
             Ton système demande de réduire les animations. On respecte ce réglage par
-            défaut — mais si tu choisis un mouvement ici, c&apos;est le tien qui
+            défaut. Mais si tu choisis un mouvement ici, c&apos;est le tien qui
             s&apos;applique.
           </p>
         )}
@@ -321,7 +374,7 @@ export default function ThemePicker() {
         <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/55">
           Compose tes couleurs ci-dessous, puis enregistre-les sous un nom. Elles
           resteront dans cette liste, à côté des nôtres.
-          {dejaEnregistre && " Les couleurs actuelles correspondent déjà à une ambiance existante — tu peux quand même les garder sous un autre nom."}
+          {dejaEnregistre && " Les couleurs actuelles correspondent déjà à une ambiance existante, mais tu peux quand même les garder sous un autre nom."}
         </p>
       </div>
 

@@ -46,7 +46,6 @@ export default async function AdminUserDetail({ params }: Props) {
         ? "Ce compte est administrateur. Repasse-le en membre ou créateur avant de pouvoir le supprimer."
         : undefined;
 
-  // const estCreateur = profile.role === "createur" || profile.role === "admin";
   // Un créateur sans marque rattachée ne peut rien modifier : le rôle
   // est une étiquette, ce sont les rattachements qui ouvrent les portes.
   const incoherent = profile.role === "createur" && brands.length === 0;
@@ -55,13 +54,13 @@ export default async function AdminUserDetail({ params }: Props) {
     <>
       <BackLink href="/admin/utilisateurs">Comptes</BackLink>
 
-      <header className="mb-7 mt-5">
+      <header className="mb-5 sm:mb-7 mt-5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-white text-[18px] font-black text-[var(--color-ink)]">
             {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <h1 className="m-0 truncate text-[clamp(22px,5vw,30px)] font-extrabold tracking-[-0.03em] text-white">
+            <h1 className="m-0 truncate text-[clamp(19px,4.1vw,26px)] font-extrabold tracking-[-0.03em] text-white">
               {profile.display_name ?? profile.email}
             </h1>
             <p className="m-0 mt-0.5 truncate text-[13.5px] text-white/70">{profile.email}</p>

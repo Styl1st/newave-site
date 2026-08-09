@@ -28,7 +28,7 @@ export default function BrandManagers({
   );
 
   return (
-    <section className="glass mt-8 p-6 sm:p-8">
+    <section className="glass mt-8 p-4 sm:p-7">
       <h2 className="m-0 text-[17px] font-extrabold text-white">Gérants de la marque</h2>
       <p className="m-0 mt-2 text-[13.5px] leading-relaxed text-white/72">
         Ces comptes peuvent modifier la présentation et les pièces de cette marque,

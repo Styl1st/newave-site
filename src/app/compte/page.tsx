@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DisplayNameForm, LogoutButton, PasswordForm } from "@/components/AccountForms";
 import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
+import { lireApparenceDuCompte } from "@/lib/apparence";
 import { ROLE_LABEL } from "@/lib/types";
 import { getManagedBrands } from "@/lib/brand-space";
 import { getFavoriteBrands } from "@/lib/favorites";
@@ -12,7 +13,11 @@ export const dynamic = "force-dynamic";
 
 export default async function ComptePage() {
   const profile = await requireUser();
-  const [brands, favorites] = await Promise.all([getManagedBrands(), getFavoriteBrands()]);
+  const [brands, favorites, apparence] = await Promise.all([
+    getManagedBrands(),
+    getFavoriteBrands(),
+    lireApparenceDuCompte(),
+  ]);
 
   const isAdmin = profile.role === "admin";
   const raccourcis = [
@@ -41,10 +46,10 @@ export default async function ComptePage() {
   ].filter((r) => r.show);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
+    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise mb-9">
         <p className="eyebrow m-0">Ton compte</p>
-        <h1 className="m-0 mt-2 text-[clamp(26px,6vw,40px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(22px,4.9vw,34px)] font-extrabold leading-tight tracking-[-0.03em] text-white">
           {profile.display_name ?? "Mon compte"}
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -73,17 +78,17 @@ export default async function ComptePage() {
       </div>
 
       {/* ---------- identite ---------- */}
-      <section className="glass rise rise-2 mt-8 p-6 sm:p-8">
+      <section className="glass rise rise-2 mt-8 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Ton identité</h2>
         <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
-          Ton adresse email ne peut pas être changée ici — elle identifie ton compte.
+          Ton adresse email ne peut pas être changée ici, parce qu&apos;elle identifie ton compte.
           Écris-nous à contact@newavesphere.fr si tu en as besoin.
         </p>
         <DisplayNameForm current={profile.display_name ?? ""} />
       </section>
 
       {/* ---------- securite ---------- */}
-      <section className="glass rise rise-3 mt-6 p-6 sm:p-8">
+      <section className="glass rise rise-3 mt-6 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Mot de passe</h2>
         <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
           Le changement prend effet tout de suite. Tes autres appareils resteront
@@ -93,14 +98,13 @@ export default async function ComptePage() {
       </section>
 
       {/* ---------- apparence ---------- */}
-      <section className="glass rise rise-3 mt-6 p-6 sm:p-8">
+      <section className="glass rise rise-3 mt-6 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Apparence</h2>
         <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
-          Le fond du site, à ton goût. Le réglage est enregistré dans ce navigateur —
-          il ne te suit pas d&apos;un appareil à l&apos;autre, et personne d&apos;autre
-          ne le voit.
+          Le fond du site, à ton goût. Le réglage est rangé avec ton compte : il te
+          suit d&apos;un appareil à l&apos;autre, et personne d&apos;autre ne le voit.
         </p>
-        <ThemePicker />
+        <ThemePicker duCompte={apparence} connecte />
       </section>
 
       {/* ---------- sortie ---------- */}

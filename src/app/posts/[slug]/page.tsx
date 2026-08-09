@@ -36,7 +36,7 @@ export default async function PostPage({ params }: Props) {
   const images = post.images?.length ? post.images : post.image_url ? [post.image_url] : [];
 
   return (
-    <article className="mx-auto w-full max-w-3xl px-[var(--pad)] py-12">
+    <article className="mx-auto w-full max-w-3xl px-[var(--pad)] py-7 sm:py-11">
       <BackLink href="/posts">Tous les posts</BackLink>
 
       <header className="rise mt-6">
@@ -56,7 +56,7 @@ export default async function PostPage({ params }: Props) {
             </p>
           )}
         </div>
-        <h1 className="m-0 mt-3 text-[clamp(26px,6.4vw,40px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-3 text-[clamp(22px,5.1vw,34px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
           {post.title}
         </h1>
       </header>
@@ -87,7 +87,7 @@ export default async function PostPage({ params }: Props) {
       )}
 
       {post.caption && (
-        <div className="glass rise rise-2 mt-6 p-6 sm:p-8">
+        <div className="glass rise rise-2 mt-6 p-4 sm:p-7">
           <p className="m-0 whitespace-pre-line text-[16px] leading-[1.7] text-white/92">
             {post.caption}
           </p>

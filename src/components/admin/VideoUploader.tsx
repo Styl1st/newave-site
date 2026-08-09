@@ -34,7 +34,7 @@ export default function VideoUploader({
 
     const mo = file.size / (1024 * 1024);
     if (mo > MAX_MO) {
-      setNote(`Cette vidéo fait ${mo.toFixed(0)} Mo. Le maximum est de ${MAX_MO} Mo — compresse-la avant l'envoi.`);
+      setNote(`Cette vidéo fait ${mo.toFixed(0)} Mo. Le maximum est de ${MAX_MO} Mo, donc compresse-la avant l'envoi.`);
       e.target.value = "";
       return;
     }

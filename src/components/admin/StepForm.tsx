@@ -133,13 +133,13 @@ export default function StepForm({
             conteneurs.current[i] = el;
           }}
           hidden={i !== index}
-          className="glass flex flex-col gap-6 p-6 sm:p-8"
+          className="glass flex flex-col gap-6 p-4 sm:p-7"
         >
           <header>
             <p className="eyebrow m-0">
               Étape {i + 1} sur {etapes.length}
             </p>
-            <h2 className="m-0 mt-2 text-[clamp(19px,4.4vw,24px)] font-extrabold tracking-[-0.02em] text-white">
+            <h2 className="m-0 mt-2 text-[clamp(16.5px,3.6vw,21px)] font-extrabold tracking-[-0.02em] text-white">
               {etape.titre}
             </h2>
             <p className="m-0 mt-2 text-[14px] leading-relaxed text-white/72">{etape.intro}</p>

@@ -1,0 +1,22 @@
+# Fins de ligne normalisées.
+#
+# Sans ça, chaque aller-retour entre Windows et un autre système
+# réécrit tous les retours à la ligne : git annonce alors des dizaines
+# de fichiers « modifiés » qui ne le sont pas, et les vraies
+# modifications se noient dedans.
+#
+# Le dépôt stocke des LF ; Windows garde ses CRLF dans le répertoire de
+# travail, c'est transparent.
+* text=auto eol=lf
+
+# Fichiers binaires : on n'y touche jamais.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+*.pdf binary

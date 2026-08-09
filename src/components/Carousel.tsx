@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Carrousel simple : defilement horizontal, pastilles de position,
- * fleches au survol. Pas de dependance, pas de JavaScript au chargement.
+ * Carrousel à défilement natif.
+ *
+ * La version précédente remplaçait l'adresse d'une seule image. Sur
+ * téléphone, cela voulait dire : pas de glissement du doigt, un blanc
+ * à chaque changement le temps que la nouvelle image se charge, et
+ * aucun élan. Ici, toutes les images sont réellement présentes côte à
+ * côte dans une bande qu'on fait défiler.
+ *
+ * C'est le navigateur qui gère le geste, l'inertie et l'aimantation —
+ * il le fait mieux que n'importe quel code, et sans rien écouter en
+ * permanence. On ne lit la position que pour allumer la bonne pastille.
  */
 export default function Carousel({
   images,
@@ -15,32 +24,73 @@ export default function Carousel({
   alt: string;
   className?: string;
 }) {
+  const bande = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+
+  const relire = useCallback(() => {
+    const el = bande.current;
+    if (!el || el.clientWidth === 0) return;
+    setIndex(Math.round(el.scrollLeft / el.clientWidth));
+  }, []);
+
+  useEffect(() => {
+    const el = bande.current;
+    if (!el) return;
+    el.addEventListener("scroll", relire, { passive: true });
+    return () => el.removeEventListener("scroll", relire);
+  }, [relire]);
+
   if (images.length === 0) return null;
 
   const clamped = Math.min(index, images.length - 1);
-  const go = (n: number) => setIndex((n + images.length) % images.length);
+
+  function aller(n: number) {
+    const el = bande.current;
+    if (!el) return;
+    const cible = (n + images.length) % images.length;
+    el.scrollTo({ left: cible * el.clientWidth, behavior: "smooth" });
+  }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={images[clamped]} alt={alt} className="block w-full" />
+    <div className={`relative ${className}`}>
+      <div
+        ref={bande}
+        /* `touch-pan-y` laisse le doigt faire défiler la page
+           verticalement : sans ça, le carrousel capterait le geste et
+           on se retrouverait bloqué dessus. */
+        className="flex touch-pan-y snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {images.map((src, i) => (
+          <div key={src + i} className="visuel w-full shrink-0 snap-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={i === 0 ? alt : ""}
+              /* La première est celle qu'on voit tout de suite : elle
+                 se charge sans attendre, les autres à l'approche. */
+              loading={i === 0 ? "eager" : "lazy"}
+              decoding="async"
+              className="block w-full"
+            />
+          </div>
+        ))}
+      </div>
 
       {images.length > 1 && (
         <>
           <button
             type="button"
-            onClick={() => go(clamped - 1)}
+            onClick={() => aller(clamped - 1)}
             aria-label="Image précédente"
-            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55"
+            className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
           >
             ‹
           </button>
           <button
             type="button"
-            onClick={() => go(clamped + 1)}
+            onClick={() => aller(clamped + 1)}
             aria-label="Image suivante"
-            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55"
+            className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
           >
             ›
           </button>
@@ -50,7 +100,7 @@ export default function Carousel({
               <button
                 key={i}
                 type="button"
-                onClick={() => setIndex(i)}
+                onClick={() => aller(i)}
                 aria-label={`Image ${i + 1} sur ${images.length}`}
                 aria-current={i === clamped}
                 className={`h-1.5 rounded-full transition-all ${

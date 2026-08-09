@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirmationCle } from "@/lib/confirmation";
 import {
   acceptApplication,
   deleteApplication,
@@ -27,20 +28,26 @@ export default function ApplicationActions({
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const { cle, demander, desarmer } = useConfirmationCle();
 
   function run(intent: "accepter" | "refuser" | "supprimer") {
-    if (intent === "accepter") {
-      const ok = window.confirm(
-        `Accepter « ${brandName} » créera une fiche marque en brouillon. Continuer ?`
-      );
-      if (!ok) return;
+    // Deuxième appui = confirmation, dans la page plutôt que dans une
+    // boîte de dialogue que le téléphone peut escamoter.
+    if (intent === "accepter" && !demander("accepter")) {
+      setNote({
+        ok: true,
+        text: `Appuie encore pour accepter « ${brandName} » : une fiche marque en brouillon sera créée.`,
+      });
+      return;
     }
-    if (intent === "supprimer") {
-      const ok = window.confirm(
-        `Effacer définitivement la candidature de « ${brandName} » ? La marque déjà créée, s'il y en a une, ne sera pas touchée.`
-      );
-      if (!ok) return;
+    if (intent === "supprimer" && !demander("supprimer")) {
+      setNote({
+        ok: true,
+        text: `Appuie encore pour effacer la candidature de « ${brandName} ». La marque déjà créée, s'il y en a une, ne sera pas touchée.`,
+      });
+      return;
     }
+    desarmer();
 
     const formData = new FormData();
     formData.set("id", id);
@@ -75,9 +82,12 @@ export default function ApplicationActions({
             type="button"
             disabled={pending}
             onClick={() => run("accepter")}
-            className={`${btn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] hover:shadow-[0_8px_20px_rgba(35,12,85,0.42)]`}
+            onBlur={desarmer}
+            className={`${btn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] hover:shadow-[0_8px_20px_rgba(35,12,85,0.42)] ${
+              cle === "accepter" ? "ring-2 ring-white/70" : ""
+            }`}
           >
-            <IconCheck /> Accepter
+            <IconCheck /> {cle === "accepter" ? "Confirmer" : "Accepter"}
           </button>
         )}
         {status !== "refusee" && status !== "acceptee" && (
@@ -94,11 +104,17 @@ export default function ApplicationActions({
           type="button"
           disabled={pending}
           onClick={() => run("supprimer")}
+          onBlur={desarmer}
           aria-label="Supprimer la candidature"
           title="Supprimer définitivement"
-          className={`${btn} border border-white/20 text-white/60 hover:border-white/50 hover:text-white`}
+          className={
+            cle === "supprimer"
+              ? `${btn} border border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white`
+              : `${btn} border border-white/20 text-white/60 hover:border-white/50 hover:text-white`
+          }
         >
           <IconTrash />
+          {cle === "supprimer" && <span>Confirmer</span>}
         </button>
       </div>
 

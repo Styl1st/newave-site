@@ -48,7 +48,7 @@ export default async function BrandPresentation({ params }: Props) {
     {
       titre: "Ta démarche",
       intro:
-        "La partie qui compte. Raconte comment tu fabriques et pourquoi — c'est ce que les gens viennent chercher ici, pas une fiche produit.",
+        "La partie qui compte. Raconte comment tu fabriques et pourquoi. C'est ce que les gens viennent chercher ici, pas une fiche produit.",
       contenu: (
         <Area
           name="description"
@@ -122,9 +122,9 @@ export default async function BrandPresentation({ params }: Props) {
     <>
       <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
 
-      <header className="mb-7">
+      <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Ta page</p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.5vw,34px)] font-extrabold tracking-[-0.03em] text-white">
+        <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
           Présentation
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">

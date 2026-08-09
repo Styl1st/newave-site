@@ -6,7 +6,14 @@ import { useFormStatus } from "react-dom";
 import { importCatalogueSelection } from "@/app/espace-marque/actions";
 import { formatPrice } from "@/lib/types";
 import { FIELD, Label } from "./fields";
-import { SOURCE_LABEL, type CatalogueItem, type Source } from "@/lib/catalogue";
+import { cleLien, SOURCE_LABEL, type CatalogueItem, type Source } from "@/lib/catalogue-commun";
+
+/**
+ * Un gros catalogue affiché d'un bloc fait tousser le téléphone : des
+ * centaines d'images demandées en même temps, et l'écran qui se fige.
+ * On en montre une poignée, le reste à la demande.
+ */
+const PAR_PAGE = 18;
 
 type Result = { ok: true; source: Source; items: CatalogueItem[] } | { ok: false; error: string } | null;
 
@@ -45,8 +52,14 @@ export default function CatalogueImport({
   const [shopUrl, setShopUrl] = useState(defaultShopUrl);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [visibles, setVisibles] = useState(PAR_PAGE);
 
   const known = new Set(alreadyImported);
+
+  /** Déjà chez la marque, que ce soit par identifiant ou par adresse. */
+  function connue(item: CatalogueItem): boolean {
+    return known.has(item.source_id) || known.has(cleLien(item.shop_url));
+  }
 
   function toggle(id: string) {
     setChosen((prev) => {
@@ -60,9 +73,9 @@ export default function CatalogueImport({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- adresse de la boutique ---- */}
-      <div className="glass p-6 sm:p-8">
+      <div className="glass p-4 sm:p-7">
         <Label htmlFor="boutique" hint="shoparyes.fr, ou le lien direct d'une pièce. Les deux fonctionnent.">
-          Adresse de ta boutique ou d&aposune pièce
+          Adresse de ta boutique ou d&apos;une pièce
         </Label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
@@ -100,14 +113,14 @@ export default function CatalogueImport({
 
       {/* ---- analyse en cours ---- */}
       {analyse && (
-        <div className="glass p-6 sm:p-8">
+        <div className="glass p-4 sm:p-7">
           <p className="m-0 mb-1 text-[14px] font-extrabold text-white">
             On lit {shopUrl.replace(/^https?:\/\//, "")}
           </p>
           <p className="m-0 mb-5 text-[13px] leading-relaxed text-white/65">
             On essaie Shopify, WooCommerce et Big Cartel, puis les données publiées
             pour Google, et enfin le plan du site. Cette dernière méthode va chercher
-            les pages une par une — compte une dizaine de secondes.
+            les pages une par une, donc compte une dizaine de secondes.
           </p>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -172,13 +185,17 @@ export default function CatalogueImport({
             </button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {result.items.map((item) => {
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            {result.items.slice(0, visibles).map((item, i) => {
               const selected = chosen.has(item.source_id);
               return (
                 <label
                   key={item.source_id}
-                  className={`card-light cursor-pointer overflow-hidden transition ${
+                  /* Une arrivée décalée : la grille se remplit au lieu
+                     d'apparaître d'un bloc, ce qui donnait l'impression
+                     que la page avait planté. */
+                  style={{ animationDelay: `${Math.min((i % PAR_PAGE) * 35, 600)}ms` }}
+                  className={`card-light arrive cursor-pointer overflow-hidden transition ${
                     selected ? "ring-3 ring-white" : ""
                   }`}
                 >
@@ -191,12 +208,18 @@ export default function CatalogueImport({
                     className="sr-only"
                   />
                   <div className="relative z-3">
-                    <div className="relative aspect-square w-full overflow-hidden bg-[#e6dcfb]">
+                    <div className="visuel relative aspect-square w-full overflow-hidden">
                       {item.images[0] && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={item.images[0]} alt="" className="h-full w-full object-cover" />
+                        <img
+                          src={item.images[0]}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover"
+                        />
                       )}
-                      {known.has(item.source_id) && (
+                      {connue(item) && (
                         <span className="absolute left-2 top-2 rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[9.5px] font-black uppercase tracking-[0.1em] text-white">
                           Déjà importée
                         </span>
@@ -207,11 +230,11 @@ export default function CatalogueImport({
                         </span>
                       )}
                     </div>
-                    <div className="p-4">
-                      <p className="m-0 truncate text-[13.5px] font-extrabold text-[var(--color-ink)]">
+                    <div className="p-3">
+                      <p className="m-0 truncate text-[12.5px] font-extrabold text-[var(--color-ink)]">
                         {item.name}
                       </p>
-                      <p className="m-0 mt-1 text-[12px] font-bold text-[#6a5a92]">
+                      <p className="m-0 mt-0.5 text-[11.5px] font-bold text-[#6a5a92]">
                         {formatPrice(item.price_cents, item.currency) ?? "Prix variable"}
                         {!item.available && " · épuisée"}
                       </p>
@@ -222,14 +245,28 @@ export default function CatalogueImport({
             })}
           </div>
 
+          {visibles < result.items.length && (
+            <button
+              type="button"
+              onClick={() => setVisibles((n) => n + PAR_PAGE)}
+              className="self-center rounded-full border border-white/35 px-6 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:bg-white/12 active:scale-[.97]"
+            >
+              Afficher {Math.min(PAR_PAGE, result.items.length - visibles)} pièces de plus
+              <span className="ml-2 font-semibold text-white/50">
+                {visibles} / {result.items.length}
+              </span>
+            </button>
+          )}
+
           {error && (
             <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] text-white">{error}</p>
           )}
 
           <p className="m-0 text-[13px] leading-relaxed text-white/62">
-            Réimporter une pièce déjà présente la met à jour, elle ne se duplique pas.
-            Tout arrive en brouillon : tu passes les pièces en « publiée » quand elles
-            te conviennent.
+            Réimporter une pièce déjà présente la met à jour sans la dupliquer, et sans
+            toucher au rayon ni à l&apos;état que tu lui as donnés. Les nouvelles pièces
+            arrivent en brouillon : tu les passes en « publiée » quand elles te
+            conviennent.
           </p>
 
           <SubmitCount count={chosen.size} />
