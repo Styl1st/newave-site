@@ -35,14 +35,23 @@ export default async function Header() {
     "rounded-full px-3 py-2.5 text-[13px] font-bold text-white/85 transition hover:bg-white/14 hover:text-white active:scale-[.97]";
 
   return (
-    <header className="relative z-10 w-full">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-[var(--pad)] py-5 md:py-6">
+    /*
+     * Collante, et non plus emportée par le défilement.
+     *
+     * Sur téléphone, il fallait remonter toute la page pour retrouver
+     * le menu — sur une fiche de marque, cela pouvait faire plusieurs
+     * écrans. Le flou et le trait du bas séparent nettement la barre du
+     * contenu qui passe dessous : sans eux, sur un fond animé, les deux
+     * se confondent.
+     */
+    <header className="sticky top-0 z-40 w-full border-b border-white/12 bg-[rgba(28,10,70,0.55)] backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-[var(--pad)] py-3.5 md:py-4">
         <Link href="/" aria-label="Accueil NEWAVE SPHERE" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/brand/logo-white.webp"
             alt="NEWAVE SPHERE"
-            className="h-7 w-auto drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:h-8"
+            className="h-7 w-auto drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)]"
           />
         </Link>
 

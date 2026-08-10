@@ -31,7 +31,7 @@
   /* Hauteur de l'en-tête, qui n'est pas fixe : elle occupe de la place
      dans le flux, il faut donc la retrancher pour qu'un écran « plein »
      le soit vraiment. */
-  --haut-entete: 68px;
+  --haut-entete: 56px;
 
   /* Amplitude du défilement en cylindre. Sur un petit écran, la même
      bascule qu'en grand rend le texte flou et donne le tournis : on la
@@ -636,7 +636,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    visible quand les barres du navigateur mobile sont déployées, donc le
    pire cas. Les navigateurs qui l'ignorent gardent `vh`. */
 @media (min-width: 640px) {
-  :root { --haut-entete: 82px; }
+  :root { --haut-entete: 64px; }
 }
 
 .premier-ecran {

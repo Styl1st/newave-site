@@ -107,15 +107,21 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
           où l'animation reboucle, la seconde copie se trouve pile là
           où était la première. La couture est invisible.
         */}
-        <div className="ruban pb-4 sm:pb-5">
-          <div className="piste flex w-max gap-3 px-4 sm:px-6" style={{ animationDuration: `${duree}s` }}>
-            {tirage.map((b) => (
-              <Vignette key={b.id} brand={b} />
-            ))}
-            {tirage.map((b) => (
-              <span key={`bis-${b.id}`} aria-hidden className="contents">
-                <Vignette brand={b} />
-              </span>
+        <div className="ruban px-4 pb-4 sm:px-6 sm:pb-5">
+          <div className="piste flex w-max" style={{ animationDuration: `${duree}s` }}>
+            {/* Deux moitiés STRICTEMENT identiques, chacune avec son
+                espace final. C'est la condition pour que le retour à
+                zéro passe inaperçu : la piste glisse d'exactement 50 %
+                de sa largeur, donc la seconde copie doit se retrouver
+                pile là où était la première. Avec un espacement posé
+                sur la piste entière, il manquait un demi-écart au
+                bouclage, et la couture se voyait à chaque tour. */}
+            {[0, 1].map((copie) => (
+              <div key={copie} aria-hidden={copie === 1} className="flex shrink-0 gap-3 pr-3">
+                {tirage.map((b) => (
+                  <Vignette key={`${copie}-${b.id}`} brand={b} />
+                ))}
+              </div>
             ))}
           </div>
         </div>

@@ -6,10 +6,13 @@ import { PRICE_TIER_LABEL } from "@/lib/types";
 export default function BrandCard({
   brand,
   favori,
+  apercu,
 }: {
   brand: Brand;
   /** Présent = on affiche le cœur, avec son état de départ. */
   favori?: { initial: boolean };
+  /** Bouton d'aperçu, posé en bas à gauche du visuel. */
+  apercu?: React.ReactNode;
 }) {
   const visual = brand.cover_url ?? brand.logo_url;
 
@@ -66,6 +69,14 @@ export default function BrandCard({
           {/* En bas à droite du visuel : le haut est déjà occupé par le
               badge « À la une » et par le bouton d'aperçu, et sur une
               carte étroite les trois se marchaient dessus. */}
+          {/* Trois surcouches, trois coins distincts : le badge en
+              haut à gauche, l'aperçu en bas à gauche, le cœur en bas à
+              droite. Sur une carte étroite, deux d'entre elles au même
+              endroit finissaient par se chevaucher. */}
+          {apercu && (
+            <div className="pointer-events-auto absolute bottom-3 left-3">{apercu}</div>
+          )}
+
           {favori && (
             <div className="pointer-events-auto absolute bottom-3 right-3">
               <FavoriteButton

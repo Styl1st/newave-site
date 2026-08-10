@@ -38,16 +38,20 @@ export default function BrandGrid({
              le bouton restait en place et venait flotter au-dessus de
              la carte de la ligne du dessus. */
           <div key={b.id} data-reveal className="relative h-full">
-            <BrandCard brand={b} favori={favoris ? { initial: suivies.has(b.id) } : undefined} />
-
-            <button
-              type="button"
-              onClick={() => setOpen(b.slug)}
-              aria-label={`Aperçu des pièces de ${b.name}`}
-              className="absolute right-3 top-3 z-10 rounded-full bg-[rgba(20,8,50,0.62)] px-3.5 py-1.5 text-[10.5px] font-black uppercase tracking-[0.1em] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.92)]"
-            >
-              Aperçu
-            </button>
+            <BrandCard
+              brand={b}
+              favori={favoris ? { initial: suivies.has(b.id) } : undefined}
+              apercu={
+                <button
+                  type="button"
+                  onClick={() => setOpen(b.slug)}
+                  aria-label={`Aperçu des pièces de ${b.name}`}
+                  className="rounded-full bg-[rgba(20,8,50,0.62)] px-3.5 py-1.5 text-[10.5px] font-black uppercase tracking-[0.1em] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.92)]"
+                >
+                  Aperçu
+                </button>
+              }
+            />
           </div>
         ))}
       </Grille>

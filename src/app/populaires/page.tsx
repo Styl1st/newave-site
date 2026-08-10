@@ -4,6 +4,7 @@ import BrandCard from "@/components/BrandCard";
 import Grille from "@/components/Grille";
 import ProductCard from "@/components/ProductCard";
 import Rang from "@/components/Rang";
+import SelecteurClassement from "@/components/SelecteurClassement";
 import { enEtoiles } from "@/components/Etoiles";
 import { getMostLiked, getMyLikes } from "@/lib/likes";
 import { getMostFavorited } from "@/lib/favorites";
@@ -87,8 +88,6 @@ export default async function PopulairesPage({ searchParams }: Props) {
       </>
     );
 
-  const onglet_actif = "bg-white text-[var(--color-ink)]";
-  const onglet_repos = "text-white/72 hover:bg-white/12 hover:text-white";
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -102,34 +101,8 @@ export default async function PopulairesPage({ searchParams }: Props) {
         </p>
       </header>
 
-      {/* Des liens, pas des boutons : chaque classement a son adresse,
-          donc il se partage et se met en favori.
+      <SelecteurClassement onglets={ONGLETS} actif={onglet} base="/populaires" defaut="semaine" />
 
-          Une bande qui défile, pas un pavé qui se replie. À cinq
-          entrées sur un téléphone, le repli fabriquait un bloc de trois
-          lignes qui poussait les résultats hors de l'écran. */}
-      <nav
-        data-no-reveal
-        aria-label="Choix du classement"
-        className="rise rise-1 -mx-[var(--pad)] mb-7 overflow-x-auto px-[var(--pad)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        <div className="inline-flex w-max gap-1 rounded-full border border-white/20 bg-white/8 p-1">
-          {ONGLETS.map((o) => (
-            <Link
-              key={o.id}
-              href={o.id === "semaine" ? "/populaires" : `/populaires?vue=${o.id}`}
-              aria-current={onglet === o.id ? "page" : undefined}
-              title={o.label}
-              className={`whitespace-nowrap rounded-full px-3.5 py-2 text-[12.5px] font-bold transition sm:px-4 ${
-                onglet === o.id ? onglet_actif : onglet_repos
-              }`}
-            >
-              <span className="sm:hidden">{o.court}</span>
-              <span className="hidden sm:inline">{o.label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
 
       {onglet === "notes-pieces" ? (
         piecesNotees.length === 0 ? (

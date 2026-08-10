@@ -28,14 +28,29 @@ export default function AttachBrand({
   rattachees: Option[];
 }) {
   const [query, setQuery] = useState("");
+  /*
+   * Une poignée à la fois. Une liste de trente marques fabrique un bloc
+   * plus haut que l'écran : il traverse alors l'animation de
+   * défilement d'un seul tenant et disparaît avant qu'on ait pu le
+   * lire. Trois entrées suffisent à comprendre, la recherche fait le
+   * reste.
+   */
+  const [visibles, setVisibles] = useState(4);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const resultats = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return disponibles.slice(0, 6);
-    return disponibles.filter((b) => b.name.toLowerCase().includes(q)).slice(0, 8);
+    const filtrees = q
+      ? disponibles.filter((b) => b.name.toLowerCase().includes(q))
+      : disponibles;
+    return filtrees.slice(0, visibles);
+  }, [disponibles, query, visibles]);
+
+  const totalFiltre = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? disponibles.filter((b) => b.name.toLowerCase().includes(q)).length : disponibles.length;
   }, [disponibles, query]);
 
   function agir(brandId: string, sens: "attacher" | "detacher") {
@@ -151,7 +166,17 @@ export default function AttachBrand({
         </ul>
       )}
 
-      {!query && disponibles.length > 6 && (
+      {totalFiltre > visibles && (
+        <button
+          type="button"
+          onClick={() => setVisibles((n) => n + 8)}
+          className="mt-3 w-full rounded-full border border-white/30 px-4 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:bg-white/12 active:scale-[.98]"
+        >
+          Voir plus de marques ({visibles} sur {totalFiltre})
+        </button>
+      )}
+
+      {!query && disponibles.length > 4 && (
         <p className="m-0 mt-3 text-[12px] text-white/45">
           {disponibles.length} marques disponibles. Tape pour filtrer.
         </p>

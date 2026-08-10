@@ -109,20 +109,23 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
         <div className="flex flex-col gap-3">
           {results.map((u) => (
             <div key={u.id} className="card-light p-4">
-              <div className="relative z-3 flex flex-wrap items-center gap-4">
+              {/* Sur téléphone, l'identité prend toute la largeur et les
+                  commandes passent dessous. Tout sur une seule ligne,
+                  le nombre de marques venait recouvrir le rôle. */}
+              <div className="relative z-3 flex flex-wrap items-center gap-x-4 gap-y-3">
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[rgba(23,10,51,0.08)] text-[15px] font-black text-[var(--color-ink)]">
                   {(u.display_name ?? u.email ?? "?").charAt(0).toUpperCase()}
                 </span>
 
-                <Link href={`/admin/utilisateurs/${u.id}`} className="min-w-0 flex-1">
+                <Link href={`/admin/utilisateurs/${u.id}`} className="min-w-0 flex-1 basis-[calc(100%-3.75rem)] sm:basis-auto">
                   <span className="block truncate text-[14.5px] font-extrabold text-[var(--color-ink)]">
                     {u.display_name ?? u.email}
                     {u.id === meId && (
                       <span className="ml-2 text-[11px] font-bold text-[#6a5a92]">(toi)</span>
                     )}
                   </span>
-                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] font-semibold text-[#6a5a92]">
-                    {u.display_name && <span className="truncate">{u.email}</span>}
+                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-semibold text-[#6a5a92]">
+                    {u.display_name && <span className="min-w-0 max-w-full truncate">{u.email}</span>}
                     {u.brands > 0 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(23,10,51,0.07)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.06em]">
                         <IconUser className="h-3 w-3" /> {u.brands} marque{u.brands > 1 ? "s" : ""}
@@ -133,10 +136,11 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
 
                 <select
                   value={u.role}
+
                   disabled={pending}
                   onChange={(e) => changeRole(u.id, e.target.value as Role)}
                   aria-label={`Rôle de ${u.email}`}
-                  className="rounded-[11px] border border-[rgba(23,10,51,0.18)] bg-white px-3 py-2 text-[12.5px] font-bold text-[var(--color-ink)] disabled:opacity-50"
+                  className="ml-auto rounded-[11px] border border-[rgba(23,10,51,0.18)] bg-white px-3 py-2 text-[12.5px] font-bold text-[var(--color-ink)] disabled:opacity-50 sm:ml-0"
                 >
                   <option value="membre">{ROLE_LABEL.membre}</option>
                   <option value="createur">{ROLE_LABEL.createur}</option>

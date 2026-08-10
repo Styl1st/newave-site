@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BrandSpaceList from "@/components/BrandSpaceList";
 import { getManagedBrands } from "@/lib/brand-space";
 import { getProfile } from "@/lib/auth";
 
@@ -32,26 +33,7 @@ export default async function BrandSpaceHome() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {brands.map((b) => (
-            <Link key={b.id} href={`/espace-marque/${b.slug}`} className="card-light overflow-hidden">
-              <div className="relative z-3">
-                {b.cover_url && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={b.cover_url} alt="" className="block aspect-16/9 w-full object-cover" />
-                )}
-                <div className="p-5">
-                  <p className="m-0 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#6a5a92]">
-                    {b.status === "published" ? "En ligne" : "En attente de publication"}
-                  </p>
-                  <h2 className="m-0 mt-1.5 text-[17px] font-extrabold text-[var(--color-ink)]">
-                    {b.name}
-                  </h2>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <BrandSpaceList brands={brands} />
       )}
     </>
   );
