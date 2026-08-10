@@ -22,7 +22,12 @@ export default async function EditBrandProduct({ params }: Props) {
   const priceEuros = product?.price_cents != null ? (product.price_cents / 100).toFixed(2) : "";
   const compareEuros =
     product?.compare_at_cents != null ? (product.compare_at_cents / 100).toFixed(2) : "";
-  const sizeList = (product?.sizes ?? []).map((s) => s.label).join(", ");
+  // Dédoublonné, comme sur la fiche publique : une pièce importée
+  // avant la correction porte autant de fois « Apricot » qu'elle a de
+  // tailles, et le champ à modifier doit montrer la liste propre.
+  const sizeList = Array.from(
+    new Set((product?.sizes ?? []).map((s) => s.label.trim()).filter(Boolean))
+  ).join(", ");
 
   return (
     <>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
+import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
 
 /**
  * Toutes les ecritures de l'administration passent par ici.
@@ -115,6 +116,18 @@ export async function saveBrand(formData: FormData): Promise<Result> {
   const status = toText(formData.get("status")) === "published" ? "published" : "draft";
   const year = toText(formData.get("founded_year"));
 
+  // La même règle qu'ailleurs : on ne met pas en ligne une fiche sans
+  // visuel, quel que soit le chemin emprunté pour la publier.
+  if (status === "published") {
+    const obstacle = obstacleAPublication({
+      tagline: toText(formData.get("tagline")),
+      description: toText(formData.get("description")),
+      cover_url: toNullable(formData.get("cover_url")),
+      logo_url: toNullable(formData.get("logo_url")),
+    });
+    if (obstacle) return { ok: false, error: obstacle };
+  }
+
   const payload = {
     slug: toText(formData.get("slug")) || slugify(name),
     name,
@@ -156,6 +169,121 @@ export async function deleteBrand(formData: FormData): Promise<void> {
   revalidatePath("/admin/marques");
   revalidatePath("/marques");
   redirect("/admin/marques");
+}
+
+/**
+ * Publier, remettre en brouillon ou supprimer plusieurs marques.
+ *
+ * Le même geste que le bouton d'une ligne, appliqué à une sélection.
+ * Ouvrir soixante-dix fiches pour répéter le même clic n'est pas du
+ * travail, c'est de la manutention.
+ *
+ * Les règles ne changent pas pour autant. Une fiche sans accroche ni
+ * description ne part pas en ligne, ici comme ailleurs : elle est
+ * simplement laissée de côté, et le compte renvoyé le dit.
+ */
+export async function bulkBrandAction(
+  formData: FormData
+): Promise<Result & { traitees?: number; ecartees?: number }> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const intent = toText(formData.get("intent"));
+  const ids = formData.getAll("ids").map((v) => String(v)).filter(Boolean);
+  if (ids.length === 0) return { ok: false, error: "Aucune marque sélectionnée." };
+
+  /* ---------- suppression ---------- */
+  if (intent === "delete") {
+    // Les pièces d'abord : selon la déclaration de la clé étrangère,
+    // supprimer une marque qui en porte encore échouerait.
+    const { error: pieces } = await supabase.from("products").delete().in("brand_id", ids);
+    if (pieces) return { ok: false, error: pieces.message };
+
+    const { error } = await supabase.from("brands").delete().in("id", ids);
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/admin/marques");
+    revalidatePath("/marques");
+    revalidatePath("/");
+    return { ok: true, traitees: ids.length, ecartees: 0 };
+  }
+
+  if (intent !== "publish" && intent !== "draft") {
+    return { ok: false, error: "Action inconnue." };
+  }
+
+  /* ---------- retrait de l'annuaire ---------- */
+  if (intent === "draft") {
+    const { error } = await supabase
+      .from("brands")
+      .update({ status: "draft", published_at: null })
+      .in("id", ids);
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/admin/marques");
+    revalidatePath("/marques");
+    revalidatePath("/");
+    return { ok: true, traitees: ids.length, ecartees: 0 };
+  }
+
+  /* ---------- publication ---------- */
+  const { data, error: lecture } = await supabase
+    .from("brands")
+    .select("id, tagline, description, cover_url, logo_url, published_at")
+    .in("id", ids);
+  if (lecture) return { ok: false, error: lecture.message };
+
+  const fiches =
+    (data as
+      | {
+          id: string;
+          tagline: string;
+          description: string;
+          cover_url: string | null;
+          logo_url: string | null;
+          published_at: string | null;
+        }[]
+      | null) ?? [];
+
+  const publiables = fiches.filter(peutEtrePubliee);
+  const ecartees = fiches.length - publiables.length;
+
+  if (publiables.length === 0) {
+    return {
+      ok: false,
+      // Toutes recalées pour la même raison, la plupart du temps : on
+      // la donne plutôt qu'un message générique.
+      error: obstacleAPublication(fiches[0] ?? {}) ?? "Aucune de ces fiches n'est publiable.",
+    };
+  }
+
+  const maintenant = new Date().toISOString();
+
+  // Deux lots plutôt qu'une boucle : celles qui ont déjà connu la
+  // publication gardent leur date d'origine, qui ordonne l'annuaire.
+  const jamaisPubliees = publiables.filter((f) => !f.published_at).map((f) => f.id);
+  const dejaPubliees = publiables.filter((f) => f.published_at).map((f) => f.id);
+
+  if (jamaisPubliees.length > 0) {
+    const { error } = await supabase
+      .from("brands")
+      .update({ status: "published", published_at: maintenant })
+      .in("id", jamaisPubliees);
+    if (error) return { ok: false, error: error.message };
+  }
+  if (dejaPubliees.length > 0) {
+    const { error } = await supabase
+      .from("brands")
+      .update({ status: "published" })
+      .in("id", dejaPubliees);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/admin/marques");
+  revalidatePath("/marques");
+  revalidatePath("/");
+  return { ok: true, traitees: publiables.length, ecartees };
 }
 
 /* ========================= CANDIDATURES ========================= */
@@ -549,7 +677,7 @@ export async function toggleBrandStatus(formData: FormData): Promise<Result> {
 
   const { data: brand } = await supabase
     .from("brands")
-    .select("name, tagline, description, published_at")
+    .select("name, tagline, description, cover_url, logo_url, published_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -557,17 +685,15 @@ export async function toggleBrandStatus(formData: FormData): Promise<Result> {
     name: string;
     tagline: string;
     description: string;
+    cover_url: string | null;
+    logo_url: string | null;
     published_at: string | null;
   } | null;
   if (!fiche) return { ok: false, error: "Marque introuvable." };
 
-  // Publier une fiche vide dessert la marque autant que nous.
-  if (publier && !fiche.tagline.trim() && !fiche.description.trim()) {
-    return {
-      ok: false,
-      error:
-        "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.",
-    };
+  if (publier) {
+    const obstacle = obstacleAPublication(fiche);
+    if (obstacle) return { ok: false, error: obstacle };
   }
 
   const { error } = await supabase

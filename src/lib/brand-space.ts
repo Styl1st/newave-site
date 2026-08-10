@@ -30,6 +30,32 @@ export async function getManagedBrands(): Promise<Brand[]> {
 }
 
 /**
+ * Les marques dont la personne est réellement gérante.
+ *
+ * Différent de getManagedBrands(), qui renvoie tout l'annuaire à un
+ * administrateur : c'est ce qu'il faut pour l'espace de travail, ce
+ * n'est pas ce qu'il faut pour un bouton « ma marque » dans la barre
+ * du haut. Un administrateur qui dirige aussi une marque doit y
+ * retrouver la sienne, pas les soixante-dix autres.
+ */
+export async function getMesMarques(): Promise<Pick<Brand, "id" | "slug" | "name">[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const profile = await getProfile();
+  if (!profile) return [];
+
+  const { data } = await supabase
+    .from("brand_managers")
+    .select("brand:brands(id,slug,name)")
+    .eq("user_id", profile.id);
+
+  return (data ?? [])
+    .map((row) => (row as unknown as { brand: Pick<Brand, "id" | "slug" | "name"> | null }).brand)
+    .filter((b): b is Pick<Brand, "id" | "slug" | "name"> => Boolean(b));
+}
+
+/**
  * Charge une marque en verifiant que la personne a le droit d'y toucher.
  * Redirige plutot que de renvoyer null : ces pages n'ont aucun sens sans droits.
  *

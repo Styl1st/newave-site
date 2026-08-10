@@ -119,16 +119,58 @@ type ShopifyBrut = {
   title: string;
   handle: string;
   body_html?: string;
-  variants?: {
-    title?: string;
-    option1?: string | null;
-    price?: string;
-    compare_at_price?: string | null;
-    available?: boolean;
-  }[];
+  // Les trois axes que Shopify autorise, alignés sur `options`.
+  variants?: ShopifyVariante[];
   images?: { src: string }[];
   options?: { name?: string }[];
 };
+
+type ShopifyVariante = {
+  title?: string;
+  option1?: string | null;
+  option2?: string | null;
+  option3?: string | null;
+  price?: string;
+  compare_at_price?: string | null;
+  available?: boolean;
+};
+
+/** Ce qui, dans le nom d'un axe de variante, désigne bien une taille. */
+const AXE_TAILLE = /taille|size|pointure|dimension/i;
+
+/**
+ * Nettoie une liste de tailles avant de l'enregistrer.
+ *
+ * Deux problèmes, et le même symptôme : une fiche qui affiche
+ * « Apricot, Apricot, Apricot ».
+ *
+ * Le premier est que les variantes d'une boutique ne sont pas des
+ * tailles mais des combinaisons. Une pièce déclinée en trois couleurs
+ * et quatre tailles a douze variantes, et si l'on lit toujours le
+ * premier axe, on récupère douze fois trois couleurs. React s'en
+ * plaint d'ailleurs à juste titre : deux enfants ne peuvent pas
+ * partager la même clé.
+ *
+ * Le second est que rien ne garantit que le premier axe soit la
+ * taille. Beaucoup de boutiques déclarent la couleur en premier.
+ *
+ * On dédoublonne donc, et une taille reste disponible dès qu'une seule
+ * de ses variantes l'est : un pull en taille M existe encore si le
+ * rouge est épuisé mais pas le noir.
+ */
+function normaliserTailles(
+  brutes: { label: string; available: boolean }[]
+): { label: string; available: boolean }[] {
+  const parLabel = new Map<string, boolean>();
+
+  for (const t of brutes) {
+    const label = t.label.trim();
+    if (!label || label.toLowerCase() === "default title") continue;
+    parLabel.set(label, (parLabel.get(label) ?? false) || t.available);
+  }
+
+  return Array.from(parLabel, ([label, available]) => ({ label, available }));
+}
 
 async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
   const r = await lire(`${base}/products.json?limit=250`);
@@ -153,6 +195,21 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
       .filter((n): n is number => n !== null);
     const maxBarre = barres.length ? Math.max(...barres) : null;
 
+    /*
+     * Sur quel axe lire la taille.
+     *
+     * Shopify aligne option1, option2, option3 sur l'ordre déclaré
+     * dans `options`. On cherche celui qui parle de taille ; à défaut
+     * on prend le premier, comme avant.
+     */
+    const axes = p.options ?? [];
+    const rang = Math.max(
+      0,
+      axes.findIndex((o) => AXE_TAILLE.test(o?.name ?? ""))
+    );
+    const lireAxe = (v: ShopifyVariante) =>
+      [v.option1, v.option2, v.option3][rang] ?? v.option1 ?? v.title ?? "";
+
     return {
       source_id: identifiant(p.id, p.handle, p.title),
       slug: p.handle,
@@ -162,10 +219,10 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
       compare_at_cents:
         maxBarre !== null && priceCents !== null && maxBarre > priceCents ? maxBarre : null,
       currency: "EUR",
-      sizes: variants
-        .map((v) => ({ label: (v.option1 ?? v.title ?? "").trim(), available: Boolean(v.available) }))
-        .filter((s) => s.label && s.label.toLowerCase() !== "default title"),
-      size_label: (p.options ?? [])[0]?.name?.trim() || "Taille",
+      sizes: normaliserTailles(
+        variants.map((v) => ({ label: lireAxe(v), available: Boolean(v.available) }))
+      ),
+      size_label: axes[rang]?.name?.trim() || "Taille",
       images: (p.images ?? []).map((i) => i.src).slice(0, 8),
       shop_url: `${base}/products/${p.handle}`,
       available: variants.some((v) => v.available),
@@ -217,9 +274,7 @@ async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
     const price = Number.isFinite(brutPrix) ? Math.round(brutPrix / facteur) : null;
     const regulier = Number.isFinite(brutRegulier) ? Math.round(brutRegulier / facteur) : null;
 
-    const tailles = p.attributes?.find((a) =>
-      /taille|size|pointure/i.test(a.name ?? "")
-    );
+    const tailles = p.attributes?.find((a) => AXE_TAILLE.test(a.name ?? ""));
 
     return {
       source_id: identifiant(p.id, p.slug, p.name),
@@ -229,7 +284,9 @@ async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
       price_cents: price,
       compare_at_cents: regulier !== null && price !== null && regulier > price ? regulier : null,
       currency: p.prices?.currency_code || "EUR",
-      sizes: (tailles?.terms ?? []).map((t) => ({ label: t.name, available: true })),
+      sizes: normaliserTailles(
+        (tailles?.terms ?? []).map((t) => ({ label: t.name, available: true }))
+      ),
       size_label: tailles?.name ?? "Taille",
       images: (p.images ?? []).map((i) => i.src).slice(0, 8),
       shop_url: p.permalink,
@@ -276,9 +333,9 @@ async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
       price_cents: enCentimes(p.price),
       compare_at_cents: null,
       currency: "EUR",
-      sizes: options
-        .map((o) => ({ label: (o.name ?? "").trim(), available: !o.sold_out }))
-        .filter((s) => s.label),
+      sizes: normaliserTailles(
+        options.map((o) => ({ label: o.name ?? "", available: !o.sold_out }))
+      ),
       size_label: "Taille",
       images: p.images?.map((i) => i.secure_url ?? i.url ?? "").filter(Boolean).slice(0, 8) ?? [],
       shop_url: chemin.startsWith("http") ? chemin : `${base}${chemin}`,

@@ -11,7 +11,17 @@
  */
 
 export const BRAND_CATEGORIES = [
+  // Les huit premières viennent de la base tenue à la main : ce sont
+  // celles qui décrivent réellement les marques du site, plutôt que
+  // celles qu'on avait imaginées avant d'en avoir la moindre.
   "Streetwear",
+  "Artiste",
+  "Alt",
+  "Luxe",
+  "Punk",
+  "Womenswear",
+  "Old money",
+  "Casual",
   "Minimalisme",
   "Denim",
   "Maille",
@@ -70,6 +80,9 @@ export function withExisting(
   reference: readonly string[],
   existing: string[] | undefined
 ): string[] {
-  const extra = (existing ?? []).filter((v) => !reference.includes(v));
+  // Le `Set` n'est pas une précaution de style : une valeur venue
+  // d'ailleurs peut arriver en double, et deux cases à cocher de même
+  // nom deviennent deux enfants React de même clé.
+  const extra = Array.from(new Set(existing ?? [])).filter((v) => !reference.includes(v));
   return [...reference, ...extra];
 }

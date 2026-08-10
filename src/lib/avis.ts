@@ -239,21 +239,72 @@ export async function enregistrerAvis(formData: FormData): Promise<ResultatAvis>
     return { ok: false, error: "Avis mal formé." };
   }
 
-  // Un avis par personne et par cible : on écrase le sien plutôt que
-  // d'en empiler un second. Changer d'avis est normal, en avoir deux
-  // en même temps ne l'est pas.
-  const { error } = await supabase.from("reviews").upsert(
-    {
-      user_id: user.id,
-      brand_id: brandId || null,
-      product_id: productId || null,
-      note,
-      commentaire,
-    },
-    { onConflict: brandId ? "user_id,brand_id" : "user_id,product_id" }
-  );
+  /*
+   * Un avis par personne et par cible : on remplace le sien plutôt que
+   * d'en empiler un second. Changer d'avis est normal, en avoir deux
+   * en même temps ne l'est pas.
+   *
+   * On cherche donc le sien, puis on modifie ou on crée. C'était écrit
+   * avant avec un « upsert », et ça ne pouvait pas marcher : les deux
+   * index uniques de la table sont PARTIELS, chacun assorti d'un
+   * « where … is not null », parce qu'un avis porte sur une marque ou
+   * sur une pièce mais jamais sur les deux. Or Postgres refuse
+   * d'appuyer un ON CONFLICT sur un index partiel tant qu'on ne lui
+   * répète pas la même condition, ce que l'interface de Supabase ne
+   * permet pas d'écrire. D'où le message incompréhensible reçu à
+   * l'envoi : « no unique or exclusion constraint matching the ON
+   * CONFLICT specification ».
+   *
+   * Deux requêtes au lieu d'une, sur un geste qu'on fait une fois par
+   * marque. L'index reste en place et continue de garantir l'unicité.
+   */
+  const cible = brandId ? "brand_id" : "product_id";
+  const valeurCible = brandId || productId;
 
-  if (error) return { ok: false, error: error.message };
+  const { data: existant } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq(cible, valeurCible)
+    .maybeSingle();
+
+  const { error } = existant
+    ? await supabase
+        .from("reviews")
+        .update({ note, commentaire })
+        .eq("id", (existant as { id: string }).id)
+    : await supabase.from("reviews").insert({
+        user_id: user.id,
+        brand_id: brandId || null,
+        product_id: productId || null,
+        note,
+        commentaire,
+      });
+
+  if (error) {
+    // Reste le cas où deux envois se croisent : l'index a fait son
+    // travail, on rattrape en modifiant celui qui vient d'être créé.
+    if (/duplicate key|unique/i.test(error.message)) {
+      const { data: doublon } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq(cible, valeurCible)
+        .maybeSingle();
+
+      if (doublon) {
+        const { error: reprise } = await supabase
+          .from("reviews")
+          .update({ note, commentaire })
+          .eq("id", (doublon as { id: string }).id);
+        if (reprise) return { ok: false, error: reprise.message };
+        revalidatePath(chemin);
+        revalidatePath("/populaires");
+        return { ok: true };
+      }
+    }
+    return { ok: false, error: error.message };
+  }
 
   revalidatePath(chemin);
   revalidatePath("/populaires");

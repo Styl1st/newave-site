@@ -16,7 +16,29 @@ const BRAND_REF = "brand:brands(id,slug,name)";
  * ecrit la raison dans la console du serveur.
  */
 function report(where: string, error: { message: string } | null) {
-  if (error) console.error(`[newave] ${where} : ${error.message}`);
+  if (!error) return;
+
+  /*
+   * Certaines erreurs ne viennent pas du site et se cherchent
+   * longtemps si le message reste brut.
+   *
+   * « JWT issued at future » en est le meilleur exemple : le jeton de
+   * session porte une date d'émission postérieure à l'heure du serveur
+   * qui le vérifie. Rien dans le code ne peut produire cela — c'est
+   * l'horloge de la machine qui est désynchronisée. On le dit, plutôt
+   * que de laisser chercher dans les requêtes.
+   */
+  if (/issued at future|iat|clock skew/i.test(error.message)) {
+    console.error(
+      `[newave] ${where} : ${error.message}\n` +
+        "         → L'horloge de cette machine est décalée par rapport à celle de Supabase.\n" +
+        "         → Windows : Paramètres › Heure et langue › Synchroniser maintenant.\n" +
+        "         → Puis déconnecte-toi et reconnecte-toi pour obtenir un jeton propre."
+    );
+    return;
+  }
+
+  console.error(`[newave] ${where} : ${error.message}`);
 }
 
 /* ---------------- marques ---------------- */

@@ -16,7 +16,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const profile = await requireAdmin();
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-6 sm:py-9">
+    // Même raison que l'espace marque : on ne fait pas danser une
+    // table de travail. Voir espace-marque/layout.tsx.
+    <div data-no-reveal className="mx-auto w-full max-w-6xl px-[var(--pad)] py-6 sm:py-9">
       <div data-no-reveal className="glass mb-8 flex flex-wrap items-center justify-between gap-4 p-4 sm:px-6">
         <nav className="-mx-1 flex items-center gap-1 overflow-x-auto md:mx-0 md:flex-wrap [&::-webkit-scrollbar]:hidden">
           {NAV.map(({ href, label, Icon }) => (

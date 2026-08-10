@@ -1,71 +1,50 @@
 import BrandSpaceNav from "@/components/BrandSpaceNav";
-import CatalogueImport from "@/components/admin/CatalogueImport";
+import FormulaireImport from "@/components/admin/FormulaireImport";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { cleLien, fetchCatalogue } from "@/lib/catalogue";
-import { getBrandProducts } from "@/lib/brand-space";
 
 /**
  * Parcourir un plan de site demande une trentaine de requêtes : la
- * limite par défaut de Vercel, dix secondes, ne suffirait pas et la
- * page se couperait en plein milieu.
+ * limite par défaut de Vercel, dix secondes, ne suffirait pas et
+ * l'import se couperait en plein milieu. Cette limite vaut aussi pour
+ * l'action lancée depuis cette page.
  */
 export const maxDuration = 60;
 
-type Props = {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ boutique?: string }>;
-};
+type Props = { params: Promise<{ slug: string }> };
 
-export default async function ImportPage({ params, searchParams }: Props) {
+export default async function ImportPage({ params }: Props) {
   const { slug } = await params;
-  const { boutique } = await searchParams;
   const { brand, isAdmin } = await requireManagedBrand(slug);
-
-  const shopUrl = boutique ?? brand.shop_url ?? brand.website_url ?? "";
-  const result = shopUrl ? await fetchCatalogue(shopUrl) : null;
-  const existing = await getBrandProducts(brand.id);
-
-  /*
-   * Les repères qui disent « cette pièce est déjà chez toi ».
-   *
-   * On garde l'identifiant de la boutique ET l'adresse de la pièce :
-   * une même pièce lue par deux méthodes différentes n'a pas le même
-   * identifiant, mais son adresse, elle, ne change pas.
-   */
-  const alreadyImported = new Set(
-    existing
-      .flatMap((p) => [p.source_id ?? "", cleLien(p.shop_url)])
-      .filter(Boolean)
-  );
 
   return (
     <>
-      <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
+      <BrandSpaceNav
+        slug={slug}
+        name={brand.name}
+        isAdmin={isAdmin}
+        published={brand.status === "published"}
+      />
 
       <header className="mb-5 sm:mb-7">
-        <p className="eyebrow m-0">Gain de temps</p>
+        <p className="eyebrow m-0">Ton catalogue</p>
         <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
-          Importer ton catalogue
+          Importer tes pièces
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-          Colle l&apos;adresse de ta boutique, ou celle d&apos;une page produit. On lit
-          ce qu&apos;elle publie et on reprend les noms, prix et photos. Tu choisis ce
-          que tu gardes, et tout arrive en brouillon, donc rien ne s&apos;affiche avant que
-          tu l&apos;aies relu.
+          Colle l&apos;adresse de ta boutique, clique une fois. On reprend les noms, les
+          prix, les tailles et les photos, et tout arrive en brouillon : rien ne
+          s&apos;affiche avant que tu l&apos;aies relu. Tu tries ensuite depuis la page
+          Pièces, où tout se publie et se supprime en lot.
         </p>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-          Shopify, WooCommerce et Big Cartel sont lus directement. Pour les autres,
-          on se rabat sur les données que la boutique publie déjà pour Google, et
-          ça fonctionne dans la plupart des cas. Et si rien ne passe, la saisie à la
-          main fonctionne exactement pareil.
+          Réimporter ne crée jamais de doublon : une pièce déjà présente est simplement
+          mise à jour, sans toucher au rayon ni à l&apos;état que tu lui as donnés.
         </p>
       </header>
 
-      <CatalogueImport
+      <FormulaireImport
         slug={slug}
-        defaultShopUrl={shopUrl}
-        result={result}
-        alreadyImported={Array.from(alreadyImported)}
+        adresseConnue={brand.shop_url ?? brand.website_url ?? ""}
       />
     </>
   );

@@ -13,8 +13,14 @@ import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import Link from "next/link";
 import BackLink from "@/components/BackLink";
+import PanneauEdition from "@/components/PanneauEdition";
+import { IconGrid, IconPlus } from "@/components/Icons";
 
 type Props = { params: Promise<{ slug: string }> };
+
+/** Les boutons réservés au gérant, tous du même poids. */
+const ACTION_GERANT =
+  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/85 transition hover:bg-white/16 hover:text-white active:scale-[.97]";
 
 /**
  * Page rendue a la demande, pas figee a la compilation.
@@ -65,22 +71,48 @@ export default async function BrandPage({ params }: Props) {
   return (
     <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-7 sm:py-11">
       {enApercu && (
-        <div className="glass mb-6 flex flex-wrap items-center justify-between gap-3 border-white/45 p-4 sm:px-5">
+        <div className="glass mb-6 p-4 sm:px-5">
           <p className="m-0 text-[13.5px] leading-relaxed text-white/88">
             <strong className="font-extrabold text-white">Aperçu.</strong> Voici ce que
             verra la communauté. Cette page n&apos;est pas encore publique. Personne
             d&apos;autre que toi ne peut y accéder.
           </p>
-          <Link
-            href={`/espace-marque/${brand.slug}`}
-            className="shrink-0 rounded-full border border-white/40 bg-white/8 px-4 py-2 text-[12px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
-          >
-            Continuer à modifier
-          </Link>
         </div>
       )}
 
       <BackLink href="/marques">Toutes les marques</BackLink>
+
+      {/*
+        La page publique devient le poste de commande.
+
+        Un gérant ne devrait pas avoir à quitter sa page pour la
+        modifier : il voit ce que voient les autres, et il agit depuis
+        là. C'est le fonctionnement d'un profil de réseau social, et
+        c'est celui que tout le monde connaît déjà. Chaque pièce porte
+        d'ailleurs son propre crayon, juste en dessous.
+      */}
+      {insight && (
+        <div
+          data-no-reveal
+          className="mt-4 flex flex-wrap items-center gap-2 rounded-full border border-white/20 bg-white/8 p-1.5 backdrop-blur-sm"
+        >
+          <span className="px-2.5 text-[10.5px] font-black uppercase tracking-[0.16em] text-white/50">
+            Ta page
+          </span>
+          {/* Le formulaire ne vit plus sur une page à part : il s'ouvre
+              ici, par-dessus la page qu'on est en train de modifier. */}
+          <PanneauEdition brand={brand} />
+          <Link href={`/espace-marque/${brand.slug}/pieces/ajouter`} className={ACTION_GERANT}>
+            <IconPlus /> Ajouter des pièces
+          </Link>
+          <Link href={`/espace-marque/${brand.slug}/pieces`} className={ACTION_GERANT}>
+            <IconGrid /> Mes pièces
+          </Link>
+          <Link href={`/espace-marque/${brand.slug}/stats`} className={ACTION_GERANT}>
+            Statistiques
+          </Link>
+        </div>
+      )}
 
       <header className="rise mt-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -111,11 +143,21 @@ export default async function BrandPage({ params }: Props) {
       )}
 
       <div className="glass rise rise-1 mt-6 p-4 sm:p-7">
-        <p className="m-0 whitespace-pre-line text-[15.5px] leading-[1.7] text-white/92">
-          {brand.description}
-        </p>
+        {/* Une description peut manquer : une marque tout juste importée
+            n'en a pas encore, et son site n'en donnait peut-être aucune.
+            Mieux vaut passer directement aux faits que réserver une
+            place blanche à un texte absent. */}
+        {brand.description.trim() && (
+          <p className="m-0 whitespace-pre-line text-[15.5px] leading-[1.7] text-white/92">
+            {brand.description}
+          </p>
+        )}
 
-        <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:grid-cols-4">
+        <dl
+          className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
+            brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
+          }`}
+        >
           {facts.map(([label, value]) =>
             value ? (
               <div key={label}>

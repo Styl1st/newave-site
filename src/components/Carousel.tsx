@@ -78,11 +78,23 @@ export default function Carousel({
 
       {images.length > 1 && (
         <>
+          {/*
+            `z-10` n'est pas décoratif : sans lui, ces boutons ne
+            servaient à rien sur ordinateur.
+
+            Les images portent `z-index: 1` — c'est ce qui les fait
+            passer devant le dégradé d'attente pendant leur chargement.
+            Les flèches, elles, n'avaient aucun rang, donc zéro. Une
+            image opaque et large comme la bande se posait donc par
+            dessus : on la faisait glisser au doigt sans problème, mais
+            le clic sur la flèche atterrissait sur l'image. Le geste
+            marchait, le bouton non, exactement comme constaté.
+          */}
           <button
             type="button"
             onClick={() => aller(clamped - 1)}
             aria-label="Image précédente"
-            className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
+            className="absolute left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
           >
             ‹
           </button>
@@ -90,12 +102,12 @@ export default function Carousel({
             type="button"
             onClick={() => aller(clamped + 1)}
             aria-label="Image suivante"
-            className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
+            className="absolute right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
           >
             ›
           </button>
 
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/30 px-2.5 py-1.5 backdrop-blur-sm">
+          <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/30 px-2.5 py-1.5 backdrop-blur-sm">
             {images.map((_, i) => (
               <button
                 key={i}

@@ -4,11 +4,17 @@ import { fetchCatalogue } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 
 /**
- * Relecture quotidienne des catalogues.
+ * Relecture quotidienne des catalogues, vers midi.
  *
  * Une marque change ses prix, épuise une taille, sort une pièce. Sans
  * cette tâche, sa fiche chez nous vieillit doucement jusqu'à mentir.
  * Elle passe donc chaque jour remettre tout le monde à jour.
+ *
+ * L'heure est réglée dans vercel.json, et elle y est écrite en UTC :
+ * « 0 10 * * * » vaut midi à Paris de fin mars à fin octobre, et onze
+ * heures le reste de l'année. Vercel ne connaît pas l'heure d'été, et
+ * la suivre demanderait de changer cette ligne deux fois par an pour
+ * une différence que personne ne remarque.
  *
  * Les nouvelles pièces sont publiées directement. C'est un choix
  * assumé : demander une relecture à chaque nouveauté reviendrait à

@@ -52,6 +52,28 @@ export default async function PiecePage({ params }: Props) {
   const was = formatPrice(product.compare_at_cents, product.currency);
   const off = discountPercent(product);
 
+  /*
+   * Les tailles, dédoublonnées à l'affichage.
+   *
+   * La lecture des boutiques s'en charge désormais, mais les pièces
+   * importées avant la correction portent encore des doublons en base :
+   * une pièce en trois couleurs et quatre tailles avait douze
+   * variantes, donc « Apricot » quatre fois de suite. React refuse deux
+   * enfants de même clé, et la liste affichée n'avait aucun sens.
+   *
+   * Une taille reste disponible dès qu'une seule de ses variantes
+   * l'est. Ce filet coûte trois lignes et évite d'attendre le prochain
+   * passage de la mise à jour quotidienne.
+   */
+  const tailles = Array.from(
+    product.sizes.reduce((acc, t) => {
+      const label = t.label.trim();
+      if (label) acc.set(label, (acc.get(label) ?? false) || t.available);
+      return acc;
+    }, new Map<string, boolean>()),
+    ([label, available]) => ({ label, available })
+  );
+
   // Les autres pièces de la marque, sans celle qu'on regarde.
   const [siblingsAll, insight] = await Promise.all([
     getProductsByBrand(brand.id),
@@ -104,12 +126,11 @@ export default async function PiecePage({ params }: Props) {
         {/* ---------- informations ---------- */}
         <div className="rise rise-1 flex flex-col gap-6">
           <header>
-            <Link
-              href={`/marques/${brand.slug}`}
-              className="eyebrow transition hover:text-white"
-            >
-              {brand.name}
-            </Link>
+            {/* Le nom de la marque, écrit et non plus cliquable : le
+                lien du haut mène déjà exactement au même endroit, et
+                deux chemins vers la même page ne se choisissent pas,
+                ils se subissent. */}
+            <p className="eyebrow m-0">{brand.name}</p>
             <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,31px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
               {product.name}
             </h1>
@@ -167,11 +188,11 @@ export default async function PiecePage({ params }: Props) {
           </header>
 
           {/* ---------- tailles ---------- */}
-          {product.sizes.length > 0 && (
+          {tailles.length > 0 && (
             <section className="glass p-4 sm:p-5">
               <p className="eyebrow m-0">{product.size_label}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
+                {tailles.map((size) => (
                   <span
                     key={size.label}
                     className={
@@ -266,7 +287,12 @@ export default async function PiecePage({ params }: Props) {
                 key={p.id}
                 product={p}
                 brandSlug={brand.slug}
-                canManage={canManage}
+                /* Pas de crayon sur ces quatre vignettes. On modifie une
+                   pièce depuis sa propre page, où le bouton est en haut
+                   et se voit ; le semer sur chaque suggestion ne fait
+                   qu'ajouter du bruit à une section qui sert à
+                   regarder, pas à travailler. */
+                canManage={false}
                 likes={{ count: coeurs.get(p.id) ?? 0, liked: mesCoeurs.has(p.id) }}
               />
             ))}

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { fetchCatalogue } from "@/lib/catalogue";
+import { fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 
 /**
@@ -277,37 +277,65 @@ export async function bulkProductAction(formData: FormData): Promise<Result> {
   return { ok: true };
 }
 
-/* ---------------- import Shopify ---------------- */
+/* ---------------- import du catalogue ---------------- */
 
-export async function importCatalogueSelection(formData: FormData): Promise<Result> {
+/**
+ * Lit une boutique et range tout son catalogue, en un seul geste.
+ *
+ * La version précédente affichait d'abord la boutique, laissait cocher
+ * les pièces, puis relisait TOUTE la boutique une seconde fois au
+ * moment de valider. C'est ce qui la faisait échouer une fois sur
+ * deux : parcourir un plan de site prend une dizaine de secondes, le
+ * faire deux fois frôle la minute au bout de laquelle Vercel coupe. Et
+ * dès qu'une boutique répondait mal, la seconde lecture ne renvoyait
+ * plus exactement les mêmes pièces : les identifiants cochés ne
+ * correspondaient alors à rien, et l'import s'arrêtait sur « ces
+ * pièces n'existent plus dans le catalogue ».
+ *
+ * Une seule lecture, donc, et tout ce qu'elle trouve est importé. Ce
+ * n'est pas seulement plus fiable, c'est aussi plus simple : les
+ * pièces arrivent en brouillon, invisibles pour le public, et la page
+ * « Mes pièces » sait déjà publier ou supprimer en lot. Trier après
+ * coup demande moins de gestes que cocher avant.
+ */
+export async function importerLeCatalogue(formData: FormData): Promise<Result> {
   const slug = text(formData, "slug");
   const { brand } = await requireManagedBrand(slug);
 
   const supabase = await createClient();
   if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
 
-  const shopUrl = text(formData, "shop_url");
-  const chosen = new Set(list(formData, "chosen"));
-  if (chosen.size === 0) return { ok: false, error: "Aucune pièce sélectionnée." };
-
-  const result = await fetchCatalogue(shopUrl);
-  if (!result.ok) return { ok: false, error: result.error };
-
-  // On relit le catalogue plutot que de faire confiance au formulaire :
-  // sinon n'importe qui pourrait envoyer les prix et images de son choix.
-  const choisies = result.items.filter((item) => chosen.has(item.source_id));
-  if (choisies.length === 0) {
-    return { ok: false, error: "Ces pièces n'existent plus dans le catalogue." };
+  const adresse = text(formData, "boutique") || brand.shop_url || brand.website_url || "";
+  if (!adresse) {
+    return { ok: false, error: "Renseigne d'abord l'adresse de ta boutique." };
   }
 
-  // Import manuel : les nouvelles pièces arrivent en brouillon, pour
-  // que la personne les relise avant qu'elles ne s'affichent.
-  const bilan = await synchroniserCatalogue(supabase, brand.id, choisies, {
+  const lecture = await fetchCatalogue(adresse);
+  if (!lecture.ok) return { ok: false, error: lecture.error };
+  if (lecture.items.length === 0) {
+    return { ok: false, error: "La boutique répond, mais son catalogue est vide." };
+  }
+
+  const bilan = await synchroniserCatalogue(supabase, brand.id, lecture.items, {
+    // En brouillon : rien ne s'affiche avant relecture.
     statutDesNouvelles: "draft",
   });
   if (bilan.erreur) return { ok: false, error: bilan.erreur };
 
+  /*
+   * L'adresse est retenue, pour ne pas avoir à la recoller.
+   *
+   * Réduite à son domaine, et c'est important : on accepte le lien
+   * direct d'une pièce pour dépanner, mais l'enregistrer tel quel
+   * ferait pointer la fiche, et la relecture quotidienne, sur une
+   * seule pièce au lieu de la boutique entière.
+   */
+  const base = normalizeShopUrl(adresse);
+  if (base && base !== brand.shop_url) {
+    await supabase.from("brands").update({ shop_url: base }).eq("id", brand.id);
+  }
+
   revalidatePath(`/espace-marque/${slug}/pieces`);
   revalidatePath(`/marques/${slug}`);
-  redirect(`/espace-marque/${slug}/pieces`);
+  redirect(`/espace-marque/${slug}/pieces?nouvelles=${bilan.creees}&majs=${bilan.majs}`);
 }

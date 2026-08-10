@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import ApplicationForm from "@/components/ApplicationForm";
+import ParcoursCandidature from "@/components/ParcoursCandidature";
 
 export const metadata: Metadata = {
   title: "Proposer sa marque",
   description:
-    "Tu crées une marque indépendante ? Propose ton dossier à NEWAVE SPHERE. Gratuit, lu par un humain.",
+    "Tu crées une marque indépendante ? Propose ton dossier à NEWAVE SPHERE. Gratuit, lu par un humain, et un site internet n'est pas nécessaire.",
 };
+
+/** Lire le site d'une marque peut demander plusieurs secondes. */
+export const maxDuration = 60;
 
 export default function CandidaturePage() {
   return (
@@ -16,13 +19,15 @@ export default function CandidaturePage() {
           Proposer sa marque
         </h1>
         <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
-          C&apos;est gratuit, et il n&apos;y a pas de commission à l&apos;entrée. On regarde le
-          travail, pas le nombre d&apos;abonnés. Une seule condition : que ce soit vraiment le tien.
+          C&apos;est gratuit, et il n&apos;y a pas de commission à l&apos;entrée. On
+          regarde le travail, pas le nombre d&apos;abonnés. Pas besoin d&apos;avoir un
+          site : beaucoup de créateurs commencent sans, et ça n&apos;enlève rien à leurs
+          pièces.
         </p>
       </header>
 
       <div className="rise rise-1">
-        <ApplicationForm />
+        <ParcoursCandidature />
       </div>
     </div>
   );

@@ -20,6 +20,15 @@ export default function BrandDirectory({
   const [category, setCategory] = useState<string | null>(null);
   const [tier, setTier] = useState<PriceTier | null>(null);
   const [ouvert, setOuvert] = useState(false);
+  /*
+   * Marque ou artiste : la distinction la plus utile de l'annuaire.
+   *
+   * Une marque a une boutique, des tailles, des séries. Un artiste fait
+   * lui-même, souvent à l'unité, parfois sans rien vendre en ligne. On
+   * ne cherche pas la même chose selon les jours, et noyer les seconds
+   * parmi les premiers revenait à les rendre introuvables.
+   */
+  const [genre, setGenre] = useState<"tout" | "marques" | "artistes">("tout");
 
   // Le compteur sur le bouton : sans lui, un filtre actif derrière un
   // panneau replié devient invisible, et la liste paraît incomplète
@@ -39,6 +48,9 @@ export default function BrandDirectory({
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return brands.filter((b) => {
+      const artiste = b.categories.includes("Artiste");
+      if (genre === "artistes" && !artiste) return false;
+      if (genre === "marques" && artiste) return false;
       if (tier && b.price_tier !== tier) return false;
       if (category && !b.categories.includes(category)) return false;
       if (!q) return true;
@@ -48,7 +60,7 @@ export default function BrandDirectory({
         b.categories.some((c) => c.toLowerCase().includes(q))
       );
     });
-  }, [brands, query, category, tier]);
+  }, [brands, query, category, tier, genre]);
 
   const chip =
     "rounded-full px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.07em] transition";
@@ -58,6 +70,30 @@ export default function BrandDirectory({
   return (
     <>
       <div className="glass rise rise-1 mb-8 p-4 sm:p-5">
+        <div className="mb-3 flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
+          {(
+            [
+              ["tout", "Tout"],
+              ["marques", "Marques"],
+              ["artistes", "Artistes"],
+            ] as const
+          ).map(([id, libelle]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setGenre(id)}
+              aria-pressed={genre === id}
+              className={`flex-1 rounded-full px-3 py-2 text-[12.5px] font-bold transition ${
+                genre === id
+                  ? "bg-white text-[var(--color-ink)]"
+                  : "text-white/72 hover:bg-white/12 hover:text-white"
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
+
         {/* La recherche reste toujours là : c'est le geste le plus
             fréquent. Les filtres, eux, se déplient — affichés en
             permanence, ils occupaient la moitié d'un écran de

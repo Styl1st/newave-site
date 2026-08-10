@@ -31,7 +31,7 @@
   /* Hauteur de l'en-tête, qui n'est pas fixe : elle occupe de la place
      dans le flux, il faut donc la retrancher pour qu'un écran « plein »
      le soit vraiment. */
-  --haut-entete: 56px;
+  --haut-entete: 64px;
 
   /* Amplitude du défilement en cylindre. Sur un petit écran, la même
      bascule qu'en grand rend le texte flou et donne le tournis : on la
@@ -69,10 +69,23 @@
 
 * { box-sizing: border-box; }
 
-html {
+html, body {
   -webkit-text-size-adjust: 100%;
+  /* Deux fois plutôt qu'une : selon les navigateurs, c'est l'un ou
+     l'autre qui porte réellement le défilement de la page. */
   overflow-x: clip;
-  scroll-behavior: smooth;
+  max-width: 100%;
+}
+html { scroll-behavior: smooth; }
+
+/* Safari n'a compris `overflow: clip` qu'à partir de sa seizième
+   version. Sur les téléphones plus anciens, la règle ci-dessus était
+   purement et simplement ignorée, et la page continuait de déborder.
+   `hidden` fait le même travail ; on ne l'utilise qu'en dernier
+   recours parce qu'il crée une zone de défilement, ce qui peut gêner
+   les éléments collants. */
+@supports not (overflow: clip) {
+  html, body { overflow-x: hidden; }
 }
 
 body {
@@ -83,6 +96,26 @@ body {
   color: var(--color-creme);
   background: var(--bg-1);
   -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- le cadre du décor ----------
+   Il occupe l'écran et découpe tout ce qu'il contient. `contain: paint`
+   fait de lui le contenant des éléments en position fixe qu'il abrite :
+   sans cela, les blobs des coins débordaient de la fenêtre et
+   provoquaient un défilement horizontal — le fameux trait sombre à
+   droite. */
+.decor {
+  /* `--phase` décale toutes les animations de ce décor d'un même
+     temps. Un second décor monté plus tard repart sinon de zéro,
+     pendant que celui de la page tourne depuis des minutes : les deux
+     n'affichent pas la même couleur au même instant, et la frontière
+     entre les deux se voit. Voir MobileMenu. */
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: clip;
+  contain: paint;
 }
 
 /* ---------- fond : degrade mesh anime ----------
@@ -114,6 +147,7 @@ body {
   animation:
     respire calc(18s / var(--vit)) ease-in-out infinite alternate,
     teinte calc(41s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
 }
 
 @keyframes respire {
@@ -166,6 +200,7 @@ body {
   animation:
     nappe1 calc(13s / var(--vit)) ease-in-out infinite alternate,
     teinteInverseFloue calc(37s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
 }
 .bg::after {
   background:
@@ -176,6 +211,7 @@ body {
   animation:
     nappe2 calc(17s / var(--vit)) ease-in-out infinite alternate,
     teinteFloue calc(31s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
 }
 
 .bg-nappe {
@@ -189,6 +225,7 @@ body {
   animation:
     nappe3 calc(23s / var(--vit)) ease-in-out infinite alternate,
     teinteInverseFloue calc(29s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
 }
 
 /* Lueur qui traverse l'ecran en diagonale. C'est elle qu'on remarque
@@ -209,6 +246,7 @@ body {
   animation:
     balayage calc(21s / var(--vit)) ease-in-out infinite alternate,
     pulseLueur calc(9s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
 }
 
 /* Des amplitudes larges : deplacer une nappe de 9 % ne se voit pas,
@@ -277,15 +315,28 @@ body {
 .chrome img { display: block; width: 100%; height: auto;
   filter: drop-shadow(0 18px 34px rgba(45,15,95,.42)); }
 
-.c-tl { top: calc(-7vw - 40px);  left: calc(-14vw - 46px);  width: min(40vw, 280px); }
-.c-tr { top: calc(-9vw - 46px);  right: calc(-15vw - 56px); width: min(44vw, 310px); }
-.c-bl { bottom: calc(-10vw - 50px); left: calc(-16vw - 60px);  width: min(46vw, 320px); }
-.c-br { bottom: calc(-8vw - 44px);  right: calc(-13vw - 48px); width: min(42vw, 300px); }
+/*
+   Les décalages sont exprimés en `vw`, donc ils grandissent avec
+   l'écran : sur un grand moniteur, -14vw fait plus de deux cent
+   soixante pixels, et le blob sortait presque entièrement du cadre. Il
+   n'en restait qu'un liseré de vingt pixels, invisible.
 
-.c-tl img { rotate: -8deg;   animation: float1 15s ease-in-out infinite; }
-.c-tr img { rotate: 14deg;   scale: -1 1; animation: float2 18s ease-in-out infinite; }
-.c-bl img { rotate: 160deg;  animation: float2 20s ease-in-out infinite reverse; }
-.c-br img { rotate: -166deg; animation: float1 17s ease-in-out infinite reverse; }
+   `max()` pose une limite : au-delà d'une certaine largeur, on cesse de
+   les repousser. Le cadrage reste le même sur téléphone, où le calcul
+   en `vw` donnait déjà le bon résultat.
+
+   Les deux du haut sont aussi moins remontés qu'avant, pour qu'ils
+   dépassent franchement sous la barre de navigation devenue opaque —
+   c'est elle qui les mangeait sur ordinateur. */
+.c-tl { top: max(-90px, calc(-5vw - 24px));  left: max(-130px, calc(-11vw - 36px)); width: clamp(190px, 40vw, 340px); }
+.c-tr { top: max(-96px, calc(-6vw - 28px));  right: max(-140px, calc(-12vw - 42px)); width: clamp(200px, 44vw, 370px); }
+.c-bl { bottom: max(-130px, calc(-10vw - 50px)); left: max(-150px, calc(-13vw - 48px)); width: clamp(210px, 46vw, 380px); }
+.c-br { bottom: max(-120px, calc(-8vw - 44px));  right: max(-135px, calc(-11vw - 40px)); width: clamp(195px, 42vw, 355px); }
+
+.c-tl img { rotate: -8deg;   animation: float1 15s ease-in-out infinite; animation-delay: var(--phase, 0s); }
+.c-tr img { rotate: 14deg;   scale: -1 1; animation: float2 18s ease-in-out infinite; animation-delay: var(--phase, 0s); }
+.c-bl img { rotate: 160deg;  animation: float2 20s ease-in-out infinite reverse; animation-delay: var(--phase, 0s); }
+.c-br img { rotate: -166deg; animation: float1 17s ease-in-out infinite reverse; animation-delay: var(--phase, 0s); }
 
 @keyframes float1 { 0%,100% { translate: 0 0; } 50% { translate: 0 18px; } }
 @keyframes float2 { 0%,100% { translate: 0 0; } 50% { translate: 0 -20px; } }
@@ -304,7 +355,7 @@ body {
 .glyphs.left  { left: clamp(6px, 2.4vw, 20px); }
 .glyphs.right { right: clamp(6px, 2.4vw, 20px); }
 .glyph-track { display: flex; flex-direction: column; will-change: transform;
-  animation: defile 30s linear infinite; }
+  animation: defile 30s linear infinite; animation-delay: var(--phase, 0s); }
 .glyphs.right .glyph-track { animation-duration: 38s; animation-direction: reverse; }
 .glyph-track span { display: block; height: var(--gh); line-height: var(--gh); text-align: center; }
 @keyframes defile { from { transform: translateY(0); } to { transform: translateY(-50%); } }
@@ -423,12 +474,18 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   }
 }
 
-/* ---------- transitions de page ---------- */
+/* ---------- transitions de page ----------
+   Un fondu seul, sans glissement.
+
+   Le contenu montait de dix pixels en apparaissant. Sous une barre de
+   navigation translucide et collante, ce mouvement se lisait très mal :
+   on voyait le haut de la page traverser le verre par en dessous, et
+   la barre semblait se remplir. Le fondu seul ne traverse rien. */
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-.page-in { animation: pageIn .42s cubic-bezier(.2,.8,.3,1) both; }
+.page-in { animation: pageIn .34s ease both; }
 
 /* Barre de chargement en haut, pendant une navigation. */
 .progress {
@@ -511,6 +568,13 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    Ce qu'on écarte, et pourquoi :
      .rise              — a déjà sa propre entrée
      [data-no-reveal]   — exclusion posée à la main
+     [data-no-reveal] * — et tout ce que ce bloc contient. C'est ce qui
+                          permet de désactiver l'effet sur une zone
+                          entière : un espace d'administration est une
+                          table de travail, pas une vitrine. Un
+                          formulaire qui arrive incliné et rapetissé
+                          donne l'impression d'être loin, alors qu'on
+                          voulait juste le remplir.
      [data-reveal] *    — ce qui vit DANS un bloc déjà animé. Sans ça,
                           une carte et le badge posé par-dessus
                           bougeaient chacun de leur côté, et le badge
@@ -530,7 +594,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 
 @supports (animation-timeline: view()) {
   html[data-defilement="1"] main
-    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
+    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not([data-no-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
     animation: cylindre linear both;
     animation-timeline: view();
     animation-range: entry 0% exit 100%;
@@ -551,7 +615,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    une seule fois. Moins spectaculaire, mais aucune saccade. */
 @supports not (animation-timeline: view()) {
   html[data-defilement="1"] main
-    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
+    :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not([data-no-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
     animation: glisse .62s cubic-bezier(.19, .84, .3, 1) both;
 
     &:nth-child(2) { animation-delay: .06s; }
@@ -627,6 +691,106 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   .grille-serre .piece-infos .prix { font-size: 11px; }
 }
 
+/* ---------- ce qui s'efface quand le menu s'ouvre ----------
+   Le menu ne pose pas son propre décor : il laisse celui de la page,
+   et fait disparaître le contenu par-dessus. C'est la seule façon
+   d'obtenir exactement la même image des deux côtés du cercle —
+   puisqu'il n'y a qu'une image.
+
+   La barre du haut part aussi : le menu a sa propre croix, au même
+   endroit, et la laisser visible ferait deux barres superposées. */
+main,
+body > header,
+body > footer {
+  transition: opacity .34s ease;
+}
+html[data-menu="1"] main,
+html[data-menu="1"] > body > header,
+html[data-menu="1"] > body > footer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- menu de téléphone ----------
+   Un simple fondu, et c'est mieux ainsi.
+
+   Le panneau s'ouvrait d'abord en cercle, découpé par `clip-path`. Le
+   geste était joli sur le papier, mais il tenait à un fil : si le
+   navigateur peignait l'état final avant d'avoir vu l'état initial,
+   la transition ne se déclenchait pas du tout et le menu apparaissait
+   d'un coup. Une animation qui marche trois fois sur quatre est pire
+   qu'une animation simple qui marche toujours.
+
+   Il reste donc l'essentiel, qui était de toute façon la plus belle
+   partie : le contenu de la page s'efface, les liens montent un par
+   un, et le décor ne bouge pas d'un pixel. */
+.menu-panneau {
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.menu-panneau[data-ouvert] { opacity: 1; }
+
+/* Les liens montent un par un. Le décalage se lit comme une liste qui
+   se déroule plutôt que comme un bloc qui apparaît. */
+@keyframes entreeMenu {
+  from { opacity: 0; transform: translate3d(0, 22px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.entree-menu {
+  animation: entreeMenu .5s cubic-bezier(.2, .8, .3, 1) both;
+}
+
+/* ---------- barre de navigation ----------
+   Une pastille flottante, détachée du bord, plutôt qu'un bandeau collé
+   en haut. Trois raisons, dans cet ordre :
+
+   1. Le bandeau pleine largeur écrasait le décor. Les blobs chromés
+      des coins hauts passaient dessous et ne se voyaient plus.
+   2. Une forme posée SUR la page se lit tout de suite comme un objet
+      distinct. Un bandeau, lui, se confond avec le haut du contenu dès
+      que le fond prend une teinte proche.
+   3. C'est la même matière que les cartes du site : verre, liseré
+      chromé, ombre portée. La barre appartient enfin à l'identité au
+      lieu d'être un rectangle posé par-dessus.
+
+   Le liseré reprend exactement la technique de `.card-light` : un
+   dégradé chromé masqué en son centre, ce qui ne laisse qu'un contour
+   d'un pixel et demi. Une bordure ordinaire ne peut pas être dégradée. */
+.barre {
+  position: relative;
+  border-radius: 999px;
+  /* Plus opaque et plus floue qu'au départ : à travers un verre trop
+     clair, le contenu qui défile dessous se devine, et la barre paraît
+     se remplir au lieu de rester au-dessus. */
+  background: rgba(26, 9, 64, .72);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow:
+    0 10px 34px rgba(24, 8, 60, .38),
+    inset 0 1px 0 rgba(255, 255, 255, .14);
+}
+.barre::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: var(--chrome-edge);
+  background-size: 240% 240%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: .55;
+  pointer-events: none;
+  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+}
+
+/* Le chrome dérive lentement le long du contour : c'est ce qui le fait
+   ressembler à du métal plutôt qu'à un dégradé imprimé. */
+@keyframes liseré {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
 /* ---------- premier écran ----------
    Le manifeste occupe exactement la hauteur visible, ni plus ni moins.
    Sans ça, la section suivante dépassait de quelques centimètres en bas
@@ -636,7 +800,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    visible quand les barres du navigateur mobile sont déployées, donc le
    pire cas. Les navigateurs qui l'ignorent gardent `vh`. */
 @media (min-width: 640px) {
-  :root { --haut-entete: 64px; }
+  :root { --haut-entete: 76px; }
 }
 
 .premier-ecran {
@@ -685,7 +849,32 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   background-size: 220% 100%;
   animation: attente 1.4s ease-in-out infinite;
 }
-.visuel > img { position: relative; z-index: 1; }
+/*
+   L'image se contente de recouvrir le dégradé d'attente.
+
+   Elle portait un `z-index: 1`, qui ne servait à rien : le contenu
+   d'un élément se peint toujours par-dessus le fond de son parent, un
+   rang explicite n'y change rien. En revanche il la faisait passer
+   devant TOUT ce qui est posé en surcouche sans rang à elle : les
+   flèches du carrousel, les étiquettes « Retirée », « Épuisé » et la
+   remise d'une carte. Sur téléphone on ne voyait rien, puisque ces
+   éléments y sont masqués ou minuscules ; sur ordinateur, on voyait
+   les flèches et le clic n'atteignait jamais que l'image.
+*/
+.visuel > img { position: relative; }
+
+/* ---------- le panneau de modification ----------
+   Il arrive par la droite, d'où il vient. Une apparition sèche
+   laisserait croire à un changement de page, alors qu'on n'a pas
+   quitté la sienne : c'est justement ce qu'il faut faire sentir. */
+.panneau-edition { animation: panneauEntre .28s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes panneauEntre {
+  from { transform: translateX(18px); opacity: 0; }
+  to   { transform: none;             opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panneau-edition { animation: none; }
+}
 @keyframes attente {
   0%, 100% { background-position: 0% 0; }
   50% { background-position: 100% 0; }

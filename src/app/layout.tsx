@@ -86,7 +86,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Tracker />
         <Reveal />
         {!nu && <Header />}
-        <main className="relative z-10 flex flex-1 flex-col">
+        {/* `min-w-0` : un élément de boîte flexible refuse par défaut de
+            devenir plus étroit que son contenu. Un seul bloc un peu
+            large — une grille, un mot sans espace — et c'est toute la
+            page qui s'élargit, d'où la bande vide à droite.
+            `overflow-x-clip` découpe ce qui dépasserait malgré tout,
+            sans créer de zone de défilement : la barre du haut reste
+            collante, ce qu'un `overflow: hidden` casserait. */}
+        <main className="relative z-10 flex min-w-0 flex-1 flex-col overflow-x-clip">
           <PageTransition>{children}</PageTransition>
         </main>
         {!nu && <Footer />}
