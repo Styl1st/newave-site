@@ -19,37 +19,46 @@ import type { BrandAdmin } from "@/lib/admin-queries";
  *
  * Les filtres ne sont pas un supplément décoratif, ils font partie du
  * geste : on réduit d'abord la liste à ce qui nous intéresse, puis
- * « Cocher les affichées » ne coche que celles-là. Les raccourcis du
- * bas répondent aux questions qu'on se pose vraiment devant une base
- * importée : lesquelles n'ont pas d'image, pas de boutique, pas encore
- * de pièces, ou ne sont réclamées par personne.
+ * « Cocher les affichées » ne coche que celles-là. Les critères du
+ * bas répondent aux questions qu'on se pose devant une base tout
+ * juste importée, et ils se prennent dans les deux sens : avec ou
+ * sans visuel, avec ou sans boutique, avec ou sans pièces.
  */
 
 type Etat = "tout" | "published" | "draft";
 type Tri = "nom" | "recentes" | "pieces";
 
-/** Les raccourcis du bas, chacun une question qu'on se pose. */
-type Cle = "sansVisuel" | "sansBoutique" | "sansPiece" | "sansGerant" | "aLaUne" | "bloquees";
+/**
+ * Les critères du bas, chacun une question qu'on se pose.
+ *
+ * Chaque question se pose dans les deux sens, et il fallait les deux :
+ * « sans visuel » sert à réparer, « avec visuel » sert à choisir quoi
+ * publier. Il n'y avait que la moitié négative, ce qui obligeait à
+ * lire la liste entière pour trouver l'autre.
+ */
+type Cle = "visuel" | "boutique" | "piece" | "gerant" | "aLaUne" | "publiable";
+type Sens = "avec" | "sans";
 
 const TESTS: Record<Cle, (b: BrandAdmin) => boolean> = {
-  sansVisuel: (b) => !b.cover_url && !b.logo_url,
-  sansBoutique: (b) => !b.shop_url && !b.website_url,
-  sansPiece: (b) => b.pieces === 0,
-  sansGerant: (b) => b.gerants === 0,
+  visuel: (b) => Boolean(b.cover_url || b.logo_url),
+  boutique: (b) => Boolean(b.shop_url || b.website_url),
+  piece: (b) => b.pieces > 0,
+  gerant: (b) => b.gerants > 0,
   aLaUne: (b) => b.featured,
-  // Ce qui ne peut pas partir en ligne en l'état, quelle qu'en soit la
-  // raison : c'est la liste à traiter avant une mise en ligne groupée.
-  bloquees: (b) => !peutEtrePubliee(b),
+  // Ce qui peut partir en ligne en l'état. Pris à l'envers, c'est la
+  // liste à traiter avant une mise en ligne groupée.
+  publiable: (b) => peutEtrePubliee(b),
 };
 
-const ETIQUETTES: Record<Cle, string> = {
-  sansVisuel: "Sans visuel",
-  sansBoutique: "Sans boutique",
-  sansPiece: "Sans pièce",
-  sansGerant: "Sans gérant",
-  aLaUne: "À la une",
-  bloquees: "Non publiables",
-};
+/** Le nom du critère, puis comment se lisent ses deux faces. */
+const CRITERES: { cle: Cle; nom: string; avec: string; sans: string }[] = [
+  { cle: "visuel", nom: "Visuel", avec: "Avec visuel", sans: "Sans visuel" },
+  { cle: "boutique", nom: "Boutique", avec: "Avec boutique", sans: "Sans boutique" },
+  { cle: "piece", nom: "Pièces", avec: "Avec pièces", sans: "Sans pièce" },
+  { cle: "gerant", nom: "Gérant", avec: "Avec gérant", sans: "Sans gérant" },
+  { cle: "aLaUne", nom: "À la une", avec: "À la une", sans: "Pas à la une" },
+  { cle: "publiable", nom: "Publiable", avec: "Publiables", sans: "Non publiables" },
+];
 
 const CHAMP =
   "w-full rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[13px] text-white placeholder:text-white/45 focus:border-white/60 focus:outline-none";
@@ -68,7 +77,18 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
   const [categorie, setCategorie] = useState("");
   const [gamme, setGamme] = useState("");
   const [tri, setTri] = useState<Tri>("nom");
-  const [raccourcis, setRaccourcis] = useState<Set<Cle>>(new Set());
+  /** Pour chaque critère retenu, dans quel sens on l'a pris. */
+  const [criteres, setCriteres] = useState<Partial<Record<Cle, Sens>>>({});
+  /*
+   * Les filtres sont repliés au départ.
+   *
+   * Six menus et douze boutons dépliés en permanence, c'est un mur
+   * avant la liste, alors qu'on vient neuf fois sur dix chercher un
+   * nom. La recherche reste donc toujours là, le reste s'ouvre quand
+   * on en a besoin, et le bouton dit combien de filtres sont actifs
+   * pour qu'un filtre oublié ne se cache jamais.
+   */
+  const [ouverts, setOuverts] = useState(false);
 
   // Les choix proposés viennent des marques elles-mêmes : une liste
   // figée finirait par proposer des pays qu'on n'a plus, et par taire
@@ -82,11 +102,12 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
     [brands]
   );
 
-  /** Combien de marques chaque raccourci trouverait, pour l'afficher dessus. */
+  /** Combien de marques de chaque côté, pour l'afficher sur le bouton. */
   const comptes = useMemo(() => {
-    const total = {} as Record<Cle, number>;
-    for (const c of Object.keys(TESTS) as Cle[]) {
-      total[c] = brands.filter(TESTS[c]).length;
+    const total = {} as Record<Cle, { avec: number; sans: number }>;
+    for (const { cle } of CRITERES) {
+      const avec = brands.filter(TESTS[cle]).length;
+      total[cle] = { avec, sans: brands.length - avec };
     }
     return total;
   }, [brands]);
@@ -99,9 +120,11 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
       if (pays && b.country !== pays) return false;
       if (categorie && !(b.categories ?? []).includes(categorie)) return false;
       if (gamme && b.price_tier !== gamme) return false;
-      // Plusieurs raccourcis se cumulent : « sans visuel » ET « sans
+      // Plusieurs critères se cumulent : « sans visuel » ET « sans
       // pièce » donne les fiches les plus incomplètes, pas leur somme.
-      for (const c of raccourcis) if (!TESTS[c](b)) return false;
+      for (const [cle, sens] of Object.entries(criteres) as [Cle, Sens][]) {
+        if (TESTS[cle](b) !== (sens === "avec")) return false;
+      }
       if (!mot) return true;
       // Le nom, mais aussi le pseudo et l'adresse : on cherche souvent
       // une marque dont on a l'Instagram en tête, pas l'orthographe.
@@ -119,11 +142,14 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
       return gardees.slice().sort((a, b) => b.pieces - a.pieces);
     }
     return gardees;
-  }, [brands, recherche, etat, pays, categorie, gamme, raccourcis, tri]);
+  }, [brands, recherche, etat, pays, categorie, gamme, criteres, tri]);
 
-  const filtreActif = Boolean(
-    recherche || etat !== "tout" || pays || categorie || gamme || raccourcis.size > 0
-  );
+  /** Ce qui est actif dans le repli, pour l'annoncer sur le bouton. */
+  const nbCriteres =
+    Object.keys(criteres).length +
+    [etat !== "tout", Boolean(pays), Boolean(categorie), Boolean(gamme)].filter(Boolean).length;
+
+  const filtreActif = Boolean(recherche) || nbCriteres > 0;
 
   /*
    * La sélection ne porte que sur ce qui est affiché.
@@ -148,11 +174,12 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
     });
   }
 
-  function basculerRaccourci(c: Cle) {
-    setRaccourcis((prev) => {
-      const suivant = new Set(prev);
-      if (suivant.has(c)) suivant.delete(c);
-      else suivant.add(c);
+  /** Cliquer sur une face l'active ; recliquer dessus la relâche. */
+  function basculerCritere(cle: Cle, sens: Sens) {
+    setCriteres((prev) => {
+      const suivant = { ...prev };
+      if (suivant[cle] === sens) delete suivant[cle];
+      else suivant[cle] = sens;
       return suivant;
     });
   }
@@ -163,7 +190,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
     setPays("");
     setCategorie("");
     setGamme("");
-    setRaccourcis(new Set());
+    setCriteres({});
   }
 
   function agir(intent: "publish" | "draft" | "delete") {
@@ -210,16 +237,45 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
     <>
       {/* ---------- filtres ---------- */}
       <div className="glass mb-4 flex flex-col gap-3 p-4 sm:px-5">
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             type="search"
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             placeholder="Nom, pseudo, ville, site"
             aria-label="Chercher une marque"
-            className={`${CHAMP} lg:col-span-3`}
+            className={`${CHAMP} min-w-0 flex-1`}
           />
+          <button
+            type="button"
+            onClick={() => setOuverts((o) => !o)}
+            aria-expanded={ouverts}
+            className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-bold transition ${
+              nbCriteres > 0 || ouverts
+                ? "border-white/60 bg-white/18 text-white"
+                : "border-white/30 text-white/78 hover:bg-white/12 hover:text-white"
+            }`}
+          >
+            Filtres
+            {nbCriteres > 0 && <span className="ml-1.5 text-white/60">{nbCriteres}</span>}
+          </button>
+          <span className="shrink-0 text-[12px] font-bold uppercase tracking-[0.12em] text-white/55">
+            {visibles.length}
+            {filtreActif && ` / ${brands.length}`}
+          </span>
+          {filtreActif && (
+            <button
+              type="button"
+              onClick={reinitialiser}
+              className="shrink-0 text-[12.5px] font-bold text-white/70 underline underline-offset-2 transition hover:text-white"
+            >
+              Tout afficher
+            </button>
+          )}
+        </div>
 
+        {ouverts && (
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           <select
             value={etat}
             onChange={(e) => setEtat(e.target.value as Etat)}
@@ -282,49 +338,56 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             <option value="pieces">Le plus de pièces</option>
           </select>
         </div>
+        )}
 
-        {/* Les raccourcis. Chacun affiche son nombre : un raccourci à
-            zéro dit déjà quelque chose, et évite un clic pour rien. */}
-        <div className="flex flex-wrap gap-1.5">
-          {(Object.keys(TESTS) as Cle[]).map((c) => {
-            const actif = raccourcis.has(c);
+        {/* Chaque critère se prend dans les deux sens, côte à côte, et
+            porte son nombre : un côté à zéro se voit avant d'être
+            cliqué, ce qui évite un aller-retour pour rien. */}
+        {ouverts && (
+        <div className="flex flex-wrap gap-2">
+          {CRITERES.map((critere) => {
+            const choisi = criteres[critere.cle];
+            const faces: { sens: Sens; texte: string; n: number }[] = [
+              { sens: "avec", texte: critere.avec, n: comptes[critere.cle].avec },
+              { sens: "sans", texte: critere.sans, n: comptes[critere.cle].sans },
+            ];
+
             return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => basculerRaccourci(c)}
-                aria-pressed={actif}
-                disabled={comptes[c] === 0 && !actif}
-                className={`rounded-full px-3 py-1.5 text-[11.5px] font-bold transition disabled:opacity-30 ${
-                  actif
-                    ? "bg-white text-[var(--color-ink)]"
-                    : "border border-white/25 text-white/75 hover:border-white/50 hover:text-white"
-                }`}
+              <div
+                key={critere.cle}
+                role="group"
+                aria-label={critere.nom}
+                className="flex items-center overflow-hidden rounded-full border border-white/25"
               >
-                {ETIQUETTES[c]}
-                <span className={actif ? "ml-1.5 text-[#6a5a92]" : "ml-1.5 text-white/45"}>
-                  {comptes[c]}
-                </span>
-              </button>
+                {faces.map((f, i) => {
+                  const actif = choisi === f.sens;
+                  return (
+                    <button
+                      key={f.sens}
+                      type="button"
+                      onClick={() => basculerCritere(critere.cle, f.sens)}
+                      aria-pressed={actif}
+                      disabled={f.n === 0 && !actif}
+                      className={`px-3 py-1.5 text-[11.5px] font-bold transition disabled:opacity-25 ${
+                        i === 1 ? "border-l border-white/20" : ""
+                      } ${
+                        actif
+                          ? "bg-white text-[var(--color-ink)]"
+                          : "text-white/72 hover:bg-white/12 hover:text-white"
+                      }`}
+                    >
+                      {f.texte}
+                      <span className={actif ? "ml-1.5 text-[#6a5a92]" : "ml-1.5 text-white/40"}>
+                        {f.n}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/55">
-            {visibles.length} marque{visibles.length > 1 ? "s" : ""}
-            {filtreActif && ` sur ${brands.length}`}
-          </span>
-          {filtreActif && (
-            <button
-              type="button"
-              onClick={reinitialiser}
-              className="text-[12.5px] font-bold text-white/70 underline underline-offset-2 transition hover:text-white"
-            >
-              Tout afficher
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ---------- barre d'action ----------

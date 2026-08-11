@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connecterRobot } from "@/lib/robot";
 import { fetchCatalogue } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
+import { rafraichirLesTaux } from "@/lib/devises";
 
 /**
  * Relecture quotidienne des catalogues, vers midi.
@@ -66,6 +67,18 @@ export async function GET(request: Request) {
     );
   }
 
+  /*
+   * Les taux de change, avant les catalogues.
+   *
+   * L'ordre compte : la lecture d'un catalogue calcule au passage
+   * l'équivalent en euros de chaque prix. Rafraîchir les taux après
+   * coup les laisserait vieux d'un jour à chaque fois.
+   *
+   * Un échec ici n'arrête rien : on se contentera des taux de la
+   * veille, ce qui est très largement suffisant.
+   */
+  const taux = await rafraichirLesTaux(supabase);
+
   const { data, error } = await supabase
     .from("brands")
     .select("id, name, slug, shop_url, website_url")
@@ -118,5 +131,9 @@ export async function GET(request: Request) {
     journal.push({ marque: marque.slug, resultat: note });
   }
 
-  return NextResponse.json({ traitees: marques.length, journal });
+  return NextResponse.json({
+    taux: taux.ok ? `${taux.devises} devises` : (taux.erreur ?? "échec"),
+    traitees: marques.length,
+    journal,
+  });
 }

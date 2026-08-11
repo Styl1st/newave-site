@@ -2,7 +2,7 @@ import Link from "next/link";
 import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
 import type { Product } from "@/lib/types";
-import { discountPercent, formatPrice } from "@/lib/types";
+import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
 /**
  * Renvoie vers la fiche interne de la pièce quand elle existe, sinon
@@ -49,7 +49,7 @@ export default function ProductCard({
   /** Coups de cœur. Absent = le bouton ne s'affiche pas. */
   likes?: { count: number; liked: boolean };
 }) {
-  const price = formatPrice(product.price_cents, product.currency);
+  const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
   const off = discountPercent(product);
   const cover = product.images?.[0] ?? product.image_url;
@@ -139,8 +139,14 @@ export default function ProductCard({
           <div className="pied mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
             <span className="flex flex-wrap items-baseline gap-2">
               <span className="prix text-[13.5px] font-extrabold text-[var(--color-ink)]">
-                {price ?? "Prix sur la boutique"}
+                {prix.principal ?? "Prix sur la boutique"}
               </span>
+              {/* Le prix réellement demandé par la marque, quand il
+                  n'est pas en euros. Notre conversion aide à comparer,
+                  elle ne remplace pas ce qui sera payé. */}
+              {prix.origine && (
+                <span className="text-[11.5px] font-semibold text-[#8a7bab]">{prix.origine}</span>
+              )}
               {was && off !== null && (
                 <span className="text-[12px] font-semibold text-[#8a7bab] line-through">{was}</span>
               )}

@@ -34,6 +34,10 @@ export type Product = {
   price_cents: number | null;
   /** Prix barre. Rempli seulement s'il depasse le prix courant. */
   compare_at_cents: number | null;
+  /* Les mêmes prix ramenés en euros, calculés à la lecture du
+     catalogue. Nuls quand la devise est inconnue. */
+  price_eur_cents?: number | null;
+  compare_at_eur_cents?: number | null;
   currency: string;
   sizes: Size[];
   size_label: string;
@@ -113,6 +117,15 @@ export type Application = {
   pitch: string;
   status: "nouvelle" | "en_cours" | "acceptee" | "refusee";
   created_at: string;
+  /* La fiche telle qu'elle sera créée le jour où on accepte. Recueillie
+     au dépôt, mais rien n'est écrit dans l'annuaire avant. */
+  description?: string;
+  pays?: string | null;
+  ville?: string | null;
+  categories?: string[];
+  logo_url?: string | null;
+  cover_url?: string | null;
+  reseaux?: { reseau: string; identifiant: string }[];
 };
 
 export const PRICE_TIER_LABEL: Record<PriceTier, string> = {
@@ -147,6 +160,31 @@ export function formatPrice(cents: number | null, currency = "EUR"): string | nu
     currency,
     maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
+}
+
+/**
+ * Le prix tel qu'on l'écrit sur le site.
+ *
+ * Une boutique danoise affiche 899 DKK. Repris tel quel, à côté d'un
+ * article français à 89 €, ça se lit comme un prix délirant alors que
+ * c'est à peu près la même somme. On met donc l'euro devant, parce que
+ * c'est lui qui permet de comparer.
+ *
+ * Mais on n'efface jamais le prix d'origine : c'est celui que la
+ * personne paiera réellement chez la marque, et notre conversion n'est
+ * qu'une aide à la lecture, jamais une promesse. Elle est donc écrite
+ * comme une approximation, et le vrai prix reste affiché à côté.
+ */
+export function prixAffiche(
+  p: Pick<Product, "price_cents" | "currency" | "price_eur_cents">
+): { principal: string | null; origine: string | null } {
+  const origine = formatPrice(p.price_cents, p.currency);
+  const enEuros = p.price_eur_cents ?? null;
+
+  const memeDevise = (p.currency || "EUR").toUpperCase() === "EUR";
+  if (memeDevise || enEuros === null) return { principal: origine, origine: null };
+
+  return { principal: `≈ ${formatPrice(enEuros, "EUR")}`, origine };
 }
 
 /** Pourcentage de remise, ou null s'il n'y a pas de promo credible. */

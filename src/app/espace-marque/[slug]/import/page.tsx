@@ -1,4 +1,4 @@
-import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BarreGerant from "@/components/BarreGerant";
 import FormulaireImport from "@/components/admin/FormulaireImport";
 import { requireManagedBrand } from "@/lib/brand-space";
 
@@ -14,16 +14,13 @@ type Props = { params: Promise<{ slug: string }> };
 
 export default async function ImportPage({ params }: Props) {
   const { slug } = await params;
-  const { brand, isAdmin } = await requireManagedBrand(slug);
+  const { brand } = await requireManagedBrand(slug);
 
   return (
     <>
-      <BrandSpaceNav
-        slug={slug}
-        name={brand.name}
-        isAdmin={isAdmin}
-        published={brand.status === "published"}
-      />
+      <div className="mb-7">
+        <BarreGerant brand={brand} />
+      </div>
 
       <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Ton catalogue</p>

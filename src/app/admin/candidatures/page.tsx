@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ApercuCandidature from "@/components/admin/ApercuCandidature";
 import ApplicationActions from "@/components/admin/ApplicationActions";
 import { IconExternal, IconInbox } from "@/components/Icons";
 import { adminGetApplications } from "@/lib/admin-queries";
@@ -31,9 +32,20 @@ function Carte({ a }: { a: Application }) {
         </span>
       </div>
 
-      <p className="m-0 mt-4 whitespace-pre-line text-[14.5px] leading-relaxed text-white/88">
-        {a.pitch}
-      </p>
+      {/* La fiche telle qu'elle sera, avant tout le reste : c'est
+          elle qu'on accepte ou qu'on refuse, pas un formulaire. */}
+      <div className="mt-4">
+        <ApercuCandidature a={a} />
+      </div>
+
+      {a.pitch?.trim() && (
+        <div className="mt-4 rounded-[var(--radius)] border border-white/15 bg-white/6 p-4">
+          <p className="eyebrow m-0 mb-2">Le mot de {a.contact_name}</p>
+          <p className="m-0 whitespace-pre-line text-[14px] leading-relaxed text-white/88">
+            {a.pitch}
+          </p>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-col gap-4 border-t border-white/15 pt-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-wrap gap-2">
@@ -53,12 +65,13 @@ function Carte({ a }: { a: Application }) {
           >
             Répondre
           </a>
+          {/* La fiche n'existe qu'une fois la candidature acceptée. */}
           {a.brand_id && (
             <Link
               href={`/admin/marques/${a.brand_id}`}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/8 px-3.5 py-2 text-[11.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white"
             >
-              La fiche créée
+              La fiche en brouillon
             </Link>
           )}
         </div>

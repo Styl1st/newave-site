@@ -13,14 +13,9 @@ import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import Link from "next/link";
 import BackLink from "@/components/BackLink";
-import PanneauEdition from "@/components/PanneauEdition";
-import { IconGrid, IconPlus } from "@/components/Icons";
+import BarreGerant from "@/components/BarreGerant";
 
 type Props = { params: Promise<{ slug: string }> };
-
-/** Les boutons réservés au gérant, tous du même poids. */
-const ACTION_GERANT =
-  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/85 transition hover:bg-white/16 hover:text-white active:scale-[.97]";
 
 /**
  * Page rendue a la demande, pas figee a la compilation.
@@ -83,34 +78,16 @@ export default async function BrandPage({ params }: Props) {
       <BackLink href="/marques">Toutes les marques</BackLink>
 
       {/*
-        La page publique devient le poste de commande.
+        La page publique est le poste de commande.
 
-        Un gérant ne devrait pas avoir à quitter sa page pour la
-        modifier : il voit ce que voient les autres, et il agit depuis
-        là. C'est le fonctionnement d'un profil de réseau social, et
-        c'est celui que tout le monde connaît déjà. Chaque pièce porte
-        d'ailleurs son propre crayon, juste en dessous.
+        Un gérant ne quitte pas sa page pour la modifier : il voit ce
+        que voient les autres, et il agit depuis là. La barre est
+        exactement la même sur ses écrans de gestion, pour que passer
+        de l'un à l'autre ne ressemble jamais à un changement de site.
       */}
       {insight && (
-        <div
-          data-no-reveal
-          className="mt-4 flex flex-wrap items-center gap-2 rounded-full border border-white/20 bg-white/8 p-1.5 backdrop-blur-sm"
-        >
-          <span className="px-2.5 text-[10.5px] font-black uppercase tracking-[0.16em] text-white/50">
-            Ta page
-          </span>
-          {/* Le formulaire ne vit plus sur une page à part : il s'ouvre
-              ici, par-dessus la page qu'on est en train de modifier. */}
-          <PanneauEdition brand={brand} />
-          <Link href={`/espace-marque/${brand.slug}/pieces/ajouter`} className={ACTION_GERANT}>
-            <IconPlus /> Ajouter des pièces
-          </Link>
-          <Link href={`/espace-marque/${brand.slug}/pieces`} className={ACTION_GERANT}>
-            <IconGrid /> Mes pièces
-          </Link>
-          <Link href={`/espace-marque/${brand.slug}/stats`} className={ACTION_GERANT}>
-            Statistiques
-          </Link>
+        <div className="mt-4">
+          <BarreGerant brand={brand} />
         </div>
       )}
 

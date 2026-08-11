@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
-import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BarreGerant from "@/components/BarreGerant";
 import DeleteButton from "@/components/admin/DeleteButton";
 import MultiImageUploader from "@/components/admin/MultiImageUploader";
 import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
@@ -13,7 +13,7 @@ type Props = { params: Promise<{ slug: string; id: string }> };
 
 export default async function EditBrandProduct({ params }: Props) {
   const { slug, id } = await params;
-  const { brand, isAdmin } = await requireManagedBrand(slug);
+  const { brand } = await requireManagedBrand(slug);
 
   const isNew = id === "nouvelle";
   const product = isNew ? null : await getBrandProduct(id);
@@ -31,7 +31,9 @@ export default async function EditBrandProduct({ params }: Props) {
 
   return (
     <>
-      <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
+      <div className="mb-7">
+        <BarreGerant brand={brand} />
+      </div>
 
       <header className="mb-5 sm:mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -97,16 +99,18 @@ export default async function EditBrandProduct({ params }: Props) {
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Text
-            name="piece_slug"
-            label="Adresse de la page"
-            hint="Laisse vide et je la fabrique à partir du nom."
-            defaultValue={product?.slug ?? ""}
-            placeholder="la-chemise-cobalt"
-          />
-          <Text name="position" label="Ordre d'affichage" type="number" defaultValue={product?.position ?? 0} />
-        </div>
+        {/* « Ordre d'affichage » a disparu. Un numéro à saisir à la
+            main pour ranger ses pièces les unes par rapport aux autres
+            ne veut rien dire tant qu'on ne les a pas toutes sous les
+            yeux, et personne ne s'en servait. L'ordre reste celui de
+            l'arrivée, ce qui est prévisible. */}
+        <Text
+          name="piece_slug"
+          label="Adresse de la page"
+          hint="Laisse vide et je la fabrique à partir du nom."
+          defaultValue={product?.slug ?? ""}
+          placeholder="la-chemise-cobalt"
+        />
 
         <Text
           name="shop_url"

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cleLien, type CatalogueItem } from "./catalogue-commun";
+import { enEuros, lireLesTaux, type Taux } from "./devises";
 
 /**
  * Ranger un catalogue lu chez une marque dans notre base.
@@ -57,7 +58,7 @@ function slugify(input: string): string {
     .slice(0, 70);
 }
 
-export function enLigne(item: CatalogueItem, brandId: string) {
+export function enLigne(item: CatalogueItem, brandId: string, taux?: Taux) {
   return {
     brand_id: brandId,
     source_id: item.source_id,
@@ -66,6 +67,16 @@ export function enLigne(item: CatalogueItem, brandId: string) {
     description: item.description,
     price_cents: item.price_cents,
     compare_at_cents: item.compare_at_cents,
+    /*
+     * Le prix ramené en euros, calculé une fois ici plutôt qu'à chaque
+     * affichage : sinon il faudrait transporter la table des taux
+     * jusqu'à chaque carte de chaque grille du site.
+     *
+     * Nul quand on ne connaît pas la devise. Une conversion inventée
+     * serait pire que pas de conversion du tout.
+     */
+    price_eur_cents: taux ? enEuros(item.price_cents, item.currency, taux) : null,
+    compare_at_eur_cents: taux ? enEuros(item.compare_at_cents, item.currency, taux) : null,
     currency: item.currency,
     sizes: item.sizes,
     size_label: item.size_label,
@@ -96,6 +107,9 @@ export async function synchroniserCatalogue(
 ): Promise<Bilan> {
   if (items.length === 0) return { creees: 0, majs: 0, retirees: 0 };
 
+  // Les taux du jour, lus une fois pour tout le catalogue.
+  const taux = await lireLesTaux();
+
   const { data: brut, error: lecture } = await supabase
     .from("products")
     .select("id, source_id, shop_url, slug, status, position, categories, featured, retired_at")
@@ -122,7 +136,7 @@ export async function synchroniserCatalogue(
   const dejaTraitees = new Set<string>();
 
   for (const item of items) {
-    const ligne = enLigne(item, brandId);
+    const ligne = enLigne(item, brandId, taux);
     const trouvee =
       (ligne.source_id ? parSource.get(ligne.source_id) : undefined) ??
       parLien.get(cleLien(ligne.shop_url));

@@ -1,4 +1,4 @@
-import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BarreGerant from "@/components/BarreGerant";
 import { getBrandStats } from "@/lib/brand-stats";
 import { requireManagedBrand } from "@/lib/brand-space";
 import type { Jour, Ligne } from "@/lib/stats";
@@ -73,12 +73,14 @@ function Classement({ titre, lignes, vide }: { titre: string; lignes: Ligne[]; v
 
 export default async function BrandStatsPage({ params }: Props) {
   const { slug } = await params;
-  const { brand, isAdmin } = await requireManagedBrand(slug);
+  const { brand } = await requireManagedBrand(slug);
   const stats = await getBrandStats(brand.id, slug);
 
   return (
     <>
-      <BrandSpaceNav slug={slug} name={brand.name} isAdmin={isAdmin} published={brand.status === "published"} />
+      <div className="mb-7">
+        <BarreGerant brand={brand} />
+      </div>
 
       <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Ton audience</p>

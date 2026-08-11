@@ -388,6 +388,13 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
     instagram: string | null;
     website: string | null;
     pitch: string;
+    description: string | null;
+    pays: string | null;
+    ville: string | null;
+    categories: string[] | null;
+    logo_url: string | null;
+    cover_url: string | null;
+    reseaux: unknown;
     user_id: string | null;
     brand_id: string | null;
     relationship: "proprietaire" | "decouvreur";
@@ -397,6 +404,15 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
 
   let brandId = application.brand_id;
 
+  /*
+   * C'est ICI que la fiche naît, et nulle part ailleurs.
+   *
+   * Le dépôt d'une candidature n'écrit rien dans l'annuaire. Sans quoi
+   * un brouillon voudrait dire deux choses à la fois : « relu et gardé
+   * pour plus tard » et « personne ne l'a encore regardé ». La fiche
+   * apparaît donc au moment où l'on accepte, remplie d'un coup avec
+   * tout ce que la personne avait renseigné.
+   */
   if (!brandId) {
     // Le slug doit etre unique : on suffixe plutot que d'echouer.
     let slug = slugify(application.brand_name);
@@ -407,14 +423,27 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
       .maybeSingle();
     if (clash) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
+    const description = application.description?.trim() || application.pitch;
+
     const { data: created, error: createError } = await supabase
       .from("brands")
       .insert({
         slug,
         name: application.brand_name,
-        description: application.pitch,
+        // Une accroche provisoire, tirée de la première phrase : la
+        // fiche reste ainsi publiable sans qu'on ait à la réécrire.
+        tagline: description.split(/[.!?\n]/)[0]?.trim().slice(0, 160) || "Marque indépendante",
+        description,
+        country: application.pays || "France",
+        city: application.ville,
+        categories: application.categories ?? [],
         instagram: application.instagram?.replace(/^@/, "") ?? null,
+        reseaux: Array.isArray(application.reseaux) ? application.reseaux : [],
+        website_url: application.website,
         shop_url: application.website,
+        logo_url: application.logo_url,
+        cover_url: application.cover_url,
+        featured: false,
         status: "draft",
       })
       .select("id")

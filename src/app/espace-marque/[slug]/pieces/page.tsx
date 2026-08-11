@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BarreGerant from "@/components/BarreGerant";
 import ProductBulkList from "@/components/admin/ProductBulkList";
 import { getBrandProducts, requireManagedBrand } from "@/lib/brand-space";
 
@@ -12,7 +12,7 @@ type Props = {
 export default async function BrandProducts({ params, searchParams }: Props) {
   const { slug } = await params;
   const { nouvelles, majs } = await searchParams;
-  const { brand, isAdmin } = await requireManagedBrand(slug);
+  const { brand } = await requireManagedBrand(slug);
   const products = await getBrandProducts(brand.id);
 
   const creees = Number(nouvelles ?? 0) || 0;
@@ -21,12 +21,9 @@ export default async function BrandProducts({ params, searchParams }: Props) {
 
   return (
     <>
-      <BrandSpaceNav
-        slug={slug}
-        name={brand.name}
-        isAdmin={isAdmin}
-        published={brand.status === "published"}
-      />
+      <div className="mb-7">
+        <BarreGerant brand={brand} />
+      </div>
 
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">
         <div>

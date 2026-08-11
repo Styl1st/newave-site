@@ -6,7 +6,7 @@ import BrandPrefill from "@/components/admin/BrandPrefill";
 import PublishToggle from "@/components/admin/PublishToggle";
 import DeleteButton from "@/components/admin/DeleteButton";
 import ImageUploader from "@/components/admin/ImageUploader";
-import StepForm, { type Etape } from "@/components/admin/StepForm";
+import AdminForm from "@/components/admin/AdminForm";
 import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { deleteBrand, saveBrand } from "../../actions";
 import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
@@ -14,6 +14,18 @@ import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 
 type Props = { params: Promise<{ id: string }> };
 
+/**
+ * La fiche d'une marque, d'un seul tenant.
+ *
+ * Elle se remplissait en quatre étapes, avec une barre de progression.
+ * Un parcours guidé a du sens quand on part de rien et qu'on ignore ce
+ * qu'on attend de nous. Ici, on vient presque toujours corriger une
+ * ligne, et il fallait traverser trois écrans pour l'atteindre, sans
+ * rien pouvoir enregistrer avant la fin.
+ *
+ * Tout est visible, on modifie ce qu'on veut, on enregistre. Les
+ * sections restent, mais comme des repères, pas comme des portes.
+ */
 export default async function EditBrand({ params }: Props) {
   const { id } = await params;
   const isNew = id === "nouveau";
@@ -21,12 +33,65 @@ export default async function EditBrand({ params }: Props) {
   if (!isNew && !brand) notFound();
   const managers = isNew ? [] : await adminGetBrandManagers(brand!.id);
 
-  const etapes: Etape[] = [
-    {
-      titre: "L'identité",
-      intro: "Le nom, la phrase d'accroche et les visuels. Ce que le visiteur voit en premier.",
-      contenu: (
-        <>
+  const bouton =
+    "rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]";
+
+  return (
+    <>
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">
+        <div>
+          <BackLink href="/admin/marques">Marques</BackLink>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="m-0 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
+              {isNew ? "Nouvelle marque" : brand!.name}
+            </h1>
+            {!isNew && (
+              <span
+                className={
+                  brand!.status === "published"
+                    ? "rounded-full bg-white px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--color-ink)]"
+                    : "rounded-full bg-white/15 px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-white/80"
+                }
+              >
+                {brand!.status === "published" ? "En ligne" : "Brouillon"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isNew && (
+          <div className="flex flex-wrap items-center gap-3">
+            <PublishToggle
+              brandId={brand!.id}
+              brandName={brand!.name}
+              published={brand!.status === "published"}
+            />
+            <Link href={`/marques/${brand!.slug}`} className={bouton}>
+              Voir la page
+            </Link>
+            <Link href={`/espace-marque/${brand!.slug}/pieces`} className={bouton}>
+              Pièces
+            </Link>
+            <Link href={`/espace-marque/${brand!.slug}/stats`} className={bouton}>
+              Statistiques
+            </Link>
+            <DeleteButton
+              action={deleteBrand}
+              id={brand!.id}
+              label="Supprimer"
+              confirmText="Supprimer la marque supprimera aussi ses pièces. Continuer ?"
+            />
+          </div>
+        )}
+      </header>
+
+      <BrandPrefill modeCreation={isNew} />
+
+      <AdminForm action={saveBrand} submitLabel={isNew ? "Créer la marque" : "Enregistrer"}>
+        {!isNew && <input type="hidden" name="id" value={brand!.id} />}
+        {brand?.published_at && <input type="hidden" name="published_at" value={brand.published_at} />}
+
+        <Bloc titre="L'identité" intro="Ce que le visiteur voit en premier.">
           <Text
             name="name"
             label="Nom de la marque"
@@ -41,23 +106,26 @@ export default async function EditBrand({ params }: Props) {
             defaultValue={brand?.tagline}
             placeholder="Minimalisme français, séries limitées"
           />
-          <ImageUploader name="cover_url" label="Image de couverture" defaultValue={brand?.cover_url} folder="marques" />
+          <ImageUploader
+            name="cover_url"
+            label="Image de couverture"
+            defaultValue={brand?.cover_url}
+            folder="marques"
+          />
           <ImageUploader name="logo_url" label="Logo" defaultValue={brand?.logo_url} folder="marques" />
-        </>
-      ),
-    },
-    {
-      titre: "La démarche",
-      intro: "Le texte de la fiche. Si la marque gère sa page elle-même, elle pourra le réécrire.",
-      contenu: (
-        <Area name="description" label="Description" rows={10} defaultValue={brand?.description} />
-      ),
-    },
-    {
-      titre: "Le classement",
-      intro: "Origine, catégories, gamme de prix. C'est ce qui fait apparaître la marque dans les filtres.",
-      contenu: (
-        <>
+        </Bloc>
+
+        <Bloc
+          titre="La démarche"
+          intro="Le texte de la fiche. Si la marque gère sa page elle-même, elle pourra le réécrire."
+        >
+          <Area name="description" label="Description" rows={10} defaultValue={brand?.description} />
+        </Bloc>
+
+        <Bloc
+          titre="Le classement"
+          intro="Origine, catégories, gamme. C'est ce qui fait apparaître la marque dans les filtres."
+        >
           <div className="grid gap-6 sm:grid-cols-3">
             <Text name="country" label="Pays" defaultValue={brand?.country ?? "France"} />
             <Text name="city" label="Ville" defaultValue={brand?.city ?? ""} placeholder="Paris" />
@@ -78,19 +146,18 @@ export default async function EditBrand({ params }: Props) {
             selected={brand?.categories}
           />
 
-          <Select name="price_tier" label="Gamme de prix" defaultValue={brand?.price_tier ?? "intermediaire"}>
+          <Select
+            name="price_tier"
+            label="Gamme de prix"
+            defaultValue={brand?.price_tier ?? "intermediaire"}
+          >
             <option value="accessible">Accessible</option>
             <option value="intermediaire">Intermédiaire</option>
             <option value="premium">Premium</option>
           </Select>
-        </>
-      ),
-    },
-    {
-      titre: "Liens et publication",
-      intro: "Où envoyer les visiteurs, et si cette fiche doit être visible.",
-      contenu: (
-        <>
+        </Bloc>
+
+        <Bloc titre="Liens et publication" intro="Où envoyer les visiteurs, et si cette fiche est visible.">
           <Text
             name="shop_url"
             label="Boutique ou site officiel"
@@ -129,71 +196,29 @@ export default async function EditBrand({ params }: Props) {
             <option value="draft">Brouillon</option>
             <option value="published">Publié</option>
           </Select>
-        </>
-      ),
-    },
-  ];
-
-  return (
-    <>
-      <header className="mb-5 sm:mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <BackLink href="/admin/marques">Marques</BackLink>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="m-0 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
-              {isNew ? "Nouvelle marque" : brand!.name}
-            </h1>
-            {!isNew && (
-              <span
-                className={
-                  brand!.status === "published"
-                    ? "rounded-full bg-white px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--color-ink)]"
-                    : "rounded-full bg-white/15 px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.1em] text-white/80"
-                }
-              >
-                {brand!.status === "published" ? "En ligne" : "Brouillon"}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {!isNew && (
-          <div className="flex flex-wrap items-center gap-3">
-            <PublishToggle
-              brandId={brand!.id}
-              brandName={brand!.name}
-              published={brand!.status === "published"}
-            />
-            <Link
-              href={`/espace-marque/${brand!.slug}/stats`}
-              className="rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
-            >
-              Statistiques
-            </Link>
-            <Link
-              href={`/espace-marque/${brand!.slug}/pieces`}
-              className="rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
-            >
-              Gérer les pièces
-            </Link>
-            <DeleteButton
-              action={deleteBrand}
-              id={brand!.id}
-              label="Supprimer"
-              confirmText="Supprimer la marque supprimera aussi ses pièces. Continuer ?"
-            />
-          </div>
-        )}
-      </header>
-
-      <BrandPrefill modeCreation={isNew} />
-
-      <StepForm action={saveBrand} etapes={etapes} submitLabel={isNew ? "Créer la marque" : "Enregistrer"}>
-        {!isNew && <input type="hidden" name="id" value={brand!.id} />}
-        {brand?.published_at && <input type="hidden" name="published_at" value={brand.published_at} />}
-      </StepForm>
+        </Bloc>
+      </AdminForm>
 
       {!isNew && <BrandManagers brandId={brand!.id} managers={managers} />}
     </>
+  );
+}
+
+/** Une section du formulaire : un titre, une phrase, des champs. */
+function Bloc({
+  titre,
+  intro,
+  children,
+}: {
+  titre: string;
+  intro: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border-t border-white/12 pt-6 first:border-0 first:pt-0">
+      <h2 className="m-0 text-[15.5px] font-extrabold tracking-[-0.01em] text-white">{titre}</h2>
+      <p className="m-0 mb-5 mt-1.5 text-[13px] leading-relaxed text-white/65">{intro}</p>
+      <div className="flex flex-col gap-6">{children}</div>
+    </section>
   );
 }

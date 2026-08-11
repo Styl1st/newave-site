@@ -1,5 +1,5 @@
 import Link from "next/link";
-import BrandSpaceNav from "@/components/BrandSpaceNav";
+import BarreGerant from "@/components/BarreGerant";
 import { requireManagedBrand } from "@/lib/brand-space";
 import { IconDownload, IconPlus } from "@/components/Icons";
 
@@ -17,18 +17,15 @@ type Props = { params: Promise<{ slug: string }> };
  */
 export default async function AjouterDesPieces({ params }: Props) {
   const { slug } = await params;
-  const { brand, isAdmin } = await requireManagedBrand(slug);
+  const { brand } = await requireManagedBrand(slug);
 
   const boutique = brand.shop_url ?? brand.website_url;
 
   return (
     <>
-      <BrandSpaceNav
-        slug={slug}
-        name={brand.name}
-        isAdmin={isAdmin}
-        published={brand.status === "published"}
-      />
+      <div className="mb-7">
+        <BarreGerant brand={brand} />
+      </div>
 
       <header className="mb-5 sm:mb-7">
         <p className="eyebrow m-0">Ton catalogue</p>

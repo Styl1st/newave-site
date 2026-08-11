@@ -609,6 +609,32 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
       opacity: 1;
     }
   }
+
+  /* ---------- sur téléphone, l'animation ne joue qu'à l'arrivée ----------
+
+     Le cylindre se déforme aux deux bords : le bloc s'incline en
+     arrivant, et s'incline à nouveau en repartant. Sur un grand écran
+     c'est juste, parce qu'un paragraphe y occupe le tiers de la
+     hauteur et qu'il a quitté la zone de lecture avant de commencer à
+     pâlir.
+
+     Sur un téléphone, non. La description d'une pièce y remplit
+     presque tout l'écran, et la course animée vaut la hauteur de
+     l'écran PLUS celle du bloc : la sortie commence donc alors que le
+     texte est encore parfaitement visible et qu'on est en train de le
+     lire. Il s'efface sous les yeux, et on croit avoir défilé trop
+     loin. C'est exactement ce qui a été constaté.
+
+     Ici, le bloc se met en place puis reste net jusqu'à disparaître
+     par le haut. On perd la moitié de l'effet, on garde le texte
+     lisible tant qu'il est à l'écran, ce qui n'est pas négociable. */
+  @media (max-width: 900px) {
+    html[data-defilement="1"] main
+      :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not([data-no-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
+      animation-name: cylindreArrivee;
+      animation-range: entry 0% entry 100%;
+    }
+  }
 }
 
 /* Navigateurs sans timeline de défilement : une arrivée en cascade,
@@ -660,6 +686,27 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
       rotateX(calc(-10deg * var(--amp) * var(--cyl)))
       scale(calc(1 - .11 * var(--amp) * var(--cyl)))
       translateY(calc(-20px * var(--amp) * var(--cyl)));
+  }
+}
+
+/* La même arrivée, sans le départ.
+
+   Le plateau commence tôt, à 62 % : le bloc est droit et net bien
+   avant d'avoir fini d'entrer, donc on peut le lire dès qu'il occupe
+   le bas de l'écran plutôt que d'attendre qu'il soit au centre. Puis
+   plus rien ne bouge, quoi qu'on fasse ensuite. */
+@keyframes cylindreArrivee {
+  0% {
+    opacity: calc(1 - .4 * var(--amp) * var(--cyl));
+    transform:
+      perspective(1200px)
+      rotateX(calc(10deg * var(--amp) * var(--cyl)))
+      scale(calc(1 - .11 * var(--amp) * var(--cyl)))
+      translateY(calc(20px * var(--amp) * var(--cyl)));
+  }
+  62%, 100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) scale(1) translateY(0);
   }
 }
 
@@ -861,6 +908,17 @@ html[data-menu="1"] > body > footer {
    éléments y sont masqués ou minuscules ; sur ordinateur, on voyait
    les flèches et le clic n'atteignait jamais que l'image.
 */
+/* ---------- les listes déroulantes ----------
+   Une <option> n'est pas dessinée par le navigateur comme le reste de
+   la page : c'est le système qui la peint, dans une fenêtre à lui. Elle
+   hérite malgré tout de la couleur du texte, si bien qu'un menu blanc
+   affichait du texte blanc, donc rien du tout. On fixe donc les deux
+   couleurs explicitement, sur l'option et non sur le select. */
+option {
+  background-color: #fff;
+  color: var(--color-ink);
+}
+
 .visuel > img { position: relative; }
 
 /* ---------- le panneau de modification ----------

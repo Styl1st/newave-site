@@ -39,6 +39,22 @@ function list(formData: FormData, name: string): string[] {
   return formData.getAll(name).map((v) => String(v).trim()).filter(Boolean);
 }
 
+/** Le rang qui suit la dernière pièce d'une marque. */
+async function rangSuivant(brandId: string): Promise<number> {
+  const supabase = await createClient();
+  if (!supabase) return 0;
+
+  const { data } = await supabase
+    .from("products")
+    .select("position")
+    .eq("brand_id", brandId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return ((data as { position: number | null } | null)?.position ?? -1) + 1;
+}
+
 /* ---------------- presentation de la marque ---------------- */
 
 export async function saveBrandPresentation(formData: FormData): Promise<Result> {
@@ -149,12 +165,19 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
     featured: formData.get("featured") === "on",
     available: formData.get("available") === "on",
     status: text(formData, "status") === "draft" ? "draft" : "published",
-    position: Number(text(formData, "position") || 0),
   };
 
+  /*
+   * L'ordre d'affichage ne se saisit plus.
+   *
+   * Le formulaire demandait un numéro, ce qui n'a de sens que si l'on
+   * a toutes ses pièces sous les yeux au même moment. Une pièce
+   * modifiée garde donc simplement son rang, et une nouvelle se range
+   * à la suite des autres.
+   */
   const { error } = id
     ? await supabase.from("products").update(payload).eq("id", id).eq("brand_id", brand.id)
-    : await supabase.from("products").insert(payload);
+    : await supabase.from("products").insert({ ...payload, position: await rangSuivant(brand.id) });
 
   if (error) return { ok: false, error: error.message };
 

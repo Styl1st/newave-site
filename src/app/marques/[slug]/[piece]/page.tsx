@@ -9,7 +9,7 @@ import { getProduct, getProductsByBrand } from "@/lib/queries";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { IconPencil } from "@/components/Icons";
-import { discountPercent, formatPrice } from "@/lib/types";
+import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string; piece: string }> };
@@ -48,7 +48,7 @@ export default async function PiecePage({ params }: Props) {
       ? [product.image_url]
       : [];
 
-  const price = formatPrice(product.price_cents, product.currency);
+  const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
   const off = discountPercent(product);
 
@@ -137,8 +137,15 @@ export default async function PiecePage({ params }: Props) {
 
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
               <span className="text-[clamp(17px,3.8vw,23px)] font-extrabold text-white">
-                {price ?? "Prix sur la boutique"}
+                {prix.principal ?? "Prix sur la boutique"}
               </span>
+              {/* Ce que la marque demande vraiment. Notre équivalent en
+                  euros sert à comparer, pas à annoncer un prix. */}
+              {prix.origine && (
+                <span className="text-[14px] font-semibold text-white/60">
+                  soit {prix.origine} chez {brand.name}
+                </span>
+              )}
               {was && off !== null && (
                 <>
                   <span className="text-[16px] font-semibold text-white/55 line-through">{was}</span>

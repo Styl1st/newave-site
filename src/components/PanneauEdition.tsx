@@ -47,7 +47,7 @@ export default function PanneauEdition({ brand }: { brand: Brand }) {
       <button
         type="button"
         onClick={() => setOuvert(true)}
-        className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/85 transition hover:bg-white/16 hover:text-white active:scale-[.97]"
+        className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/75 transition hover:bg-white/14 hover:text-white active:scale-[.97]"
       >
         <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9" />
