@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "./supabase/server";
 import { DEMO_BRANDS, DEMO_POSTS, DEMO_PRODUCTS } from "./demo-data";
 import type { Brand, Post, Product } from "./types";
@@ -43,20 +44,45 @@ function report(where: string, error: { message: string } | null) {
 
 /* ---------------- marques ---------------- */
 
+/**
+ * L'annuaire, avec une minute de mémoire.
+ *
+ * La page reste rendue à la demande, et il le faut : elle affiche les
+ * favoris de la personne connectée, donc la mettre en cache reviendrait
+ * à servir les favoris de quelqu'un d'autre. C'est la REQUÊTE qu'on
+ * garde, pas la page.
+ *
+ * Le gain est réel : la liste des marques est identique pour tout le
+ * monde et ne change que quand tu publies quelque chose. Sans ce cache,
+ * chaque visite rouvrait la même interrogation de la base. Avec, la
+ * première la paie et les suivantes sont servies aussitôt.
+ *
+ * Une minute, parce qu'une marque publiée doit apparaître vite. Le
+ * cache est de toute façon vidé à chaque publication, par les appels à
+ * revalidatePath("/marques") des actions d'administration.
+ */
+const lireLAnnuaire = unstable_cache(
+  async (): Promise<Brand[] | null> => {
+    const supabase = await createClient();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from("brands")
+      .select("*")
+      .eq("status", "published")
+      .order("featured", { ascending: false })
+      .order("published_at", { ascending: false });
+
+    report("annuaire des marques", error);
+    if (error || !data) return null;
+    return data as Brand[];
+  },
+  ["annuaire-marques"],
+  { revalidate: 60, tags: ["marques"] }
+);
+
 export async function getBrands(): Promise<Brand[]> {
-  const supabase = await createClient();
-  if (!supabase) return DEMO_BRANDS;
-
-  const { data, error } = await supabase
-    .from("brands")
-    .select("*")
-    .eq("status", "published")
-    .order("featured", { ascending: false })
-    .order("published_at", { ascending: false });
-
-  report("annuaire des marques", error);
-  if (error || !data) return DEMO_BRANDS;
-  return data as Brand[];
+  return (await lireLAnnuaire()) ?? DEMO_BRANDS;
 }
 
 export async function getBrand(slug: string): Promise<Brand | null> {

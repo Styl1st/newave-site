@@ -169,26 +169,37 @@ body {
   100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1); }
 }
 
-/* Mêmes dérives, avec le flou : réservées aux nappes. Le dégradé de
-   fond, lui, n'est pas flouté — il n'a pas de bord à cacher. */
+/* Mêmes dérives, pour les nappes.
+
+   LE FLOU N'EST PLUS DANS L'ANIMATION, et c'est une correction de
+   performance importante. Il variait entre 30 et 38 pixels au fil du
+   cycle : à chaque image, le navigateur devait donc reflouter une
+   surface plein écran, soixante fois par seconde, sur trois couches à
+   la fois. C'est l'opération la plus coûteuse qu'on puisse demander au
+   processeur graphique d'un téléphone, et elle tournait en permanence.
+
+   Le flou est désormais posé une fois sur l'élément, et seule la
+   teinte varie. Personne ne voyait ces quatre pixels d'écart ; tout le
+   monde subissait leur coût. */
 @keyframes teinteFloue {
-  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94) blur(34px); }
-  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08) blur(30px); }
-  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1) blur(38px); }
+  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94); }
+  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08); }
+  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1); }
 }
 
 /* Les nappes dérivent en sens inverse : les deux mouvements se
    croisent au lieu de se superposer, ce qui multiplie les teintes
    traversées sans jamais s'éloigner de la couleur de départ. */
 @keyframes teinteInverseFloue {
-  0%   { filter: hue-rotate(calc(6deg * var(--amp))) saturate(1.05) blur(32px); }
-  50%  { filter: hue-rotate(calc(-5deg * var(--amp))) saturate(0.96) blur(36px); }
-  100% { filter: hue-rotate(calc(-12deg * var(--amp))) saturate(1.1) blur(30px); }
+  0%   { filter: hue-rotate(calc(6deg * var(--amp))) saturate(1.05); }
+  50%  { filter: hue-rotate(calc(-5deg * var(--amp))) saturate(0.96); }
+  100% { filter: hue-rotate(calc(-12deg * var(--amp))) saturate(1.1); }
 }
 
 .bg::before, .bg::after {
   content: ''; position: absolute; inset: -45%;
-  will-change: transform, opacity;
+  /* Posé une fois, jamais animé. Voir teinteFloue. */
+  filter: blur(34px);
 }
 
 .bg::before {
@@ -216,7 +227,7 @@ body {
 
 .bg-nappe {
   position: fixed; inset: -50%; z-index: 0; pointer-events: none;
-  will-change: transform, opacity;
+  filter: blur(34px);
   background:
     radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .6) 0%, transparent 36%),
     radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .55) 0%, transparent 38%),
@@ -662,8 +673,23 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     animation: cylindre linear both;
     animation-timeline: view();
     animation-range: entry 0% exit 100%;
-    will-change: transform, opacity;
     transform-origin: center center;
+
+    /*
+       PAS DE `will-change` ICI, et c'est délibéré.
+
+       Cette règle vise toutes les cartes de la page. Sur l'annuaire,
+       cela fait quatre-vingts éléments, et `will-change` demande au
+       navigateur de réserver à CHACUN son propre calque graphique, en
+       permanence, qu'il soit visible ou non. Sur un téléphone, la
+       mémoire vidéo s'épuise, le système ferme l'onglet, et la page se
+       recharge d'elle-même — le rechargement en boucle constaté.
+
+       Une animation liée au défilement est de toute façon composée par
+       le navigateur : il n'a pas besoin qu'on le prévienne. `will-change`
+       ne se justifie que sur un ou deux éléments identifiés, jamais sur
+       une famille entière.
+    */
 
     /* Un bloc dans lequel on écrit se fige : c'est ce qui permet
        d'animer aussi les formulaires. */
@@ -1030,4 +1056,34 @@ option {
 @keyframes attente {
   0%, 100% { background-position: 0% 0; }
   50% { background-position: 100% 0; }
+}
+
+/* ---------- allègement sur téléphone ----------
+
+   `backdrop-filter` est ce qui coûte le plus cher sur mobile : le
+   navigateur doit photographier tout ce qui se trouve derrière
+   l'élément, le flouter, puis recomposer — et le refaire à chaque
+   défilement. Le site en compte une vingtaine par page, empilés
+   par-dessus un décor déjà flouté.
+
+   Sous 900 pixels, on remplace donc le verre par un aplat un peu plus
+   dense. Personne ne remarque l'absence de flou sur un fond qui bouge ;
+   tout le monde remarque une page qui rame ou un onglet qui se ferme.
+
+   Elle est volontairement placée en toute fin de fichier : le fond de
+   remplacement doit l'emporter sur celui de `.glass`, et à poids égal
+   c'est la dernière règle écrite qui gagne. */
+@media (max-width: 900px) {
+  .glass,
+  .barre,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .glass {
+    background: linear-gradient(150deg, rgba(38, 14, 88, .72), rgba(38, 14, 88, .58));
+  }
+  .barre {
+    background: rgba(26, 9, 64, .92);
+  }
 }
