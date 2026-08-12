@@ -520,11 +520,21 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
        c'est exactement le geste à éviter. */
     scroll-behavior: auto !important;
 
-    /* Le décor, lui, ralentit au lieu de s'arrêter. Il continue de
-       vivre, mais deux fois plus lentement et avec la moitié de
-       l'amplitude : présent, jamais insistant. */
-    --vit: .5;
-    --amp: .5;
+    /*
+       Le décor garde sa vitesse normale, et c'est un choix révisé.
+
+       J'avais commencé par le ralentir de moitié. Sur un dégradé qui
+       met déjà quarante secondes à dériver, doubler ce temps revient à
+       ne plus rien voir bouger du tout : le réglage revenait à couper,
+       avec une étape de plus. Or ce fond n'est ni un déplacement, ni
+       une parallaxe, ni une rotation — c'est une teinte qui évolue sur
+       place, hors du champ de lecture. Rien de ce que le mode réduit
+       cherche à éviter.
+
+       Ce qui reste coupé au-dessus, en revanche, l'est pour de bon :
+       le cylindre de défilement, les transitions de page, les entrées
+       en cascade. Ce sont eux qui posent réellement problème.
+    */
   }
 }
 

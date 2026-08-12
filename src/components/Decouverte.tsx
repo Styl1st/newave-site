@@ -167,11 +167,27 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
     const el = bande.current;
     if (!el) return;
 
-    // Un système réglé sur « réduire le mouvement » n'aura pas de
-    // dérive du tout. La bande reste défilable à la main, ce qui est
-    // l'essentiel : on retire l'agrément, jamais la fonction.
+    /*
+     * La bande dérive pour tout le monde, et c'est un choix révisé.
+     *
+     * Elle s'arrêtait complètement sous « réduire les animations ».
+     * C'était défendable en théorie et faux en pratique : sur un
+     * ordinateur où ce réglage est actif — ce qui est courant, par
+     * économie de batterie autant que par gêne — le présentoir
+     * paraissait cassé, et la moitié des visiteurs ne voyaient jamais
+     * les marques défiler.
+     *
+     * On la ralentit plutôt que de la couper. Le mouvement reste lent,
+     * horizontal, cantonné à sa bande, et surtout il s'arrête au
+     * moindre contact : c'est ce qui compte vraiment pour qui préfère
+     * que rien ne bouge, et c'est aussi ce qu'exige la règle
+     * d'accessibilité sur les contenus animés — pouvoir les arrêter.
+     */
     const sobre = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (sobre?.matches && document.documentElement.dataset.animChoisi !== "1") return;
+    const vitesse =
+      sobre?.matches && document.documentElement.dataset.animChoisi !== "1"
+        ? VITESSE * 0.55
+        : VITESSE;
 
     let image = 0;
     let precedent = performance.now();
@@ -190,7 +206,7 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
        * gauche au bouclage pendant qu'on essaie de l'attraper.
        */
       if (!survol.current && maintenant >= repriseA.current && moitie > 0) {
-        el.scrollLeft += VITESSE * dt;
+        el.scrollLeft += vitesse * dt;
         /*
          * Le retour invisible.
          *
