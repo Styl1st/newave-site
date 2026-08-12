@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ConnexionFournisseurs from "./ConnexionFournisseurs";
 
 type Mode = "connexion" | "inscription" | "oubli";
 
@@ -15,7 +16,39 @@ export default function AuthForm({ suite }: { suite: string }) {
   const [pending, setPending] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  /** Retenue pour l'écran de confirmation et pour le renvoi du lien. */
+  const [adresse, setAdresse] = useState("");
   const router = useRouter();
+
+  /** Redemande un lien de confirmation, sans recréer de compte. */
+  async function renvoyer() {
+    setPending(true);
+    setNote(null);
+
+    const supabase = createClient();
+    if (!supabase) {
+      setPending(false);
+      setNote("Supabase n'est pas encore branché.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: adresse,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?suite=${encodeURIComponent(suite)}`,
+      },
+    });
+
+    setPending(false);
+    setNote(
+      error
+        ? error.message.toLowerCase().includes("rate")
+          ? "Trop de demandes d'affilée. Attends quelques minutes."
+          : error.message
+        : "C'est reparti. Le nouveau lien annule le précédent."
+    );
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +59,7 @@ export default function AuthForm({ suite }: { suite: string }) {
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
     const displayName = String(form.get("display_name") ?? "").trim();
+    setAdresse(email);
 
     const supabase = createClient();
     if (!supabase) {
@@ -79,9 +113,15 @@ export default function AuthForm({ suite }: { suite: string }) {
       if (brut.includes("invalid login credentials")) {
         setNote("Email ou mot de passe incorrect.");
       } else if (brut.includes("email not confirmed")) {
+        // Message écrit pour la personne, pas pour l'administrateur :
+        // c'est elle qui le lira, et elle a une action à sa portée.
+        setAdresse(email);
+        setDone(true);
+        setMode("inscription");
         setNote(
-          "Ce compte n'a jamais été confirmé. Désactive « Confirm email » dans Supabase, ou confirme le compte depuis Authentication → Users."
+          "Ce compte existe mais son adresse n'a jamais été confirmée. Renvoie-toi un lien ci-dessous."
         );
+        return;
       } else if (brut.includes("rate limit") || brut.includes("too many")) {
         setNote("Trop de tentatives. Attends quelques minutes avant de réessayer.");
       } else {
@@ -106,17 +146,53 @@ export default function AuthForm({ suite }: { suite: string }) {
 
   if (done) {
     return (
-      <div className="glass p-8 text-center">
-        <h2 className="m-0 text-[19px] font-extrabold text-white">Vérifie tes emails</h2>
-        <p className="m-0 mt-3 text-[14.5px] leading-relaxed text-white/84">
+      <div className="glass flex flex-col items-center gap-4 p-8 text-center">
+        <span
+          className="grid h-14 w-14 place-items-center rounded-full bg-white/14 text-[24px]"
+          aria-hidden
+        >
+          ✉
+        </span>
+
+        <h2 className="m-0 text-[19px] font-extrabold text-white">Vérifie ta boîte mail</h2>
+
+        <p className="m-0 max-w-md text-[14.5px] leading-relaxed text-white/84">
           {mode === "oubli"
             ? "Si un compte existe avec cette adresse, un lien vient de partir. Il n'est valable qu'une fois et pour peu de temps."
-            : "On vient de t'envoyer un lien de confirmation. Clique dessus et ton compte sera actif."}
+            : (
+              <>
+                Un lien de confirmation vient de partir vers{" "}
+                <strong className="font-extrabold text-white">{adresse}</strong>. Clique
+                dessus et ton compte sera actif. Tant que ce n&apos;est pas fait, la
+                connexion sera refusée.
+              </>
+            )}
         </p>
-        <p className="m-0 mt-3 text-[13px] leading-relaxed text-white/60">
-          Regarde dans les spams si rien n&apos;arrive. L&apos;expéditeur intégré de
-          Supabase est limité à deux messages par heure.
+
+        <p className="m-0 max-w-md text-[13px] leading-relaxed text-white/60">
+          Rien n&apos;arrive ? Regarde dans les indésirables. L&apos;expéditeur intégré de
+          Supabase est limité à quelques messages par heure.
         </p>
+
+        {/* Le renvoi. Un lien perdu ou expiré est le premier motif
+            d'abandon à l'inscription, et sans ce bouton il faudrait
+            recréer un compte pour s'en sortir. */}
+        {mode === "inscription" && (
+          <button
+            type="button"
+            onClick={renvoyer}
+            disabled={pending}
+            className="rounded-full border border-white/40 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/18 active:scale-[.97] disabled:opacity-55"
+          >
+            {pending ? "Envoi…" : "Renvoyer le lien"}
+          </button>
+        )}
+
+        {note && (
+          <p className="m-0 max-w-md rounded-[13px] bg-white/12 px-4 py-3 text-[13px] leading-relaxed text-white">
+            {note}
+          </p>
+        )}
       </div>
     );
   }
@@ -125,6 +201,12 @@ export default function AuthForm({ suite }: { suite: string }) {
 
   return (
     <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-4 sm:p-7">
+      {/* En haut, parce que c'est le chemin le plus court et le plus
+          sûr. Le mot de passe qu'on invente à contrecœur est faible ;
+          celui qu'on ne crée pas ne peut pas fuir. Rien ici quand on a
+          simplement oublié son mot de passe : le sujet est ailleurs. */}
+      {mode !== "oubli" && <ConnexionFournisseurs suite={suite} />}
+
       <div className="flex gap-1.5 rounded-full bg-white/10 p-1.5">
         <button
           type="button"

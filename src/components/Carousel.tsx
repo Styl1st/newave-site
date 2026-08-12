@@ -55,10 +55,22 @@ export default function Carousel({
     <div className={`relative ${className}`}>
       <div
         ref={bande}
-        /* `touch-pan-y` laisse le doigt faire défiler la page
-           verticalement : sans ça, le carrousel capterait le geste et
-           on se retrouverait bloqué dessus. */
-        className="flex touch-pan-y snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        /*
+         * `pan-x pan-y`, et les deux sont indispensables.
+         *
+         * Il n'y avait que `pan-y`, ce qui voulait dire : le navigateur
+         * ne prend en charge que le geste vertical sur cet élément. Le
+         * geste horizontal n'était donc transmis à personne, et le
+         * carrousel refusait de tourner au doigt. C'est le défaut
+         * constaté sur téléphone.
+         *
+         * Avec les deux axes déclarés, le navigateur reconnaît la
+         * direction dominante du geste : horizontal, il fait tourner
+         * les images ; vertical, il laisse la page défiler. C'est
+         * exactement ce qu'on veut, et c'est lui qui décide, pas nous.
+         */
+        style={{ touchAction: "pan-x pan-y" }}
+        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {images.map((src, i) => (
           <div key={src + i} className="visuel w-full shrink-0 snap-center">

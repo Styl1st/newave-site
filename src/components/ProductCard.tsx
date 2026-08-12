@@ -65,7 +65,7 @@ export default function ProductCard({
     <div className="card-light group flex h-full flex-col overflow-hidden">
       <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">
-          <div className="visuel relative aspect-square w-full overflow-hidden">
+          <div className="visuel relative aspect-square w-full overflow-hidden rounded-t-[var(--radius)]">
             {cover ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img

@@ -44,7 +44,7 @@ export default function BrandCard({
       <div className="pointer-events-none relative z-3 flex h-full flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
             un aplat plutot qu'un trou : la grille reste alignee. */}
-        <div className="relative aspect-16/10 w-full overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
+        <div className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
           {visual ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img

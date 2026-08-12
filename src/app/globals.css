@@ -374,6 +374,19 @@ body {
 .card-light {
   position: relative; overflow: hidden; isolation: isolate;
   border-radius: var(--radius);
+  /*
+     Le survol soulève la carte de trois pixels et lance le balayage
+     chromé. Ces deux animations la font passer sur son propre calque
+     de composition, et un calque ne reprend pas toujours la découpe
+     arrondie de son parent : l'image reprenait alors ses angles
+     droits, le temps du survol. C'est le carré qu'on voyait apparaître.
+
+     Ce masque force le navigateur à découper le calque lui-même. Il ne
+     change rien à l'image — c'est un dégradé entièrement opaque — mais
+     il rend l'arrondi solidaire du contenu, survol ou pas.
+  */
+  -webkit-mask-image: radial-gradient(#fff, #000);
+  mask-image: radial-gradient(#fff, #000);
   color: var(--color-ink);
   background: linear-gradient(160deg, #fff 0%, #f4efff 52%, #e6dcfb 100%);
   box-shadow: 0 8px 22px rgba(52,18,110,.26), inset 0 1px 0 #fff;
@@ -459,18 +472,59 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 
 :focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 
-/* Le réglage système « réduire les animations » reste la valeur par
-   défaut. Mais si le visiteur a explicitement demandé du mouvement
-   depuis « Mon compte → Apparence », on respecte SON choix : c'est
-   une décision consciente, pas un défaut qu'on écrase. */
+/* ---------- « réduire les animations » ----------
+
+   Ce réglage système ne dit pas « je ne veux rien voir bouger ». Il
+   dit : évitez ce qui me donne le tournis. Ce qu'il vise est précis,
+   et documenté : les grands déplacements, la parallaxe, les rotations,
+   les zooms, ce qui bouge vite ou traverse l'écran.
+
+   La règle d'avant coupait TOUT, sur `*`, avec `!important`. Un
+   visiteur sans compte dont la machine demandait le mode réduit
+   arrivait donc sur un site entièrement figé : le fond ne dérivait
+   plus, le ruban ne tournait plus, plus rien ne respirait. Et comme
+   une préférence enregistrée dispensait de la règle, le même site
+   bougeait une fois connecté et se figeait une fois déconnecté. Cette
+   incohérence était le vrai défaut.
+
+   On distingue donc deux familles.
+
+   D'un côté le DÉCOR : un dégradé dont la teinte évolue sur quarante
+   secondes, sans déplacement, sans transformation, hors du champ de
+   lecture. Ce n'est pas ce que le réglage cherche à éviter, et le
+   couper revenait à sur-interpréter une demande.
+
+   De l'autre les GRANDS MOUVEMENTS : le cylindre de défilement, les
+   transitions de page, les entrées en cascade, la dérive du ruban. Ce
+   sont eux qui posent problème, et ceux-là restent coupés. Le ruban
+   demeure défilable à la main, ce qui est d'ailleurs le comportement
+   accessible attendu d'un contenu qui défile tout seul. */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-anim-choisi="1"]) *,
-  html:not([data-anim-choisi="1"]) *::before,
-  html:not([data-anim-choisi="1"]) *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+  html:not([data-anim-choisi="1"]) {
+    /* Les blocs cessent d'être animés au défilement, et les entrées
+       en cascade se contentent d'apparaître. */
+    & main :is([data-reveal], .card-light, .glass),
+    & main :is([data-reveal], .card-light, .glass)::before,
+    & main :is([data-reveal], .card-light, .glass)::after,
+    & .rise,
+    & .arrive,
+    & .entree-menu,
+    & .page-in,
+    & .panneau-edition {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
+    }
+
+    /* Un défilement propulsé par un lien d'ancrage traverse l'écran :
+       c'est exactement le geste à éviter. */
     scroll-behavior: auto !important;
+
+    /* Le décor, lui, ralentit au lieu de s'arrêter. Il continue de
+       vivre, mais deux fois plus lentement et avec la moitié de
+       l'amplitude : présent, jamais insistant. */
+    --vit: .5;
+    --amp: .5;
   }
 }
 
@@ -870,20 +924,50 @@ html[data-menu="1"] > body > footer {
    première, donc la couture ne se voit pas.
 
    De -50% vers 0 : les vignettes vont de la gauche vers la droite. */
-.ruban { overflow: hidden; }
-.piste {
-  animation: ruban linear infinite;
-  will-change: transform;
+/* Le ruban est une vraie zone de défilement. Sa barre est masquée,
+   parce qu'elle serait la seule du site et qu'elle jurerait, mais le
+   défilement lui-même reste entier : au doigt, à la molette, au pavé
+   tactile et au clavier. La dérive automatique est pilotée en
+   JavaScript, dans Decouverte, pour qu'elle puisse s'interrompre dès
+   qu'une main s'en mêle. */
+.ruban {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: auto;
 }
-/* On s'arrête quand quelqu'un regarde de près, ou navigue au clavier :
-   un nom qui s'échappe pendant qu'on tend le doigt est agaçant. */
-.ruban:hover .piste,
-.ruban:focus-within .piste,
-.piste:active { animation-play-state: paused; }
+.ruban::-webkit-scrollbar { display: none; }
 
-@keyframes ruban {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
+/* ---------- la barre, mais seulement à la souris ----------
+
+   Un doigt fait glisser une bande sans rien demander à personne, et
+   une barre n'y servirait qu'à manger de la place. Une souris, elle,
+   ne peut rien faire : la molette ne défile qu'à la verticale, et il
+   n'y a aucune prise à saisir. Sans barre, la bande paraît bloquée.
+
+   `pointer: fine` distingue les deux : c'est le dispositif de pointage
+   qui est interrogé, pas la largeur de l'écran. Un ordinateur à écran
+   tactile est donc traité comme il se doit, et un téléphone en mode
+   paysage ne se retrouve pas avec une barre inutile. */
+@media (pointer: fine) {
+  .ruban {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .4) rgba(255, 255, 255, .08);
+    /* De quoi loger la barre sans qu'elle touche les cartes. */
+    padding-bottom: 14px;
+    cursor: grab;
+  }
+  .ruban:active { cursor: grabbing; }
+
+  .ruban::-webkit-scrollbar { display: block; height: 8px; }
+  .ruban::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, .08);
+    border-radius: 999px;
+  }
+  .ruban::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .4);
+    border-radius: 999px;
+  }
+  .ruban::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .62); }
 }
 
 /* ---------- fond des visuels pendant leur chargement ----------
