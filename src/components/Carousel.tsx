@@ -102,11 +102,18 @@ export default function Carousel({
             le clic sur la flèche atterrissait sur l'image. Le geste
             marchait, le bouton non, exactement comme constaté.
           */}
+          {/* Visibles aussi sur téléphone.
+              Elles y étaient masquées, au motif qu'on fait glisser au
+              doigt. C'est vrai, mais ça suppose qu'on ait deviné qu'il
+              y a plusieurs photos : les pastilles du bas sont petites,
+              et rien d'autre ne le dit. Deux flèches lèvent le doute
+              tout de suite. Un peu plus petites qu'en grand, pour ne
+              pas manger la photo. */}
           <button
             type="button"
             onClick={() => aller(clamped - 1)}
             aria-label="Image précédente"
-            className="absolute left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
+            className="absolute left-2 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[17px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 active:scale-95 sm:left-3 sm:h-10 sm:w-10 sm:text-[18px]"
           >
             ‹
           </button>
@@ -114,7 +121,7 @@ export default function Carousel({
             type="button"
             onClick={() => aller(clamped + 1)}
             aria-label="Image suivante"
-            className="absolute right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[18px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 sm:grid"
+            className="absolute right-2 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-black/35 text-[17px] font-black text-white backdrop-blur-sm transition hover:bg-black/55 active:scale-95 sm:right-3 sm:h-10 sm:w-10 sm:text-[18px]"
           >
             ›
           </button>

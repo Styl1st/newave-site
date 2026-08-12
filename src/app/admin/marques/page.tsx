@@ -14,9 +14,17 @@ export default async function AdminBrands() {
             Marques
           </h1>
         </div>
-        <Link href="/admin/marques/nouveau" className="card-light px-5 py-3">
-          <span className="relative z-3 text-[13.5px] font-extrabold">Nouvelle marque</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/admin/catalogues"
+            className="rounded-full border border-white/35 bg-white/8 px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
+          >
+            Mettre à jour les catalogues
+          </Link>
+          <Link href="/admin/marques/nouveau" className="card-light px-5 py-3">
+            <span className="relative z-3 text-[13.5px] font-extrabold">Nouvelle marque</span>
+          </Link>
+        </div>
       </header>
 
       {/* Le bouton « Retirer » a quitté chaque ligne. Il y répétait
