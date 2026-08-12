@@ -31,11 +31,11 @@ import type { Brand } from "@/lib/types";
 
 const COMBIEN = 14;
 
-/** Pixels par seconde. Assez lent pour lire un nom au passage. */
-const VITESSE = 26;
+/** Pixels par seconde. Assez vif pour vivre, assez lent pour lire un nom. */
+const VITESSE = 52;
 
 /** Temps d'immobilité avant que la dérive ne reprenne la main. */
-const REPRISE_MS = 2600;
+const REPRISE_MS = 1800;
 
 function melanger<T>(liste: T[]): T[] {
   const copie = [...liste];
@@ -99,14 +99,25 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
   const bande = useRef<HTMLDivElement>(null);
   /** Instant après lequel la dérive a le droit de reprendre. */
   const repriseA = useRef(0);
-  /** Tant que la souris est dessus, rien ne bouge tout seul. */
-  const survol = useRef(false);
 
   useEffect(() => {
     setTirage(melanger(brands).slice(0, COMBIEN));
   }, [brands]);
 
-  /** Toute intervention humaine met la dérive en pause. */
+  /*
+   * Toute intervention humaine met la dérive en pause, pour un temps.
+   *
+   * C'est un simple délai, et non plus un drapeau « la souris est
+   * dessus » qu'on levait à l'entrée et baissait à la sortie. Ce
+   * drapeau était l'autre cause des arrêts définitifs : il suffisait
+   * qu'un événement de sortie se perde — la souris qui quitte la
+   * fenêtre, un onglet qu'on change, la page qui défile sous le
+   * curseur — pour qu'il reste levé et que la bande ne reparte jamais.
+   *
+   * Un délai ne peut pas rester coincé : au pire il expire. Et comme
+   * le moindre mouvement de souris sur la bande le repousse, elle
+   * reste bien à l'arrêt tant qu'on s'en occupe.
+   */
   const suspendre = useCallback(() => {
     repriseA.current = performance.now() + REPRISE_MS;
   }, []);
@@ -192,21 +203,34 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
     let image = 0;
     let precedent = performance.now();
 
+    /*
+     * La position est tenue à part, en nombre à virgule.
+     *
+     * C'est la correction de l'arrêt intempestif, et elle mérite une
+     * explication. Le code faisait `el.scrollLeft += vitesse * dt`.
+     * À soixante images par seconde, cela ajoute moins d'un demi-pixel
+     * à chaque passage — et selon le navigateur, le niveau de zoom et
+     * la densité de l'écran, la lecture de `scrollLeft` renvoie un
+     * entier. La fraction ajoutée était alors perdue à chaque tour, la
+     * somme restait indéfiniment à zéro, et la bande semblait figée
+     * sans raison apparente. D'où le « des fois ça s'arrête ».
+     *
+     * On tient donc le compte nous-mêmes, et on l'écrit d'un coup.
+     */
+    let position = el.scrollLeft;
+
     const avancer = (maintenant: number) => {
       const dt = Math.min(maintenant - precedent, 64) / 1000;
       precedent = maintenant;
 
       const moitie = el.scrollWidth / 2;
 
-      /*
-       * Rien ne dérive tant que la souris est posée dessus.
-       *
-       * C'est un confort, et c'est aussi ce qui rend la barre de
-       * défilement lisible : sans cela, son curseur repartirait à
-       * gauche au bouclage pendant qu'on essaie de l'attraper.
-       */
-      if (!survol.current && maintenant >= repriseA.current && moitie > 0) {
-        el.scrollLeft += vitesse * dt;
+      // Quelqu'un a fait glisser la bande : on repart d'où elle est,
+      // sinon elle sauterait à notre position au premier tour suivant.
+      if (Math.abs(el.scrollLeft - position) > 2) position = el.scrollLeft;
+
+      if (maintenant >= repriseA.current && moitie > 0) {
+        position += vitesse * dt;
         /*
          * Le retour invisible.
          *
@@ -214,7 +238,8 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
          * on recule d'exactement sa largeur : le contenu sous les yeux
          * est le même au pixel près, personne ne voit la couture.
          */
-        if (el.scrollLeft >= moitie) el.scrollLeft -= moitie;
+        if (position >= moitie) position -= moitie;
+        el.scrollLeft = position;
       }
 
       image = requestAnimationFrame(avancer);
@@ -269,17 +294,14 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
             suspendre();
             prendre(e);
           }}
-          onPointerMove={trainer}
+          onPointerMove={(e) => {
+            suspendre();
+            trainer(e);
+          }}
           onPointerUp={lacher}
           onPointerCancel={lacher}
-          onPointerEnter={(e) => {
-            if (e.pointerType === "mouse") survol.current = true;
-            suspendre();
-          }}
-          onPointerLeave={(e) => {
-            survol.current = false;
-            lacher(e);
-          }}
+          onPointerEnter={suspendre}
+          onPointerLeave={lacher}
           onWheel={suspendre}
           onTouchStart={suspendre}
           onFocusCapture={suspendre}
