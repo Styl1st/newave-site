@@ -828,51 +828,40 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   .grille-serre .piece-infos .prix { font-size: 11px; }
 }
 
-/* ---------- ce qui s'efface quand le menu s'ouvre ----------
-   Le menu ne pose pas son propre décor : il laisse celui de la page,
-   et fait disparaître le contenu par-dessus. C'est la seule façon
-   d'obtenir exactement la même image des deux côtés du cercle —
-   puisqu'il n'y a qu'une image.
-
-   La barre du haut part aussi : le menu a sa propre croix, au même
-   endroit, et la laisser visible ferait deux barres superposées. */
-main,
-body > header,
-body > footer {
-  transition: opacity .34s ease;
-}
 /* ---------- la page pendant que le menu est ouvert ----------
 
-   Elle s'efface, et surtout elle REVIENT en fondu.
+   Le menu ne pose pas son propre décor : il laisse celui de la page et
+   fait disparaître le CONTENU par-dessus. C'est la seule façon
+   d'obtenir exactement la même image des deux côtés, puisqu'il n'y en
+   a qu'une. La barre du haut s'efface avec le reste : le menu a sa
+   propre croix, au même endroit, et les laisser toutes les deux ferait
+   deux barres superposées.
 
-   Il n'y avait pas de transition ici : le contenu passait de zéro à
-   pleine opacité d'un coup, et il le faisait à l'instant précis où le
-   panneau se démontait. D'où l'impression d'un contenu qui surgit,
-   alors que tout le reste du menu est en fondu.
+   Il n'y avait au départ aucune transition ici : le contenu passait de
+   zéro à pleine opacité d'un coup, et à l'instant précis où le panneau
+   se démontait. D'où l'impression qu'il surgissait.
 
-   Les trois retards décalés valent mieux qu'un réglage identique : la
-   barre revient en premier, le contenu ensuite, le pied en dernier. On
-   lit une page qui se rallume plutôt qu'un interrupteur.
+   TOUT REVIENT ENSEMBLE, sans retard échelonné. J'avais d'abord étagé
+   les trois — barre, contenu, pied — en pensant que la page se
+   rallumerait joliment. À l'usage c'est l'inverse : l'œil suit la
+   barre, la voit arriver seule, et lit deux mouvements là où il n'en
+   faut qu'un. Un seul fondu simultané se remarque moins, et c'est bien
+   le but.
 
-   Uniquement l'opacité, jamais de déplacement. Un contenu qui remonte
-   de quelques pixels sous une barre translucide donne l'impression que
-   la barre se remplit, ce qu'on a déjà corrigé une fois. */
+   Uniquement de l'opacité, jamais de déplacement. Un contenu qui
+   remonte de quelques pixels sous une barre translucide donne
+   l'impression que la barre se remplit, ce qu'on a déjà corrigé. */
 main,
 body > header,
 body > footer {
   transition: opacity .34s ease;
 }
-body > header { transition-delay: 0s; }
-main { transition-delay: .06s; }
-body > footer { transition-delay: .1s; }
 
 html[data-menu="1"] main,
 html[data-menu="1"] > body > header,
 html[data-menu="1"] > body > footer {
   opacity: 0;
   pointer-events: none;
-  /* À l'ouverture, tout part ensemble : c'est le retour qu'on étage. */
-  transition-delay: 0s;
 }
 
 /* ---------- menu de téléphone ----------

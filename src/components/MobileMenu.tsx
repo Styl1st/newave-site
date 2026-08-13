@@ -116,31 +116,39 @@ export default function MobileMenu({
   return (
     <>
       {/*
-        Le bouton DÉMÉNAGE quand le menu s'ouvre.
-        
-        Il vit normalement dans la barre du haut, qui a son propre plan
-        d'empilement. Un élément ne peut pas sortir du plan de son
-        parent, quel que soit son z-index : laissé là, le bouton passait
-        sous le panneau et devenait impossible à toucher. On le rend
-        donc à l'intérieur du menu, aux coordonnées relevées à
-        l'ouverture — même endroit, même taille, même geste.
+        Le bouton est DOUBLÉ quand le menu s'ouvre, pas déplacé.
 
-        Ici on ne garde qu'une place vide, pour que la barre ne se
-        réorganise pas pendant l'absence.
+        Il vit dans la barre du haut, qui a son propre plan
+        d'empilement. Un élément ne peut pas sortir du plan de son
+        parent, quel que soit son z-index : laissé là, il passerait sous
+        le panneau et deviendrait impossible à toucher. Le menu en rend
+        donc un second, aux coordonnées relevées à l'ouverture.
+
+        Celui-ci restait autrefois démonté pendant ce temps, et
+        réapparaissait d'un coup à la fermeture, 320 millisecondes après
+        le clic : la barre semblait se recomposer alors que le reste de
+        la page revenait en fondu. C'était le dernier accroc.
+
+        Il reste donc en place. Pendant que le menu est ouvert, toute la
+        barre est à opacité nulle et ne reçoit plus aucun appui — il est
+        donc invisible et inoffensif, et il revient en fondu avec elle.
       */}
       <div className="md:hidden" style={{ width: 40, height: 40 }}>
-        {!monte && (
-          <button
-            ref={bouton}
-            type="button"
-            onClick={ouvrir}
-            aria-label="Ouvrir le menu"
-            aria-expanded={false}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/14 ring-1 ring-white/25 transition hover:bg-white/24 active:scale-95"
-          >
-            <Barres ouvert={false} />
-          </button>
-        )}
+        <button
+          ref={bouton}
+          type="button"
+          onClick={ouvrir}
+          aria-label="Ouvrir le menu"
+          aria-expanded={ouvert}
+          // Invisible pour les lecteurs d'écran tant que le menu porte
+          // sa propre croix : deux boutons identiques annoncés en même
+          // temps n'aideraient personne.
+          aria-hidden={monte || undefined}
+          tabIndex={monte ? -1 : undefined}
+          className="grid h-10 w-10 place-items-center rounded-full bg-white/14 ring-1 ring-white/25 transition hover:bg-white/24 active:scale-95"
+        >
+          <Barres ouvert={false} />
+        </button>
       </div>
 
       {monte && (
