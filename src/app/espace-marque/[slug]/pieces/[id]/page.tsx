@@ -120,13 +120,11 @@ export default async function EditBrandProduct({ params }: Props) {
             ne veut rien dire tant qu'on ne les a pas toutes sous les
             yeux, et personne ne s'en servait. L'ordre reste celui de
             l'arrivée, ce qui est prévisible. */}
-        <Text
-          name="piece_slug"
-          label="Adresse de la page"
-          hint="Laisse vide et je la fabrique à partir du nom."
-          defaultValue={product?.slug ?? ""}
-          placeholder="adresse-de-la-piece"
-        />
+        {/* Même raison que pour un post : personne ne savait ce qu'on
+            attendait dans ce champ, et on le confondait avec un lien.
+            L'adresse existante est conservée telle quelle — la changer
+            casserait les liens déjà partagés. */}
+        {product?.slug && <input type="hidden" name="piece_slug" value={product.slug} />}
 
         <Text
           name="shop_url"

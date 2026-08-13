@@ -4,6 +4,7 @@ import CatalogueNotice from "@/components/CatalogueNotice";
 import FavoriteButton from "@/components/FavoriteButton";
 import SectionAvis from "@/components/SectionAvis";
 import BoutonSignaler from "@/components/BoutonSignaler";
+import TexteRiche from "@/components/TexteRiche";
 import PostCard from "@/components/PostCard";
 import RayonsPieces from "@/components/RayonsPieces";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
@@ -139,8 +140,8 @@ export default async function BrandPage({ params }: Props) {
             Mieux vaut passer directement aux faits que réserver une
             place blanche à un texte absent. */}
         {brand.description.trim() && (
-          <p className="m-0 whitespace-pre-line text-[15.5px] leading-[1.7] text-white/92">
-            {brand.description}
+          <p className="m-0 text-[15.5px] leading-[1.7] text-white/92">
+            <TexteRiche texte={brand.description} />
           </p>
         )}
 
@@ -178,6 +179,27 @@ export default async function BrandPage({ params }: Props) {
           brandPublished={brand.status === "published"}
           insight={insight}
         />
+      )}
+
+      {/* Aucune pièce : on l'explique, au lieu de laisser un trou.
+          Une fiche sans catalogue ne veut pas dire que la marque n'a
+          rien à vendre — le plus souvent, sa boutique n'expose pas de
+          liste que l'on puisse lire automatiquement. Sans un mot, le
+          visiteur en conclut que la marque est vide et s'en va, ce qui
+          est faux et injuste pour elle. */}
+      {products.length === 0 && (
+        <section className="glass rise rise-2 mt-8 p-5 sm:mt-11 sm:p-7">
+          <p className="eyebrow m-0">Le catalogue</p>
+          <h2 className="m-0 mt-2 text-[clamp(16px,3.6vw,20px)] font-extrabold tracking-[-0.02em] text-white">
+            Les pièces ne sont pas encore listées ici
+          </h2>
+          <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
+            Notre lecture automatique n&apos;a pas réussi à récupérer le catalogue de{" "}
+            {brand.name} — certaines boutiques ne l&apos;exposent tout simplement pas.
+            Ça ne veut pas dire qu&apos;il n&apos;y a rien : tout se trouve sur leur
+            site, par le bouton juste en dessous.
+          </p>
+        </section>
       )}
 
       {/* ---------- les pieces, juste apres la presentation ----------

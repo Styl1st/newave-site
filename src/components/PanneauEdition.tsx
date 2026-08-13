@@ -66,7 +66,15 @@ export default function PanneauEdition({
 
       {ouvert && (
         <Portal>
-          <div className="fixed inset-0 z-[90] flex justify-end">
+          {/* SUR TÉLÉPHONE, UNE FEUILLE QUI MONTE ; sur ordinateur, un
+              panneau qui vient de la droite.
+              Un panneau plein écran arrivant par le côté sur un
+              téléphone ne se lit pas comme un panneau : il se lit comme
+              un changement de page, brutal, et on ne sait plus si l'on
+              a quitté sa fiche. La feuille par le bas est le geste que
+              tout le monde connaît, et elle laisse voir la page
+              au-dessus, donc on sait qu'on n'est pas parti. */}
+          <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-stretch sm:justify-end">
             {/* Le voile. Cliquer à côté ferme, comme partout ailleurs. */}
             <button
               type="button"
@@ -79,9 +87,17 @@ export default function PanneauEdition({
               role="dialog"
               aria-modal
               aria-label="Modifier ma page"
-              className="panneau-edition relative flex h-full w-full max-w-xl flex-col overflow-y-auto bg-[rgba(26,9,64,0.94)] shadow-[-18px_0_50px_rgba(12,4,32,0.55)] backdrop-blur-2xl sm:border-l sm:border-white/20"
+              className="panneau-edition relative flex h-[92svh] w-full flex-col overflow-y-auto rounded-t-[26px] shadow-[0_-18px_50px_rgba(12,4,32,0.5)] backdrop-blur-2xl sm:h-full sm:max-w-xl sm:rounded-none sm:border-l sm:border-white/20 sm:shadow-[-18px_0_50px_rgba(12,4,32,0.55)]"
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/15 bg-[rgba(26,9,64,0.92)] px-5 py-4 backdrop-blur-xl">
+              {/* La poignée : elle ne fait rien, et c'est très bien.
+                  Elle dit « ceci se ferme en tirant vers le bas », ce
+                  qu'on essaiera de toute façon. */}
+              <span
+                aria-hidden
+                className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-white/30 sm:hidden"
+              />
+
+              <div className="panneau-entete sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/15 px-5 py-4 backdrop-blur-xl">
                 <div>
                   <p className="eyebrow m-0">Ta page</p>
                   <h2 className="m-0 mt-1 text-[17px] font-extrabold text-white">

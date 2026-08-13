@@ -31,12 +31,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     // table de travail. Voir espace-marque/layout.tsx.
     <div data-no-reveal className="mx-auto w-full max-w-6xl px-[var(--pad)] py-6 sm:py-9">
       <div data-no-reveal className="glass mb-8 flex flex-wrap items-center justify-between gap-4 p-4 sm:px-6">
-        <nav className="-mx-1 flex items-center gap-1 overflow-x-auto md:mx-0 md:flex-wrap [&::-webkit-scrollbar]:hidden">
+        {/* Elle s'enroule, elle ne défile plus.
+            Six entrées ne tiennent pas sur la largeur d'un téléphone :
+            on les faisait glisser latéralement, ce qui veut dire que
+            les deux dernières — dont les signalements — n'existaient
+            pas pour qui ne pensait pas à balayer. Deux rangs visibles
+            valent mieux qu'un rang caché. */}
+        <nav className="flex flex-wrap items-center gap-1">
           {NAV.map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2.5 text-[12.5px] font-bold text-white/82 transition hover:bg-white/14 hover:text-white active:scale-[.97]"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[12px] font-bold text-white/82 transition hover:bg-white/14 hover:text-white active:scale-[.97] sm:px-3.5 sm:py-2.5 sm:text-[12.5px]"
             >
               <Icon /> {label}
             </Link>

@@ -70,7 +70,7 @@ export default function Carousel({
          * exactement ce qu'on veut, et c'est lui qui décide, pas nous.
          */
         style={{ touchAction: "pan-x pan-y" }}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {images.map((src, i) => (
           <div key={src + i} className="visuel w-full shrink-0 snap-center">

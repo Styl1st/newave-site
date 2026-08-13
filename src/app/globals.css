@@ -374,7 +374,16 @@ body {
 /* ---------- carte en verre (reprise de .about du linktree) ---------- */
 .glass {
   border-radius: var(--radius);
-  background: linear-gradient(150deg, rgba(38,14,88,.46), rgba(38,14,88,.28));
+  /* Le verre suivait un violet fixe, comme la barre du haut avant
+     qu'on la reprenne. Sur une ambiance verte, ces panneaux
+     ressortaient en bleu sombre — une couleur qui n'était nulle part
+     ailleurs sur la page.
+
+     Même construction que `.barre` : une base sombre qui garantit la
+     lisibilité du texte clair, et par-dessus la teinte du thème, qui
+     est toujours la plus sombre du dégradé courant. */
+  background-color: rgba(8, 2, 30, .22);
+  background-image: linear-gradient(150deg, rgba(var(--voile), .48), rgba(var(--voile), .28));
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   border: 1px solid rgba(255,255,255,.30);
@@ -1459,6 +1468,10 @@ html[data-menu="1"] > body > footer {
    visible. Si une pièce se retrouvait coupée, c'est ce rapport qu'il
    faudrait revoir, pas le remplissage. */
 .visuel {
+  /* `height` l'emporte quand le cadre a déjà une hauteur — c'est le cas
+     sur la fiche d'une pièce. Le rapport ne sert plus que de repli, là
+     où le carrousel n'est pas enfermé dans un cadre dimensionné. */
+  height: 100%;
   aspect-ratio: 4 / 5;
   background:
     linear-gradient(115deg, #e6dcfb 0%, #f2ecff 45%, #ddd0f8 100%);
@@ -1499,13 +1512,34 @@ option {
 }
 
 /* ---------- le panneau de modification ----------
-   Il arrive par la droite, d'où il vient. Une apparition sèche
+   Sur téléphone il monte, sur ordinateur il vient de la droite : dans
+   les deux cas, du bord d'où il arrive. Une apparition sèche
    laisserait croire à un changement de page, alors qu'on n'a pas
-   quitté la sienne : c'est justement ce qu'il faut faire sentir. */
-.panneau-edition { animation: panneauEntre .28s cubic-bezier(.2,.8,.3,1) both; }
+   quitté la sienne — c'est justement ce qu'il faut faire sentir.
+
+   Sa couleur suit le thème, comme le verre et la barre du haut. Elle
+   était figée sur un violet sombre, et sur une ambiance verte ce grand
+   pan bleu nuit n'appartenait à rien. */
+.panneau-edition {
+  background-color: rgba(8, 2, 30, .34);
+  background-image: linear-gradient(165deg, rgba(var(--voile), .92), rgba(var(--voile), .97));
+  animation: feuilleMonte .34s cubic-bezier(.2, .85, .3, 1) both;
+}
+.panneau-entete {
+  background-color: rgba(8, 2, 30, .30);
+  background-image: linear-gradient(165deg, rgba(var(--voile), .90), rgba(var(--voile), .95));
+}
+
+@keyframes feuilleMonte {
+  from { transform: translateY(34px); opacity: 0; }
+  to   { transform: none;             opacity: 1; }
+}
 @keyframes panneauEntre {
   from { transform: translateX(18px); opacity: 0; }
   to   { transform: none;             opacity: 1; }
+}
+@media (min-width: 640px) {
+  .panneau-edition { animation-name: panneauEntre; }
 }
 @media (prefers-reduced-motion: reduce) {
   .panneau-edition { animation: none; }
@@ -1547,8 +1581,11 @@ option {
   .panneau-apercu {
     background: linear-gradient(158deg, rgba(38, 14, 88, .96), rgba(22, 8, 56, .98));
   }
+  /* Sans le flou, il faut compenser par l'opacité. La teinte, elle,
+     reste celle du thème. */
   .glass {
-    background: linear-gradient(150deg, rgba(38, 14, 88, .72), rgba(38, 14, 88, .58));
+    background-color: rgba(8, 2, 30, .34);
+    background-image: linear-gradient(150deg, rgba(var(--voile), .72), rgba(var(--voile), .58));
   }
   /* Sans le flou, il faut compenser par l'opacité, sinon le contenu
      qui défile dessous se devine à travers. La barre garde la teinte
@@ -1705,7 +1742,8 @@ html[data-clair="1"] .apercu-entete {
     radial-gradient(120% 220% at 100% 0%, rgba(var(--accent-2), .10) 0%, transparent 62%);
 }
 
-html[data-clair="1"] .panneau-edition {
+html[data-clair="1"] .panneau-edition,
+html[data-clair="1"] .panneau-entete {
   background: rgba(255, 255, 255, .96);
 }
 

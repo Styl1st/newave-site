@@ -5,6 +5,7 @@ import Carousel from "@/components/Carousel";
 import LikeButton from "@/components/LikeButton";
 import SectionAvis from "@/components/SectionAvis";
 import BoutonSignaler from "@/components/BoutonSignaler";
+import TexteRiche from "@/components/TexteRiche";
 import { mesSignalements } from "@/lib/moderation";
 import { getProfile } from "@/lib/auth";
 import ProductCard from "@/components/ProductCard";
@@ -118,12 +119,24 @@ export default async function PiecePage({ params }: Props) {
         {/* ---------- visuels ---------- */}
         {/* Collant : il a déjà sa propre logique de position, une
             animation de défilement par-dessus le ferait vibrer. */}
-        <div data-no-reveal className="card-light rise overflow-hidden lg:sticky lg:top-6">
-          <div className="relative z-3">
+        {/* C'EST LE CADRE QUI PORTE LE RAPPORT, et l'image qui le
+            remplit — pas l'inverse.
+
+            En laissant la hauteur du cadre suivre celle de la photo, il
+            restait toujours quelques pixels entre le bas de l'image et
+            le bord de la carte : le fond clair de la carte s'y voyait,
+            et c'est la bande blanche. En fixant le rapport ici et en
+            faisant descendre `h-full` jusqu'à l'image, il n'y a plus
+            d'espace possible : les deux hauteurs sont la même. */}
+        <div
+          data-no-reveal
+          className="card-light rise aspect-4/5 self-start overflow-hidden lg:sticky lg:top-6"
+        >
+          <div className="relative z-3 h-full">
             {images.length > 0 ? (
-              <Carousel images={images} alt={product.name} />
+              <Carousel images={images} alt={product.name} className="h-full" />
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center bg-[#e6dcfb]">
+              <div className="flex h-full w-full items-center justify-center bg-[#e6dcfb]">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a7bab]">
                   Visuel à venir
                 </span>
@@ -257,8 +270,8 @@ export default async function PiecePage({ params }: Props) {
           {product.description && (
             <section className="glass p-4 sm:p-5">
               <p className="eyebrow m-0">La pièce</p>
-              <p className="m-0 mt-3 whitespace-pre-line text-[15px] leading-[1.7] text-white/90">
-                {product.description}
+              <p className="m-0 mt-3 text-[15px] leading-[1.7] text-white/90">
+                <TexteRiche texte={product.description} />
               </p>
             </section>
           )}

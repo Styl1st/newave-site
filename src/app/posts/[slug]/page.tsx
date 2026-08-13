@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import TexteRiche from "@/components/TexteRiche";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
@@ -88,8 +89,8 @@ export default async function PostPage({ params }: Props) {
 
       {post.caption && (
         <div className="glass rise rise-2 mt-6 p-4 sm:p-7">
-          <p className="m-0 whitespace-pre-line text-[16px] leading-[1.7] text-white/92">
-            {post.caption}
+          <p className="m-0 text-[16px] leading-[1.7] text-white/92">
+            <TexteRiche texte={post.caption} />
           </p>
         </div>
       )}

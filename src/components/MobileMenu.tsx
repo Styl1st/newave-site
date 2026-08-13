@@ -267,10 +267,19 @@ export default function MobileMenu({
                       <li key={l.href}>
                         <Link
                           href={l.href}
-                          className={`inline-block rounded-full border px-4 py-2.5 text-[13px] font-bold transition active:scale-[.97] ${
+                          /* Ces entrées étaient de simples contours fins
+                             sur un décor qui bouge : selon la teinte du
+                             moment, on ne les voyait presque plus, et
+                             rien ne disait qu'on pouvait les toucher.
+
+                             Elles ont maintenant une matière — un fond
+                             translucide, un contour plus franc, un
+                             reflet en haut — et la page courante reste
+                             nettement plus appuyée que les autres. */
+                          className={`inline-block rounded-full border px-4.5 py-3 text-[13.5px] font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] transition active:scale-[.97] ${
                             actif
-                              ? "border-white/60 bg-white/18 text-white"
-                              : "border-white/25 text-white/78 hover:bg-white/12 hover:text-white"
+                              ? "border-white/75 bg-white/28 text-white"
+                              : "border-white/45 bg-white/14 text-white/90 hover:border-white/70 hover:bg-white/24 hover:text-white"
                           }`}
                         >
                           {l.label}
