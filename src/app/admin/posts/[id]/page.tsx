@@ -2,9 +2,7 @@ import { notFound } from "next/navigation";
 import BackLink from "@/components/BackLink";
 import AdminForm from "@/components/admin/AdminForm";
 import DeleteButton from "@/components/admin/DeleteButton";
-import ImageUploader from "@/components/admin/ImageUploader";
 import MultiImageUploader from "@/components/admin/MultiImageUploader";
-import VideoUploader from "@/components/admin/VideoUploader";
 import { Area, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { deletePost, savePost } from "../../actions";
 import { adminGetBrands, adminGetPost } from "@/lib/admin-queries";
@@ -89,19 +87,12 @@ export default async function EditPost({ params }: Props) {
 
         <Section
           titre="Les visuels"
-          intro="Photos, vidéo, ou les deux. La première image sert de vignette dans la mosaïque et d'aperçu quand on partage le lien."
+          intro="Les photos du post. La première sert de vignette dans la mosaïque et d'aperçu quand on partage le lien. Pour une vidéo, colle son lien Instagram ou TikTok plus bas : elle restera chez eux."
         >
           <MultiImageUploader
             name="images"
             label="Photos"
             defaultValue={post?.images ?? []}
-            folder="posts"
-          />
-          <VideoUploader defaultValue={post?.video_url} folder="posts" />
-          <ImageUploader
-            name="video_poster"
-            label="Image d'attente de la vidéo"
-            defaultValue={post?.video_poster}
             folder="posts"
           />
           <Text
@@ -150,8 +141,8 @@ export default async function EditPost({ params }: Props) {
         </Section>
 
         <Section
-          titre="Les liens et la publication"
-          intro="Les adresses de l'original, et le moment de décider si ce post part en ligne ou attend."
+          titre="La vidéo et la publication"
+          intro="On n'héberge pas les vidéos : elles restent sur Instagram ou TikTok, et un bouton y emmène. C'est plus rapide à l'affichage, et ça ne consomme rien."
         >
           <div className="grid gap-6 sm:grid-cols-2">
             <Text

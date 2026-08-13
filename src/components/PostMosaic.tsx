@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { IconArrow } from "./Icons";
 import type { Post } from "@/lib/types";
 
@@ -63,9 +63,15 @@ export default function PostMosaic({ posts }: { posts: Post[] }) {
 }
 
 function MosaicCard({ post, index }: { post: Post; index: number }) {
-  const [playing, setPlaying] = useState(false);
-  const video = useRef<HTMLVideoElement>(null);
-
+  /*
+   * On n'héberge plus les vidéos, on renvoie chez elles.
+   *
+   * La carte ne lit donc plus rien sur place : elle mène à la page du
+   * post, où le bouton attend. Le détour est volontaire — envoyer
+   * directement sur Instagram depuis la mosaïque ferait quitter le
+   * site à quelqu'un qui n'a encore rien lu.
+   */
+  const videoAilleurs = Boolean(post.instagram_url || post.tiktok_url);
   const cover = post.video_poster ?? post.images?.[0] ?? post.image_url;
   const extra = Math.max((post.images?.length ?? 0) - 1, 0);
 
@@ -73,27 +79,11 @@ function MosaicCard({ post, index }: { post: Post; index: number }) {
   // l'alignement, trop discret pour ressembler à un bug.
   const offset = index % 3 === 1 ? "lg:mt-6" : index % 3 === 2 ? "lg:mt-3" : "";
 
-  function play() {
-    setPlaying(true);
-    // Le rendu se fait avant que la ref existe : on attend une frame.
-    requestAnimationFrame(() => video.current?.play());
-  }
-
   return (
     <article className={`card-light break-inside-avoid overflow-hidden ${offset}`}>
       <div className="relative z-3">
         <div className="relative w-full overflow-hidden bg-[#e6dcfb]">
-          {post.video_url && playing ? (
-            <video
-              ref={video}
-              src={post.video_url}
-              poster={cover ?? undefined}
-              controls
-              playsInline
-              className="block w-full"
-            />
-          ) : (
-            <Link href={`/posts/${post.slug}`} className="group block">
+          <Link href={`/posts/${post.slug}`} className="group block">
               {cover ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -110,30 +100,24 @@ function MosaicCard({ post, index }: { post: Post; index: number }) {
                 </div>
               )}
 
-              {extra > 0 && !post.video_url && (
+              {extra > 0 && !videoAilleurs && (
                 <span className="absolute right-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-[10.5px] font-black text-white backdrop-blur-sm">
                   +{extra}
                 </span>
               )}
-            </Link>
-          )}
 
-          {/* La lecture se fait sur place : personne n'est renvoyé
-              vers Instagram pour regarder une vidéo qu'on héberge. */}
-          {post.video_url && !playing && (
-            <button
-              type="button"
-              onClick={play}
-              aria-label={`Lire la vidéo : ${post.title}`}
-              className="absolute inset-0 grid place-items-center bg-black/15 transition hover:bg-black/25"
-            >
-              <span className="grid h-16 w-16 place-items-center rounded-full bg-white/92 shadow-[0_8px_24px_rgba(20,8,50,0.4)] transition hover:scale-105">
-                <svg viewBox="0 0 24 24" className="ml-1 h-6 w-6 fill-[var(--color-ink)]" aria-hidden="true">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-            </button>
-          )}
+              {/* Une pastille discrète, pas un grand bouton de lecture :
+                  rien ne se lira ici, et promettre une lecture qui
+                  n'arrive pas est le plus sûr moyen de décevoir. */}
+              {videoAilleurs && (
+                <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[10.5px] font-black uppercase tracking-[0.08em] text-white backdrop-blur-sm">
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 fill-white" aria-hidden="true">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  Vidéo
+                </span>
+              )}
+          </Link>
         </div>
 
         <div className="p-5">

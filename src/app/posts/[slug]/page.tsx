@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import TexteRiche from "@/components/TexteRiche";
+import LienVideo from "@/components/LienVideo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
@@ -62,20 +63,17 @@ export default async function PostPage({ params }: Props) {
         </h1>
       </header>
 
-      {/* La vidéo passe avant les images : c'est elle qu'on est venu
-          voir, et elle se lit ici plutôt que sur Instagram. */}
-      {post.video_url && (
-        <div className="card-light rise rise-1 mt-8 overflow-hidden">
-          <div className="relative z-3">
-            <video
-              src={post.video_url}
-              poster={post.video_poster ?? post.images?.[0] ?? undefined}
-              controls
-              playsInline
-              preload="metadata"
-              className="block w-full"
-            />
-          </div>
+      {/* La vidéo reste chez elle.
+          L'héberger coûtait de la bande passante à chaque lecture et
+          se chargeait mal en 4G, alors qu'Instagram et TikTok le font
+          gratuitement et mieux. On garde l'image ici — c'est elle qui
+          donne envie — et le bouton emmène à l'original. */}
+      {(post.instagram_url || post.tiktok_url) && (
+        <div className="rise rise-1 mt-7 flex flex-wrap items-center gap-3">
+          <LienVideo instagram={post.instagram_url} tiktok={post.tiktok_url} />
+          <p className="m-0 text-[12.5px] text-white/55">
+            La vidéo s&apos;ouvre dans un nouvel onglet.
+          </p>
         </div>
       )}
 
