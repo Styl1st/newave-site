@@ -478,7 +478,7 @@ function EcranRelecture({
             onChange={(e) => modifier("marque", e.target.value)}
             required
             maxLength={120}
-            placeholder="Engineered By Aryes"
+            placeholder="Le nom de ta marque"
           />
         </div>
 

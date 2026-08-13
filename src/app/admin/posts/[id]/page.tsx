@@ -33,7 +33,7 @@ export default async function EditPost({ params }: Props) {
             label="Titre"
             required
             defaultValue={post?.title}
-            placeholder="La sélection Aryes"
+            placeholder="Le titre du post"
           />
 
           <Select name="brand_id" label="Marque associée" defaultValue={post?.brand_id ?? ""}>
@@ -50,7 +50,7 @@ export default async function EditPost({ params }: Props) {
             label="Adresse de la page"
             hint="Laisse vide et je la fabrique à partir du titre."
             defaultValue={post?.slug}
-            placeholder="la-selection-aryes"
+            placeholder="adresse-de-la-page"
           />
         </>
       ),
@@ -79,7 +79,7 @@ export default async function EditPost({ params }: Props) {
             label="Description de l'image"
             hint="Lue à voix haute par les lecteurs d'écran, et affichée si l'image ne charge pas."
             defaultValue={post?.image_alt}
-            placeholder="Chemise blanche portée ouverte sur un t-shirt noir"
+            placeholder="Ce que montre l'image, en une phrase"
           />
         </>
       ),

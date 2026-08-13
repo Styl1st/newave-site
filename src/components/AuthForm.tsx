@@ -227,7 +227,7 @@ export default function AuthForm({ suite }: { suite: string }) {
       {mode === "inscription" && (
         <div>
           <label className={LABEL} htmlFor="display_name">Ton prénom ou pseudo</label>
-          <input className={FIELD} id="display_name" name="display_name" placeholder="Dennis" />
+          <input className={FIELD} id="display_name" name="display_name" placeholder="Ton prénom, ou ton pseudo" />
         </div>
       )}
 

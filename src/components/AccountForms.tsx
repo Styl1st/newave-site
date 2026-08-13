@@ -46,6 +46,120 @@ export function DisplayNameForm({ current }: { current: string }) {
 }
 
 /**
+ * Changement d'adresse email.
+ *
+ * Supabase écrit AUX DEUX ADRESSES, l'ancienne et la nouvelle, et le
+ * changement n'est effectif qu'une fois les deux liens ouverts. C'est
+ * le réglage « Secure email change », et il est le bon : sans lui,
+ * quelqu'un qui aurait mis la main sur une session ouverte pourrait
+ * déplacer le compte vers sa propre boîte, et le vrai propriétaire ne
+ * serait jamais prévenu de rien.
+ *
+ * La contrainte, c'est qu'il FAUT le dire. Quelqu'un qui ouvre un seul
+ * lien, voit que son adresse n'a pas bougé et en conclut que le site
+ * est cassé va écrire — soit exactement le travail qu'on voulait
+ * éviter. Le message de confirmation nomme donc les deux boîtes.
+ */
+export function EmailForm({ actuel }: { actuel: string }) {
+  const [pending, setPending] = useState(false);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const email = String(data.get("email") ?? "").trim().toLowerCase();
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setNote({ ok: false, text: "Cette adresse n'a pas l'air valide." });
+      return;
+    }
+    if (email === actuel.toLowerCase()) {
+      setNote({ ok: false, text: "C'est déjà ton adresse actuelle." });
+      return;
+    }
+
+    setPending(true);
+    setNote(null);
+
+    const supabase = createClient();
+    if (!supabase) {
+      setPending(false);
+      setNote({ ok: false, text: "Supabase n'est pas configuré." });
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser(
+      { email },
+      { emailRedirectTo: `${window.location.origin}/auth/callback?suite=/compte` }
+    );
+    setPending(false);
+
+    if (error) {
+      // On traduit ce qu'on sait traduire. Le reste passe tel quel :
+      // un message anglais reste plus utile qu'un « une erreur est
+      // survenue » qui n'apprend rien à personne.
+      const dejaPrise = /already (been )?registered|already exists/i.test(error.message);
+      setNote({
+        ok: false,
+        text: dejaPrise
+          ? "Un compte utilise déjà cette adresse."
+          : `Supabase répond : ${error.message}`,
+      });
+      return;
+    }
+
+    setNote({
+      ok: true,
+      text:
+        `Deux messages viennent de partir : un à ${actuel}, un à ${email}. ` +
+        "Il faut ouvrir les DEUX liens pour que le changement soit pris en compte. " +
+        "Tant que ce n'est pas fait, ton adresse actuelle reste la bonne.",
+    });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 border-t border-white/12 pt-6">
+      <div>
+        <Label htmlFor="email" hint="C'est aussi l'adresse avec laquelle tu te connectes.">
+          Adresse email
+        </Label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          defaultValue={actuel}
+          required
+          className={FIELD}
+        />
+      </div>
+
+      {note && (
+        <p
+          className={
+            note.ok
+              ? "m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] leading-relaxed text-white"
+              : "m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] text-white"
+          }
+        >
+          {note.text}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="card-light self-start px-7 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="relative z-3 text-[14px] font-extrabold">
+          {pending ? "Envoi…" : "Changer mon adresse"}
+        </span>
+      </button>
+    </form>
+  );
+}
+
+/**
  * Le mot de passe se change PAR EMAIL, et jamais directement ici.
  *
  * Il y avait avant, à cet endroit, un simple « nouveau mot de passe »

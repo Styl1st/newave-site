@@ -160,7 +160,7 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
                 if (url.trim()) analyser();
               }
             }}
-            placeholder="https://shoparyes.fr"
+            placeholder="https://tamarque.fr"
             className={`${FIELD} !border-[rgba(23,10,51,0.15)]`}
           />
           <button

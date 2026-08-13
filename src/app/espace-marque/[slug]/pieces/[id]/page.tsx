@@ -51,7 +51,7 @@ export default async function EditBrandProduct({ params }: Props) {
         <input type="hidden" name="slug" value={slug} />
         {!isNew && <input type="hidden" name="id" value={product!.id} />}
 
-        <Text name="name" label="Nom de la pièce" required defaultValue={product?.name} placeholder="La chemise « Cobalt »" />
+        <Text name="name" label="Nom de la pièce" required defaultValue={product?.name} placeholder="Le nom de la pièce" />
 
         <Area
           name="description"
@@ -109,7 +109,7 @@ export default async function EditBrandProduct({ params }: Props) {
           label="Adresse de la page"
           hint="Laisse vide et je la fabrique à partir du nom."
           defaultValue={product?.slug ?? ""}
-          placeholder="la-chemise-cobalt"
+          placeholder="adresse-de-la-piece"
         />
 
         <Text

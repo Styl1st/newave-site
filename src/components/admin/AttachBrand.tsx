@@ -121,7 +121,7 @@ export default function AttachBrand({
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Engineered By Aryes…"
+        placeholder="Chercher une marque…"
         className={FIELD}
       />
 

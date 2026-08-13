@@ -97,14 +97,14 @@ export default async function EditBrand({ params }: Props) {
             label="Nom de la marque"
             required
             defaultValue={brand?.name}
-            placeholder="Engineered By Aryes"
+            placeholder="Le nom tel qu'il s'écrit"
           />
           <Text
             name="tagline"
             label="Phrase d'accroche"
             hint="Une ligne, affichée sur la carte de l'annuaire."
             defaultValue={brand?.tagline}
-            placeholder="Minimalisme français, séries limitées"
+            placeholder="Une phrase, pas un slogan"
           />
           <ImageUploader
             name="cover_url"
@@ -171,14 +171,14 @@ export default async function EditBrand({ params }: Props) {
             label="Instagram"
             hint="Sans l'arobase."
             defaultValue={brand?.instagram ?? ""}
-            placeholder="engineeredbyaryes"
+            placeholder="tamarque"
           />
           <Text
             name="slug"
             label="Adresse de la page"
             hint="Laisse vide et je la fabrique à partir du nom."
             defaultValue={brand?.slug}
-            placeholder="engineered-by-aryes"
+            placeholder="ta-marque"
           />
 
           <Check name="featured" label="Mettre à la une sur l'accueil" defaultChecked={brand?.featured} />

@@ -41,7 +41,7 @@ export default function FormulaireImport({
 
   return (
     <div className="glass p-4 sm:p-7">
-      <Label htmlFor="boutique" hint="shoparyes.fr, ou le lien direct d'une pièce. Les deux fonctionnent.">
+      <Label htmlFor="boutique" hint="L'adresse de la boutique, ou le lien direct d'une pièce. Les deux fonctionnent.">
         Adresse de ta boutique
       </Label>
 

@@ -107,7 +107,7 @@ export default function PanneauEdition({ brand }: { brand: Brand }) {
                   label="Ta phrase, en une ligne"
                   hint="Pas un slogan : ce que tu fais, dit simplement."
                   defaultValue={brand.tagline}
-                  placeholder="Minimalisme français, séries limitées"
+                  placeholder="Ce que tu fais, en une ligne"
                 />
 
                 <Area

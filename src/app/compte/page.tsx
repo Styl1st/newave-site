@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   DisplayNameForm,
+  EmailForm,
   LienReinitialisation,
   LogoutButton,
 } from "@/components/AccountForms";
@@ -85,10 +86,12 @@ export default async function ComptePage() {
       <section className="glass rise rise-2 mt-8 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Ton identité</h2>
         <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
-          Ton adresse email ne peut pas être changée ici, parce qu&apos;elle identifie ton compte.
-          Écris-nous à contact@newavesphere.fr si tu en as besoin.
+          Ton nom affiché change tout de suite. Ton adresse email, elle, demande une
+          confirmation dans les deux boîtes — l&apos;ancienne et la nouvelle — pour que
+          personne ne puisse déplacer ton compte à ta place.
         </p>
         <DisplayNameForm current={profile.display_name ?? ""} />
+        {profile.email && <EmailForm actuel={profile.email} />}
       </section>
 
       {/* ---------- securite ---------- */}
