@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "./supabase/server";
+import { createPublicClient } from "./supabase/public";
 import { DEMO_BRANDS, DEMO_POSTS, DEMO_PRODUCTS } from "./demo-data";
 import type { Brand, Post, Product } from "./types";
 
@@ -60,10 +61,16 @@ function report(where: string, error: { message: string } | null) {
  * Une minute, parce qu'une marque publiée doit apparaître vite. Le
  * cache est de toute façon vidé à chaque publication, par les appels à
  * revalidatePath("/marques") des actions d'administration.
+ *
+ * ATTENTION au client utilisé ici, c'est le client PUBLIC et non le
+ * client habituel. Ce dernier lit les cookies de la requête, ce que
+ * Next.js interdit à l'intérieur d'un cache — et à juste titre : un
+ * résultat calculé pour quelqu'un finirait resservi à tout le monde.
+ * L'oubli faisait tomber l'accueil et l'annuaire sur la page d'erreur.
  */
 const lireLAnnuaire = unstable_cache(
   async (): Promise<Brand[] | null> => {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     if (!supabase) return null;
 
     const { data, error } = await supabase
