@@ -23,7 +23,23 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
   const rang = useRef(0);
   const arret = useRef(false);
 
+  const termine = restantes === 0;
+
   async function lancer() {
+    /*
+     * Une série achevée : on repart de zéro plutôt que de rester
+     * planté sur un « Reprendre » qui n'a plus rien à reprendre.
+     *
+     * Ce n'est pas qu'un confort. Le tri instable a fait sauter des
+     * marques lors des premiers passages, et il faut donc pouvoir
+     * relancer un tour complet sans recharger la page.
+     */
+    if (termine) {
+      rang.current = 0;
+      setResultats([]);
+      setRestantes(null);
+    }
+
     arret.current = false;
     setEnCours(true);
     setNote(null);
@@ -78,7 +94,13 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           disabled={enCours}
           className="rounded-full bg-white px-6 py-2.5 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-55"
         >
-          {enCours ? "Lecture en cours…" : faites === 0 ? `Tout mettre à jour (${total})` : "Reprendre"}
+          {enCours
+            ? "Lecture en cours…"
+            : faites === 0
+              ? `Tout mettre à jour (${total})`
+              : termine
+                ? "Tout relire depuis le début"
+                : "Reprendre"}
         </button>
 
         {enCours && (
@@ -106,9 +128,14 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
 
       {resultats.length > 0 && (
         <div className="mt-4 flex max-h-[360px] flex-col gap-1.5 overflow-y-auto pr-1">
-          {resultats.map((r) => (
+          {/* La clé porte le rang, pas seulement l'identifiant de la
+              marque : une même fiche peut légitimement figurer deux
+              fois dans ce journal, par exemple si on relance un tour
+              complet après une première série. React exige une clé
+              unique, et l'identifiant seul ne l'est pas ici. */}
+          {resultats.map((r, i) => (
             <div
-              key={r.brandId}
+              key={`${r.brandId}-${i}`}
               className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 rounded-[11px] border px-3 py-2 ${
                 r.ok ? "border-white/25 bg-white/6" : "border-white/12"
               }`}

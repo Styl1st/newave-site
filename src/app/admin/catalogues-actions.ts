@@ -57,8 +57,23 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
   /*
    * On avance par rang plutôt qu'en renvoyant la liste de ce qui a
    * déjà été vu : au bout de quatre-vingts passages, cette liste
-   * dépasserait la taille raisonnable d'une requête. L'ordre de
-   * création ne bouge pas pendant l'opération, un rang suffit donc.
+   * dépasserait la taille raisonnable d'une requête.
+   *
+   * Cela suppose un ordre STABLE d'un appel à l'autre, et c'est là
+   * qu'était le bug : le tri se faisait sur `created_at` seul. Or les
+   * marques ont été insérées en lot, et `now()` renvoie l'heure de la
+   * TRANSACTION, pas celle de la ligne : des dizaines de fiches
+   * partagent donc la même date à la microseconde près. Postgres ne
+   * promet aucun ordre entre des lignes ex æquo, et il n'a aucune
+   * raison de rendre le même deux fois de suite.
+   *
+   * Conséquence directe : la fenêtre 0-2 et la fenêtre 3-5 pouvaient
+   * se recouvrir. Certaines marques étaient relues deux fois — d'où
+   * les doublons dans la liste — et d'autres n'étaient jamais lues du
+   * tout, ce qui est nettement plus grave puisque ça ne se voit pas.
+   *
+   * Le second critère règle la question : `id` est unique, l'ordre
+   * total est donc entièrement déterminé.
    */
   const depuis = Math.max(0, Number(formData.get("depuis") ?? 0) || 0);
 
@@ -82,6 +97,7 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
     .select("id, name, slug, shop_url, website_url", { count: "exact" })
     .or("shop_url.not.is.null,website_url.not.is.null")
     .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
     .range(depuis, depuis + LOT - 1);
 
   if (error) {

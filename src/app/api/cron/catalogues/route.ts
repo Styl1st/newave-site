@@ -85,6 +85,11 @@ export async function GET(request: Request) {
     .eq("status", "published")
     .eq("catalogue_auto", true)
     .order("catalogue_sync_at", { ascending: true, nullsFirst: true })
+    // Départage les ex æquo — et il y en a : toutes les fiches jamais
+    // lues ont la même valeur vide. Sans ce second critère, deux
+    // exécutions peuvent choisir les mêmes six marques et en laisser
+    // d'autres de côté indéfiniment.
+    .order("id", { ascending: true })
     .limit(PAR_PASSAGE);
 
   if (error) {
