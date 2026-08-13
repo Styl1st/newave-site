@@ -596,6 +596,16 @@ html[data-entree="b"] > body > footer { animation: pageInBis .34s ease backwards
   to   { opacity: 1; }
 }
 
+/* Une zone qui défile sans montrer d'ascenseur.
+   Réservée aux rangées courtes dont le débordement est l'exception :
+   sur une liste longue, cacher l'ascenseur cacherait aussi le fait
+   qu'il reste quelque chose à voir. */
+.sans-ascenseur {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sans-ascenseur::-webkit-scrollbar { display: none; }
+
 /* Barre de chargement en haut, pendant une navigation. */
 .progress {
   position: fixed; top: 0; left: 0; z-index: 200; height: 2.5px;

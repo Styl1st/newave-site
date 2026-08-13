@@ -24,7 +24,15 @@ import type { Brand } from "@/lib/types";
  * il aurait hérité de son plan d'empilement et serait passé sous la
  * barre du haut.
  */
-export default function PanneauEdition({ brand }: { brand: Brand }) {
+export default function PanneauEdition({
+  brand,
+  className = "",
+}: {
+  brand: Brand;
+  /** Ajouté au bouton d'ouverture, pour que la barre du gérant puisse
+      lui donner sa largeur sur téléphone. */
+  className?: string;
+}) {
   const [ouvert, setOuvert] = useState(false);
   const router = useRouter();
 
@@ -47,7 +55,7 @@ export default function PanneauEdition({ brand }: { brand: Brand }) {
       <button
         type="button"
         onClick={() => setOuvert(true)}
-        className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/75 transition hover:bg-white/14 hover:text-white active:scale-[.97]"
+        className={`inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-white/75 transition hover:bg-white/14 hover:text-white active:scale-[.97] ${className}`}
       >
         <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9" />
