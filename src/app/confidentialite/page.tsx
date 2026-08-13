@@ -28,7 +28,8 @@ const SECTIONS = [
     contenu: [
       "La base et les images sont hébergées par **Supabase**, sur des serveurs situés dans l'Union européenne.",
       "Le site est servi par **Vercel Inc.**, dont l'infrastructure est mondiale.",
-      "Les emails de la marque transitent par **OVHcloud**, en France.",
+      "Les emails automatiques — confirmation d'inscription, mot de passe oublié — sont envoyés par **Resend**, aux États-Unis. Ils ne contiennent que ton adresse et un lien.",
+      "La boîte **contact@newavesphere.fr** est hébergée par **OVHcloud**, en France.",
     ],
   },
   {

@@ -33,8 +33,31 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     type: "website",
     url: SITE_URL,
+    /*
+     * L'image qui s'affiche quand on colle le lien quelque part.
+     *
+     * Sans elle, un lien posé sur Instagram, WhatsApp ou Discord
+     * apparaît nu : une adresse en texte, rien autour. Les 1200 × 630
+     * ne sont pas un choix esthétique, c'est le format que ces
+     * applications attendent — un autre rapport se fait rogner.
+     *
+     * L'adresse est relative, `metadataBase` la complète. Attention
+     * donc à ce que NEXT_PUBLIC_SITE_URL corresponde bien au domaine
+     * réellement servi : une image annoncée sur un domaine qui ne la
+     * sert pas donne un rectangle vide, ce qui est pire que rien.
+     *
+     * Elle se régénère avec scripts/image-partage.py.
+     */
+    images: [
+      {
+        url: "/og.jpg",
+        width: 1200,
+        height: 630,
+        alt: "NEWAVE SPHERE, média de marques et d'artistes indépendants",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: { card: "summary_large_image", images: ["/og.jpg"] },
   icons: { icon: "/favicon-32.png", apple: "/apple-touch-icon.png" },
 };
 

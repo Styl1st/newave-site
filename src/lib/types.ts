@@ -155,9 +155,21 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** Affiche un prix en centimes sous forme lisible. */
 export function formatPrice(cents: number | null, currency = "EUR"): string | null {
   if (cents == null) return null;
+
+  /*
+   * `Intl` exige un code de trois lettres et lève une exception sinon.
+   *
+   * Ce n'est pas théorique depuis que la devise se saisit à la main
+   * dans l'espace marque : quelqu'un écrit « Euro » ou « € », et c'est
+   * la page publique de la marque qui tombe. Une pièce mal renseignée
+   * ne doit pas emporter tout le reste avec elle.
+   */
+  const code = (currency || "EUR").toUpperCase();
+  const valide = /^[A-Z]{3}$/.test(code);
+
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
-    currency,
+    currency: valide ? code : "EUR",
     maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
 }

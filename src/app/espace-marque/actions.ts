@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireManagedBrand } from "@/lib/brand-space";
 import { fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
+import { enEuros, lireLesTaux } from "@/lib/devises";
 
 /**
  * Ecritures de l'espace marque.
@@ -148,6 +149,27 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
     }
   }
 
+  /*
+   * L'équivalent en euros se recalcule ICI, à chaque enregistrement.
+   *
+   * Il ne le faisait pas, et la saisie du prix paraissait sans effet :
+   * la carte affiche `price_eur_cents` dès que la devise n'est pas
+   * l'euro, or seul `price_cents` était mis à jour. On corrigeait un
+   * prix, on enregistrait, et l'ancien montant restait à l'écran.
+   *
+   * Le recalcul est fait au moment de l'écriture, pas de l'affichage,
+   * pour la même raison qu'à l'import : sans quoi il faudrait
+   * transporter la table des taux jusqu'à chaque carte du site.
+   */
+  const devise = (text(formData, "currency") || "EUR").toUpperCase();
+  if (!/^[A-Z]{3}$/.test(devise)) {
+    return {
+      ok: false,
+      error: "La devise s'écrit en trois lettres : EUR, DKK, GBP, USD…",
+    };
+  }
+  const taux = await lireLesTaux();
+
   const payload = {
     brand_id: brand.id,
     slug: slugValue,
@@ -157,7 +179,9 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
     name,
     description: text(formData, "description"),
     price_cents: cents,
-    currency: text(formData, "currency") || "EUR",
+    price_eur_cents: enEuros(cents, devise, taux),
+    compare_at_eur_cents: enEuros(wasCents, devise, taux),
+    currency: devise,
     images,
     image_url: images[0] ?? null,
     shop_url: shopUrl,

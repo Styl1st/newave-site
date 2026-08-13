@@ -69,7 +69,18 @@ export default async function EditBrandProduct({ params }: Props) {
         />
 
         <div className="grid gap-6 sm:grid-cols-3">
-          <Text name="price_euros" label="Prix en euros" hint="Vide si le prix varie." inputMode="decimal" defaultValue={priceEuros} placeholder="80" />
+          {/* Le champ s'appelait « Prix en euros », ce qui était faux
+              dès que la boutique comptait dans une autre monnaie : on
+              saisit le prix DANS LA DEVISE indiquée à côté, et le site
+              affiche l'équivalent en euros tout seul. */}
+          <Text
+            name="price_euros"
+            label="Prix"
+            hint="Dans la devise ci-contre. Vide si le prix varie."
+            inputMode="decimal"
+            defaultValue={priceEuros}
+            placeholder="80"
+          />
           <Text
             name="compare_at_euros"
             label="Prix barré"
@@ -78,7 +89,12 @@ export default async function EditBrandProduct({ params }: Props) {
             defaultValue={compareEuros}
             placeholder="110"
           />
-          <Text name="currency" label="Devise" defaultValue={product?.currency ?? "EUR"} />
+          <Text
+            name="currency"
+            label="Devise"
+            hint="EUR, DKK, GBP… Le site convertit en euros pour l'affichage."
+            defaultValue={product?.currency ?? "EUR"}
+          />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-3">

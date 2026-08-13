@@ -112,6 +112,68 @@ async function lire(url: string, accept = "application/json"): Promise<Response 
   }
 }
 
+/** Les trois lettres d'un code ISO 4217, et rien d'autre. */
+const CODE_DEVISE = /^[A-Z]{3}$/;
+
+/**
+ * La devise d'une boutique.
+ *
+ * C'est le maillon qui manquait, et il coûtait cher : les prix d'une
+ * boutique danoise s'affichaient tels quels avec un symbole euro. Un
+ * short à 505 couronnes, soit une soixantaine d'euros, devenait
+ * « 505 € ». Pas une erreur d'arrondi : un facteur sept, et dans le
+ * sens qui fait fuir.
+ *
+ * La cause est que `/products.json` de Shopify ne dit PAS dans quelle
+ * monnaie il compte. Le lecteur écrivait donc « EUR » en dur, faute de
+ * mieux. Tant que les marques étaient françaises, personne ne le
+ * voyait.
+ *
+ * Deux sources, dans l'ordre :
+ *
+ *   1. `/cart.js`, que toute boutique Shopify expose et qui porte la
+ *      devise de la boutique. Une requête, du JSON, aucune ambiguïté.
+ *   2. la page d'accueil, où la même information traîne sous plusieurs
+ *      écritures selon le thème.
+ *
+ * En dernier recours on garde la valeur par défaut. C'est un pari,
+ * mais un pari explicite : mieux vaut une devise supposée qu'une
+ * lecture abandonnée.
+ */
+async function devineLaDevise(base: string, defaut = "EUR"): Promise<string> {
+  const panier = await lire(`${base}/cart.js`);
+  if (panier) {
+    try {
+      const p = (await panier.json()) as { currency?: string };
+      const code = (p.currency ?? "").toUpperCase();
+      if (CODE_DEVISE.test(code)) return code;
+    } catch {
+      // Réponse illisible : on passe à la source suivante.
+    }
+  }
+
+  const page = await lire(base, "text/html");
+  if (page) {
+    try {
+      const html = await page.text();
+      const pistes = [
+        /Shopify\.currency\s*=\s*\{[^}]*"active"\s*:\s*"([A-Za-z]{3})"/,
+        /"currencyCode"\s*:\s*"([A-Za-z]{3})"/,
+        /(?:og:price:currency|product:price:currency|priceCurrency)[^>]{0,60}?content="([A-Za-z]{3})"/i,
+        /content="([A-Za-z]{3})"[^>]{0,60}?(?:og:price:currency|product:price:currency|priceCurrency)/i,
+      ];
+      for (const piste of pistes) {
+        const code = html.match(piste)?.[1]?.toUpperCase();
+        if (code && CODE_DEVISE.test(code)) return code;
+      }
+    } catch {
+      // Page illisible : on retombe sur la valeur par défaut.
+    }
+  }
+
+  return defaut;
+}
+
 /* ---------------- 1. Shopify ---------------- */
 
 type ShopifyBrut = {
@@ -185,6 +247,11 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
   // Big Cartel répond aussi sur /products.json, mais sans enveloppe.
   if (!Array.isArray(payload?.products)) return null;
 
+  // Une seule fois pour toute la boutique, et seulement maintenant
+  // qu'on est sûr d'avoir affaire à du Shopify : inutile de payer une
+  // requête pour une adresse qui n'aurait rien donné.
+  const devise = await devineLaDevise(base);
+
   return payload.products.map((p) => {
     const variants = p.variants ?? [];
     const prix = variants.map((v) => enCentimes(v.price)).filter((n): n is number => n !== null);
@@ -218,7 +285,7 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
       price_cents: priceCents,
       compare_at_cents:
         maxBarre !== null && priceCents !== null && maxBarre > priceCents ? maxBarre : null,
-      currency: "EUR",
+      currency: devise,
       sizes: normaliserTailles(
         variants.map((v) => ({ label: lireAxe(v), available: Boolean(v.available) }))
       ),
@@ -322,6 +389,11 @@ async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
   // Chez Big Cartel la réponse est un tableau nu, pas un objet.
   if (!Array.isArray(brut) || brut.length === 0) return null;
 
+  // Même angle mort que chez Shopify : le catalogue ne dit pas en quoi
+  // il compte. Beaucoup de boutiques Big Cartel sont américaines, on
+  // ne peut donc pas se contenter de supposer l'euro.
+  const devise = await devineLaDevise(base);
+
   return brut.map((p) => {
     const chemin = p.url ?? (p.permalink ? `/product/${p.permalink}` : "");
     const options = p.options ?? [];
@@ -332,7 +404,7 @@ async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
       description: stripHtml(p.description ?? "").slice(0, 1200),
       price_cents: enCentimes(p.price),
       compare_at_cents: null,
-      currency: "EUR",
+      currency: devise,
       sizes: normaliserTailles(
         options.map((o) => ({ label: o.name ?? "", available: !o.sold_out }))
       ),
