@@ -13,6 +13,12 @@ import { usePathname } from "next/navigation";
  * Le repère est une pastille pleine plutôt qu'un simple soulignement :
  * sur un fond animé qui change de teinte en permanence, un trait fin
  * disparaît la moitié du temps.
+ *
+ * Elle était blanche et translucide, ce qui posait le même problème une
+ * marche plus haut : dès que le décor passait dans les clairs, la
+ * pastille se confondait avec lui. Elle emprunte maintenant les accents
+ * du thème (`.nav-actif`), donc une couleur, et elle ne peut plus se
+ * fondre dans un fond qui, lui, reste sombre sous la barre.
  */
 export default function LienNav({
   href,
@@ -35,7 +41,7 @@ export default function LienNav({
       aria-current={actif ? "page" : undefined}
       className={`relative rounded-full px-3.5 py-2 text-[13px] font-bold transition ${
         actif
-          ? "bg-white/16 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
+          ? "nav-actif text-white"
           : "text-white/70 hover:bg-white/10 hover:text-white"
       } ${className}`}
     >

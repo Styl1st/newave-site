@@ -100,7 +100,7 @@ export default async function Header() {
           {maMarque && (
             <Link
               href={maMarque}
-              className="ml-1.5 rounded-full border border-white/35 bg-white/10 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/65 hover:bg-white/20 active:scale-[.97]"
+              className="puce-barre ml-1.5 rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
             >
               {mesMarques.length === 1 ? "Ma marque" : "Mes marques"}
             </Link>
@@ -108,7 +108,7 @@ export default async function Header() {
 
           <Link
             href="/candidature"
-            className="ml-1.5 rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(35,12,85,0.35)] transition hover:shadow-[0_6px_18px_rgba(35,12,85,0.5)] active:scale-[.97]"
+            className="cta-barre ml-1.5 rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
           >
             Proposer une marque
           </Link>
@@ -118,7 +118,7 @@ export default async function Header() {
               href="/compte"
               aria-label="Mon compte"
               title={profile.display_name ?? profile.email ?? "Mon compte"}
-              className="ml-1.5 grid h-9 w-9 place-items-center rounded-full bg-white/16 text-[13px] font-black text-white ring-1 ring-white/25 transition hover:bg-white/28 active:scale-95"
+              className="puce-barre ml-1.5 grid h-9 w-9 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
             >
               {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
             </Link>

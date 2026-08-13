@@ -74,6 +74,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={archivo.variable}
       style={style}
       data-anim-choisi={apparence ? "1" : undefined}
+      /* Le tempo d'entrée de la barre et du pied. Écrit ici plutôt que
+         posé par le navigateur : sinon le premier affichage les
+         montrerait une fraction de seconde avant de les faire repartir
+         de zéro. Voir globals.css, près de `pageIn`. */
+      data-entree="a"
       data-fige={apparence && apparence.mouvement.amplitude <= 0.02 ? "1" : undefined}
       suppressHydrationWarning
     >

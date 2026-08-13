@@ -52,6 +52,28 @@ export default function PageTransition({ children }: { children: React.ReactNode
     };
   }, [pathname]);
 
+  /*
+   * La barre du haut et le pied de page entrent avec le contenu.
+   *
+   * Ils sont hors de ce composant — la barre doit rester enfant direct
+   * de <body> pour rester collante — donc rien ne les remonte à la
+   * navigation et leur fondu ne repartait pas tout seul. On bascule
+   * l'attribut d'une valeur à l'autre : c'est le changement de nom
+   * d'animation qui la relance côté CSS.
+   *
+   * Le premier passage est ignoré : le serveur a déjà écrit « a » sur
+   * <html>, et le rejouer ici ferait clignoter la barre au chargement.
+   */
+  const premierRendu = useRef(true);
+  useEffect(() => {
+    if (premierRendu.current) {
+      premierRendu.current = false;
+      return;
+    }
+    const racine = document.documentElement;
+    racine.dataset.entree = racine.dataset.entree === "a" ? "b" : "a";
+  }, [pathname]);
+
   // L'adresse a changé : la page est là.
   useEffect(() => {
     arreter();

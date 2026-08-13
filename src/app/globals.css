@@ -562,6 +562,40 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 }
 .page-in { animation: pageIn .34s ease both; }
 
+/* La barre du haut et le pied entrent AVEC la page, pas avant elle.
+   ----------------------------------------------------------------
+   Ils vivent hors de `.page-in`, et c'est nécessaire : la barre est
+   collante, elle doit rester enfant direct de <body>, sinon le
+   `overflow-x-clip` de <main> lui vole son ancrage et elle cesse de
+   suivre le défilement.
+
+   Mais du coup, ils ne sont pas remontés à chaque navigation : leur
+   animation d'entrée ne repartait jamais. Le contenu apparaissait en
+   fondu, la barre était déjà là. Deux temps au lieu d'un, exactement
+   ce qu'on avait corrigé pour le menu de téléphone.
+
+   D'où ces deux règles jumelles. `data-entree` alterne entre « a » et
+   « b » à chaque changement d'adresse : c'est le CHANGEMENT DE NOM de
+   l'animation qui la relance, une même animation reposée à l'identique
+   ne rejouerait pas. La valeur de départ est écrite par le serveur
+   dans layout.tsx, sans quoi le premier affichage montrerait la barre
+   avant de la faire clignoter.
+
+   `backwards` et non `both` : une fois le fondu terminé, l'opacité
+   redevient celle des règles ordinaires. Avec `both`, l'animation
+   l'aurait figée à 1 pour toujours et le menu de téléphone n'aurait
+   plus jamais pu effacer la barre. */
+html[data-entree="a"] > body > header,
+html[data-entree="a"] > body > footer { animation: pageIn .34s ease backwards; }
+
+html[data-entree="b"] > body > header,
+html[data-entree="b"] > body > footer { animation: pageInBis .34s ease backwards; }
+
+@keyframes pageInBis {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Barre de chargement en haut, pendant une navigation. */
 .progress {
   position: fixed; top: 0; left: 0; z-index: 200; height: 2.5px;
@@ -912,15 +946,88 @@ html[data-menu="1"] > body > footer {
 .barre {
   position: relative;
   border-radius: 999px;
-  /* Plus opaque et plus floue qu'au départ : à travers un verre trop
-     clair, le contenu qui défile dessous se devine, et la barre paraît
-     se remplir au lieu de rester au-dessus. */
-  background: rgba(26, 9, 64, .72);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+
+  /* La barre prend enfin les couleurs du thème.
+     ------------------------------------------
+     Elle était d'un bleu-violet fixe : on pouvait changer toute la
+     palette du site, elle ne bougeait pas d'un cheveu et finissait par
+     avoir l'air posée là par erreur.
+
+     Quatre couches, du bas vers le haut :
+       1. une base sombre, la seule valeur fixe, celle qui garantit que
+          du texte blanc reste lisible quelle que soit l'ambiance ;
+       2. la teinte du thème par-dessus — `--voile` suit la couleur la
+          plus sombre du dégradé courant, elle est donc toujours
+          accordée au fond sans jamais l'éclaircir ;
+       3. un reflet vertical, celui d'une surface vitrée ;
+       4. deux halos pris aux accents du thème, un à chaque extrémité,
+          qui donnent sa couleur à la barre sans toucher au centre où
+          se lisent les liens.
+
+     Aucun `color-mix` ici, volontairement : une teinte translucide
+     posée sur une base sombre donne le même résultat et fonctionne
+     partout, sans risque de voir la déclaration entière invalidée. */
+  background-color: rgba(8, 2, 30, .58);
+  background-image:
+    radial-gradient(130% 240% at 2% 50%, rgba(var(--accent-1), .30) 0%, transparent 58%),
+    radial-gradient(130% 240% at 98% 50%, rgba(var(--accent-2), .28) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, 0) 52%),
+    linear-gradient(180deg, rgba(var(--voile), .62), rgba(var(--voile), .40));
+
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+
+  /* L'ombre est teintée elle aussi : une ombre grise sous un objet
+     coloré le fait paraître découpé et collé. */
   box-shadow:
-    0 10px 34px rgba(24, 8, 60, .38),
-    inset 0 1px 0 rgba(255, 255, 255, .14);
+    0 16px 42px -12px rgba(var(--voile), .62),
+    0 3px 12px rgba(8, 2, 30, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -1px 0 rgba(0, 0, 0, .24);
+}
+
+/* La pastille de la page courante.
+   Elle était blanche et translucide, donc invisible dès que le fond
+   passait dans les clairs. Les accents du thème la tiennent à
+   distance du fond en toutes circonstances. */
+.nav-actif {
+  background-image: linear-gradient(118deg,
+    rgba(var(--accent-1), .58) 0%,
+    rgba(var(--accent-3), .52) 52%,
+    rgba(var(--accent-2), .56) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .34),
+    0 3px 12px -3px rgba(var(--accent-1), .55);
+}
+
+/* L'appel à l'action, blanc, avec un halo aux couleurs du thème :
+   c'est ce qui l'empêche de ressembler à une gomme posée sur la barre. */
+.cta-barre {
+  box-shadow:
+    0 4px 16px -3px rgba(var(--accent-1), .50),
+    0 2px 6px rgba(8, 2, 30, .32);
+}
+.cta-barre:hover {
+  box-shadow:
+    0 9px 26px -5px rgba(var(--accent-1), .72),
+    0 2px 6px rgba(8, 2, 30, .38);
+}
+
+/* Les pastilles rondes de la barre : avatar, « Ma marque », menu.
+   Le contour est écrit ici, dans l'ombre, et non avec un `ring-1` de
+   Tailwind : les deux passent par `box-shadow`, et cette règle-ci
+   n'étant dans aucune couche l'emporterait, effaçant le contour. */
+.puce-barre {
+  background-image: linear-gradient(140deg,
+    rgba(var(--accent-3), .40), rgba(var(--accent-2), .32));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .26),
+    inset 0 1px 0 rgba(255, 255, 255, .30),
+    0 3px 12px -4px rgba(var(--accent-2), .55);
+}
+.puce-barre:hover {
+  background-image: linear-gradient(140deg,
+    rgba(var(--accent-3), .58), rgba(var(--accent-2), .48));
 }
 .barre::before {
   content: '';
@@ -1099,7 +1206,15 @@ option {
   .glass {
     background: linear-gradient(150deg, rgba(38, 14, 88, .72), rgba(38, 14, 88, .58));
   }
+  /* Sans le flou, il faut compenser par l'opacité, sinon le contenu
+     qui défile dessous se devine à travers. La barre garde la teinte
+     du thème, elle est simplement plus dense. */
   .barre {
-    background: rgba(26, 9, 64, .92);
+    background-color: rgba(8, 2, 30, .74);
+    background-image:
+      radial-gradient(130% 240% at 2% 50%, rgba(var(--accent-1), .32) 0%, transparent 58%),
+      radial-gradient(130% 240% at 98% 50%, rgba(var(--accent-2), .30) 0%, transparent 58%),
+      linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, 0) 52%),
+      linear-gradient(180deg, rgba(var(--voile), .88), rgba(var(--voile), .74));
   }
 }

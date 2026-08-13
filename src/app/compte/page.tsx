@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DisplayNameForm, LogoutButton, PasswordForm } from "@/components/AccountForms";
+import {
+  DisplayNameForm,
+  LienReinitialisation,
+  LogoutButton,
+} from "@/components/AccountForms";
 import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
 import { lireApparenceDuCompte } from "@/lib/apparence";
@@ -90,11 +94,18 @@ export default async function ComptePage() {
       {/* ---------- securite ---------- */}
       <section className="glass rise rise-3 mt-6 p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Mot de passe</h2>
-        <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
-          Le changement prend effet tout de suite. Tes autres appareils resteront
-          connectés jusqu&apos;à expiration de leur session.
+        <p className="m-0 mt-2 text-[13.5px] leading-relaxed text-white/70">
+          On ne le change pas depuis cette page, et c&apos;est voulu : une session
+          restée ouverte sur un appareil posé quelque part suffirait, sinon, à te
+          faire prendre ton compte. On t&apos;envoie donc un lien, et il faut avoir
+          accès à ta boîte mail pour aller au bout.
         </p>
-        <PasswordForm />
+        <p className="m-0 mt-2 mb-5 text-[13px] leading-relaxed text-white/55">
+          C&apos;est aussi par là qu&apos;il faut passer si tu t&apos;es inscrit avec
+          Google : tu n&apos;as jamais eu de mot de passe, et ce lien t&apos;en donne
+          un.
+        </p>
+        {profile.email && <LienReinitialisation email={profile.email} />}
       </section>
 
       {/* ---------- apparence ---------- */}

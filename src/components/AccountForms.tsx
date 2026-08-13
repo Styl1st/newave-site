@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateDisplayName } from "@/app/compte/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -45,27 +45,41 @@ export function DisplayNameForm({ current }: { current: string }) {
   );
 }
 
-/** Changement de mot de passe, pour la personne déjà connectée. */
-export function PasswordForm() {
+/**
+ * Le mot de passe se change PAR EMAIL, et jamais directement ici.
+ *
+ * Il y avait avant, à cet endroit, un simple « nouveau mot de passe »
+ * suivi d'une confirmation. C'était trop facile, au sens propre : une
+ * session laissée ouverte sur un téléphone posé sur une table, et
+ * n'importe qui pouvait changer le mot de passe en deux champs, donc
+ * s'emparer du compte sans jamais avoir eu à prouver quoi que ce soit.
+ *
+ * Le détour par la boîte mail rétablit cette preuve. Il faut accéder à
+ * la messagerie de la personne, ce qu'une session ouverte ne donne
+ * pas. C'est une gêne de trente secondes contre une prise de compte,
+ * et le marché est bon.
+ *
+ * Cela règle au passage le cas de qui s'est inscrit avec Google : il
+ * n'a jamais eu de mot de passe, et ce chemin est aussi celui qui lui
+ * permet d'en avoir un.
+ *
+ * Le délai de soixante secondes n'est pas de la méfiance envers la
+ * personne : sans lui, un clic répété par impatience envoie cinq
+ * messages identiques, et c'est exactement ce qui fait basculer un
+ * expéditeur dans les indésirables.
+ */
+export function LienReinitialisation({ email }: { email: string }) {
   const [pending, setPending] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [attente, setAttente] = useState(0);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const data = new FormData(form);
-    const password = String(data.get("password") ?? "");
-    const confirm = String(data.get("confirm") ?? "");
+  useEffect(() => {
+    if (attente <= 0) return;
+    const t = setTimeout(() => setAttente((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [attente]);
 
-    if (password.length < 8) {
-      setNote({ ok: false, text: "Huit caractères minimum." });
-      return;
-    }
-    if (password !== confirm) {
-      setNote({ ok: false, text: "Les deux saisies ne correspondent pas." });
-      return;
-    }
-
+  async function envoyer() {
     setPending(true);
     setNote(null);
 
@@ -76,63 +90,55 @@ export function PasswordForm() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      // Le meme detour que sur la page de connexion : c'est
+      // /auth/callback qui echange le jeton du lien contre une vraie
+      // session, sans quoi la page de reinitialisation s'ouvre sans
+      // droits.
+      redirectTo: `${window.location.origin}/auth/callback?suite=/reinitialisation`,
+    });
     setPending(false);
 
     if (error) {
       setNote({ ok: false, text: `Supabase répond : ${error.message}` });
       return;
     }
-    form.reset();
-    setNote({ ok: true, text: "Mot de passe changé. Il est actif immédiatement." });
+    setAttente(60);
+    setNote({
+      ok: true,
+      text: `Email envoyé à ${email}. Le lien est valable une heure, et une seule fois.`,
+    });
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <div>
-        <Label htmlFor="password" hint="Huit caractères minimum.">
-          Nouveau mot de passe
-        </Label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          className={FIELD}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="confirm">Confirmation</Label>
-        <input
-          id="confirm"
-          name="confirm"
-          type="password"
-          autoComplete="new-password"
-          required
-          className={FIELD}
-        />
-      </div>
+    <div>
+      <button
+        type="button"
+        onClick={envoyer}
+        disabled={pending || attente > 0}
+        className="card-light px-7 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className="relative z-3 text-[14px] font-extrabold">
+          {pending
+            ? "Envoi…"
+            : attente > 0
+              ? `Renvoyer dans ${attente} s`
+              : "Réinitialiser mon mot de passe"}
+        </span>
+      </button>
 
       {note && (
         <p
           className={
             note.ok
-              ? "m-0 text-[13px] font-bold text-white/85"
-              : "m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] text-white"
+              ? "m-0 mt-4 text-[13px] font-bold text-white/85"
+              : "m-0 mt-4 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] text-white"
           }
         >
           {note.text}
         </p>
       )}
-
-      <button type="submit" disabled={pending} className="card-light self-start px-7 py-3.5 disabled:opacity-60">
-        <span className="relative z-3 text-[14px] font-extrabold">
-          {pending ? "…" : "Changer le mot de passe"}
-        </span>
-      </button>
-    </form>
+    </div>
   );
 }
 

@@ -145,7 +145,7 @@ export default function MobileMenu({
           // temps n'aideraient personne.
           aria-hidden={monte || undefined}
           tabIndex={monte ? -1 : undefined}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/14 ring-1 ring-white/25 transition hover:bg-white/24 active:scale-95"
+          className="puce-barre grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
         >
           <Barres ouvert={false} />
         </button>
@@ -196,7 +196,7 @@ export default function MobileMenu({
                 width: place.taille,
                 height: place.taille,
               }}
-              className="z-10 grid place-items-center rounded-full bg-white/14 ring-1 ring-white/25 transition hover:bg-white/24 active:scale-95"
+              className="puce-barre z-10 grid place-items-center rounded-full transition active:scale-95"
             >
               <Barres ouvert={ouvert} />
             </button>
