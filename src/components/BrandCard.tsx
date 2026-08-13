@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
+import PastilleNote from "./PastilleNote";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
@@ -7,12 +8,15 @@ export default function BrandCard({
   brand,
   favori,
   apercu,
+  note,
 }: {
   brand: Brand;
   /** Présent = on affiche le cœur, avec son état de départ. */
   favori?: { initial: boolean };
   /** Bouton d'aperçu, posé en bas à gauche du visuel. */
   apercu?: React.ReactNode;
+  /** La moyenne des avis. Absente ou vide = rien ne s'affiche. */
+  note?: { moyenne: number; avis: number };
 }) {
   const visual = brand.cover_url ?? brand.logo_url;
 
@@ -65,6 +69,17 @@ export default function BrandCard({
           )}
 
           {brand.featured && <span className="badge absolute left-3 top-3">À la une</span>}
+
+          {/* Le quatrième coin, le seul encore libre : « À la une » en
+              haut à gauche, l'aperçu en bas à gauche, le cœur en bas à
+              droite. La note prend donc le haut à droite. */}
+          {note && (
+            <PastilleNote
+              moyenne={note.moyenne}
+              avis={note.avis}
+              className="absolute right-3 top-3"
+            />
+          )}
 
           {/* En bas à droite du visuel : le haut est déjà occupé par le
               badge « À la une » et par le bouton d'aperçu, et sur une

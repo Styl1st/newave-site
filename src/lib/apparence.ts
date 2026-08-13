@@ -27,6 +27,7 @@ export function nettoyerApparence(brut: unknown): Preferences | null {
   if (!o || !estUnTheme(o.theme)) return null;
   return {
     theme: o.theme,
+    clair: Boolean(o.clair),
     mouvement: {
       vitesse: Number(o.mouvement?.vitesse ?? 1) || 1,
       amplitude: Number(o.mouvement?.amplitude ?? 1) || 0,

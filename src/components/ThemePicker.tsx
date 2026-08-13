@@ -9,6 +9,7 @@ import {
   PRESETS,
   PRESETS_MOUVEMENT,
   THEME_DEFAUT,
+  appliquerClarte,
   appliquerMouvement,
   appliquerTheme,
   decrire,
@@ -68,6 +69,7 @@ export default function ThemePicker({
     setPrefs(next);
     appliquerTheme(next.theme, document.documentElement);
     appliquerMouvement(next.mouvement, document.documentElement, true);
+    appliquerClarte(Boolean(next.clair), document.documentElement);
 
     // On garde toujours une copie locale : c'est elle qui peint les
     // bonnes couleurs avant même que le JavaScript démarre.
@@ -142,6 +144,37 @@ export default function ThemePicker({
           </>
         )}
       </p>
+
+      {/* ---- clair ou sombre ---- */}
+      <div>
+        <p className="eyebrow m-0 mb-3">Fond</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { clair: false, label: "Sombre" },
+            { clair: true, label: "Clair" },
+          ].map((o) => {
+            const actif = Boolean(prefs.clair) === o.clair;
+            return (
+              <button
+                key={o.label}
+                type="button"
+                onClick={() => poser({ ...prefs, clair: o.clair })}
+                className={`${chip} ${
+                  actif
+                    ? "bg-white text-[var(--color-ink)]"
+                    : "border border-white/25 text-white/80 hover:bg-white/12 hover:text-white"
+                }`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="m-0 mt-2.5 text-[12.5px] leading-relaxed text-white/60">
+          La palette que tu choisis plus bas s&apos;applique dans les deux cas : en
+          clair, elle est simplement diluée. Ton ambiance reste reconnaissable.
+        </p>
+      </div>
 
       {/* ---- mouvement ---- */}
       <div>

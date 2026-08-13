@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cleLien, type CatalogueItem } from "./catalogue-commun";
 import { enEuros, lireLesTaux, type Taux } from "./devises";
+import { deduireLeRayon } from "./rayons";
 
 /**
  * Ranger un catalogue lu chez une marque dans notre base.
@@ -153,7 +154,16 @@ export async function synchroniserCatalogue(
         slug: trouvee.slug ?? ligne.slug,
         status: trouvee.status,
         position: trouvee.position ?? 0,
-        categories: trouvee.categories ?? [],
+        /*
+         * Le rayon choisi à la main l'emporte toujours. On ne devine
+         * que pour les pièces qui n'en ont aucun — celles importées
+         * avant que cette déduction existe, notamment : sans ça, il
+         * aurait fallu reclasser cent quarante pièces une par une.
+         */
+        categories:
+          trouvee.categories && trouvee.categories.length > 0
+            ? trouvee.categories
+            : deduireLeRayon(ligne.name, ligne.description),
         featured: trouvee.featured ?? false,
         // Elle est de retour dans la boutique : on lève l'archive.
         retired_at: null,
@@ -171,7 +181,7 @@ export async function synchroniserCatalogue(
       aCreer.push({
         ...ligne,
         slug: pieceSlug,
-        categories: [] as string[],
+        categories: deduireLeRayon(ligne.name, ligne.description),
         status: options.statutDesNouvelles,
         position: rang++,
       });

@@ -1,6 +1,9 @@
 import Etoiles, { enEtoiles } from "./Etoiles";
 import FormulaireAvis from "./FormulaireAvis";
+import OutilsAvis from "./OutilsAvis";
 import { getAvis, getMonAvis } from "@/lib/avis";
+import { mesSignalements } from "@/lib/moderation";
+import { getProfile } from "@/lib/auth";
 
 /**
  * Les avis d'une marque ou d'une pièce, et de quoi en laisser un.
@@ -21,7 +24,18 @@ export default async function SectionAvis({
   chemin: string;
 }) {
   const filtre = cible === "marque" ? { brand_id: cibleId } : { product_id: cibleId };
-  const [avis, mien] = await Promise.all([getAvis(filtre), getMonAvis(filtre)]);
+  const [avis, mien, profile] = await Promise.all([
+    getAvis(filtre),
+    getMonAvis(filtre),
+    getProfile(),
+  ]);
+
+  // Les signalements déjà faits par cette personne : le bouton doit
+  // dire « c'est signalé » plutôt que proposer de recommencer.
+  const signales = new Set(
+    profile ? await mesSignalements("avis", avis.map((a) => a.id)) : []
+  );
+  const estAdmin = profile?.role === "admin";
 
   const total = avis.length;
   const moyenne = total > 0 ? avis.reduce((s, a) => s + a.note, 0) / total : 0;
@@ -86,6 +100,19 @@ export default async function SectionAvis({
                 <p className="m-0 mt-3 whitespace-pre-line text-[14px] leading-relaxed text-white/88">
                   {a.commentaire}
                 </p>
+              )}
+
+              {/* Rien sous son propre avis : on le modifie ou on le
+                  retire depuis le formulaire au-dessus, et se signaler
+                  soi-même n'aurait aucun sens. */}
+              {a.user_id !== profile?.id && (
+                <OutilsAvis
+                  avisId={a.id}
+                  chemin={chemin}
+                  connecte={Boolean(profile)}
+                  estAdmin={estAdmin}
+                  dejaSignale={signales.has(a.id)}
+                />
               )}
             </article>
           ))}

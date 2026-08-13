@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import Carousel from "@/components/Carousel";
 import LikeButton from "@/components/LikeButton";
 import SectionAvis from "@/components/SectionAvis";
+import BoutonSignaler from "@/components/BoutonSignaler";
+import { mesSignalements } from "@/lib/moderation";
+import { getProfile } from "@/lib/auth";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getProductsByBrand } from "@/lib/queries";
 import { getCatalogueInsight } from "@/lib/brand-space";
@@ -42,6 +45,12 @@ export default async function PiecePage({ params }: Props) {
   if (!found) notFound();
 
   const { product, brand } = found;
+
+  const profilPiece = await getProfile();
+  const dejaSignalee = profilPiece
+    ? (await mesSignalements("piece", [product.id])).length > 0
+    : false;
+
   const images = product.images?.length
     ? product.images
     : product.image_url
@@ -281,6 +290,16 @@ export default async function PiecePage({ params }: Props) {
         nom={product.name}
         chemin={`/marques/${brand.slug}/${product.slug}`}
       />
+
+      <div className="mt-9 border-t border-white/10 pt-5">
+        <BoutonSignaler
+          cible="piece"
+          cibleId={product.id}
+          chemin={`/marques/${brand.slug}/${product.slug}`}
+          connecte={Boolean(profilPiece)}
+          dejaFait={dejaSignalee}
+        />
+      </div>
 
       {/* ---------- autres pièces ---------- */}
       {siblings.length > 0 && (

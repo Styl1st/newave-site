@@ -3,6 +3,7 @@ import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
 import Grille from "@/components/Grille";
 import { getFavoriteBrands } from "@/lib/favorites";
+import { getNotesMarques } from "@/lib/avis";
 import { requireUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Mes favoris" };
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function FavorisPage() {
   const profile = await requireUser();
   const brands = await getFavoriteBrands();
+  const notes = await getNotesMarques(brands.map((b) => b.id));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -34,7 +36,7 @@ export default async function FavorisPage() {
       ) : (
         <Grille variante="marques" memoire="favoris">
           {brands.map((b) => (
-            <BrandCard key={b.id} brand={b} />
+            <BrandCard key={b.id} brand={b} note={notes.get(b.id)} />
           ))}
         </Grille>
       )}

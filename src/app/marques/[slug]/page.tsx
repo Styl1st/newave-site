@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CatalogueNotice from "@/components/CatalogueNotice";
 import FavoriteButton from "@/components/FavoriteButton";
-import Grille from "@/components/Grille";
 import SectionAvis from "@/components/SectionAvis";
+import BoutonSignaler from "@/components/BoutonSignaler";
 import PostCard from "@/components/PostCard";
-import ProductCard from "@/components/ProductCard";
+import RayonsPieces from "@/components/RayonsPieces";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
 import { isFavorite } from "@/lib/favorites";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes } from "@/lib/likes";
+import { getNotesPieces } from "@/lib/avis";
+import { mesSignalements } from "@/lib/moderation";
+import { getProfile } from "@/lib/auth";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import Link from "next/link";
 import BackLink from "@/components/BackLink";
@@ -54,7 +57,18 @@ export default async function BrandPage({ params }: Props) {
   ]);
 
   const ids = products.map((p) => p.id);
-  const [likeCounts, myLikes] = await Promise.all([getLikeCounts(ids), getMyLikes(ids)]);
+  const profil = await getProfile();
+  // Déjà signalée par cette personne ? Le bouton doit le dire, plutôt
+  // que de proposer de recommencer pour se faire refuser par la base.
+  const dejaSignalee = profil
+    ? (await mesSignalements("marque", [brand.id])).length > 0
+    : false;
+
+  const [likeCounts, myLikes, notesPieces] = await Promise.all([
+    getLikeCounts(ids),
+    getMyLikes(ids),
+    getNotesPieces(ids),
+  ]);
 
   const facts: [string, string | null][] = [
     ["Origine", [brand.city, brand.country].filter(Boolean).join(", ") || null],
@@ -180,25 +194,21 @@ export default async function BrandPage({ params }: Props) {
             </div>
           </div>
 
-          <Grille
-            variante="pieces"
-            memoire="pieces-marque"
-            aside={
-              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                {products.length} pièce{products.length > 1 ? "s" : ""}
-              </p>
-            }
-          >
-            {products.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                brandSlug={brand.slug}
-                canManage={Boolean(insight)}
-                likes={{ count: likeCounts.get(p.id) ?? 0, liked: myLikes.has(p.id) }}
-              />
-            ))}
-          </Grille>
+          {/* Le filtre par rayon vit dans un composant client : c'est
+              lui qui garde le rayon choisi pendant qu'on parcourt, sans
+              recharger la page ni perdre sa place. */}
+          <RayonsPieces
+            produits={products}
+            brandSlug={brand.slug}
+            canManage={Boolean(insight)}
+            notes={Object.fromEntries(notesPieces)}
+            likes={Object.fromEntries(
+              products.map((p) => [
+                p.id,
+                { count: likeCounts.get(p.id) ?? 0, liked: myLikes.has(p.id) },
+              ])
+            )}
+          />
 
           <p className="m-0 mt-5 text-[12.5px] leading-relaxed text-white/55">
             L&apos;achat se fait directement chez {brand.name}. NEWAVE SPHERE ne vend rien.
@@ -253,6 +263,20 @@ export default async function BrandPage({ params }: Props) {
         nom={brand.name}
         chemin={`/marques/${brand.slug}`}
       />
+
+      {/* Discret, et tout en bas : un lien de signalement bien visible
+          sous chaque fiche transformerait l'annuaire en tribunal, et
+          donnerait l'idée à des gens qui n'y pensaient pas. Il faut
+          qu'il soit trouvable, pas qu'il saute aux yeux. */}
+      <div className="mt-9 border-t border-white/10 pt-5">
+        <BoutonSignaler
+          cible="marque"
+          cibleId={brand.id}
+          chemin={`/marques/${brand.slug}`}
+          connecte={Boolean(profil)}
+          dejaFait={dejaSignalee}
+        />
+      </div>
 
       {/* ---------- posts lies ---------- */}
       {posts.length > 0 && (

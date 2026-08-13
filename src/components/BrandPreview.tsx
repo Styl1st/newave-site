@@ -74,18 +74,18 @@ export default function BrandPreview({
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
       style={{ animation: "fadeIn .18s ease both" }}
     >
-      <div className="absolute inset-0 bg-[rgba(20,8,50,0.72)] backdrop-blur-md" />
+      <div className="absolute inset-0 bg-[rgba(16,6,44,0.74)] backdrop-blur-lg" />
 
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass relative flex max-h-[86svh] w-full max-w-4xl flex-col overflow-hidden"
-        style={{ animation: "popIn .24s cubic-bezier(.2,.8,.3,1) both" }}
+        className="panneau-apercu relative flex max-h-[86svh] w-full max-w-4xl flex-col overflow-hidden"
+        style={{ animation: "apercuEntree .42s cubic-bezier(.19,.84,.3,1) both" }}
       >
         {/* ---- en-tête ---- */}
-        <div className="flex items-start justify-between gap-4 border-b border-white/15 p-6 sm:px-8">
+        <div className="apercu-entete relative flex items-start justify-between gap-4 border-b border-white/12 p-6 sm:px-8">
           <div className="min-w-0">
             <p className="eyebrow m-0">Aperçu</p>
-            <h2 className="m-0 mt-1.5 truncate text-[clamp(16.5px,3.6vw,22px)] font-extrabold tracking-[-0.02em] text-white">
+            <h2 className="m-0 mt-1.5 truncate text-[clamp(17px,3.6vw,23px)] font-extrabold tracking-[-0.025em] text-white">
               {data?.brand.name ?? "…"}
             </h2>
             {data && (
@@ -97,9 +97,11 @@ export default function BrandPreview({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/12 text-[17px] font-black text-white transition hover:bg-white/25"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/12 text-white ring-1 ring-white/20 transition hover:rotate-90 hover:bg-white hover:text-[var(--color-ink)]"
           >
-            ×
+            <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
 
@@ -116,7 +118,11 @@ export default function BrandPreview({
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-square animate-pulse rounded-[13px] bg-white/10"
+                  /* Le retard décale aussi les squelettes : sans lui, huit
+                     rectangles pulsent à l'unisson et l'on croit à un
+                     bug d'affichage plutôt qu'à un chargement. */
+                  className="aspect-square animate-pulse rounded-[14px] bg-white/10"
+                  style={{ animationDelay: `${i * 90}ms` }}
                 />
               ))}
             </div>
@@ -130,7 +136,7 @@ export default function BrandPreview({
 
           {data && data.products.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {data.products.map((p) => {
+              {data.products.map((p, i) => {
                 const off = discountPercent(p);
                 const price = formatPrice(p.price_cents, p.currency);
                 const was = formatPrice(p.compare_at_cents, p.currency);
@@ -139,8 +145,18 @@ export default function BrandPreview({
                   : `/marques/${data.brand.slug}`;
 
                 return (
-                  <Link key={p.id} href={href} onClick={onClose} className="group block">
-                    <div className="relative aspect-square overflow-hidden rounded-[13px] bg-white/10">
+                  <Link
+                    key={p.id}
+                    href={href}
+                    onClick={onClose}
+                    className="apercu-carreau group block"
+                    /* Le retard est plafonné à douze vignettes : au-delà,
+                       une grille qui se remplit n'est plus élégante, elle
+                       est lente, et c'est la dernière ligne qu'on attend
+                       en regardant l'écran sans rien faire. */
+                    style={{ animationDelay: `${90 + Math.min(i, 11) * 30}ms` }}
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white/10 ring-1 ring-white/10 transition duration-300 group-hover:ring-white/35">
                       {p.image && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
@@ -180,7 +196,7 @@ export default function BrandPreview({
 
         {/* ---- pied ---- */}
         {data && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 p-5 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/12 bg-[rgba(12,4,36,0.35)] p-5 sm:px-8">
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.12em] text-white/55">
               {data.total} pièce{data.total > 1 ? "s" : ""}
               {data.total > data.products.length && ` · ${data.products.length} affichées`}

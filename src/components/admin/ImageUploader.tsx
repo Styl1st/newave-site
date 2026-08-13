@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { allegerImage, poids } from "@/lib/alleger-image";
 import { FIELD, Label } from "./fields";
 
 /**
@@ -28,13 +29,21 @@ export default function ImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      setNote("Image trop lourde : 8 Mo maximum. Compresse-la avant l'envoi.");
+    // La limite s'applique au fichier D'ORIGINE, avant allègement :
+    // au-delà, c'est le navigateur qui peine à ouvrir l'image, et le
+    // refus doit venir avant qu'il s'y essaie.
+    if (file.size > 25 * 1024 * 1024) {
+      setNote("Image trop lourde : 25 Mo maximum.");
       return;
     }
 
     setBusy(true);
     setNote(null);
+
+    // Redimensionnée et convertie en WebP dans le navigateur. Voir
+    // lib/alleger-image.ts : l'octet économisé ici l'est à la fois
+    // dans le stockage, dans la bande passante et chez le visiteur.
+    const allege = await allegerImage(file, { maxCote: 1800, qualite: 0.82 });
 
     const supabase = createClient();
     if (!supabase) {
@@ -43,12 +52,14 @@ export default function ImageUploader({
       return;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const ext = allege.modifie
+      ? "webp"
+      : file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     const { error } = await supabase.storage
       .from("media")
-      .upload(path, file, { cacheControl: "31536000", upsert: false });
+      .upload(path, allege.fichier, { cacheControl: "31536000", upsert: false });
 
     if (error) {
       setBusy(false);
@@ -59,11 +70,14 @@ export default function ImageUploader({
     const { data } = supabase.storage.from("media").getPublicUrl(path);
     setUrl(data.publicUrl);
     setBusy(false);
+    if (allege.modifie) {
+      setNote(`Allégée : ${poids(allege.avant)} → ${poids(allege.apres)}.`);
+    }
   }
 
   return (
     <div>
-      <Label htmlFor={`${name}-file`} hint="JPG, PNG ou WebP, 8 Mo maximum.">
+      <Label htmlFor={`${name}-file`} hint="JPG, PNG ou WebP. Redimensionnée et compressée automatiquement.">
         {label}
       </Label>
 

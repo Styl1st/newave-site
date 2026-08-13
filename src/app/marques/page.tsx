@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import BrandDirectory from "@/components/BrandDirectory";
 import { getBrands } from "@/lib/queries";
 import { getMyFavorites } from "@/lib/favorites";
+import { getNotesMarques } from "@/lib/avis";
 
 export const metadata: Metadata = {
   title: "Marques",
@@ -16,6 +17,20 @@ export default async function BrandsPage() {
   const brands = await getBrands();
   const favoris = await getMyFavorites(brands.map((b) => b.id));
 
+  /*
+   * Les moyennes en UNE requête pour toute la page.
+   *
+   * Elles existaient depuis la migration 14 mais n'étaient lues nulle
+   * part : on pouvait noter une marque sans que cela se voie jamais
+   * ailleurs que sur sa fiche. Une note qu'on dépose et qui disparaît
+   * n'encourage personne à en déposer une deuxième.
+   *
+   * L'objet plutôt que la Map : ces données descendent jusqu'à un
+   * composant client, et un objet simple traverse cette frontière sans
+   * discussion.
+   */
+  const notes = Object.fromEntries(await getNotesMarques(brands.map((b) => b.id)));
+
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise mb-10">
@@ -29,7 +44,7 @@ export default async function BrandsPage() {
         </p>
       </header>
 
-      <BrandDirectory brands={brands} favoris={Array.from(favoris)} />
+      <BrandDirectory brands={brands} favoris={Array.from(favoris)} notes={notes} />
     </div>
   );
 }

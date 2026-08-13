@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Tracker from "@/components/Tracker";
 import PageTransition from "@/components/PageTransition";
+import ProgressionLecture from "@/components/ProgressionLecture";
 import Reveal from "@/components/Reveal";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
@@ -103,6 +104,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
          de zéro. Voir globals.css, près de `pageIn`. */
       data-entree="a"
       data-fige={apparence && apparence.mouvement.amplitude <= 0.02 ? "1" : undefined}
+      /* Écrit par le serveur pour qui a un compte, et par le script
+         anti-flash pour les autres : sans ça, le site s'afficherait
+         sombre une fraction de seconde avant de basculer. */
+      data-clair={apparence?.clair ? "1" : undefined}
       suppressHydrationWarning
     >
       <head>
@@ -125,6 +130,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PageTransition>{children}</PageTransition>
         </main>
         {!nu && <Footer />}
+        {!nu && <ProgressionLecture />}
       </body>
     </html>
   );

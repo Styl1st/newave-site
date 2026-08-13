@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { allegerImage, poids } from "@/lib/alleger-image";
 import { Label } from "./fields";
 
 /**
@@ -40,18 +41,30 @@ export default function MultiImageUploader({
     setBusy(true);
     setNote(null);
     const added: string[] = [];
+    let avant = 0;
+    let apres = 0;
 
     for (const file of files) {
-      if (file.size > 8 * 1024 * 1024) {
-        setNote(`« ${file.name} » dépasse 8 Mo, elle a été ignorée.`);
+      if (file.size > 25 * 1024 * 1024) {
+        setNote(`« ${file.name} » dépasse 25 Mo, elle a été ignorée.`);
         continue;
       }
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+
+      // Redimensionnée et convertie dans le navigateur avant l'envoi.
+      // Sur une série de huit photos de téléphone, c'est la différence
+      // entre trente mégaoctets et un et demi.
+      const allege = await allegerImage(file, { maxCote: 1800, qualite: 0.82 });
+      avant += allege.avant;
+      apres += allege.apres;
+
+      const ext = allege.modifie
+        ? "webp"
+        : file.name.split(".").pop()?.toLowerCase() ?? "jpg";
       const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error } = await supabase.storage
         .from("media")
-        .upload(path, file, { cacheControl: "31536000", upsert: false });
+        .upload(path, allege.fichier, { cacheControl: "31536000", upsert: false });
 
       if (error) {
         setNote(`Envoi refusé : ${error.message}`);
@@ -62,6 +75,9 @@ export default function MultiImageUploader({
 
     setUrls((prev) => [...prev, ...added]);
     setBusy(false);
+    if (added.length > 0 && apres < avant) {
+      setNote(`${added.length} image${added.length > 1 ? "s" : ""} allégée${added.length > 1 ? "s" : ""} : ${poids(avant)} → ${poids(apres)}.`);
+    }
     e.target.value = "";
   }
 
@@ -82,7 +98,7 @@ export default function MultiImageUploader({
 
   return (
     <div>
-      <Label htmlFor={`${name}-file`} hint="JPG, PNG ou WebP, 8 Mo par image. La première sert de vignette.">
+      <Label htmlFor={`${name}-file`} hint="JPG, PNG ou WebP. Compressées automatiquement. La première sert de vignette.">
         {label}
       </Label>
 

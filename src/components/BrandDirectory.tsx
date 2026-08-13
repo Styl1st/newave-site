@@ -11,10 +11,13 @@ const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 export default function BrandDirectory({
   brands,
   favoris,
+  notes,
 }: {
   brands: Brand[];
   /** Les marques déjà suivies, pour allumer la bonne étoile. */
   favoris?: string[];
+  /** Les moyennes d'avis, par identifiant de marque. */
+  notes?: Record<string, { moyenne: number; avis: number }>;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -197,6 +200,7 @@ export default function BrandDirectory({
         <BrandGrid
           brands={results}
           favoris={favoris}
+          notes={notes}
           memoire="annuaire"
           aside={
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">

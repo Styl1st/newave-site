@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
+import Etoiles from "./Etoiles";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
@@ -39,6 +40,7 @@ export default function ProductCard({
   showBrand = false,
   canManage = false,
   likes,
+  note,
 }: {
   product: Product;
   /** Slug de la marque, pour construire le lien vers la fiche. */
@@ -48,6 +50,15 @@ export default function ProductCard({
   canManage?: boolean;
   /** Coups de cœur. Absent = le bouton ne s'affiche pas. */
   likes?: { count: number; liked: boolean };
+  /**
+   * La moyenne des avis.
+   *
+   * Elle vit sous le nom, et non sur le visuel comme pour une marque :
+   * les quatre coins de l'image sont déjà pris par la remise, la
+   * mention « épuisé », le crayon et le cœur. Une cinquième pastille
+   * aurait transformé la photo en tableau de bord.
+   */
+  note?: { moyenne: number; avis: number };
 }) {
   const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
@@ -135,6 +146,16 @@ export default function ProductCard({
               {product.name}
             </h3>
           </ProductLink>
+
+          {/* Jamais la moyenne sans le nombre d'avis : « 5 sur 5 » ne
+              veut rien dire tant qu'on ignore si c'est une personne ou
+              deux cents. */}
+          {note && note.avis > 0 && (
+            <span className="mt-1.5 flex items-center gap-1.5">
+              <Etoiles note={note.moyenne} taille="petite" />
+              <span className="text-[11px] font-bold text-[#6a5a92]">({note.avis})</span>
+            </span>
+          )}
 
           <div className="pied mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
             <span className="flex flex-wrap items-baseline gap-2">

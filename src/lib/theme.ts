@@ -16,6 +16,14 @@ export type Ambiance = { id: string; nom: string; theme: Theme };
 
 export type Preferences = {
   theme: Theme;
+  /**
+   * Fond clair plutôt que sombre.
+   *
+   * Ce n'est pas une palette de plus : c'est le sens de lecture du
+   * site qui s'inverse. La palette choisie continue de s'appliquer,
+   * simplement diluée — voir la section « mode clair » de globals.css.
+   */
+  clair?: boolean;
   mouvement: Mouvement;
   /** Ambiances créées par la personne, en plus des nôtres. */
   ambiances: Ambiance[];
@@ -32,6 +40,7 @@ export const MOUVEMENT_DEFAUT: Mouvement = { vitesse: 1, amplitude: 1 };
 
 export const PREFERENCES_DEFAUT: Preferences = {
   theme: THEME_DEFAUT,
+  clair: false,
   mouvement: MOUVEMENT_DEFAUT,
   ambiances: [],
   mouvements: [],
@@ -119,6 +128,12 @@ export function appliquerTheme(theme: Theme, cible: HTMLElement) {
  * c'est exactement ce qui donnait un site figé sans qu'on comprenne
  * pourquoi.
  */
+/** Pose ou retire le mode clair. */
+export function appliquerClarte(clair: boolean, cible: HTMLElement) {
+  if (clair) cible.dataset.clair = "1";
+  else delete cible.dataset.clair;
+}
+
 export function appliquerMouvement(m: Mouvement, cible: HTMLElement, explicite = false) {
   cible.style.setProperty("--vit", String(Math.max(m.vitesse, 0.1)));
   cible.style.setProperty("--amp", String(m.amplitude));
@@ -183,6 +198,7 @@ export const SCRIPT_ANTI_FLASH = `
       if (m.amplitude <= .02) r.dataset.fige = '1';
       r.dataset.animChoisi = '1';
     }
+    if (o.clair) r.dataset.clair = '1';
     if (!t) return;
     var rgb = function(h){h=h.replace('#','');if(h.length===3){h=h.split('').map(function(c){return c+c}).join('')}
       var n=parseInt(h,16);return ((n>>16)&255)+', '+((n>>8)&255)+', '+(n&255)};
