@@ -841,11 +841,38 @@ body > header,
 body > footer {
   transition: opacity .34s ease;
 }
+/* ---------- la page pendant que le menu est ouvert ----------
+
+   Elle s'efface, et surtout elle REVIENT en fondu.
+
+   Il n'y avait pas de transition ici : le contenu passait de zéro à
+   pleine opacité d'un coup, et il le faisait à l'instant précis où le
+   panneau se démontait. D'où l'impression d'un contenu qui surgit,
+   alors que tout le reste du menu est en fondu.
+
+   Les trois retards décalés valent mieux qu'un réglage identique : la
+   barre revient en premier, le contenu ensuite, le pied en dernier. On
+   lit une page qui se rallume plutôt qu'un interrupteur.
+
+   Uniquement l'opacité, jamais de déplacement. Un contenu qui remonte
+   de quelques pixels sous une barre translucide donne l'impression que
+   la barre se remplit, ce qu'on a déjà corrigé une fois. */
+main,
+body > header,
+body > footer {
+  transition: opacity .34s ease;
+}
+body > header { transition-delay: 0s; }
+main { transition-delay: .06s; }
+body > footer { transition-delay: .1s; }
+
 html[data-menu="1"] main,
 html[data-menu="1"] > body > header,
 html[data-menu="1"] > body > footer {
   opacity: 0;
   pointer-events: none;
+  /* À l'ouverture, tout part ensemble : c'est le retour qu'on étage. */
+  transition-delay: 0s;
 }
 
 /* ---------- menu de téléphone ----------

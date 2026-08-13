@@ -85,14 +85,32 @@ export default function MobileMenu({
     document.addEventListener("keydown", onKey);
     const precedent = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    // Le contenu de la page s'efface, le décor reste.
-    document.documentElement.dataset.menu = "1";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = precedent;
-      delete document.documentElement.dataset.menu;
     };
   }, [monte, fermer]);
+
+  /*
+   * L'effacement de la page suit `ouvert`, et non `monte`.
+   *
+   * La nuance fait toute la différence à la fermeture. `monte` ne
+   * retombe qu'une fois le fondu du menu terminé : le contenu
+   * réapparaissait donc d'un bloc, 320 millisecondes trop tard, une
+   * fois le menu déjà parti. `ouvert`, lui, retombe dès le clic.
+   *
+   * Les deux fondus se croisent alors : le menu s'en va pendant que la
+   * page revient. C'est ce croisement qui donne l'impression d'un seul
+   * geste plutôt que de deux étapes.
+   */
+  useEffect(() => {
+    if (!ouvert) return;
+    // Le contenu de la page s'efface, le décor reste.
+    document.documentElement.dataset.menu = "1";
+    return () => {
+      delete document.documentElement.dataset.menu;
+    };
+  }, [ouvert]);
 
 
   return (
