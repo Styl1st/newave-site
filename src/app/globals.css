@@ -1834,3 +1834,71 @@ html[data-clair="1"] :is(.ring-white\/70, .ring-white\/55, .ring-white\/50) {
 html[data-clair="1"] :is(input, textarea)::placeholder {
   color: rgba(34, 16, 70, .48);
 }
+
+/* ============================================================
+   TÉLÉPHONE : LA MÉMOIRE AVANT TOUT
+   ============================================================
+
+   Constat, vidéo à l'appui : sur iPhone, la page se peignait, puis
+   blanchissait, puis se rechargeait — en boucle. Ce n'est pas une
+   lenteur, c'est Safari qui abandonne l'onglet et le relance parce
+   qu'il dépasse la mémoire qu'il s'autorise.
+
+   Le calcul explique tout. Le décor est fait de couches posées en
+   `position: fixed` avec `inset: -45%`, `-50%`, `-60%` : chacune
+   mesure donc près du DOUBLE de l'écran dans les deux sens. Sur un
+   grand téléphone à trois pixels physiques par pixel logique, une
+   seule de ces couches fait quelque chose comme 2300 × 5000 pixels
+   réels, soit une quarantaine de mégaoctets. Et elles portent un
+   `filter: blur()`, ce qui oblige le navigateur à en garder DEUX
+   copies : l'originale et la floutée.
+
+   Quatre couches de cette taille, et l'on demande trois cents
+   mégaoctets à un téléphone avant d'avoir affiché la moindre pièce.
+   D'où le plantage dès le premier écran, et d'où le fait qu'il
+   revenait quel que soit le poids des images.
+
+   Ce qui suit ne change pas l'aspect du site, il change son coût :
+
+     — le flou disparaît. Ces couches sont des dégradés radiaux, donc
+       déjà doux ; le flou n'ajoutait presque rien à l'œil et coûtait
+       le double de mémoire ;
+     — les couches sont ramenées à la taille de l'écran, plus une
+       marge de trente pour cent au lieu de cent ;
+     — la lueur qui balaie l'écran est retirée : c'est la plus grande
+       de toutes, et c'est un voile blanc à treize pour cent qu'on ne
+       remarque pas sur un téléphone ;
+     — les blobs chromés perdent leur ombre portée, qui oblige elle
+       aussi à conserver une copie floutée de chaque image.
+
+   Sur ordinateur, rien ne bouge : la mémoire y est large et l'écran
+   moins dense. */
+@media (max-width: 900px) {
+  .bg::before,
+  .bg::after {
+    inset: -30%;
+    filter: none;
+  }
+
+  .bg-nappe {
+    inset: -30%;
+    filter: none;
+  }
+
+  .bg-lueur { display: none; }
+
+  .chrome img { filter: none; }
+
+  /* Un dernier gros consommateur : chaque carte porte un liseré
+     chromé fait d'un dégradé masqué, et un masque force le navigateur
+     à composer la carte sur son propre calque. Cent pièces à l'écran,
+     cent calques. Le contour clair ci-dessous fait le même office
+     visuel pour rien. */
+  .card-light::before {
+    background: none;
+    padding: 0;
+    -webkit-mask: none;
+    mask: none;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55);
+  }
+}

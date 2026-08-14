@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Grille from "./Grille";
 import ProductCard from "./ProductCard";
 import { compterLesRayons, rayonDe } from "@/lib/rayons";
@@ -21,7 +21,26 @@ import type { Product } from "@/lib/types";
  * corrigeable à la main. Ce qui n'a pas pu être rangé se retrouve dans
  * « Autres » plutôt que d'être caché : une pièce invisible parce que
  * mal classée serait un défaut bien pire qu'un rayon approximatif.
+ *
+ * ET SURTOUT : ON N'AFFICHE PAS TOUT D'UN COUP.
+ *
+ * Un navigateur charge les images à l'approche de l'écran, mais il ne
+ * les DÉCHARGE jamais tant qu'elles restent dans la page. Sur une
+ * marque de cent quarante pièces, descendre jusqu'en bas revenait donc
+ * à empiler cent quarante images décompressées en mémoire, sans qu'une
+ * seule ne soit libérée. Un téléphone finit par abandonner l'onglet et
+ * le recharger — c'est le rechargement en boucle constaté.
+ *
+ * Vingt-quatre pièces à la fois, donc, et un bouton pour la suite. Ce
+ * n'est pas une pagination : on ne perd pas sa place, on ne change pas
+ * de page, la liste s'allonge. Mais elle ne s'allonge que si on le
+ * demande, ce qui suffit à ne jamais atteindre le plafond par
+ * inadvertance.
  */
+
+/** Pièces ajoutées à chaque fois qu'on en redemande. */
+const LOT = 24;
+
 export default function RayonsPieces({
   produits,
   brandSlug,
@@ -36,12 +55,21 @@ export default function RayonsPieces({
   notes: Record<string, { moyenne: number; avis: number }>;
 }) {
   const [rayon, setRayon] = useState<string | null>(null);
+  const [combien, setCombien] = useState(LOT);
 
   const rayons = useMemo(() => compterLesRayons(produits), [produits]);
-  const visibles = useMemo(
+  const duRayon = useMemo(
     () => (rayon ? produits.filter((p) => rayonDe(p) === rayon) : produits),
     [produits, rayon]
   );
+
+  // Changer de rayon repart du début : garder le compteur donnerait
+  // trente pièces dans un rayon qui n'en a que huit, et l'impression
+  // que le filtre n'a rien fait.
+  useEffect(() => setCombien(LOT), [rayon]);
+
+  const visibles = duRayon.slice(0, combien);
+  const reste = duRayon.length - visibles.length;
 
   const chip =
     "shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition active:scale-[.97]";
@@ -84,7 +112,7 @@ export default function RayonsPieces({
         memoire="pieces-marque"
         aside={
           <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-            {visibles.length} pièce{visibles.length > 1 ? "s" : ""}
+            {duRayon.length} pièce{duRayon.length > 1 ? "s" : ""}
             {rayon && ` · ${rayon}`}
           </p>
         }
@@ -100,6 +128,23 @@ export default function RayonsPieces({
           />
         ))}
       </Grille>
+
+      {reste > 0 && (
+        <div className="mt-7 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCombien((n) => n + LOT)}
+            className="card-light px-7 py-3.5"
+          >
+            <span className="relative z-3 text-[14px] font-extrabold">
+              Voir {Math.min(reste, LOT)} pièce{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
+            </span>
+          </button>
+          <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/45">
+            {visibles.length} sur {duRayon.length}
+          </p>
+        </div>
+      )}
     </>
   );
 }
