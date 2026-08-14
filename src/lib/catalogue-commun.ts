@@ -33,7 +33,20 @@ export type CatalogueItem = {
 
 export type Resultat =
   | { ok: true; source: Source; items: CatalogueItem[] }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * La boutique est fermée volontairement — mot de passe, page
+       * « coming soon », drop en préparation.
+       *
+       * À distinguer soigneusement d'une lecture qui échoue : là, il
+       * n'y a rien à réparer de notre côté, et la marque n'a rien fait
+       * de mal. C'est ce qui permet d'écrire au visiteur « ça arrive »
+       * plutôt que « on n'a pas su lire ».
+       */
+      verrouillee?: boolean;
+    };
 
 export const SOURCE_LABEL: Record<Source, string> = {
   shopify: "Shopify",

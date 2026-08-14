@@ -112,6 +112,62 @@ async function lire(url: string, accept = "application/json"): Promise<Response 
   }
 }
 
+/**
+ * La boutique est-elle FERMÉE VOLONTAIREMENT ?
+ *
+ * Beaucoup de marques verrouillent leur site avant un drop : une page
+ * « new drop loading », un mot de passe, et rien d'autre. Ce n'est pas
+ * une panne et ce n'est pas un site illisible — c'est une décision, et
+ * elle est temporaire.
+ *
+ * La distinction compte parce qu'elle change ce qu'on écrit au
+ * visiteur. « On n'a pas su lire ce catalogue » laisse penser que la
+ * marque est mal fichue ; « la boutique prépare quelque chose » dit la
+ * vérité, et donne même envie de revenir.
+ *
+ * Trois signes, du plus fiable au moins fiable :
+ *   — Shopify répond 401 sur ses adresses quand le mot de passe est
+ *     posé, et il est le seul à le faire aussi proprement ;
+ *   — la page d'accueil renvoie vers /password ;
+ *   — le titre ou le contenu annonce l'attente en toutes lettres.
+ */
+const MOTS_DE_L_ATTENTE =
+  /opening soon|coming soon|drop loading|password|bient[oô]t disponible|ouverture prochaine|nous revenons|be right back|under construction|en construction|restock loading/i;
+
+async function boutiqueVerrouillee(base: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${base}/products.json`, {
+      headers: { Accept: "application/json", "User-Agent": "NewaveSphere/1.0 (+https://newavesphere.fr)" },
+      redirect: "follow",
+      next: { revalidate: 3600 },
+    });
+
+    // Shopify verrouillé : 401 franc, ou redirection vers la page de
+    // mot de passe.
+    if (r.status === 401 || r.status === 403) return true;
+    if (/\/password/i.test(r.url)) return true;
+  } catch {
+    return false;
+  }
+
+  const page = await lire(base, "text/html");
+  if (!page) return false;
+
+  try {
+    if (/\/password/i.test(page.url)) return true;
+    const html = (await page.text()).slice(0, 40000);
+    const titre = html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "";
+    // Le titre est le signal le plus sûr : une page de vente peut
+    // contenir « coming soon » dans un texte, pas dans son titre.
+    if (MOTS_DE_L_ATTENTE.test(titre)) return true;
+    // À défaut, une page très courte qui ne parle que d'attente.
+    if (html.length < 12000 && MOTS_DE_L_ATTENTE.test(html)) return true;
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 /** Les trois lettres d'un code ISO 4217, et rien d'autre. */
 const CODE_DEVISE = /^[A-Z]{3}$/;
 
@@ -725,6 +781,19 @@ export async function fetchCatalogue(entree: string): Promise<Resultat> {
 
   // Aucune méthode n'a abouti : on cherche pourquoi, pour dire quelque
   // chose d'utile plutôt qu'un « rien trouvé » qui laisse démuni.
+
+  // La boutique fermée passe en premier : c'est la seule cause qui ne
+  // soit pas un défaut, ni du site, ni du nôtre.
+  if (await boutiqueVerrouillee(base)) {
+    return {
+      ok: false,
+      verrouillee: true,
+      error:
+        "Cette boutique est fermée pour le moment — mot de passe ou drop en préparation. " +
+        "Rien à corriger : ses pièces réapparaîtront d'elles-mêmes à la réouverture.",
+    };
+  }
+
   if (await estUneCoquilleVide(base)) {
     return {
       ok: false,

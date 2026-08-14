@@ -115,6 +115,10 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
     let note: string;
     let ok = false;
 
+    // Une boutique fermée pour un drop n'est pas une lecture ratée :
+    // on le note sur la fiche pour pouvoir le dire aux visiteurs.
+    const verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
+
     if (!lecture.ok) {
       note = lecture.error;
     } else if (lecture.items.length === 0) {
@@ -142,7 +146,11 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
     // pas faire échouer une mise à jour qui, elle, a fonctionné.
     await supabase
       .from("brands")
-      .update({ catalogue_sync_at: new Date().toISOString(), catalogue_sync_note: note })
+      .update({
+        catalogue_sync_at: new Date().toISOString(),
+        catalogue_sync_note: note,
+        catalogue_verrouille: verrouillee,
+      })
       .eq("id", marque.id);
 
     resultats.push({ brandId: marque.id, nom: marque.name, note, ok });

@@ -103,10 +103,15 @@ export async function GET(request: Request) {
     const adresse = marque.shop_url ?? marque.website_url;
     let note: string;
 
+    let verrouillee = false;
+
     if (!adresse) {
       note = "Aucune adresse de boutique renseignée.";
     } else {
       const lecture = await fetchCatalogue(adresse);
+      // Fermée pour un drop : ce n'est pas un échec de lecture, et la
+      // fiche doit pouvoir le dire à ses visiteurs.
+      verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
 
       if (!lecture.ok) {
         note = lecture.error;
@@ -130,7 +135,11 @@ export async function GET(request: Request) {
     // les autres marques ne seraient plus jamais relues.
     await supabase
       .from("brands")
-      .update({ catalogue_sync_at: new Date().toISOString(), catalogue_sync_note: note })
+      .update({
+        catalogue_sync_at: new Date().toISOString(),
+        catalogue_sync_note: note,
+        catalogue_verrouille: verrouillee,
+      })
       .eq("id", marque.id);
 
     journal.push({ marque: marque.slug, resultat: note });

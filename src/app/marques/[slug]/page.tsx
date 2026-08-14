@@ -190,14 +190,31 @@ export default async function BrandPage({ params }: Props) {
       {products.length === 0 && (
         <section className="glass rise rise-2 mt-8 p-5 sm:mt-11 sm:p-7">
           <p className="eyebrow m-0">Le catalogue</p>
+          {/* Deux causes, deux messages. Une boutique fermée pour un
+              drop n'a rien à se reprocher, et le dire ainsi donne même
+              envie de revenir — alors qu'un « on n'a pas su lire »
+              laisserait croire que la marque est mal fichue. */}
           <h2 className="m-0 mt-2 text-[clamp(16px,3.6vw,20px)] font-extrabold tracking-[-0.02em] text-white">
-            Les pièces ne sont pas encore listées ici
+            {brand.catalogue_verrouille
+              ? "La boutique prépare quelque chose"
+              : "Les pièces ne sont pas encore listées ici"}
           </h2>
           <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-            Notre lecture automatique n&apos;a pas réussi à récupérer le catalogue de{" "}
-            {brand.name} — certaines boutiques ne l&apos;exposent tout simplement pas.
-            Ça ne veut pas dire qu&apos;il n&apos;y a rien : tout se trouve sur leur
-            site, par le bouton juste en dessous.
+            {brand.catalogue_verrouille ? (
+              <>
+                {brand.name} a fermé sa boutique le temps d&apos;un drop : elle est
+                protégée par un mot de passe et ses pièces ne sont pas visibles pour
+                l&apos;instant. Elles réapparaîtront ici toutes seules à la réouverture —
+                en attendant, le bouton ci-dessous mène à leur site.
+              </>
+            ) : (
+              <>
+                Notre lecture automatique n&apos;a pas réussi à récupérer le catalogue de{" "}
+                {brand.name} — certaines boutiques ne l&apos;exposent tout simplement pas.
+                Ça ne veut pas dire qu&apos;il n&apos;y a rien : tout se trouve sur leur
+                site, par le bouton juste en dessous.
+              </>
+            )}
           </p>
         </section>
       )}

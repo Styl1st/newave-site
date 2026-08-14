@@ -189,6 +189,14 @@ export async function saveBrand(formData: FormData): Promise<Result> {
 
     if ((count ?? 0) === 0) {
       const lecture = await fetchCatalogue(adresse);
+      const verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
+      if (verrouillee) {
+        await supabase
+          .from("brands")
+          .update({ catalogue_verrouille: true })
+          .eq("id", brandId);
+      }
+
       if (lecture.ok && lecture.items.length > 0) {
         await synchroniserCatalogue(supabase, brandId, lecture.items, {
           statutDesNouvelles: "published",
@@ -206,10 +214,13 @@ export async function saveBrand(formData: FormData): Promise<Result> {
 
         return {
           ok: false,
-          error:
-            "La fiche est enregistrée, mais aucune pièce n'a pu être lue sur cette boutique : " +
-            "elle reste en brouillon. Ouvre son espace pour importer le catalogue à la main, " +
-            "ou publie-la une fois qu'elle aura au moins une pièce.",
+          error: verrouillee
+            ? "La fiche est enregistrée, mais la boutique est fermée en ce moment — mot de passe " +
+              "ou drop en préparation. Elle reste en brouillon : ses pièces seront lues d'elles-mêmes " +
+              "à la réouverture, sans rien avoir à refaire."
+            : "La fiche est enregistrée, mais aucune pièce n'a pu être lue sur cette boutique : " +
+              "elle reste en brouillon. Ouvre son espace pour importer le catalogue à la main, " +
+              "ou publie-la une fois qu'elle aura au moins une pièce.",
         };
       }
     }

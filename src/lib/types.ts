@@ -21,6 +21,8 @@ export type Brand = {
   featured: boolean;
   status: Status;
   published_at: string | null;
+  /** La boutique est fermée volontairement : mot de passe, drop en préparation. */
+  catalogue_verrouille?: boolean;
 };
 
 /** Une piece d'une marque. Le paiement se fait chez la marque, via shop_url. */
