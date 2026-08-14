@@ -75,6 +75,8 @@ export type Post = {
   images: string[];
   /** MP4 hebergé chez nous. Un Reel ne se lit pas depuis un site tiers. */
   video_url: string | null;
+  /** Le post renvoie vers une vidéo plutôt que vers des photos. */
+  est_video?: boolean;
   /** Image affichée avant lecture. */
   video_poster: string | null;
   image_alt: string;

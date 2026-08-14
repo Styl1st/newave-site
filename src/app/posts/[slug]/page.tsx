@@ -68,7 +68,7 @@ export default async function PostPage({ params }: Props) {
           se chargeait mal en 4G, alors qu'Instagram et TikTok le font
           gratuitement et mieux. On garde l'image ici — c'est elle qui
           donne envie — et le bouton emmène à l'original. */}
-      {(post.instagram_url || post.tiktok_url) && (
+      {post.est_video && (post.instagram_url || post.tiktok_url) && (
         <div className="rise rise-1 mt-7 flex flex-wrap items-center gap-3">
           <LienVideo instagram={post.instagram_url} tiktok={post.tiktok_url} />
           <p className="m-0 text-[12.5px] text-white/55">

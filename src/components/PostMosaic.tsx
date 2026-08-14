@@ -71,7 +71,9 @@ function MosaicCard({ post, index }: { post: Post; index: number }) {
    * directement sur Instagram depuis la mosaïque ferait quitter le
    * site à quelqu'un qui n'a encore rien lu.
    */
-  const videoAilleurs = Boolean(post.instagram_url || post.tiktok_url);
+  // La case cochée dans l'administration, et rien d'autre. Se fier au
+  // lien revenait à coller « Vidéo » sur tous les carrousels.
+  const videoAilleurs = Boolean(post.est_video && (post.instagram_url || post.tiktok_url));
   const cover = post.video_poster ?? post.images?.[0] ?? post.image_url;
   const extra = Math.max((post.images?.length ?? 0) - 1, 0);
 

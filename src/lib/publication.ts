@@ -14,6 +14,15 @@ export type FichePubliable = {
   description?: string | null;
   cover_url?: string | null;
   logo_url?: string | null;
+  /**
+   * Combien de pièces la fiche porte.
+   *
+   * Absent = on ne sait pas, et on ne juge pas : plusieurs appelants
+   * n'ont pas ce chiffre sous la main et n'ont pas à faire une requête
+   * de plus pour l'obtenir. Seuls ceux qui le connaissent en tiennent
+   * compte.
+   */
+  pieces?: number;
 };
 
 /**
@@ -42,6 +51,19 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
   }
   if (!aDuTexte) {
     return "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.";
+  }
+
+  /*
+   * Une marque sans une seule pièce n'a rien à montrer.
+   *
+   * Le visiteur arrive sur une fiche, lit trois lignes, et n'a plus
+   * qu'à repartir. C'est décevant pour lui, et surtout injuste pour la
+   * marque : elle a un catalogue, c'est notre lecture automatique qui
+   * n'a pas su le prendre. Autant la garder en brouillon le temps de
+   * régler ça plutôt que de la présenter vide.
+   */
+  if (fiche.pieces === 0) {
+    return "Cette fiche n'a aucune pièce. Lance l'import du catalogue, ou ajoute au moins une pièce à la main avant de la publier.";
   }
   return null;
 }

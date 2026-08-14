@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
+import { fetchCatalogue } from "@/lib/catalogue";
+import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
 
 /**
@@ -69,6 +71,10 @@ export async function savePost(formData: FormData): Promise<Result> {
     images,
     video_url: toNullable(formData.get("video_url")),
     video_poster: toNullable(formData.get("video_poster")),
+    // On ne devine plus à partir du lien : un carrousel de photos a
+    // lui aussi son adresse Instagram, et promettre une vidéo qui
+    // n'existe pas est le plus sûr moyen de décevoir.
+    est_video: formData.get("est_video") === "on",
     image_alt: toText(formData.get("image_alt")),
     keywords: toArray(formData, "keywords"),
     brand_id: toNullable(formData.get("brand_id")),
@@ -149,11 +155,65 @@ export async function saveBrand(formData: FormData): Promise<Result> {
       status === "published" ? toNullable(formData.get("published_at")) ?? new Date().toISOString() : null,
   };
 
-  const { error } = id
-    ? await supabase.from("brands").update(payload).eq("id", id)
-    : await supabase.from("brands").insert(payload);
+  const { data: ecrite, error } = id
+    ? await supabase.from("brands").update(payload).eq("id", id).select("id").maybeSingle()
+    : await supabase.from("brands").insert(payload).select("id").maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+
+  /*
+   * LE CATALOGUE SE LIT DANS LA FOULÉE.
+   *
+   * On enregistrait la fiche, et il fallait ensuite penser à ouvrir
+   * l'espace de la marque pour lancer l'import. Personne n'y pense, et
+   * la marque restait en ligne avec zéro pièce — le pire état
+   * possible : visible, et vide.
+   *
+   * On le fait donc ici, tout de suite, mais SEULEMENT si la fiche n'a
+   * encore aucune pièce. Relire un catalogue déjà importé est le
+   * travail de la tâche quotidienne, pas d'un enregistrement de fiche :
+   * ça rendrait chaque petite correction de texte interminable.
+   *
+   * Un échec ne fait pas échouer l'enregistrement. La fiche est
+   * sauvegardée, la lecture est un bonus — et beaucoup de boutiques
+   * n'exposent tout simplement pas de catalogue lisible.
+   */
+  const brandId = (ecrite as { id: string } | null)?.id ?? id;
+  const adresse = payload.shop_url ?? payload.website_url;
+
+  if (brandId && adresse) {
+    const { count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("brand_id", brandId);
+
+    if ((count ?? 0) === 0) {
+      const lecture = await fetchCatalogue(adresse);
+      if (lecture.ok && lecture.items.length > 0) {
+        await synchroniserCatalogue(supabase, brandId, lecture.items, {
+          statutDesNouvelles: "published",
+          marquerLesAbsentes: false,
+        });
+      } else if (status === "published") {
+        /*
+         * Rien n'est venu, et la fiche partait en ligne : on la retient
+         * en brouillon. Mieux vaut une marque qui attend un jour de
+         * plus qu'une fiche publique sans une seule pièce.
+         */
+        await supabase.from("brands")
+          .update({ status: "draft", published_at: null })
+          .eq("id", brandId);
+
+        return {
+          ok: false,
+          error:
+            "La fiche est enregistrée, mais aucune pièce n'a pu être lue sur cette boutique : " +
+            "elle reste en brouillon. Ouvre son espace pour importer le catalogue à la main, " +
+            "ou publie-la une fois qu'elle aura au moins une pièce.",
+        };
+      }
+    }
+  }
 
   revalidatePath("/admin/marques");
   revalidatePath("/marques");

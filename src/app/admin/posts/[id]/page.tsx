@@ -3,7 +3,7 @@ import BackLink from "@/components/BackLink";
 import AdminForm from "@/components/admin/AdminForm";
 import DeleteButton from "@/components/admin/DeleteButton";
 import MultiImageUploader from "@/components/admin/MultiImageUploader";
-import { Area, CheckGroup, Select, Text } from "@/components/admin/fields";
+import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { deletePost, savePost } from "../../actions";
 import { adminGetBrands, adminGetPost } from "@/lib/admin-queries";
 import { POST_KEYWORDS, withExisting } from "@/lib/taxonomy";
@@ -160,6 +160,12 @@ export default async function EditPost({ params }: Props) {
               placeholder="https://www.tiktok.com/@…"
             />
           </div>
+
+          <Check
+            name="est_video"
+            label="C'est une vidéo"
+            defaultChecked={post?.est_video}
+          />
 
           <Select
             name="status"

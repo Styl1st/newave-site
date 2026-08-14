@@ -12,6 +12,14 @@ import { deleteBrand, saveBrand } from "../../actions";
 import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
 import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 
+/**
+ * Enregistrer une fiche peut déclencher la lecture de la boutique, et
+ * parcourir un plan de site demande une trentaine de requêtes : la
+ * limite par défaut de dix secondes couperait l'import en plein
+ * milieu. Même valeur que la page d'import de l'espace marque.
+ */
+export const maxDuration = 60;
+
 type Props = { params: Promise<{ id: string }> };
 
 /**
