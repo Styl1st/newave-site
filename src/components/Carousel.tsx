@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 
 /**
  * Carrousel à défilement natif.
@@ -76,7 +77,9 @@ export default function Carousel({
           <div key={src + i} className="visuel w-full shrink-0 snap-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={src}
+              src={vignette(src, 900)}
+              srcSet={jeuDeVignettes(src, 900)}
+              sizes="(max-width: 1024px) 100vw, 620px"
               alt={i === 0 ? alt : ""}
               /* La première est celle qu'on voit tout de suite : elle
                  se charge sans attendre, les autres à l'approche. */

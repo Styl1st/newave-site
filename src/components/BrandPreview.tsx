@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Portal from "./Portal";
 import { discountPercent, formatPrice } from "@/lib/types";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 
 export type PreviewProduct = {
   id: string;
@@ -160,9 +161,12 @@ export default function BrandPreview({
                       {p.image && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={p.image}
+                          src={vignette(p.image, 320)}
+                          srcSet={jeuDeVignettes(p.image, 320)}
+                          sizes="(max-width: 640px) 45vw, 220px"
                           alt={p.name}
                           loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
                         />
                       )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 
@@ -52,7 +53,9 @@ export default function BrandCard({
           {visual ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={visual}
+              src={vignette(visual, 600)}
+              srcSet={jeuDeVignettes(visual, 600)}
+              sizes="(max-width: 640px) 92vw, 380px"
               alt={estUnLogo ? brand.name : ""}
               loading="lazy"
               decoding="async"

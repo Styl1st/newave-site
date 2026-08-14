@@ -2,6 +2,7 @@ import Link from "next/link";
 import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
 import Etoiles from "./Etoiles";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
@@ -80,7 +81,14 @@ export default function ProductCard({
             {cover ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
-                src={cover}
+                /* On demande l'image à la taille où on la montre. Une
+                   photo de boutique fait 2000 pixels de large et pèse
+                   vingt mégaoctets une fois décodée en mémoire : trente
+                   vignettes suffisaient à faire recharger la page sur
+                   un téléphone. Voir lib/vignette.ts. */
+                src={vignette(cover, 400)}
+                srcSet={jeuDeVignettes(cover, 400)}
+                sizes="(max-width: 640px) 45vw, 300px"
                 alt={product.name}
                 loading="lazy"
                 decoding="async"
