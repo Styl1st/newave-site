@@ -18,6 +18,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
   const [enCours, setEnCours] = useState(false);
   const [restantes, setRestantes] = useState<number | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [corrigerPays, setCorrigerPays] = useState(false);
 
   /** Le rang atteint, et le drapeau d'arrêt. */
   const rang = useRef(0);
@@ -50,6 +51,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
 
         const formData = new FormData();
         formData.set("depuis", String(rang.current));
+        if (corrigerPays) formData.set("pays", "1");
 
         const res = await rafraichirLesCatalogues(formData);
         if (!res.ok) {
@@ -86,6 +88,24 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
         La tâche de midi fait la même chose, mais six marques par jour. Ici tout y passe
         d&apos;affilée : compte une minute pour dix marques, et laisse cet onglet ouvert.
       </p>
+
+      {/* Décochée par défaut : écraser un pays déjà saisi n'est pas le
+          genre de chose qu'on découvre après coup. */}
+      <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-[13px] border border-white/18 bg-white/6 p-3">
+        <input
+          type="checkbox"
+          checked={corrigerPays}
+          onChange={(e) => setCorrigerPays(e.target.checked)}
+          disabled={enCours}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+        />
+        <span className="text-[13px] leading-relaxed text-white/80">
+          <span className="font-extrabold text-white">Corriger aussi le pays</span> — à
+          partir de ce que le site déclare et de l&apos;extension de son domaine. Les
+          marques dont le pays est vide sont complétées ; les autres ne sont remplacées
+          que sur un indice solide, jamais sur la seule monnaie.
+        </span>
+      </label>
 
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
         <button

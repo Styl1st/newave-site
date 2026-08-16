@@ -25,6 +25,9 @@ export default function Footer() {
             <Link href="/a-propos" className="transition hover:text-white">
               À propos
             </Link>
+            <Link href="/conditions" className="transition hover:text-white">
+              Conditions
+            </Link>
             <Link href="/confidentialite" className="transition hover:text-white">
               Confidentialité
             </Link>

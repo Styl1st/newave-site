@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import { fetchCatalogue } from "@/lib/catalogue";
+import { deduireLePays, fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
 
@@ -139,7 +139,17 @@ export async function saveBrand(formData: FormData): Promise<Result> {
     name,
     tagline: toText(formData.get("tagline")),
     description: toText(formData.get("description")),
-    country: toText(formData.get("country")) || "France",
+    /*
+     * Plus de « France » par défaut.
+     *
+     * L'annuaire référence des marques danoises, allemandes,
+     * américaines : écrire France faute de mieux affichait une erreur
+     * en toutes lettres sur leur carte. Et une erreur affirmée ne se
+     * corrige jamais, parce que personne ne relit ce qui a l'air
+     * rempli. Le champ est donc laissé vide, et complété plus bas si
+     * la boutique permet de deviner.
+     */
+    country: toText(formData.get("country")),
     city: toNullable(formData.get("city")),
     founded_year: year ? Number(year) : null,
     categories: toArray(formData, "categories"),
@@ -180,6 +190,22 @@ export async function saveBrand(formData: FormData): Promise<Result> {
    */
   const brandId = (ecrite as { id: string } | null)?.id ?? id;
   const adresse = payload.shop_url ?? payload.website_url;
+
+  /*
+   * Le pays, quand on ne l'a pas saisi.
+   *
+   * Trois indices, du plus fiable au moins fiable : ce que le site
+   * déclare, l'extension de son domaine, sa monnaie. Si aucun ne
+   * ressort, on laisse vide — la carte n'affiche alors que la ville, ou
+   * rien, ce qui est toujours préférable à un pays faux.
+   */
+  if (brandId && !payload.country && adresse) {
+    const base = normalizeShopUrl(adresse);
+    const pays = base ? await deduireLePays(base) : null;
+    if (pays) {
+      await supabase.from("brands").update({ country: pays }).eq("id", brandId);
+    }
+  }
 
   if (brandId && adresse) {
     const { count } = await supabase

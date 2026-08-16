@@ -47,6 +47,31 @@ const SECTIONS = [
     ],
   },
   {
+    titre: "À quel titre on traite ces données",
+    contenu: [
+      "Le règlement européen demande que chaque traitement repose sur une base précise. Voici les nôtres, sans détour.",
+      "**Ton compte et tes favoris** : l'exécution du service que tu as demandé en t'inscrivant. Sans ces données, il n'y a pas de compte.",
+      "**Les avis** : ton consentement, donné au moment où tu écris. Tu peux retirer un avis quand tu veux, et il disparaît.",
+      "**La mesure de fréquentation** : notre intérêt légitime à savoir quelles marques intéressent. Elle ne repose sur aucun identifiant, ce qui est précisément ce qui la rend acceptable sans te demander ton avis.",
+      "**Les emails de service** — confirmation d'inscription, mot de passe oublié : l'exécution du service. Ce ne sont pas des messages publicitaires et tu ne peux pas t'en désinscrire, parce que sans eux ton compte ne fonctionne pas.",
+    ],
+  },
+  {
+    titre: "Quinze ans minimum",
+    contenu: [
+      "Il faut avoir **au moins quinze ans** pour créer un compte. C'est l'âge à partir duquel, en France, on peut consentir seul au traitement de ses données.",
+      "Si tu es parent et que tu constates qu'un compte a été créé par un enfant plus jeune, écris à **contact@newavesphere.fr** : il sera supprimé, avec tout ce qui s'y rattache.",
+    ],
+  },
+  {
+    titre: "Ce qui sort de l'Union européenne",
+    contenu: [
+      "Une seule chose, et il faut le dire : les emails automatiques passent par **Resend**, société américaine. Le message contient ton adresse et un lien, rien d'autre.",
+      "Ce transfert repose sur les clauses contractuelles types de la Commission européenne, le cadre prévu pour ces cas.",
+      "Tout le reste — ta base, tes favoris, tes avis, tes images — reste sur des serveurs situés dans l'Union.",
+    ],
+  },
+  {
     titre: "Tes droits",
     contenu: [
       "Tu peux accéder à tes données, les corriger, les emporter ou les faire supprimer. Ton nom affiché et ton mot de passe se modifient directement depuis ton compte.",

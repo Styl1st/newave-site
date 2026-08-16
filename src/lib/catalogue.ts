@@ -189,6 +189,112 @@ async function boutiqueVerrouillee(base: string): Promise<boolean> {
   return false;
 }
 
+/* ============================================================
+   D'OÙ VIENT UNE MARQUE
+
+   Le pays était écrit « France » par défaut, faute de mieux. Sur un
+   annuaire qui référence des marques danoises, allemandes et
+   américaines, c'est une erreur affichée en toutes lettres sur la
+   carte — et une erreur affirmée est bien pire qu'une case vide.
+
+   On cherche donc, dans cet ordre de fiabilité :
+
+     1. ce que le site déclare lui-même en données structurées ;
+     2. l'extension de son domaine, qui ne ment quasiment jamais ;
+     3. sa monnaie, quand elle ne laisse aucun doute.
+
+   Et si rien ne ressort, ON N'ÉCRIT RIEN. Une fiche sans pays se
+   complète en dix secondes à la main ; une fiche qui annonce le mauvais
+   pays, personne ne la corrige, parce que personne ne la relit.
+   ============================================================ */
+
+/** Les pays qu'on sait nommer, en français, depuis un code ou une extension. */
+const PAYS: Record<string, string> = {
+  fr: "France", be: "Belgique", ch: "Suisse", lu: "Luxembourg",
+  de: "Allemagne", at: "Autriche", nl: "Pays-Bas", dk: "Danemark",
+  se: "Suède", no: "Norvège", fi: "Finlande", is: "Islande",
+  es: "Espagne", pt: "Portugal", it: "Italie", gr: "Grèce",
+  gb: "Royaume-Uni", uk: "Royaume-Uni", ie: "Irlande",
+  pl: "Pologne", cz: "Tchéquie", hu: "Hongrie", ro: "Roumanie",
+  us: "États-Unis", ca: "Canada", mx: "Mexique", br: "Brésil",
+  jp: "Japon", kr: "Corée du Sud", cn: "Chine", hk: "Hong Kong",
+  au: "Australie", nz: "Nouvelle-Zélande", za: "Afrique du Sud",
+  ma: "Maroc", tn: "Tunisie", dz: "Algérie", sn: "Sénégal",
+  tr: "Turquie", il: "Israël", ae: "Émirats arabes unis", in: "Inde",
+};
+
+/** Les monnaies qui ne laissent aucun doute sur le pays. */
+const PAYS_DE_LA_DEVISE: Record<string, string> = {
+  GBP: "Royaume-Uni", DKK: "Danemark", SEK: "Suède", NOK: "Norvège",
+  PLN: "Pologne", CZK: "Tchéquie", HUF: "Hongrie", RON: "Roumanie",
+  CHF: "Suisse", USD: "États-Unis", CAD: "Canada", AUD: "Australie",
+  NZD: "Nouvelle-Zélande", JPY: "Japon", KRW: "Corée du Sud",
+  BRL: "Brésil", MXN: "Mexique", TRY: "Turquie", MAD: "Maroc",
+  ZAR: "Afrique du Sud", INR: "Inde",
+  // L'euro est volontairement absent : vingt pays le partagent, il ne
+  // dit donc rien. Mieux vaut ne rien écrire que d'écrire « France ».
+};
+
+/** « FR », « fr-FR », « France » -> « France ». Sinon la valeur d'origine. */
+export function nommerLePays(brut: string | null | undefined): string | null {
+  const valeur = (brut ?? "").trim();
+  if (!valeur) return null;
+
+  const code = valeur.toLowerCase().split(/[-_]/).pop() ?? "";
+  if (code.length === 2 && PAYS[code]) return PAYS[code];
+
+  // Déjà écrit en toutes lettres : on le garde tel quel, en corrigeant
+  // seulement la casse du premier caractère.
+  return valeur.charAt(0).toUpperCase() + valeur.slice(1);
+}
+
+/**
+ * D'où vient l'information, et donc à quel point on peut s'y fier.
+ *
+ * La distinction n'est pas cosmétique : elle décide si l'on a le droit
+ * d'ÉCRASER un pays déjà saisi. Ce que le site déclare et l'extension
+ * de son domaine sont des faits ; la monnaie n'est qu'un indice, et un
+ * indice ne renverse pas une valeur existante.
+ */
+export type IndicePays = "declare" | "domaine" | "devise";
+
+export async function deduireLePaysDetaille(
+  base: string,
+  declare?: string | null
+): Promise<{ pays: string; indice: IndicePays } | null> {
+  const dit = nommerLePays(declare);
+  if (dit) return { pays: dit, indice: "declare" };
+
+  // L'extension du domaine. Une marque danoise sur un .dk n'est pas
+  // française, quelle que soit la langue de son site.
+  try {
+    const hote = new URL(base).hostname.toLowerCase();
+    const morceaux = hote.split(".");
+    const ext = morceaux[morceaux.length - 1];
+    if (PAYS[ext]) return { pays: PAYS[ext], indice: "domaine" };
+  } catch {
+    // adresse illisible : on continue
+  }
+
+  // La monnaie, en dernier recours. `devineLaDevise` renvoie « EUR »
+  // par défaut, ce qui n'apprend rien : la table l'ignore.
+  const devise = await devineLaDevise(base, "");
+  const pays = PAYS_DE_LA_DEVISE[devise];
+  return pays ? { pays, indice: "devise" } : null;
+}
+
+/**
+ * Le pays d'une boutique, ou rien.
+ *
+ * @param declare ce que le site dit de lui-même, s'il dit quelque chose
+ */
+export async function deduireLePays(
+  base: string,
+  declare?: string | null
+): Promise<string | null> {
+  return (await deduireLePaysDetaille(base, declare))?.pays ?? null;
+}
+
 /** Les trois lettres d'un code ISO 4217, et rien d'autre. */
 const CODE_DEVISE = /^[A-Z]{3}$/;
 
@@ -1057,7 +1163,7 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
     instagram: (instaLd ?? instaHtml)?.replace(/\/$/, "") ?? null,
     shop_url: base,
     city: ldVille,
-    country: ldPays,
+    country: await deduireLePays(base, ldPays),
     founded_year: ldAnnee ?? deduireAnnee(corpus),
     categories: deduireCategories(corpus),
     price_tier: deduireGamme(prix),

@@ -135,7 +135,18 @@ export default async function EditBrand({ params }: Props) {
           intro="Origine, catégories, gamme. C'est ce qui fait apparaître la marque dans les filtres."
         >
           <div className="grid gap-6 sm:grid-cols-3">
-            <Text name="country" label="Pays" defaultValue={brand?.country ?? "France"} />
+            {/* Vide par défaut, et non plus « France ». Un champ
+                pré-rempli ne se relit pas : on enregistrait des marques
+                danoises annoncées françaises sans que personne ne le
+                remarque. Laissé vide, il se devine à partir de la
+                boutique, ou il attire l'œil. */}
+            <Text
+              name="country"
+              label="Pays"
+              hint="Laisse vide et je le devine depuis la boutique."
+              defaultValue={brand?.country ?? ""}
+              placeholder="France"
+            />
             <Text name="city" label="Ville" defaultValue={brand?.city ?? ""} placeholder="Paris" />
             <Text
               name="founded_year"

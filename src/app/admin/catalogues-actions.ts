@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import { fetchCatalogue } from "@/lib/catalogue";
+import { deduireLePaysDetaille, fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { rafraichirLesTaux } from "@/lib/devises";
 
@@ -30,7 +30,14 @@ export type BilanMarque = {
   ok: boolean;
 };
 
-type Fiche = { id: string; name: string; slug: string; shop_url: string | null; website_url: string | null };
+type Fiche = {
+  id: string;
+  name: string;
+  slug: string;
+  shop_url: string | null;
+  website_url: string | null;
+  country: string | null;
+};
 
 export async function rafraichirLesCatalogues(formData: FormData): Promise<{
   ok: boolean;
@@ -78,6 +85,18 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
   const depuis = Math.max(0, Number(formData.get("depuis") ?? 0) || 0);
 
   /*
+   * Corriger aussi le pays, sur demande expresse.
+   *
+   * Ce n'est pas coché par défaut, et c'est délibéré : écraser une
+   * valeur déjà saisie est le genre d'action qu'on ne veut pas
+   * découvrir après coup. Quand la case est cochée, on ne remplace que
+   * sur un indice SOLIDE — ce que le site déclare, ou l'extension de
+   * son domaine. La monnaie sert à remplir un champ vide, jamais à
+   * contredire une saisie.
+   */
+  const corrigerPays = formData.get("pays") === "1";
+
+  /*
    * Les taux de change d'abord, et une seule fois.
    *
    * L'ordre compte : la lecture d'un catalogue calcule au passage
@@ -94,7 +113,7 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
 
   const { data, count, error } = await supabase
     .from("brands")
-    .select("id, name, slug, shop_url, website_url", { count: "exact" })
+    .select("id, name, slug, shop_url, website_url, country", { count: "exact" })
     .or("shop_url.not.is.null,website_url.not.is.null")
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
@@ -137,6 +156,23 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
         if (bilan.creees > 0) note += `, ${bilan.creees} nouvelle${bilan.creees > 1 ? "s" : ""}`;
         if (bilan.retirees > 0) note += `, ${bilan.retirees} retirée${bilan.retirees > 1 ? "s" : ""}`;
         note += ".";
+      }
+    }
+
+    // Le pays, si on l'a demandé.
+    if (corrigerPays) {
+      const base = normalizeShopUrl(adresse);
+      const trouve = base ? await deduireLePaysDetaille(base) : null;
+      const actuel = (marque.country ?? "").trim();
+
+      const solide = trouve && (trouve.indice === "declare" || trouve.indice === "domaine");
+      const aRemplir = !actuel && trouve;
+
+      if (trouve && (solide || aRemplir) && trouve.pays !== actuel) {
+        await supabase.from("brands").update({ country: trouve.pays }).eq("id", marque.id);
+        note += actuel
+          ? ` Pays corrigé : ${actuel} → ${trouve.pays}.`
+          : ` Pays renseigné : ${trouve.pays}.`;
       }
     }
 
