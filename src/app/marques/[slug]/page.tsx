@@ -5,6 +5,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import SectionAvis from "@/components/SectionAvis";
 import BoutonSignaler from "@/components/BoutonSignaler";
 import TexteRiche from "@/components/TexteRiche";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import PostCard from "@/components/PostCard";
 import RayonsPieces from "@/components/RayonsPieces";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
@@ -122,16 +123,47 @@ export default async function BrandPage({ params }: Props) {
       </header>
 
       {brand.cover_url && (
-        <div className="card-light rise rise-1 mt-8 overflow-hidden">
+        /*
+         * L'illustration mène à la boutique.
+         *
+         * C'est le premier élément qu'on regarde, et le seul sur lequel
+         * on tapait sans que rien n'arrive. Or l'intention de quelqu'un
+         * qui touche la photo d'une marque est claire : il veut voir
+         * chez elle. Autant le lui donner là plutôt que de le faire
+         * descendre jusqu'au bouton.
+         *
+         * Le clic passe par /api/go, comme tous les liens sortants :
+         * l'adresse de destination est lue en base et jamais dans
+         * l'URL, et le départ est compté comme les autres.
+         */
+        <a
+          href={`/api/go/marque/${brand.id}`}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          aria-label={`Voir la boutique ${brand.name}`}
+          className="card-light group rise rise-1 mt-8 block overflow-hidden"
+        >
           <div className="relative z-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={brand.cover_url}
+              src={vignette(brand.cover_url, 1200)}
+              srcSet={jeuDeVignettes(brand.cover_url, 1200)}
+              sizes="(max-width: 1024px) 100vw, 900px"
               alt=""
-              className="block aspect-16/9 w-full object-cover"
+              className="block aspect-16/9 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
             />
+
+            {/* Discret, et seulement au survol sur ordinateur : la
+                photo doit rester une photo. Sur téléphone il est
+                toujours visible, faute de survol pour le révéler. */}
+            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.72)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] transition sm:opacity-0 sm:group-hover:opacity-100">
+              Voir la boutique
+              <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 17 17 7M9 7h8v8" />
+              </svg>
+            </span>
           </div>
-        </div>
+        </a>
       )}
 
       <div className="glass rise rise-1 mt-6 p-4 sm:p-7">

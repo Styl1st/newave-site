@@ -100,10 +100,31 @@ function enCentimes(valeur: unknown): number | null {
   return Math.round(n * 100);
 }
 
+/*
+ * LES EN-TÊTES ENVOYÉS COMPTENT AUTANT QUE L'ADRESSE.
+ *
+ * Shopify Markets sert des prix différents selon le pays d'où vient la
+ * requête. Nos lectures partaient des serveurs américains de Vercel :
+ * une boutique qui affiche 109,90 € à un visiteur français nous
+ * répondait 130 $US, et l'on convertissait consciencieusement ces
+ * dollars en euros pour obtenir 112,71 € — un prix que personne ne
+ * paiera jamais.
+ *
+ * Deux corrections, et il faut les deux. La région d'exécution est
+ * passée à Paris dans vercel.json, ce qui donne à Shopify une adresse
+ * française à géolocaliser. Et l'on annonce le français ci-dessous, ce
+ * dont se servent les boutiques qui décident sur la langue plutôt que
+ * sur l'adresse.
+ */
+const EN_TETES = {
+  "User-Agent": "NewaveSphere/1.0 (+https://newavesphere.fr)",
+  "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.4",
+};
+
 async function lire(url: string, accept = "application/json"): Promise<Response | null> {
   try {
     const r = await fetch(url, {
-      headers: { Accept: accept, "User-Agent": "NewaveSphere/1.0 (+https://newavesphere.fr)" },
+      headers: { Accept: accept, ...EN_TETES },
       next: { revalidate: 3600 },
     });
     return r.ok ? r : null;
@@ -137,7 +158,7 @@ const MOTS_DE_L_ATTENTE =
 async function boutiqueVerrouillee(base: string): Promise<boolean> {
   try {
     const r = await fetch(`${base}/products.json`, {
-      headers: { Accept: "application/json", "User-Agent": "NewaveSphere/1.0 (+https://newavesphere.fr)" },
+      headers: { Accept: "application/json", ...EN_TETES },
       redirect: "follow",
       next: { revalidate: 3600 },
     });

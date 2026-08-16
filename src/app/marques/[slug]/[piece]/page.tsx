@@ -219,15 +219,32 @@ export default async function PiecePage({ params }: Props) {
           {/* ---------- tailles ---------- */}
           {tailles.length > 0 && (
             <section className="glass p-4 sm:p-5">
-              <p className="eyebrow m-0">{product.size_label}</p>
+              {/*
+                ON NE CHOISIT PAS SA TAILLE ICI, ET IL FAUT LE DIRE.
+
+                Ces pastilles avaient l'allure de boutons : un contour,
+                un coin arrondi, de la place autour. On tapait dessus, il
+                ne se passait rien, et on en concluait que le site était
+                cassé. Or la vente se fait chez la marque, et c'est là
+                que la taille se choisit.
+
+                Deux corrections, et la première est la plus utile : le
+                titre dit ce que la liste EST. La seconde retire ce qui
+                faisait bouton — plus de contour sur les tailles
+                disponibles, un simple fond posé, et un curseur qui reste
+                celui du texte.
+              */}
+              <p className="eyebrow m-0">
+                {product.size_label} en stock chez {brand.name}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {tailles.map((size) => (
                   <span
                     key={size.label}
                     className={
                       size.available
-                        ? "rounded-[11px] border border-white/45 px-3.5 py-2 text-[13px] font-bold text-white"
-                        : "rounded-[11px] border border-white/15 px-3.5 py-2 text-[13px] font-bold text-white/35 line-through"
+                        ? "rounded-[9px] bg-white/14 px-3 py-1.5 text-[13px] font-bold text-white"
+                        : "rounded-[9px] px-3 py-1.5 text-[13px] font-bold text-white/32 line-through"
                     }
                   >
                     {size.label}
@@ -235,7 +252,8 @@ export default async function PiecePage({ params }: Props) {
                 ))}
               </div>
               <p className="m-0 mt-3 text-[12px] leading-relaxed text-white/55">
-                Les tailles barrées ne sont plus disponibles chez la marque.
+                C&apos;est un état des stocks, pas une sélection : les tailles barrées
+                sont épuisées, et le choix se fait sur la boutique.
               </p>
             </section>
           )}
