@@ -1933,3 +1933,250 @@ html[data-reglage="1"] .ruban {
     font-size: 16px;
   }
 }
+
+/* ---------- confirmations ----------
+   Le bandeau qui dit « c'est enregistré », en bas à droite.
+
+   C'EST LE FOND DU SITE EN MINIATURE. Il reprenait `.glass`, comme les
+   panneaux de la page, et il ressemblait donc à un bloc de contenu
+   détaché qui flottait par-dessus. Ici on refait la matière complète :
+   le même dégradé de base, les mêmes nappes d'accents qui dérivent
+   par-dessus, le même liseré chromé qui glisse le long du contour. Il
+   suit l'ambiance choisie dans les réglages sans une ligne de plus,
+   puisqu'il ne fait que lire les mêmes variables.
+
+   La contrepartie, c'est qu'il faut garantir le texte. Les nappes sont
+   volontairement tenues à mi-opacité et le dégradé de base reste
+   sombre : un blanc gras dessus passe partout, y compris sur une
+   ambiance claire.
+
+   Rien ne clignote. Les nappes dérivent lentement, comme celles du
+   fond, et tout le reste est à passage unique. C'est la règle qu'on
+   s'est donnée après les retours de bêta, et un message de confort n'a
+   aucune raison d'y déroger. */
+.confirmation {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 18px;
+  padding-bottom: 14px;
+  /* Le même dégradé que le fond du site, resserré sur la diagonale
+     d'un petit rectangle plutôt que sur toute la hauteur d'un écran. */
+  background: linear-gradient(152deg,
+    var(--bg-2) 0%,
+    var(--bg-3) 38%,
+    var(--bg-1) 76%,
+    var(--bg-6) 100%);
+  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  /* Une lueur prise aux accents : sans elle, un petit rectangle sombre
+     posé sur un fond sombre n'a pas de bord. */
+  box-shadow:
+    0 26px 60px -18px rgba(10, 3, 34, .78),
+    0 0 46px -14px rgba(var(--accent-1), .42),
+    inset 0 1px 0 rgba(255, 255, 255, .18);
+  animation: confirmationEntree .44s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+/* Les nappes. Mêmes teintes et même dérive que celles du fond, en plus
+   petit et en plus lent : à cette taille, un mouvement rapide donnerait
+   l'impression que le bandeau grésille. */
+.confirmation::after {
+  content: "";
+  position: absolute;
+  inset: -70%;
+  z-index: -1;
+  opacity: .55;
+  filter: blur(24px);
+  background:
+    radial-gradient(circle at 26% 28%, rgba(var(--accent-1), .9) 0%, transparent 46%),
+    radial-gradient(circle at 76% 64%, rgba(var(--accent-2), .85) 0%, transparent 46%),
+    radial-gradient(circle at 50% 98%, rgba(var(--accent-3), .8) 0%, transparent 44%);
+  background-repeat: no-repeat;
+  animation: confirmationNappe calc(21s / var(--vit)) ease-in-out infinite alternate;
+}
+
+/* Le liseré chromé, exactement celui de la barre du haut et du panneau
+   d'aperçu : un dégradé métallique masqué en son centre, ce qui ne
+   laisse qu'un contour d'un pixel et demi. Il dérive lentement, et
+   c'est cette dérive qui le fait ressembler à du métal plutôt qu'à un
+   trait imprimé. */
+.confirmation::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: var(--chrome-edge);
+  background-size: 240% 240%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: .62;
+  pointer-events: none;
+  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+}
+
+/* L'éclat qui traverse une fois à l'apparition. Il attrape l'œil sans
+   rien faire bouger : c'est une lumière qui passe, pas un mouvement. */
+.confirmation-eclat {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 34%,
+    rgba(255, 255, 255, .20) 48%,
+    transparent 60%
+  );
+  transform: translate3d(-130%, 0, 0);
+  animation: confirmationEclat 1.15s .16s cubic-bezier(.4, 0, .2, 1) both;
+}
+
+.confirmation[data-sortant="1"] {
+  animation: confirmationSortie .3s cubic-bezier(.4, 0, 1, 1) both;
+}
+
+/* L'erreur éteint les nappes et assombrit le fond. Pas de rouge vif :
+   sur une ambiance violette il vibre, et le texte reste parfaitement
+   lisible sans lui. C'est le calme du bandeau qui signale que quelque
+   chose ne va pas, et non une couleur d'alarme. */
+.confirmation-erreur {
+  background: linear-gradient(152deg, rgba(14, 5, 40, .96), rgba(8, 2, 30, .98));
+}
+.confirmation-erreur::after { opacity: .18; }
+.confirmation-erreur::before { opacity: .38; }
+
+/* Le texte est posé sur des couleurs qui bougent : cette ombre très
+   diffuse lui garantit un fond sombre à lui tout seul, quelle que soit
+   la nappe qui passe dessous. */
+.confirmation-texte {
+  position: relative;
+  z-index: 3;
+  text-shadow: 0 1px 10px rgba(8, 2, 30, .62);
+}
+
+.confirmation-pastille {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  height: 22px;
+  width: 22px;
+  flex: none;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-ink);
+  /* Un halo, pas une ombre portée : la pastille doit sembler éclairer
+     la matière autour d'elle. */
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, .14),
+    0 4px 16px rgba(255, 255, 255, .32);
+}
+.confirmation-erreur .confirmation-pastille {
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55);
+}
+
+/* La coche se trace au lieu d'apparaître. C'est trois lignes de CSS et
+   c'est ce qui fait la différence entre « un message s'est affiché » et
+   « quelque chose vient d'aboutir ». */
+.confirmation-trait {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: confirmationTrait .44s .14s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+
+.confirmation-fermer {
+  position: relative;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity .2s, background-color .2s;
+}
+.confirmation:hover .confirmation-fermer,
+.confirmation:focus-within .confirmation-fermer {
+  opacity: .8;
+}
+/* Sans souris, il n'y a pas de survol : le bouton reste visible, sinon
+   il serait introuvable sur téléphone. */
+@media (hover: none) {
+  .confirmation-fermer { opacity: .55; }
+}
+
+/* La jauge dit combien de temps il reste, ce qui évite de se demander
+   si le message va partir ou s'il faut le fermer. */
+.confirmation-jauge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  height: 2px;
+  transform-origin: left center;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, .92),
+    rgba(255, 255, 255, .45));
+  animation-name: confirmationJauge;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+/* Au survol, le décompte s'arrête. On vient de poser le curseur dessus
+   pour finir de lire : le faire disparaître à cet instant est la seule
+   chose vraiment agaçante que puisse faire ce bandeau. */
+.confirmation:hover .confirmation-jauge,
+.confirmation:focus-within .confirmation-jauge {
+  animation-play-state: paused;
+}
+
+@keyframes confirmationEntree {
+  from { opacity: 0; transform: translate3d(22px, 10px, 0) scale(.95); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes confirmationSortie {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translate3d(26px, 0, 0) scale(.96); }
+}
+@keyframes confirmationEclat {
+  to { transform: translate3d(130%, 0, 0); }
+}
+@keyframes confirmationTrait {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes confirmationJauge {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+/* Une dérive courte : les nappes ne doivent jamais quitter le cadre,
+   sinon un coin du bandeau se retrouverait sans couleur. */
+@keyframes confirmationNappe {
+  from { transform: translate3d(-4%, -3%, 0) scale(1.04); }
+  to   { transform: translate3d(5%, 4%, 0) scale(1.12); }
+}
+
+/* « Figer les animations », dans les réglages d'apparence : le bandeau
+   suit la même consigne que le fond dont il est la miniature. */
+[data-fige="1"] .confirmation::after,
+[data-fige="1"] .confirmation::before {
+  animation: none !important;
+}
+
+/* Le message reste, le mouvement disparaît : c'est le déplacement qui
+   gêne, pas l'information. La jauge se fige pleine plutôt que de
+   décroître, et le bandeau s'efface quand même à son heure. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) :is(
+    .confirmation,
+    .confirmation::before,
+    .confirmation::after,
+    .confirmation-eclat,
+    .confirmation-trait,
+    .confirmation-jauge
+  ) {
+    animation: none;
+  }
+  html:not([data-anim-choisi="1"]) .confirmation-trait { stroke-dashoffset: 0; }
+}

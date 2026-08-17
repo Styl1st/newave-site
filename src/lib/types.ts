@@ -25,6 +25,14 @@ export type Brand = {
   published_at: string | null;
   /** La boutique est fermée volontairement : mot de passe, drop en préparation. */
   catalogue_verrouille?: boolean;
+  /**
+   * Comment on achète : `ouvert`, `bientot`, `prive`, `liste`.
+   *
+   * Voir `acces.ts`. Facultatif ici parce que d'anciennes lectures en
+   * mémoire n'ont pas encore la colonne, et qu'une fiche sans valeur
+   * doit se comporter comme une boutique ouverte.
+   */
+  acces?: string | null;
 };
 
 /** Une piece d'une marque. Le paiement se fait chez la marque, via shop_url. */

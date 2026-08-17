@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { bulkBrandAction } from "@/app/admin/actions";
+import { annoncer } from "@/components/Confirmations";
 import { useConfirmationCle } from "@/lib/confirmation";
 import { peutEtrePubliee } from "@/lib/publication";
 import { StatusPill } from "./ListRow";
@@ -213,18 +214,23 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
       const res = await bulkBrandAction(formData);
       if (!res.ok) {
         setNote(res.error ?? "L'action a échoué.");
+        annoncer(res.error ?? "L'action a échoué.", "erreur");
         return;
       }
 
       const n = res.traitees ?? 0;
       const verbe =
         intent === "publish" ? "publiée" : intent === "draft" ? "remise en brouillon" : "supprimée";
-      setNote(
+      const bilan =
         `${n} marque${n > 1 ? "s" : ""} ${verbe}${n > 1 ? "s" : ""}.` +
-          (res.ecartees
-            ? ` ${res.ecartees} laissée${res.ecartees > 1 ? "s" : ""} de côté : il leur manque un visuel ou un texte.`
-            : "")
-      );
+        (res.ecartees
+          ? ` ${res.ecartees} laissée${res.ecartees > 1 ? "s" : ""} de côté : il leur manque un visuel ou un texte.`
+          : "");
+      setNote(bilan);
+      // Le même texte dans le bandeau : la barre d'actions est en haut
+      // de page, et l'on vient souvent de faire défiler la liste pour
+      // cocher la dernière ligne.
+      annoncer(bilan, intent === "delete" ? "info" : "ok");
       setSelection(new Set());
       router.refresh();
     });

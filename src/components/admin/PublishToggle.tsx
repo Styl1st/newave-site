@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleBrandStatus } from "@/app/admin/actions";
 import { IconCheck, IconEye } from "@/components/Icons";
 import { useConfirmation } from "@/lib/confirmation";
+import { annoncer } from "@/components/Confirmations";
 
 /**
  * Publier ou retirer une marque, sans passer par le formulaire.
@@ -25,7 +26,6 @@ export default function PublishToggle({
   /** « compacte » pour une ligne de liste, sur fond clair. */
   taille?: "normale" | "compacte";
 }) {
-  const [note, setNote] = useState<{ ok: boolean; texte: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const { arme, demander, desarmer } = useConfirmation();
@@ -42,10 +42,16 @@ export default function PublishToggle({
 
     startTransition(async () => {
       const res = await toggleBrandStatus(formData);
-      setNote(
-        res.ok
-          ? { ok: true, texte: res.message ?? "C'est fait." }
-          : { ok: false, texte: res.error ?? "L'opération a échoué." }
+      /*
+       * Le compte rendu part dans le bandeau du site plutôt que sous le
+       * bouton. Il était affiché ici, en petit, aligné à droite : dans
+       * une liste de soixante-dix lignes, il tombait souvent hors de
+       * l'écran au moment où la liste se réordonnait, et l'on ne savait
+       * pas si le clic avait pris.
+       */
+      annoncer(
+        res.ok ? (res.message ?? "C'est fait.") : (res.error ?? "L'opération a échoué."),
+        res.ok ? "ok" : "erreur"
       );
       router.refresh();
     });
@@ -97,22 +103,6 @@ export default function PublishToggle({
         >
           {brandName} redevient un brouillon : sa page quitte l&apos;annuaire, rien
           n&apos;est supprimé.
-        </p>
-      )}
-
-      {note && (
-        <p
-          className={
-            compacte
-              ? `m-0 max-w-[220px] text-right text-[11px] leading-snug ${
-                  note.ok ? "text-[#6a5a92]" : "text-[#a8243c]"
-                }`
-              : `m-0 max-w-xs text-right text-[12.5px] leading-relaxed ${
-                  note.ok ? "text-white/85" : "text-white"
-                }`
-          }
-        >
-          {note.texte}
         </p>
       )}
     </div>

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireManagedBrand } from "@/lib/brand-space";
-import { fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
+import { normalizeShopUrl } from "@/lib/catalogue";
+import { lireLaBoutique } from "@/lib/lecture";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { enEuros, lireLesTaux } from "@/lib/devises";
 
@@ -358,7 +359,7 @@ export async function importerLeCatalogue(formData: FormData): Promise<Result> {
     return { ok: false, error: "Renseigne d'abord l'adresse de ta boutique." };
   }
 
-  const lecture = await fetchCatalogue(adresse);
+  const lecture = await lireLaBoutique(adresse);
   if (!lecture.ok) return { ok: false, error: lecture.error };
   if (lecture.items.length === 0) {
     return { ok: false, error: "La boutique répond, mais son catalogue est vide." };

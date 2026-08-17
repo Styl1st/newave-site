@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { Archivo } from "next/font/google";
 import Background from "@/components/Background";
@@ -8,6 +9,7 @@ import Tracker from "@/components/Tracker";
 import PageTransition from "@/components/PageTransition";
 import ProgressionLecture from "@/components/ProgressionLecture";
 import Reveal from "@/components/Reveal";
+import Confirmations from "@/components/Confirmations";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
 import "./globals.css";
@@ -131,6 +133,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </main>
         {!nu && <Footer />}
         {!nu && <ProgressionLecture />}
+        {/* Monté une seule fois pour tout le site : n'importe quelle
+            page peut lui envoyer une confirmation sans que rien ne les
+            relie. `Suspense` est exigé par Next dès qu'un composant lit
+            les paramètres d'adresse — sans lui, la page entière
+            basculerait en rendu dynamique. */}
+        <Suspense fallback={null}>
+          <Confirmations />
+        </Suspense>
       </body>
     </html>
   );

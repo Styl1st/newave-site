@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BrandGrid from "./BrandGrid";
 import { IconChevron, IconFiltre } from "./Icons";
 import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
+import { estUnArtiste } from "@/lib/boutiques";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
@@ -30,6 +31,10 @@ export default function BrandDirectory({
    * lui-même, souvent à l'unité, parfois sans rien vendre en ligne. On
    * ne cherche pas la même chose selon les jours, et noyer les seconds
    * parmi les premiers revenait à les rendre introuvables.
+   *
+   * L'appartenance ne se coche plus forcément : vendre sur Vinted ou
+   * Depop suffit à ranger quelqu'un ici, parce que c'est déjà la
+   * réponse à la question. Voir `estUnArtiste`.
    */
   const [genre, setGenre] = useState<"tout" | "marques" | "artistes">("tout");
 
@@ -43,27 +48,107 @@ export default function BrandDirectory({
     setTier(null);
   }
 
-  const categories = useMemo(
-    () => Array.from(new Set(brands.flatMap((b) => b.categories))).sort(),
-    [brands]
-  );
-
-  const results = useMemo(() => {
+  /*
+   * UN FILTRE QUI NE MÈNE NULLE PART NE DOIT PAS S'AFFICHER.
+   *
+   * On listait toutes les catégories de l'annuaire, tout le temps. En
+   * cliquant sur « Artistes » puis sur une catégorie que seules des
+   * marques portent, on tombait sur une grille vide — et rien
+   * n'indiquait que c'était la combinaison, et non le site, qui était
+   * en cause. Les mêmes trois clics, répétés, finissent par donner
+   * l'impression que l'annuaire est à moitié vide.
+   *
+   * D'où ce découpage en trois temps. La recherche d'abord, l'onglet
+   * ensuite, et seulement à partir de ce qu'il en reste on établit les
+   * filtres proposés, chacun avec son compte. Un filtre affiché ramène
+   * donc toujours au moins une marque, et le chiffre dit combien avant
+   * même de cliquer.
+   */
+  const parRecherche = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return brands.filter((b) => {
-      const artiste = b.categories.includes("Artiste");
-      if (genre === "artistes" && !artiste) return false;
-      if (genre === "marques" && artiste) return false;
-      if (tier && b.price_tier !== tier) return false;
-      if (category && !b.categories.includes(category)) return false;
-      if (!q) return true;
-      return (
+    if (!q) return brands;
+    return brands.filter(
+      (b) =>
         b.name.toLowerCase().includes(q) ||
         b.tagline.toLowerCase().includes(q) ||
         b.categories.some((c) => c.toLowerCase().includes(q))
-      );
-    });
-  }, [brands, query, category, tier, genre]);
+    );
+  }, [brands, query]);
+
+  // Le compte des onglets s'établit AVANT l'onglet lui-même, sinon
+  // « Artistes » afficherait le nombre de marques et inversement.
+  const parGenre = useMemo(() => {
+    let marques = 0;
+    let artistes = 0;
+    for (const b of parRecherche) {
+      if (estUnArtiste(b)) artistes++;
+      else marques++;
+    }
+    return { tout: parRecherche.length, marques, artistes };
+  }, [parRecherche]);
+
+  const base = useMemo(() => {
+    if (genre === "tout") return parRecherche;
+    const cherche = genre === "artistes";
+    return parRecherche.filter((b) => estUnArtiste(b) === cherche);
+  }, [parRecherche, genre]);
+
+  /*
+   * Chaque famille de filtres se compte SANS elle-même.
+   *
+   * Les catégories tiennent compte de la gamme choisie, la gamme tient
+   * compte de la catégorie, mais aucune ne se filtre par soi : sinon
+   * choisir « Streetwear » ferait disparaître toutes les autres
+   * catégories, et l'on ne pourrait plus changer d'avis sans repasser
+   * par « Tout effacer ».
+   */
+  const categories = useMemo(() => {
+    const compte = new Map<string, number>();
+    for (const b of base) {
+      if (tier && b.price_tier !== tier) continue;
+      for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
+    }
+    // Les mieux représentées d'abord : c'est ce qui donne le plus de
+    // chances de tomber sur quelque chose au premier clic.
+    return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [base, tier]);
+
+  const gammes = useMemo(() => {
+    const compte = new Map<PriceTier, number>();
+    for (const b of base) {
+      if (category && !b.categories.includes(category)) continue;
+      if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
+    }
+    // L'ordre reste accessible → premium : un classement par nombre
+    // mettrait les prix dans le désordre, ce qui se lit très mal.
+    return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
+  }, [base, category]);
+
+  /*
+   * Un filtre qui n'a plus d'objet s'efface tout seul.
+   *
+   * Changer d'onglet avec « Bijoux » coché laissait un filtre actif sur
+   * une liste vide, et le compteur du bouton continuait d'annoncer un
+   * filtre qu'on ne voyait plus. Pas de boucle possible : ces listes se
+   * calculent sans le filtre qu'elles vérifient.
+   */
+  useEffect(() => {
+    if (category && !categories.some(([c]) => c === category)) setCategory(null);
+  }, [categories, category]);
+
+  useEffect(() => {
+    if (tier && !gammes.some(([t]) => t === tier)) setTier(null);
+  }, [gammes, tier]);
+
+  const results = useMemo(
+    () =>
+      base.filter((b) => {
+        if (tier && b.price_tier !== tier) return false;
+        if (category && !b.categories.includes(category)) return false;
+        return true;
+      }),
+    [base, category, tier]
+  );
 
   const chip =
     "rounded-full px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.07em] transition";
@@ -86,13 +171,24 @@ export default function BrandDirectory({
               type="button"
               onClick={() => setGenre(id)}
               aria-pressed={genre === id}
-              className={`flex-1 rounded-full px-3 py-2 text-[12.5px] font-bold transition ${
+              // Un onglet vide reste visible mais devient inerte :
+              // le faire disparaître déplacerait les deux autres sous
+              // le doigt au moment où l'on tape.
+              disabled={parGenre[id] === 0}
+              className={`flex-1 rounded-full px-3 py-2 text-[12.5px] font-bold transition disabled:cursor-default disabled:opacity-40 ${
                 genre === id
                   ? "bg-white text-[var(--color-ink)]"
                   : "text-white/72 hover:bg-white/12 hover:text-white"
               }`}
             >
               {libelle}
+              <span
+                className={`ml-1.5 text-[11px] font-black tabular-nums ${
+                  genre === id ? "text-[var(--color-ink)]/55" : "text-white/45"
+                }`}
+              >
+                {parGenre[id]}
+              </span>
             </button>
           ))}
         </div>
@@ -149,29 +245,60 @@ export default function BrandDirectory({
 
         {ouvert && (
           <div id="filtres" className="mt-4 border-t border-white/15 pt-4">
-            <p className="eyebrow m-0 mb-2">Catégorie</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => setCategory(null)} className={`${chip} ${category === null ? chipOn : chipOff}`}>
-                Toutes
-              </button>
-              {categories.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={`${chip} ${category === c ? chipOn : chipOff}`}>
-                  {c}
-                </button>
-              ))}
-            </div>
+            {/* Une famille sans aucune option ne s'affiche pas du
+                tout : un intertitre suivi d'un seul bouton « Toutes »
+                ne renseigne sur rien. */}
+            {categories.length > 0 && (
+              <>
+                <p className="eyebrow m-0 mb-2">Catégorie</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setCategory(null)}
+                    className={`${chip} ${category === null ? chipOn : chipOff}`}
+                  >
+                    Toutes
+                  </button>
+                  {categories.map(([c, n]) => (
+                    <button
+                      key={c}
+                      onClick={() => setCategory(c)}
+                      className={`${chip} ${category === c ? chipOn : chipOff}`}
+                    >
+                      {c}
+                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
-            <p className="eyebrow m-0 mb-2 mt-4">Gamme de prix</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => setTier(null)} className={`${chip} ${tier === null ? chipOn : chipOff}`}>
-                Tous les prix
-              </button>
-              {TIERS.map((t) => (
-                <button key={t} onClick={() => setTier(t)} className={`${chip} ${tier === t ? chipOn : chipOff}`}>
-                  {PRICE_TIER_LABEL[t]}
-                </button>
-              ))}
-            </div>
+            {gammes.length > 1 && (
+              <>
+                <p
+                  className={`eyebrow m-0 mb-2 ${categories.length > 0 ? "mt-4" : ""}`}
+                >
+                  Gamme de prix
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setTier(null)}
+                    className={`${chip} ${tier === null ? chipOn : chipOff}`}
+                  >
+                    Tous les prix
+                  </button>
+                  {gammes.map(([t, n]) => (
+                    <button
+                      key={t}
+                      onClick={() => setTier(t)}
+                      className={`${chip} ${tier === t ? chipOn : chipOff}`}
+                    >
+                      {PRICE_TIER_LABEL[t]}
+                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             {actifs > 0 && (
               <button

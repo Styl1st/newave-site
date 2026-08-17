@@ -6,6 +6,8 @@ import SectionAvis from "@/components/SectionAvis";
 import BoutonSignaler from "@/components/BoutonSignaler";
 import TexteRiche from "@/components/TexteRiche";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { plateformeDeVente } from "@/lib/boutiques";
+import { ACCES_ETIQUETTE, ACCES_MESSAGE, unAcces } from "@/lib/acces";
 import PostCard from "@/components/PostCard";
 import RayonsPieces from "@/components/RayonsPieces";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
@@ -59,6 +61,26 @@ export default async function BrandPage({ params }: Props) {
   ]);
 
   const ids = products.map((p) => p.id);
+  /*
+   * Vinted, Depop, Instagram : ce n'est pas une boutique, c'est un
+   * profil. Le dire change ce qu'on écrit partout sur cette fiche.
+   */
+  const plateforme = plateformeDeVente(brand.shop_url ?? brand.website_url);
+
+  /*
+   * La boutique n'est pas ouverte à qui passe : drop en préparation,
+   * ventes réservées, liste d'attente.
+   *
+   * Ça se dit, et ça ne se subit pas. Sans ce mot, le visiteur tombe
+   * sur une fiche sans pièces et en conclut que la marque est morte,
+   * alors qu'elle est simplement fermée aujourd'hui.
+   */
+  const acces = unAcces(brand.acces);
+  const ferme =
+    acces === "ouvert"
+      ? null
+      : { ...ACCES_MESSAGE[acces], etiquette: ACCES_ETIQUETTE[acces] };
+
   const profil = await getProfile();
   // Déjà signalée par cette personne ? Le bouton doit le dire, plutôt
   // que de proposer de recommencer pour se faire refuser par la base.
@@ -114,6 +136,9 @@ export default async function BrandPage({ params }: Props) {
             {brand.name}
           </h1>
           {brand.featured && <span className="badge">À la une</span>}
+          {/* Sur le titre, pas seulement plus bas : c'est la première
+              chose à savoir avant de faire défiler toute la fiche. */}
+          {ferme && <span className="badge">{ferme.etiquette}</span>}
         </div>
         <p className="m-0 mt-3 max-w-2xl text-[clamp(15px,4vw,19px)] leading-relaxed text-white/88">
           {brand.tagline}
@@ -260,17 +285,20 @@ export default async function BrandPage({ params }: Props) {
               envie de revenir — alors qu'un « on n'a pas su lire »
               laisserait croire que la marque est mal fichue. */}
           <h2 className="m-0 mt-2 text-[clamp(16px,3.6vw,20px)] font-extrabold tracking-[-0.02em] text-white">
-            {brand.catalogue_verrouille
-              ? "La boutique prépare quelque chose"
-              : "Les pièces ne sont pas encore listées ici"}
+            {ferme
+              ? ferme.titre
+              : plateforme
+                ? `Les pièces sont sur ${plateforme.nom}`
+                : "Les pièces ne sont pas encore listées ici"}
           </h2>
           <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
-            {brand.catalogue_verrouille ? (
+            {ferme ? (
+              ferme.corps
+            ) : plateforme ? (
               <>
-                {brand.name} a fermé sa boutique le temps d&apos;un drop : elle est
-                protégée par un mot de passe et ses pièces ne sont pas visibles pour
-                l&apos;instant. Elles réapparaîtront ici toutes seules à la réouverture —
-                en attendant, le bouton ci-dessous mène à leur site.
+                {brand.name} vend directement sur {plateforme.nom}, où les pièces se
+                voient une par une et partent souvent en un exemplaire. Le bouton
+                ci-dessous mène droit à son profil.
               </>
             ) : (
               <>
@@ -330,9 +358,11 @@ export default async function BrandPage({ params }: Props) {
         >
           <span className="relative z-3">
             <span className="block text-[15px] font-extrabold tracking-[-0.01em]">
-              {products.length > 0
-                ? `Voir toute la boutique ${brand.name}`
-                : `Découvrir la boutique ${brand.name}`}
+              {plateforme
+                ? `${plateforme.bouton} · ${brand.name}`
+                : products.length > 0
+                  ? `Voir toute la boutique ${brand.name}`
+                  : `Découvrir la boutique ${brand.name}`}
             </span>
             <span className="mt-0.5 block text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
               Tu quittes NEWAVE SPHERE

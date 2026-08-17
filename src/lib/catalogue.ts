@@ -16,7 +16,7 @@
  * fait, et il nous sert de filet.
  */
 
-import type { CatalogueItem, Resultat, Source } from "./catalogue-commun";
+import type { CatalogueItem, Fermeture, Resultat, Source } from "./catalogue-commun";
 
 export { cleLien, SOURCE_LABEL } from "./catalogue-commun";
 export type { CatalogueItem, Resultat, Source } from "./catalogue-commun";
@@ -134,28 +134,51 @@ async function lire(url: string, accept = "application/json"): Promise<Response 
 }
 
 /**
- * La boutique est-elle FERMÉE VOLONTAIREMENT ?
+ * La boutique est-elle FERMÉE VOLONTAIREMENT, et de quelle façon ?
  *
- * Beaucoup de marques verrouillent leur site avant un drop : une page
- * « new drop loading », un mot de passe, et rien d'autre. Ce n'est pas
- * une panne et ce n'est pas un site illisible — c'est une décision, et
- * elle est temporaire.
+ * Beaucoup de marques ne vendent pas en continu : un mot de passe le
+ * temps d'un drop, une page d'attente, une adresse mail à laisser pour
+ * être prévenu du lancement. Ce n'est ni une panne ni un site
+ * illisible : c'est une décision, et elle est temporaire.
  *
  * La distinction compte parce qu'elle change ce qu'on écrit au
  * visiteur. « On n'a pas su lire ce catalogue » laisse penser que la
- * marque est mal fichue ; « la boutique prépare quelque chose » dit la
- * vérité, et donne même envie de revenir.
+ * marque est mal fichue ; « la boutique n'est pas encore ouverte » dit
+ * la vérité, et donne même envie de revenir.
  *
- * Trois signes, du plus fiable au moins fiable :
- *   — Shopify répond 401 sur ses adresses quand le mot de passe est
- *     posé, et il est le seul à le faire aussi proprement ;
- *   — la page d'accueil renvoie vers /password ;
- *   — le titre ou le contenu annonce l'attente en toutes lettres.
+ * ET IL Y EN A DEUX SORTES, ce que la première version ne voyait pas.
+ * Un site sous mot de passe rouvrira tout seul : le visiteur n'a rien à
+ * faire. Une page « get your early access » avec un champ mail lui
+ * demande une démarche, et le lui cacher revient à lui faire manquer
+ * l'accès. Ces pages-là n'emploient d'ailleurs aucun des mots de
+ * l'attente : ni « coming soon », ni « password ». Elles disaient donc
+ * « boutique ouverte » alors qu'on ne pouvait rien y acheter.
+ *
+ * Les signes, du plus fiable au moins fiable :
+ *   Shopify répond 401 sur ses adresses quand le mot de passe est
+ *   posé, et il est le seul à le faire aussi proprement ;
+ *   la page d'accueil renvoie vers /password ;
+ *   le titre annonce l'attente ou l'inscription en toutes lettres ;
+ *   la page est nue, et ne contient qu'un champ mail.
  */
 const MOTS_DE_L_ATTENTE =
   /opening soon|coming soon|drop loading|password|bient[oô]t disponible|ouverture prochaine|nous revenons|be right back|under construction|en construction|restock loading/i;
 
-async function boutiqueVerrouillee(base: string): Promise<boolean> {
+/**
+ * Les mots d'une page qui fait patienter en échange d'une adresse.
+ *
+ * « subscribe » et « newsletter » n'y sont pas, et c'est délibéré :
+ * toutes les boutiques du monde en ont un dans leur pied de page. Ces
+ * mots-ci ne se disent que sur une page de lancement.
+ */
+const MOTS_DE_L_INSCRIPTION =
+  /early access|acc[eè]s anticip[eé]|wait ?list|liste d'attente|be the first|sois le premier|get notified|be notified|notify me|pr[eé]viens[- ]moi|join the list|rejoins la liste|launching soon|lancement prochain|sign up to be/i;
+
+/** Un champ où l'on tape une adresse mail, écrit de plusieurs façons. */
+const CHAMP_MAIL =
+  /<input[^>]*(?:type=["']?email|name=["']?[^"'>]*e-?mail|placeholder=["'][^"']*e-?mail)/i;
+
+async function boutiqueFermee(base: string): Promise<Fermeture | null> {
   try {
     const r = await fetch(`${base}/products.json`, {
       headers: { Accept: "application/json", ...EN_TETES },
@@ -165,28 +188,50 @@ async function boutiqueVerrouillee(base: string): Promise<boolean> {
 
     // Shopify verrouillé : 401 franc, ou redirection vers la page de
     // mot de passe.
-    if (r.status === 401 || r.status === 403) return true;
-    if (/\/password/i.test(r.url)) return true;
+    if (r.status === 401 || r.status === 403) return "bientot";
+    if (/\/password/i.test(r.url)) return "bientot";
   } catch {
-    return false;
+    return null;
   }
 
   const page = await lire(base, "text/html");
-  if (!page) return false;
+  if (!page) return null;
 
   try {
-    if (/\/password/i.test(page.url)) return true;
+    if (/\/password/i.test(page.url)) return "bientot";
     const html = (await page.text()).slice(0, 40000);
     const titre = html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? "";
+
     // Le titre est le signal le plus sûr : une page de vente peut
     // contenir « coming soon » dans un texte, pas dans son titre.
-    if (MOTS_DE_L_ATTENTE.test(titre)) return true;
-    // À défaut, une page très courte qui ne parle que d'attente.
-    if (html.length < 12000 && MOTS_DE_L_ATTENTE.test(html)) return true;
+    if (MOTS_DE_L_ATTENTE.test(titre)) return "bientot";
+    if (MOTS_DE_L_INSCRIPTION.test(titre)) return "liste";
+
+    /*
+     * Une PAGE NUE : un logo, une phrase, un champ, et c'est tout.
+     *
+     * Le nombre de liens est ce qui la trahit le mieux. Une boutique
+     * en ligne, même minimaliste, en aligne des dizaines — menu,
+     * catégories, mentions légales, réseaux. Une page de lancement en
+     * a deux ou trois. C'est aussi ce qui protège du faux positif le
+     * plus probable : l'inscription à la newsletter en pied de page
+     * d'une vraie boutique, qui coche le champ mail mais jamais ce
+     * compte de liens.
+     *
+     * On n'arrive ici qu'après avoir échoué à lire le moindre article,
+     * ce qui rend l'ensemble raisonnablement sûr.
+     */
+    const liens = (html.match(/<a\s[^>]*href=/gi) ?? []).length;
+    const nue = liens < 15;
+
+    if (nue && CHAMP_MAIL.test(html) && MOTS_DE_L_INSCRIPTION.test(html)) return "liste";
+    if (html.length < 12000 && MOTS_DE_L_ATTENTE.test(html)) return "bientot";
+    // Sans les mots, il faut une page franchement nue pour conclure.
+    if (liens < 8 && CHAMP_MAIL.test(html)) return "liste";
   } catch {
-    return false;
+    return null;
   }
-  return false;
+  return null;
 }
 
 /* ============================================================
@@ -1051,13 +1096,17 @@ export async function fetchCatalogue(entree: string): Promise<Resultat> {
 
   // La boutique fermée passe en premier : c'est la seule cause qui ne
   // soit pas un défaut, ni du site, ni du nôtre.
-  if (await boutiqueVerrouillee(base)) {
+  const fermeture = await boutiqueFermee(base);
+  if (fermeture) {
     return {
       ok: false,
-      verrouillee: true,
+      fermeture,
       error:
-        "Cette boutique est fermée pour le moment — mot de passe ou drop en préparation. " +
-        "Rien à corriger : ses pièces réapparaîtront d'elles-mêmes à la réouverture.",
+        fermeture === "liste"
+          ? "Cette boutique n'a pas encore ouvert : sa page demande une adresse mail pour prévenir " +
+            "du lancement. Rien à corriger, et la fiche le dira aux visiteurs."
+          : "Cette boutique est fermée pour le moment, mot de passe ou drop en préparation. " +
+            "Rien à corriger : ses pièces réapparaîtront d'elles-mêmes à la réouverture.",
     };
   }
 
@@ -1110,29 +1159,91 @@ export type Identite = {
    que je me suis données — ne proposer que ce qui repose sur un signe
    franc, et ne jamais présenter le résultat comme une certitude. */
 
-/** Mots qui trahissent une catégorie, dans le texte du site ou les noms de pièces. */
-const INDICES_CATEGORIES: [string, RegExp][] = [
-  ["Denim", /\b(denim|jean|jeans)\b/i],
-  ["Maille", /\b(maille|knit|tricot|pull|laine|cachemire|mohair)\b/i],
-  ["Bijoux", /\b(bijou|bijoux|collier|bague|boucle|argent 925|silver|jewel)\b/i],
-  ["Chaussures", /\b(chaussure|sneaker|basket|botte|derbies?)\b/i],
-  ["Accessoires", /\b(accessoire|casquette|bob|ceinture|sac|tote|bonnet|\u00e9charpe)\b/i],
-  ["Upcycling", /\b(upcycl\w*|recycl\w*|deadstock|seconde main|r\u00e9emploi|surplus)\b/i],
-  ["Sur-mesure", /\b(sur[- ]mesure|made to measure|bespoke)\b/i],
-  ["Tailoring", /\b(tailoring|tailleur|costume|blazer|veston)\b/i],
-  ["Workwear", /\b(workwear|chore|utilitaire|bleu de travail)\b/i],
-  ["Techwear", /\b(techwear|imperm\u00e9able|gore[- ]?tex|coupe[- ]vent)\b/i],
-  ["Sportswear", /\b(sportswear|running|jogging|training)\b/i],
-  ["Streetwear", /\b(streetwear|hoodie|sweat|oversize|skate)\b/i],
-  ["Minimalisme", /\b(minimalis\w*|\u00e9pur\w*|essentiel|sobre|intemporel)\b/i],
-  ["Vintage", /\b(vintage|archive|friperie)\b/i],
+/**
+ * Mots qui trahissent une catégorie, dans le texte du site ou les noms
+ * de pièces.
+ *
+ * POURQUOI CE N'EST PLUS UN SIMPLE `test()`. La première version
+ * cochait une catégorie dès qu'un mot apparaissait UNE fois. Or ces
+ * pages contiennent un menu, un pied de page, des mentions de
+ * livraison : à peu près toutes les boutiques vendent un tote bag
+ * quelque part, et se retrouvaient classées « Accessoires ». Puis on
+ * gardait les quatre premières DANS L'ORDRE DE CETTE LISTE, si bien
+ * que la catégorie retenue dépendait de l'endroit où je l'avais écrite
+ * ici plutôt que de la marque elle-même. C'est exactement ce qui
+ * donnait l'impression d'un classement qui part dans tous les sens.
+ *
+ * Deux corrections. On COMPTE les emplois au lieu de constater leur
+ * présence, et on garde les mieux placés. Et on distingue les mots
+ * francs — « techwear », « upcycling », « sur-mesure » : personne ne
+ * les écrit par accident, un seul emploi suffit — des mots banals, qui
+ * doivent revenir plusieurs fois pour vouloir dire quelque chose.
+ */
+type IndiceCategorie = {
+  nom: string;
+  /** Toujours global : on compte, on ne teste pas. */
+  motif: RegExp;
+  /** Un seul emploi suffit, le mot ne se dit pas par hasard. */
+  franc?: boolean;
+};
+
+/** En deçà, un mot banal est du décor de page, pas une identité. */
+const EMPLOIS_MINIMUM = 3;
+
+const INDICES_CATEGORIES: IndiceCategorie[] = [
+  { nom: "Techwear", motif: /\b(techwear|gore[- ]?tex|coupe[- ]vent|imperméable)\b/gi, franc: true },
+  { nom: "Upcycling", motif: /\b(upcycl\w*|deadstock|réemploi|surplus|seconde main)\b/gi, franc: true },
+  { nom: "Sur-mesure", motif: /\b(sur[- ]mesure|made to measure|bespoke)\b/gi, franc: true },
+  // « délavé » a été retiré : c'est un mot de teinturier, pas de
+  // style, et à peu près toutes les marques de jean l'emploient.
+  { nom: "Grunge", motif: /\b(grunge|distressed|washed out)\b/gi, franc: true },
+  { nom: "Gothique", motif: /\b(gothi\w*|goth|dark ?wear|occulte)\b/gi, franc: true },
+  { nom: "Y2K", motif: /\b(y2k|baby ?tee|low ?rise)\b/gi, franc: true },
+  { nom: "Alternative", motif: /\b(alternatif|alternative|underground|contre[- ]culture|subculture)\b/gi, franc: true },
+  { nom: "Punk", motif: /\b(punk|anarch\w*|clout\w*)\b/gi, franc: true },
+  { nom: "Skate", motif: /\b(skate\w*|sk8|longboard)\b/gi, franc: true },
+  { nom: "Workwear", motif: /\b(workwear|chore ?coat|bleu de travail)\b/gi, franc: true },
+  { nom: "Sur-mesure", motif: /\b(atelier de couture|patronnage)\b/gi, franc: true },
+  { nom: "Tailoring", motif: /\b(tailoring|tailleur|costume|blazer|veston)\b/gi },
+  { nom: "Sportswear", motif: /\b(sportswear|running|jogging|training|survêtement)\b/gi },
+  { nom: "Streetwear", motif: /\b(streetwear|hoodie|sweat[- ]?shirt|oversize)\b/gi },
+  { nom: "Minimalisme", motif: /\b(minimalis\w*|épur\w*|essentiel|sobre|intemporel)\b/gi },
+  { nom: "Vintage", motif: /\b(vintage|archive|friperie)\b/gi },
+  { nom: "Denim", motif: /\b(denim|jeans?|selvedge)\b/gi },
+  { nom: "Maille", motif: /\b(maille|knit\w*|tricot\w*|pull|laine|cachemire|mohair)\b/gi },
+  { nom: "Cuir", motif: /\b(cuir|leather|tannage|agneau|veau)\b/gi },
+  { nom: "Bijoux", motif: /\b(bijou|bijoux|collier|bague|pendentif|argent 925|jewel\w*)\b/gi },
+  { nom: "Chaussures", motif: /\b(chaussure|sneakers?|baskets?|bottes?|derbies?|mocassin)\b/gi },
+  { nom: "Accessoires", motif: /\b(casquette|bob|ceinture|bonnet|écharpe|tote ?bag)\b/gi },
 ];
 
+/** Le nombre d'emplois d'un motif dans un texte. */
+function emplois(texte: string, motif: RegExp): number {
+  // Une instance neuve à chaque appel : un motif global garde son
+  // `lastIndex` d'un appel à l'autre, et le second compte serait faux.
+  return [...texte.matchAll(new RegExp(motif.source, motif.flags))].length;
+}
+
 function deduireCategories(texte: string): string[] {
-  return INDICES_CATEGORIES.filter(([, motif]) => motif.test(texte))
-    .map(([nom]) => nom)
-    // Au-delà de quatre, on coche tout et plus rien ne veut rien dire.
-    .slice(0, 4);
+  const poids = new Map<string, number>();
+
+  for (const indice of INDICES_CATEGORIES) {
+    /*
+     * Un mot franc pèse le seuil à lui seul. Sans ça, une marque de
+     * techwear qui écrit le mot une seule fois sur sa page d'accueil,
+     * ce qui est le cas normal, serait classée sur ses mots banals
+     * — « sweat », « veste » — donc en streetwear comme tout le monde.
+     */
+    const n = emplois(texte, indice.motif) * (indice.franc ? EMPLOIS_MINIMUM : 1);
+    if (n > 0) poids.set(indice.nom, (poids.get(indice.nom) ?? 0) + n);
+  }
+
+  return [...poids.entries()]
+    .filter(([, n]) => n >= EMPLOIS_MINIMUM)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    // Au-delà de trois, on coche tout et plus rien ne veut rien dire.
+    .slice(0, 3)
+    .map(([nom]) => nom);
 }
 
 /**

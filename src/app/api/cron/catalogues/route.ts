@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connecterRobot } from "@/lib/robot";
-import { fetchCatalogue } from "@/lib/catalogue";
+import { lireLaBoutique } from "@/lib/lecture";
+import { boutiqueLisible, plateformeDeVente } from "@/lib/boutiques";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { rafraichirLesTaux } from "@/lib/devises";
 
@@ -42,6 +43,7 @@ type Marque = {
   slug: string;
   shop_url: string | null;
   website_url: string | null;
+  acces: string | null;
 };
 
 export async function GET(request: Request) {
@@ -81,7 +83,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("brands")
-    .select("id, name, slug, shop_url, website_url")
+    .select("id, name, slug, shop_url, website_url, acces")
     .eq("status", "published")
     .eq("catalogue_auto", true)
     .order("catalogue_sync_at", { ascending: true, nullsFirst: true })
@@ -103,15 +105,20 @@ export async function GET(request: Request) {
     const adresse = marque.shop_url ?? marque.website_url;
     let note: string;
 
-    let verrouillee = false;
+    let fermeture: string | null = null;
 
     if (!adresse) {
       note = "Aucune adresse de boutique renseignée.";
+    } else if (!boutiqueLisible(adresse)) {
+      // Depop, Instagram, une page de liens : rien n'y est exposé.
+      // Insister à chaque passage ne produirait qu'une requête perdue
+      // et une ligne d'échec, tous les jours, pour toujours.
+      note = `Vend sur ${plateformeDeVente(adresse)?.nom ?? "une plateforme"} : rien à lire depuis l'extérieur.`;
     } else {
-      const lecture = await fetchCatalogue(adresse);
+      const lecture = await lireLaBoutique(adresse);
       // Fermée pour un drop : ce n'est pas un échec de lecture, et la
       // fiche doit pouvoir le dire à ses visiteurs.
-      verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
+      fermeture = !lecture.ok ? (lecture.fermeture ?? null) : null;
 
       if (!lecture.ok) {
         note = lecture.error;
@@ -138,7 +145,13 @@ export async function GET(request: Request) {
       .update({
         catalogue_sync_at: new Date().toISOString(),
         catalogue_sync_note: note,
-        catalogue_verrouille: verrouillee,
+        catalogue_verrouille: fermeture !== null,
+        // Trouvée fermée : la fiche le dira d'elle-même, et de la bonne
+        // façon. Seulement si personne n'a choisi autre chose : une
+        // déduction n'a pas à écraser une décision prise à la main.
+        ...(fermeture && (marque.acces ?? "ouvert") === "ouvert"
+          ? { acces: fermeture }
+          : {}),
       })
       .eq("id", marque.id);
 

@@ -10,31 +10,57 @@
  * rien sans t'en apercevoir.
  */
 
+/**
+ * Les catégories de marque.
+ *
+ * Volontairement CLASSIQUES. Un filtre ne sert à rien si le visiteur
+ * doit deviner ce qu'il recouvre : « Grunge » ou « Bijoux » se
+ * comprennent sans explication, une trouvaille de vocabulaire non.
+ * L'annuaire n'a pas à inventer un vocabulaire, il a à retrouver
+ * celui que les gens emploient déjà.
+ *
+ * Rangées par famille plutôt que par ordre alphabétique : c'est
+ * l'ordre dans lequel les cases s'affichent en administration, et
+ * cocher un style puis une matière puis un rayon suit la façon dont on
+ * décrit une marque à voix haute.
+ *
+ * Un canal de vente n'a rien à faire ici. Vinted, Depop, Etsy se
+ * déduisent de l'adresse de la boutique et s'affichent tout seuls :
+ * en faire des cases à cocher revenait à demander de saisir deux fois
+ * la même information, avec le risque que les deux se contredisent.
+ */
 export const BRAND_CATEGORIES = [
-  // Les huit premières viennent de la base tenue à la main : ce sont
-  // celles qui décrivent réellement les marques du site, plutôt que
-  // celles qu'on avait imaginées avant d'en avoir la moindre.
+  // Le style. C'est ce qu'on cherche en premier.
   "Streetwear",
-  "Artiste",
-  "Alt",
-  "Luxe",
+  "Alternative",
+  "Grunge",
   "Punk",
-  "Womenswear",
-  "Old money",
-  "Casual",
-  "Minimalisme",
-  "Denim",
-  "Maille",
-  "Tailoring",
-  "Workwear",
+  "Gothique",
+  "Y2K",
+  "Skate",
   "Sportswear",
   "Techwear",
+  "Workwear",
+  "Tailoring",
+  "Old money",
+  "Minimalisme",
+  "Casual",
+  "Vintage",
+  "Luxe",
+  // La matière et la façon.
+  "Denim",
+  "Maille",
+  "Cuir",
   "Upcycling",
   "Sur-mesure",
-  "Bijoux",
+  // Ce qui est vendu, quand la marque ne fait que ça.
   "Accessoires",
+  "Bijoux",
   "Chaussures",
-  "Vintage",
+  // Qui est derrière. « Artiste » commande l'onglet de l'annuaire :
+  // une personne qui fait elle-même, souvent à l'unité.
+  "Artiste",
+  "Womenswear",
 ] as const;
 
 /**

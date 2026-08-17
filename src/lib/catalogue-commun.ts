@@ -9,12 +9,26 @@
  * fonctions pures vivent donc ici.
  */
 
+/**
+ * Une boutique debout, mais qui ne vend pas aujourd'hui.
+ *
+ * `bientot` : mot de passe, page d'attente, drop en préparation. Ça
+ * rouvrira tout seul et le visiteur n'a rien à faire.
+ *
+ * `liste` : la page réclame une adresse mail pour prévenir du
+ * lancement. Le visiteur, lui, a une démarche à faire, et c'est
+ * précisément ce qu'il faut lui dire plutôt que de le laisser devant
+ * une fiche sans pièces.
+ */
+export type Fermeture = "bientot" | "liste";
+
 export type Source =
   | "shopify"
   | "woocommerce"
   | "bigcartel"
   | "donnees-structurees"
-  | "plan-du-site";
+  | "plan-du-site"
+  | "vinted";
 
 export type CatalogueItem = {
   source_id: string;
@@ -37,15 +51,18 @@ export type Resultat =
       ok: false;
       error: string;
       /**
-       * La boutique est fermée volontairement — mot de passe, page
-       * « coming soon », drop en préparation.
+       * La boutique est fermée volontairement, et de quelle façon.
        *
        * À distinguer soigneusement d'une lecture qui échoue : là, il
        * n'y a rien à réparer de notre côté, et la marque n'a rien fait
        * de mal. C'est ce qui permet d'écrire au visiteur « ça arrive »
        * plutôt que « on n'a pas su lire ».
+       *
+       * La valeur reprend celle du champ `acces` d'une marque, si bien
+       * que la fiche se règle toute seule sur ce que la lecture a
+       * trouvé, sans table de correspondance à tenir quelque part.
        */
-      verrouillee?: boolean;
+      fermeture?: Fermeture;
     };
 
 export const SOURCE_LABEL: Record<Source, string> = {
@@ -54,6 +71,7 @@ export const SOURCE_LABEL: Record<Source, string> = {
   bigcartel: "Big Cartel",
   "donnees-structurees": "les données publiées pour Google",
   "plan-du-site": "le plan du site",
+  vinted: "le profil Vinted",
 };
 
 /**

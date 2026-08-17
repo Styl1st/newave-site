@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import { deduireLePays, fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
+import { deduireLePays, normalizeShopUrl } from "@/lib/catalogue";
+import { lireLaBoutique } from "@/lib/lecture";
+import { boutiqueLisible, exigeUnCatalogue } from "@/lib/boutiques";
+import { doitAvoirDesPieces, unAcces } from "@/lib/acces";
+import { avecMessage } from "@/lib/flash";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
 
@@ -95,7 +99,7 @@ export async function savePost(formData: FormData): Promise<Result> {
   revalidatePath("/admin/posts");
   revalidatePath("/posts");
   revalidatePath("/");
-  redirect("/admin/posts");
+  redirect(avecMessage("/admin/posts", id ? "Article mis à jour." : "Article créé."));
 }
 
 export async function deletePost(formData: FormData): Promise<void> {
@@ -105,7 +109,7 @@ export async function deletePost(formData: FormData): Promise<void> {
   await supabase.from("posts").delete().eq("id", toText(formData.get("id")));
   revalidatePath("/admin/posts");
   revalidatePath("/posts");
-  redirect("/admin/posts");
+  redirect(avecMessage("/admin/posts", "Article supprimé.", "info"));
 }
 
 /* ============================ MARQUES ============================ */
@@ -166,6 +170,17 @@ export async function saveBrand(formData: FormData): Promise<Result> {
      */
     cover_video_url: toNullable(formData.get("cover_video_url")),
     featured: formData.get("featured") === "on",
+    /*
+     * Comment on achète chez cette marque.
+     *
+     * Tout n'est pas une boutique ouverte à qui passe : mot de passe le
+     * temps d'un drop, ventes réservées à ceux qui suivent le compte,
+     * liste d'attente. Le dire noir sur blanc vaut mieux que de laisser
+     * le visiteur devant un catalogue vide sans explication — et permet
+     * de publier ces marques, qui sont souvent celles qu'on ne trouve
+     * nulle part ailleurs.
+     */
+    acces: unAcces(toText(formData.get("acces"))),
     status,
     published_at:
       status === "published" ? toNullable(formData.get("published_at")) ?? new Date().toISOString() : null,
@@ -205,7 +220,9 @@ export async function saveBrand(formData: FormData): Promise<Result> {
    * ressort, on laisse vide — la carte n'affiche alors que la ville, ou
    * rien, ce qui est toujours préférable à un pays faux.
    */
-  if (brandId && !payload.country && adresse) {
+  // Pas sur un profil Vinted ou Depop : le domaine y désigne la
+  // plateforme, et l'on écrirait son pays à elle sur la fiche.
+  if (brandId && !payload.country && adresse && exigeUnCatalogue(adresse)) {
     const base = normalizeShopUrl(adresse);
     const pays = base ? await deduireLePays(base) : null;
     if (pays) {
@@ -213,28 +230,61 @@ export async function saveBrand(formData: FormData): Promise<Result> {
     }
   }
 
-  if (brandId && adresse) {
+  /*
+   * Vinted, Depop, Instagram : rien à lire, et rien à attendre.
+   *
+   * Inutile d'aller frapper à une porte qui n'ouvre pas, et surtout
+   * inutile de retenir la fiche en brouillon pour une absence de
+   * pièces qui est ici définitive. Ces créateurs sont exactement ceux
+   * que l'annuaire existe pour montrer.
+   */
+  if (brandId && adresse && boutiqueLisible(adresse)) {
     const { count } = await supabase
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("brand_id", brandId);
 
     if ((count ?? 0) === 0) {
-      const lecture = await fetchCatalogue(adresse);
-      const verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
-      if (verrouillee) {
+      const lecture = await lireLaBoutique(adresse);
+
+      /*
+       * La lecture ne dit plus seulement « c'est fermé », elle dit
+       * COMMENT. Un site sous mot de passe rouvrira tout seul ; une
+       * page qui réclame une adresse mail demande une démarche au
+       * visiteur. La fiche se règle donc sur ce qui a été trouvé,
+       * plutôt que de tout ranger sous « pas encore ouverte ».
+       */
+      const fermeture = !lecture.ok ? (lecture.fermeture ?? null) : null;
+      if (fermeture) {
         await supabase
           .from("brands")
-          .update({ catalogue_verrouille: true })
+          .update({
+            catalogue_verrouille: true,
+            ...(payload.acces === "ouvert" ? { acces: fermeture } : {}),
+          })
           .eq("id", brandId);
       }
+
+      /*
+       * Une boutique fermée n'est pas une fiche ratée.
+       *
+       * On bascule son accès sur « pas encore ouverte », mais SEULEMENT
+       * si personne n'a choisi autre chose : une déduction ne doit
+       * jamais écraser une décision. La fiche peut alors partir en
+       * ligne, avec le bon message à la place du catalogue.
+       */
+      const acces =
+        fermeture && payload.acces === "ouvert" ? fermeture : payload.acces;
 
       if (lecture.ok && lecture.items.length > 0) {
         await synchroniserCatalogue(supabase, brandId, lecture.items, {
           statutDesNouvelles: "published",
           marquerLesAbsentes: false,
         });
-      } else if (status === "published") {
+      } else if (
+        status === "published" &&
+        doitAvoirDesPieces({ ...payload, acces })
+      ) {
         /*
          * Rien n'est venu, et la fiche partait en ligne : on la retient
          * en brouillon. Mieux vaut une marque qui attend un jour de
@@ -246,13 +296,11 @@ export async function saveBrand(formData: FormData): Promise<Result> {
 
         return {
           ok: false,
-          error: verrouillee
-            ? "La fiche est enregistrée, mais la boutique est fermée en ce moment — mot de passe " +
-              "ou drop en préparation. Elle reste en brouillon : ses pièces seront lues d'elles-mêmes " +
-              "à la réouverture, sans rien avoir à refaire."
-            : "La fiche est enregistrée, mais aucune pièce n'a pu être lue sur cette boutique : " +
-              "elle reste en brouillon. Ouvre son espace pour importer le catalogue à la main, " +
-              "ou publie-la une fois qu'elle aura au moins une pièce.",
+          error:
+            "La fiche est enregistrée, mais aucune pièce n'a pu être lue sur cette boutique : " +
+            "elle reste en brouillon. Ouvre son espace pour importer le catalogue à la main, " +
+            "publie-la une fois qu'elle aura au moins une pièce, ou indique que la boutique " +
+            "n'est pas encore ouverte.",
         };
       }
     }
@@ -261,7 +309,7 @@ export async function saveBrand(formData: FormData): Promise<Result> {
   revalidatePath("/admin/marques");
   revalidatePath("/marques");
   revalidatePath("/");
-  redirect("/admin/marques");
+  redirect(avecMessage("/admin/marques", id ? "Marque mise à jour." : "Marque ajoutée."));
 }
 
 export async function deleteBrand(formData: FormData): Promise<void> {
@@ -271,7 +319,7 @@ export async function deleteBrand(formData: FormData): Promise<void> {
   await supabase.from("brands").delete().eq("id", toText(formData.get("id")));
   revalidatePath("/admin/marques");
   revalidatePath("/marques");
-  redirect("/admin/marques");
+  redirect(avecMessage("/admin/marques", "Marque supprimée.", "info"));
 }
 
 /**

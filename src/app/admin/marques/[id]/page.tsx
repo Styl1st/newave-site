@@ -12,6 +12,7 @@ import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields
 import { deleteBrand, saveBrand } from "../../actions";
 import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
 import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
+import { ACCES, ACCES_AIDE, ACCES_LABEL, unAcces } from "@/lib/acces";
 
 /**
  * Enregistrer une fiche peut déclencher la lecture de la boutique, et
@@ -188,6 +189,24 @@ export default async function EditBrand({ params }: Props) {
             defaultValue={brand?.shop_url ?? brand?.website_url ?? ""}
             placeholder="https://"
           />
+
+          {/* Une boutique fermée n'est pas une fiche incomplète.
+              Beaucoup de marques ne vendent que par drops, sur
+              invitation, ou font patienter sur une liste : le dire
+              permet de les publier au lieu de les retenir en brouillon
+              pour un catalogue vide qui est leur état normal. */}
+          <Select
+            name="acces"
+            label="Comment on achète"
+            hint={ACCES_AIDE[unAcces(brand?.acces)]}
+            defaultValue={unAcces(brand?.acces)}
+          >
+            {ACCES.map((valeur) => (
+              <option key={valeur} value={valeur}>
+                {ACCES_LABEL[valeur]}
+              </option>
+            ))}
+          </Select>
           <Text
             name="instagram"
             label="Instagram"

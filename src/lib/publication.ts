@@ -23,6 +23,18 @@ export type FichePubliable = {
    * compte.
    */
   pieces?: number;
+  /**
+   * Cette fiche doit-elle avoir des pièces pour partir en ligne ?
+   *
+   * Faux pour un profil Depop ou Instagram, qui n'aura jamais de
+   * catalogue chez nous. Faux aussi pour une boutique qui n'est pas
+   * encore ouverte, ou qui vend en privé : son catalogue vide est
+   * l'état annoncé, pas un raté de lecture. Dans les deux cas, retenir
+   * la fiche en brouillon reviendrait à ne jamais la publier.
+   *
+   * Se calcule avec `doitAvoirDesPieces` (voir `acces.ts`).
+   */
+  exigeDesPieces?: boolean;
 };
 
 /**
@@ -62,7 +74,7 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
    * n'a pas su le prendre. Autant la garder en brouillon le temps de
    * régler ça plutôt que de la présenter vide.
    */
-  if (fiche.pieces === 0) {
+  if (fiche.pieces === 0 && fiche.exigeDesPieces !== false) {
     return "Cette fiche n'a aucune pièce. Lance l'import du catalogue, ou ajoute au moins une pièce à la main avant de la publier.";
   }
   return null;

@@ -5,10 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import {
   deduireLePaysDetaille,
-  fetchCatalogue,
   fetchVisuels,
   normalizeShopUrl,
 } from "@/lib/catalogue";
+import { lireLaBoutique } from "@/lib/lecture";
+import { boutiqueLisible, exigeUnCatalogue, plateformeDeVente } from "@/lib/boutiques";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { rafraichirLesTaux } from "@/lib/devises";
 
@@ -44,6 +45,7 @@ type Fiche = {
   country: string | null;
   cover_url: string | null;
   cover_video_url: string | null;
+  acces: string | null;
 };
 
 export async function rafraichirLesCatalogues(formData: FormData): Promise<{
@@ -134,7 +136,9 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
 
   const { data, count, error } = await supabase
     .from("brands")
-    .select("id, name, slug, shop_url, website_url, country, cover_url, cover_video_url", {
+    .select(
+      "id, name, slug, shop_url, website_url, country, cover_url, cover_video_url, acces",
+      {
       count: "exact",
     })
     .or("shop_url.not.is.null,website_url.not.is.null")
@@ -153,15 +157,27 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
     const adresse = marque.shop_url ?? marque.website_url;
     if (!adresse) continue;
 
-    const lecture = await fetchCatalogue(adresse);
+    /*
+     * On ne va pas frapper à une porte qui n'ouvre pas.
+     *
+     * Depop, Instagram, une page de liens : rien n'y est exposé, et
+     * insister ne produit qu'une requête perdue et une ligne d'échec
+     * dans le journal, à chaque passage, pour toujours. Vinted fait
+     * exception — ses profils se lisent — et `boutiqueLisible` le sait.
+     */
+    const lecture = boutiqueLisible(adresse) ? await lireLaBoutique(adresse) : null;
     let note: string;
     let ok = false;
 
     // Une boutique fermée pour un drop n'est pas une lecture ratée :
     // on le note sur la fiche pour pouvoir le dire aux visiteurs.
-    const verrouillee = !lecture.ok && Boolean(lecture.verrouillee);
+    const fermeture = lecture !== null && !lecture.ok ? (lecture.fermeture ?? null) : null;
 
-    if (!lecture.ok) {
+    if (!lecture) {
+      const plateforme = plateformeDeVente(adresse);
+      note = `Vend sur ${plateforme?.nom ?? "une plateforme"} : rien à lire depuis l'extérieur, la fiche y renvoie directement.`;
+      ok = true;
+    } else if (!lecture.ok) {
       note = lecture.error;
     } else if (lecture.items.length === 0) {
       note = "La boutique répond, mais son catalogue est vide.";
@@ -182,8 +198,20 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
       }
     }
 
-    // Les visuels manquants, si on l'a demandé.
-    if (completerVisuels && (!marque.cover_url || !marque.cover_video_url)) {
+    /*
+     * Les visuels et le pays, si on l'a demandé — et seulement pour un
+     * vrai site marchand.
+     *
+     * Sur un profil Vinted, l'adresse ramenée à son domaine devient
+     * `vinted.fr` : on irait chercher la couverture et le pays de
+     * VINTED, et l'on collerait sa bannière et « France » sur la fiche
+     * du créateur. Un remplissage automatique qui se trompe est pire
+     * qu'une case vide, parce que personne ne relit ce qui a l'air
+     * rempli.
+     */
+    const siteAElle = exigeUnCatalogue(adresse);
+
+    if (siteAElle && completerVisuels && (!marque.cover_url || !marque.cover_video_url)) {
       const base = normalizeShopUrl(adresse);
       const trouves = base ? await fetchVisuels(base) : null;
 
@@ -203,8 +231,7 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
       }
     }
 
-    // Le pays, si on l'a demandé.
-    if (corrigerPays) {
+    if (siteAElle && corrigerPays) {
       const base = normalizeShopUrl(adresse);
       const trouve = base ? await deduireLePaysDetaille(base) : null;
       const actuel = (marque.country ?? "").trim();
@@ -229,7 +256,19 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
       .update({
         catalogue_sync_at: new Date().toISOString(),
         catalogue_sync_note: note,
-        catalogue_verrouille: verrouillee,
+        catalogue_verrouille: fermeture !== null,
+        /*
+         * Une boutique trouvée fermée le dit sur sa fiche, et de la
+         * bonne façon : « pas encore ouverte » pour un mot de passe,
+         * « liste d'attente » pour une page qui réclame une adresse.
+         * Jamais l'inverse : la réouverture ramène des pièces, et une
+         * fiche qui a des pièces n'a plus besoin de ce message. Écraser
+         * un choix fait à la main serait le seul vrai dégât possible
+         * ici, et cette condition l'écarte.
+         */
+        ...(fermeture && (marque.acces ?? "ouvert") === "ouvert"
+          ? { acces: fermeture }
+          : {}),
       })
       .eq("id", marque.id);
 

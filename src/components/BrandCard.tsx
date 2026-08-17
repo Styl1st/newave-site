@@ -4,6 +4,8 @@ import PastilleNote from "./PastilleNote";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
+import { plateformeDeVente } from "@/lib/boutiques";
+import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 
 export default function BrandCard({
   brand,
@@ -30,6 +32,25 @@ export default function BrandCard({
    * autour.
    */
   const estUnLogo = !brand.cover_url && Boolean(brand.logo_url);
+
+  /*
+   * Ce qui n'est pas un style mais qu'il faut savoir avant de cliquer :
+   * où ça se vend, et si c'est ouvert aujourd'hui.
+   *
+   * Une seule des deux, au plus. Deux pastilles noires côte à côte
+   * plus deux catégories, ça fait quatre étiquettes sur une carte
+   * large de trois cents pixels : plus personne ne lit rien. L'accès
+   * passe devant, parce qu'une boutique fermée est l'information la
+   * plus susceptible de faire changer d'avis.
+   */
+  const acces = unAcces(brand.acces);
+  const plateforme = plateformeDeVente(brand.shop_url ?? brand.website_url);
+  const etiquettes = [
+    acces === "ouvert" ? null : ACCES_ETIQUETTE[acces],
+    plateforme?.etiquette ?? null,
+  ]
+    .filter((e): e is string => Boolean(e))
+    .slice(0, 1);
 
   return (
     /*
@@ -120,7 +141,24 @@ export default function BrandCard({
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-1.5">
-            {brand.categories.slice(0, 2).map((c) => (
+            {/*
+              Deux pastilles PLEINES avant les catégories, et elles ne
+              se saisissent nulle part : elles se déduisent de l'adresse
+              de la boutique et de son état d'ouverture.
+              « Vinted » ou « Bientôt » changent complètement ce à quoi
+              s'attendre en cliquant — pièce unique, ou rien en vente
+              aujourd'hui — et l'apprendre APRÈS avoir ouvert la fiche,
+              c'est un aller-retour pour rien.
+            */}
+            {etiquettes.map((e) => (
+              <span
+                key={e}
+                className="rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white"
+              >
+                {e}
+              </span>
+            ))}
+            {brand.categories.slice(0, etiquettes.length > 0 ? 1 : 2).map((c) => (
               <span
                 key={c}
                 className="rounded-full bg-[rgba(23,10,51,0.07)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#4a3a78]"
