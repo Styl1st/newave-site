@@ -145,14 +145,46 @@ export default async function BrandPage({ params }: Props) {
           className="card-light group rise rise-1 mt-8 block overflow-hidden"
         >
           <div className="relative z-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={vignette(brand.cover_url, 1200)}
-              srcSet={jeuDeVignettes(brand.cover_url, 1200)}
-              sizes="(max-width: 1024px) 100vw, 900px"
-              alt=""
-              className="block aspect-16/9 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
-            />
+            {brand.cover_video_url ? (
+              /*
+               * L'illustration animée, quand la marque en a une.
+               *
+               * Muette, en boucle, sans commande : c'est un décor, pas
+               * une vidéo qu'on regarde. `playsInline` est
+               * indispensable — sans lui, iPhone passe en plein écran
+               * dès le lancement et vole la page.
+               *
+               * L'image fixe sert de `poster` : elle s'affiche
+               * immédiatement, pendant que la vidéo se charge, et
+               * reste seule visible si la lecture échoue ou si la
+               * personne a demandé moins d'animations.
+               *
+               * Elle ne sert QUE sur cette page. Dans la grille de
+               * l'annuaire, quarante vidéos en lecture simultanée
+               * remettraient à terre les téléphones qu'on vient tout
+               * juste de sauver.
+               */
+              <video
+                src={brand.cover_video_url}
+                poster={vignette(brand.cover_url, 1200)}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-hidden="true"
+                className="block aspect-16/9 w-full object-cover"
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={vignette(brand.cover_url, 1200)}
+                srcSet={jeuDeVignettes(brand.cover_url, 1200)}
+                sizes="(max-width: 1024px) 100vw, 900px"
+                alt=""
+                className="block aspect-16/9 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+              />
+            )}
 
             {/* Discret, et seulement au survol sur ordinateur : la
                 photo doit rester une photo. Sur téléphone il est

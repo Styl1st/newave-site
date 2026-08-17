@@ -159,6 +159,12 @@ export async function saveBrand(formData: FormData): Promise<Result> {
     instagram: toNullable(formData.get("instagram")),
     logo_url: toNullable(formData.get("logo_url")),
     cover_url: toNullable(formData.get("cover_url")),
+    /*
+     * L'animée ne remplace pas la fixe, et n'entre donc pas dans la
+     * règle de publication : les cartes de l'annuaire et l'aperçu de
+     * partage ont besoin d'une image, pas d'une vidéo.
+     */
+    cover_video_url: toNullable(formData.get("cover_video_url")),
     featured: formData.get("featured") === "on",
     status,
     published_at:

@@ -92,6 +92,11 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
       if (ecrire("instagram", identite.instagram)) remplis.push("Instagram");
       if (ecrire("logo_url", identite.logo)) remplis.push("le logo");
       if (ecrire("cover_url", identite.cover)) remplis.push("la couverture");
+      // Beaucoup de marques ouvrent sur une vidéo plutôt que sur une
+      // photo : on la reprend telle quelle, elle reste chez elles.
+      if (ecrire("cover_video_url", identite.coverVideo)) {
+        remplis.push("l'illustration animée");
+      }
       if (ecrire("city", identite.city)) remplis.push("la ville");
       if (ecrire("country", identite.country)) remplis.push("le pays");
 

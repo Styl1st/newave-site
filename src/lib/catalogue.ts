@@ -707,6 +707,116 @@ const PAR_VAGUE = 5;
 const HORS_SUJET =
   /\/(panier|cart|checkout|compte|account|login|connexion|inscription|cgv|cgu|mentions|legal|privacy|confidentialite|contact|faq|blog|actualites?|news|search|recherche|tag|categorie|category|collection|page\/\d+)(\/|$|\?)/i;
 
+/** Les formats qu'un navigateur lit sans extension ni greffon. */
+const VIDEO_LISIBLE = /\.(mp4|webm|m4v)(\?|#|$)/i;
+
+/**
+ * La vidéo d'accueil d'une boutique, si elle en a une.
+ *
+ * Beaucoup de marques ouvrent sur une vidéo plutôt que sur une photo.
+ * On ne cherchait qu'une image : sur ces sites, on repartait sans
+ * illustration, ou avec la vignette de partage — qui n'est pas ce
+ * qu'ils montrent.
+ *
+ * Deux endroits où regarder, dans l'ordre. La balise de partage
+ * `og:video`, quand le site a pris la peine de la déclarer. Puis la
+ * première vidéo du HTML, qui est presque toujours celle de l'en-tête :
+ * on lit `src` comme `source`, parce que les deux écritures coexistent.
+ *
+ * On n'accepte que le MP4 et le WebM. Un flux HLS ou une intégration
+ * YouTube demanderait un lecteur, et une illustration de fiche n'en
+ * vaut pas le prix.
+ */
+function videoDAccueil(html: string): string | null {
+  const declaree =
+    balise(html, "og:video:secure_url") ??
+    balise(html, "og:video:url") ??
+    balise(html, "og:video");
+  if (declaree && VIDEO_LISIBLE.test(declaree)) return declaree;
+
+  const dansLaPage =
+    html.match(/<video[^>]+src=["']([^"']+)["']/i)?.[1] ??
+    html.match(/<source[^>]+src=["']([^"']+\.(?:mp4|webm|m4v)[^"']*)["']/i)?.[1];
+
+  return dansLaPage && VIDEO_LISIBLE.test(dansLaPage) ? dansLaPage : null;
+}
+
+/**
+ * L'image d'attente d'une vidéo, à défaut d'image de partage.
+ *
+ * C'est exactement ce qu'il nous faut quand un site n'a pas d'`og:image`
+ * : le poster est l'image que la marque a choisie pour représenter sa
+ * vidéo, donc son illustration, en fixe.
+ */
+function posterDeLaVideo(html: string): string | null {
+  return html.match(/<video[^>]+poster=["']([^"']+)["']/i)?.[1] ?? null;
+}
+
+/**
+ * Une image de la page, à défaut d'image déclarée.
+ *
+ * Certains sites n'ont aucune balise `og:image` — c'est le cas d'EDWIN,
+ * et ce n'est pas si rare. On repartait alors les mains vides, alors
+ * que leur page d'accueil contient d'excellents visuels de saison.
+ *
+ * On note donc chaque image de la page et on garde la meilleure. Les
+ * critères viennent de l'observation, pas d'une théorie :
+ *
+ *   — les habillages du thème (`/static/`, `/assets/`, `/frontend/`)
+ *     sont des icônes, des flèches et des logos : jamais un visuel ;
+ *   — les mots « icon », « logo », « sprite », « badge », « payment »
+ *     le disent en toutes lettres ;
+ *   — un SVG est un pictogramme dans quasiment tous les cas ;
+ *   — en revanche `/wysiwyg/`, `/uploads/`, `/banner/`, `/hero/`
+ *     désignent du contenu déposé à la main, donc choisi.
+ *
+ * Et si rien ne dépasse, on ne renvoie rien. Mettre le logo du thème en
+ * couverture serait pire que laisser la fiche vide : on ne verrait même
+ * pas qu'il manque quelque chose.
+ */
+const IMAGE_DE_THEME = /\/(static|assets|frontend|_next|dist|build)\//i;
+const NOM_D_HABILLAGE =
+  /icon|logo|sprite|badge|payment|flag|arrow|chevron|placeholder|pixel|spacer|avatar|favicon/i;
+/* Deux niveaux, et la distinction compte. « wysiwyg », « banner » ou
+   « hero » désignent une image DÉPOSÉE À LA MAIN pour habiller la page :
+   c'est exactement ce qu'on cherche. « media » ou « uploads » ne disent
+   que « ce n'est pas un habillage du thème », ce qui est déjà bien,
+   mais range aussi les photos de produits et les vignettes d'articles. */
+const DOSSIER_CHOISI = /\/(wysiwyg|banner|hero|home|cms|slider)\//i;
+const DOSSIER_DE_CONTENU = /\/(uploads?|media|content|files|img|images)\//i;
+
+function imageDeLaPage(html: string): string | null {
+  const sources = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]);
+
+  let meilleure: string | null = null;
+  let meilleurScore = 0;
+
+  for (const src of sources.slice(0, 120)) {
+    if (!src || src.startsWith("data:")) continue;
+    if (/\.svg(\?|#|$)/i.test(src)) continue;
+    if (IMAGE_DE_THEME.test(src)) continue;
+    if (NOM_D_HABILLAGE.test(src)) continue;
+
+    let score = 1;
+    if (DOSSIER_CHOISI.test(src)) score += 4;
+    else if (DOSSIER_DE_CONTENU.test(src)) score += 2;
+    // Une photo de produit fait une couverture acceptable, mais une
+    // image éditoriale la bat : elle a été choisie pour représenter la
+    // marque, pas pour vendre une pièce.
+    if (/\/catalog\/product\//i.test(src)) score -= 1;
+    if (/\.(jpe?g|webp|avif|png)(\?|#|$)/i.test(src)) score += 1;
+
+    if (score > meilleurScore) {
+      meilleurScore = score;
+      meilleure = src;
+    }
+  }
+
+  // En dessous de trois, on n'a rien trouvé de convaincant : mieux vaut
+  // une fiche visiblement incomplète qu'une couverture au hasard.
+  return meilleurScore >= 3 ? meilleure : null;
+}
+
 function balise(html: string, propriete: string): string | null {
   const motifs = [
     new RegExp(`<meta[^>]+(?:property|name)=["']${propriete}["'][^>]+content=["']([^"']*)["']`, "i"),
@@ -792,8 +902,38 @@ async function lirePage(url: string): Promise<CatalogueItem | null> {
   };
 }
 
+/**
+ * Les plans de site déclarés dans robots.txt.
+ *
+ * C'est LA méthode standard, et on l'avait oubliée : on devinait des
+ * adresses courantes — /sitemap.xml et trois variantes — alors que la
+ * convention veut qu'un site annonce ses plans dans robots.txt. Un
+ * Magento les range sous /media/sitemap/sitemap_fr_fr.xml, un nom que
+ * personne ne devinera jamais.
+ *
+ * On lit donc ce que le site déclare, avant de deviner quoi que ce
+ * soit. C'est aussi plus respectueux : robots.txt est précisément le
+ * fichier fait pour dire aux robots où regarder.
+ */
+async function plansDeclares(base: string): Promise<string[]> {
+  const r = await lire(`${base}/robots.txt`, "text/plain");
+  if (!r) return [];
+
+  try {
+    const texte = await r.text();
+    return [...texte.matchAll(/^\s*sitemap\s*:\s*(\S+)/gim)]
+      .map((m) => m[1].trim())
+      // Un gros site en publie parfois trente, un par pays. Au-delà de
+      // quatre on y passerait la minute allouée par Vercel.
+      .slice(0, 4);
+  } catch {
+    return [];
+  }
+}
+
 async function adressesDuPlan(base: string): Promise<string[]> {
   const candidats = [
+    ...(await plansDeclares(base)),
     `${base}/sitemap.xml`,
     `${base}/sitemap_index.xml`,
     `${base}/sitemap-index.xml`,
@@ -952,6 +1092,8 @@ export type Identite = {
   description: string | null;
   logo: string | null;
   cover: string | null;
+  /** Illustration animée, hébergée par la marque. */
+  coverVideo: string | null;
   instagram: string | null;
   shop_url: string;
   city: string | null;
@@ -1159,7 +1301,15 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
     name: nom ? nomPropre(nom) : null,
     description,
     logo: absolue(ldLogo ?? icones[0]?.href ?? "", base),
-    cover: absolue(balise(html, "og:image") ?? "", base),
+    cover: absolue(
+      balise(html, "og:image") ??
+        balise(html, "twitter:image") ??
+        posterDeLaVideo(html) ??
+        imageDeLaPage(html) ??
+        "",
+      base
+    ),
+    coverVideo: absolue(videoDAccueil(html) ?? "", base),
     instagram: (instaLd ?? instaHtml)?.replace(/\/$/, "") ?? null,
     shop_url: base,
     city: ldVille,
@@ -1171,5 +1321,44 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
       pieces: pieces.length,
       prixMedian: prix.length > 1 ? [...prix].sort((a, b) => a - b)[Math.floor(prix.length / 2)] : null,
     },
+  };
+}
+
+
+/**
+ * Les visuels d'une boutique, en UNE requête.
+ *
+ * `fetchIdentite` fait le même travail, mais il lit aussi le catalogue
+ * pour deviner la gamme de prix et les catégories : une dizaine
+ * d'appels par marque. Trop cher quand on repasse sur tout l'annuaire
+ * juste pour récupérer des couvertures manquantes.
+ *
+ * Ici on ne lit que la page d'accueil, et on en tire l'image et la
+ * vidéo. Le reste de la fiche n'est pas touché.
+ */
+export async function fetchVisuels(
+  base: string
+): Promise<{ image: string | null; video: string | null }> {
+  const r = await lire(base, "text/html");
+  if (!r) return { image: null, video: null };
+
+  let html: string;
+  try {
+    html = await r.text();
+  } catch {
+    return { image: null, video: null };
+  }
+
+  return {
+    image:
+      absolue(
+        balise(html, "og:image") ??
+          balise(html, "twitter:image") ??
+          posterDeLaVideo(html) ??
+          imageDeLaPage(html) ??
+          "",
+        base
+      ) || null,
+    video: absolue(videoDAccueil(html) ?? "", base) || null,
   };
 }

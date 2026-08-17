@@ -84,6 +84,7 @@ export async function saveBrandPresentation(formData: FormData): Promise<Result>
       instagram: nullable(formData, "instagram"),
       logo_url: logos[0] ?? null,
       cover_url: covers[0] ?? null,
+      cover_video_url: nullable(formData, "cover_video_url"),
     })
     .eq("id", brand.id);
 

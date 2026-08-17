@@ -18,6 +18,8 @@ export type Brand = {
   instagram: string | null;
   logo_url: string | null;
   cover_url: string | null;
+  /** Illustration animée, hébergée par la marque. cover_url reste l'image fixe. */
+  cover_video_url?: string | null;
   featured: boolean;
   status: Status;
   published_at: string | null;

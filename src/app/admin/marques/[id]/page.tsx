@@ -6,6 +6,7 @@ import BrandPrefill from "@/components/admin/BrandPrefill";
 import PublishToggle from "@/components/admin/PublishToggle";
 import DeleteButton from "@/components/admin/DeleteButton";
 import ImageUploader from "@/components/admin/ImageUploader";
+import VisuelCouverture from "@/components/admin/VisuelCouverture";
 import AdminForm from "@/components/admin/AdminForm";
 import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { deleteBrand, saveBrand } from "../../actions";
@@ -114,10 +115,12 @@ export default async function EditBrand({ params }: Props) {
             defaultValue={brand?.tagline}
             placeholder="Une phrase, pas un slogan"
           />
-          <ImageUploader
-            name="cover_url"
-            label="Image de couverture"
-            defaultValue={brand?.cover_url}
+          {/* Un seul bloc pour la couverture, fixe ou animée : personne
+              ne pense « couverture fixe » et « couverture animée », on
+              pense « le visuel de la marque ». */}
+          <VisuelCouverture
+            image={brand?.cover_url}
+            video={brand?.cover_video_url}
             folder="marques"
           />
           <ImageUploader name="logo_url" label="Logo" defaultValue={brand?.logo_url} folder="marques" />

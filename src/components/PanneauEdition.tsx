@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Portal from "./Portal";
 import ImageUploader from "./admin/ImageUploader";
+import VisuelCouverture from "./admin/VisuelCouverture";
 import SubmitBar from "./admin/SubmitBar";
 import { Area, CheckGroup, Select, Text } from "./admin/fields";
 import { saveBrandPresentation } from "@/app/espace-marque/actions";
@@ -142,10 +143,9 @@ export default function PanneauEdition({
                   defaultValue={brand.description}
                 />
 
-                <ImageUploader
-                  name="cover_url"
-                  label="Image de couverture"
-                  defaultValue={brand.cover_url}
+                <VisuelCouverture
+                  image={brand.cover_url}
+                  video={brand.cover_video_url}
                   folder={`marques/${brand.slug}`}
                 />
                 <ImageUploader

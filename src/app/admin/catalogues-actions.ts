@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import { deduireLePaysDetaille, fetchCatalogue, normalizeShopUrl } from "@/lib/catalogue";
+import {
+  deduireLePaysDetaille,
+  fetchCatalogue,
+  fetchVisuels,
+  normalizeShopUrl,
+} from "@/lib/catalogue";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { rafraichirLesTaux } from "@/lib/devises";
 
@@ -37,6 +42,8 @@ type Fiche = {
   shop_url: string | null;
   website_url: string | null;
   country: string | null;
+  cover_url: string | null;
+  cover_video_url: string | null;
 };
 
 export async function rafraichirLesCatalogues(formData: FormData): Promise<{
@@ -97,6 +104,20 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
   const corrigerPays = formData.get("pays") === "1";
 
   /*
+   * Compléter les visuels manquants.
+   *
+   * On ne REMPLACE jamais : une couverture choisie à la main vaut
+   * toujours mieux que ce qu'on devine. On ne remplit que les cases
+   * vides — et c'est là tout l'intérêt, parce que ce sont justement
+   * celles qu'on n'a pas envie d'aller chercher une par une.
+   *
+   * Une seule requête par marque : `fetchVisuels` ne lit que la page
+   * d'accueil, contrairement au pré-remplissage complet qui parcourt
+   * aussi le catalogue.
+   */
+  const completerVisuels = formData.get("visuels") === "1";
+
+  /*
    * Les taux de change d'abord, et une seule fois.
    *
    * L'ordre compte : la lecture d'un catalogue calcule au passage
@@ -113,7 +134,9 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
 
   const { data, count, error } = await supabase
     .from("brands")
-    .select("id, name, slug, shop_url, website_url, country", { count: "exact" })
+    .select("id, name, slug, shop_url, website_url, country, cover_url, cover_video_url", {
+      count: "exact",
+    })
     .or("shop_url.not.is.null,website_url.not.is.null")
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
@@ -156,6 +179,27 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
         if (bilan.creees > 0) note += `, ${bilan.creees} nouvelle${bilan.creees > 1 ? "s" : ""}`;
         if (bilan.retirees > 0) note += `, ${bilan.retirees} retirée${bilan.retirees > 1 ? "s" : ""}`;
         note += ".";
+      }
+    }
+
+    // Les visuels manquants, si on l'a demandé.
+    if (completerVisuels && (!marque.cover_url || !marque.cover_video_url)) {
+      const base = normalizeShopUrl(adresse);
+      const trouves = base ? await fetchVisuels(base) : null;
+
+      if (trouves) {
+        const maj: Record<string, string> = {};
+        if (!marque.cover_url && trouves.image) maj.cover_url = trouves.image;
+        if (!marque.cover_video_url && trouves.video) maj.cover_video_url = trouves.video;
+
+        if (Object.keys(maj).length > 0) {
+          await supabase.from("brands").update(maj).eq("id", marque.id);
+          note += ` Visuel${Object.keys(maj).length > 1 ? "s" : ""} récupéré${
+            Object.keys(maj).length > 1 ? "s" : ""
+          } : ${Object.keys(maj).includes("cover_url") ? "couverture" : ""}${
+            Object.keys(maj).length > 1 ? " et " : ""
+          }${Object.keys(maj).includes("cover_video_url") ? "animation" : ""}.`;
+        }
       }
     }
 

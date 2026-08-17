@@ -19,6 +19,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
   const [restantes, setRestantes] = useState<number | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [corrigerPays, setCorrigerPays] = useState(false);
+  const [completerVisuels, setCompleterVisuels] = useState(false);
 
   /** Le rang atteint, et le drapeau d'arrêt. */
   const rang = useRef(0);
@@ -52,6 +53,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
         const formData = new FormData();
         formData.set("depuis", String(rang.current));
         if (corrigerPays) formData.set("pays", "1");
+        if (completerVisuels) formData.set("visuels", "1");
 
         const res = await rafraichirLesCatalogues(formData);
         if (!res.ok) {
@@ -104,6 +106,22 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           partir de ce que le site déclare et de l&apos;extension de son domaine. Les
           marques dont le pays est vide sont complétées ; les autres ne sont remplacées
           que sur un indice solide, jamais sur la seule monnaie.
+        </span>
+      </label>
+
+      <label className="mt-2.5 flex cursor-pointer items-start gap-2.5 rounded-[13px] border border-white/18 bg-white/6 p-3">
+        <input
+          type="checkbox"
+          checked={completerVisuels}
+          onChange={(e) => setCompleterVisuels(e.target.checked)}
+          disabled={enCours}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+        />
+        <span className="text-[13px] leading-relaxed text-white/80">
+          <span className="font-extrabold text-white">Compléter les visuels manquants</span> —
+          couverture et illustration animée, prises sur la page d&apos;accueil de chaque
+          boutique. On ne remplit que ce qui est vide : rien de ce que tu as choisi ne
+          sera remplacé.
         </span>
       </label>
 
