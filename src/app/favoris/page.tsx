@@ -24,14 +24,23 @@ export default async function FavorisPage() {
       </header>
 
       {brands.length === 0 ? (
-        <div className="glass p-8 text-center">
-          <p className="m-0 text-[15px] leading-relaxed text-white/88">
-            Rien pour l&apos;instant.{" "}
-            <Link href="/marques" className="font-bold text-white underline underline-offset-2">
-              Parcours l&apos;annuaire
-            </Link>{" "}
-            et mets de côté ce qui te parle.
+        /*
+         * Une page vide avec un lien noyé dans une phrase, ça se lit
+         * comme une impasse. On garde la page — y renvoyer
+         * automatiquement vers l'annuaire priverait de tout repère
+         * quelqu'un qui a cliqué exprès sur « Mes favoris » — mais on
+         * en fait une invitation, avec un bouton qu'on voit.
+         */
+        <div className="glass flex flex-col items-center gap-5 p-8 text-center sm:p-10">
+          <p className="m-0 max-w-md text-[15px] leading-relaxed text-white/88">
+            Tu n&apos;as encore rien mis de côté. Le cœur, sur une carte de marque, la
+            range ici — c&apos;est ta liste à toi, elle ne se voit nulle part ailleurs.
           </p>
+          <Link href="/marques" className="card-light px-7 py-3.5">
+            <span className="relative z-3 text-[14px] font-extrabold">
+              Parcourir l&apos;annuaire
+            </span>
+          </Link>
         </div>
       ) : (
         <Grille variante="marques" memoire="favoris">

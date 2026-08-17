@@ -28,22 +28,6 @@ export default function ProgressionLecture() {
     const racine = document.documentElement;
     let image = 0;
 
-    /*
-     * Le navigateur sait-il relier une animation au défilement ?
-     *
-     * S'il le sait, le CSS s'en charge entièrement et bien mieux que
-     * nous : l'avancement est calculé au même endroit que le
-     * défilement, il ne peut donc pas prendre une image de retard.
-     * Notre variable devient inutile, et surtout on n'a plus AUCUN
-     * écouteur de défilement à faire tourner.
-     *
-     * S'il ne le sait pas, on garde l'ancienne méthode : un peu moins
-     * lisse, mais juste.
-     */
-    const natif =
-      typeof CSS !== "undefined" &&
-      CSS.supports?.("animation-timeline: scroll()");
-
     const mesurer = () => {
       image = 0;
 
@@ -63,7 +47,6 @@ export default function ProgressionLecture() {
       }
 
       racine.dataset.lecture = "1";
-      if (natif) return;
 
       const part = Math.min(1, Math.max(0, window.scrollY / hauteur));
       racine.style.setProperty("--lecture", String(part));
@@ -74,10 +57,7 @@ export default function ProgressionLecture() {
     };
 
     mesurer();
-    // Sur un navigateur qui gère les animations de défilement, il n'y
-    // a plus rien à écouter pendant qu'on défile : c'est tout l'objet
-    // de la manœuvre.
-    if (!natif) window.addEventListener("scroll", planifier, { passive: true });
+    window.addEventListener("scroll", planifier, { passive: true });
     window.addEventListener("resize", planifier);
 
     /*

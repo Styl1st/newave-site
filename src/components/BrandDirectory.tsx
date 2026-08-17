@@ -204,7 +204,14 @@ export default function BrandDirectory({
           memoire="annuaire"
           aside={
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
-              {results.length} marque{results.length > 1 ? "s" : ""}
+              {/* Le mot suit l'onglet : afficher « 12 marques » alors
+                  qu'on a demandé les artistes se remarque tout de
+                  suite, et donne l'impression que le filtre n'a pas
+                  été pris en compte. */}
+              {results.length}{" "}
+              {genre === "artistes"
+                ? `artiste${results.length > 1 ? "s" : ""}`
+                : `marque${results.length > 1 ? "s" : ""}`}
             </p>
           }
         />

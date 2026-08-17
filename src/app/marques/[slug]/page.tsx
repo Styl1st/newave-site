@@ -12,7 +12,7 @@ import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from
 import { isFavorite } from "@/lib/favorites";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes } from "@/lib/likes";
-import { getNotesPieces } from "@/lib/avis";
+import { getNotesMarques, getNotesPieces } from "@/lib/avis";
 import { mesSignalements } from "@/lib/moderation";
 import { getProfile } from "@/lib/auth";
 import { PRICE_TIER_LABEL } from "@/lib/types";
@@ -66,10 +66,11 @@ export default async function BrandPage({ params }: Props) {
     ? (await mesSignalements("marque", [brand.id])).length > 0
     : false;
 
-  const [likeCounts, myLikes, notesPieces] = await Promise.all([
+  const [likeCounts, myLikes, notesPieces, notesMarque] = await Promise.all([
     getLikeCounts(ids),
     getMyLikes(ids),
     getNotesPieces(ids),
+    getNotesMarques([brand.id]),
   ]);
 
   const facts: [string, string | null][] = [
@@ -333,6 +334,7 @@ export default async function BrandPage({ params }: Props) {
         cibleId={brand.id}
         nom={brand.name}
         chemin={`/marques/${brand.slug}`}
+        globale={notesMarque.get(brand.id)}
       />
 
       {/* Discret, et tout en bas : un lien de signalement bien visible

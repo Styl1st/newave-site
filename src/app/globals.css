@@ -849,52 +849,21 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
   transition: opacity .35s ease;
 }
 
-/* ---- la version fluide ----
+/* ---- une seule mécanique, et la plus sûre ----
 
-   Ce qui précède suit le défilement DEPUIS LE JAVASCRIPT : on mesure,
-   on écrit une variable, le navigateur repeint. Même calé sur
-   `requestAnimationFrame`, ce chemin passe par le fil principal, et il
-   arrive toujours une image en retard sur le doigt. D'où la sensation
-   de saccade sur un long défilement.
+   J'avais ajouté ici un chemin « animation pilotée par le défilement »,
+   plus lisse en théorie. En pratique il pilotait le remplissage par une
+   échelle et la pointe par une translation, deux propriétés différentes
+   calculées sur deux bases différentes : quand l'une des deux ne
+   s'appliquait pas exactement comme prévu, la ligne se remplissait
+   entièrement pendant que le sigle restait au milieu. C'est le défaut
+   de calibrage constaté sur ordinateur.
 
-   Les animations pilotées par le défilement font le même travail sans
-   JavaScript du tout : le navigateur relie directement la position de
-   la page à l'avancement de l'animation, et l'exécute au même endroit
-   que le défilement lui-même. Rien ne peut plus se désynchroniser,
-   puisqu'il n'y a plus deux horloges.
-
-   Le `@supports` garde l'ancien chemin pour les navigateurs qui ne
-   connaissent pas encore cette mécanique : ils gardent une ligne juste,
-   simplement un peu moins lisse.
-
-   `100cqw` mesure la largeur de la ligne elle-même, et non celle de la
-   fenêtre : sur ordinateur, la barre de défilement occupe une dizaine
-   de pixels, et le sigle serait sorti de l'écran avant la fin. */
-@supports (animation-timeline: scroll()) {
-  .progression-lecture { container-type: inline-size; }
-
-  .progression-remplie {
-    transform: scaleX(0);
-    animation: remplitLigne linear both;
-    animation-timeline: scroll(root block);
-  }
-
-  .progression-tete {
-    left: 14px;
-    animation: avanceTete linear both;
-    animation-timeline: scroll(root block);
-  }
-}
-
-@keyframes remplitLigne {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-@keyframes avanceTete {
-  from { translate: -50% 0; }
-  to   { translate: calc(-50% + 100cqw - 28px) 0; }
-}
+   On revient donc à une seule source, la variable `--lecture` posée par
+   le JavaScript, qui alimente le remplissage ET la pointe. Les deux ne
+   peuvent plus diverger, puisqu'ils lisent le même nombre. La mesure
+   est calée sur le rafraîchissement de l'écran, ce qui suffit largement
+   pour une ligne de trois pixels. */
 
 .progression-tete img {
   display: block;
@@ -1900,5 +1869,67 @@ html[data-clair="1"] :is(input, textarea)::placeholder {
     -webkit-mask: none;
     mask: none;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55);
+  }
+}
+
+/* ============================================================
+   PENDANT QU'ON RÈGLE LE MOUVEMENT, LE DÉCOR SE FIGE
+   ============================================================
+
+   `--vit` et `--amp` entrent dans la durée et l'amplitude de toutes les
+   animations du site. Les modifier pendant qu'on fait glisser un
+   curseur obligeait le navigateur à recalculer, dix fois par seconde,
+   la position courante de chacune : elles sautaient toutes, et
+   l'ensemble produisait un clignotement franc sur le fond, sur les
+   boutons et sur le liseré de la barre du haut.
+
+   Ce n'est pas un défaut d'élégance. Un clignotement rapide et répété
+   sur une grande surface est précisément ce qu'il faut éviter : c'est
+   un risque avéré pour les personnes photosensibles.
+
+   Le composant pose donc cet attribut le temps du réglage, et tout
+   s'arrête. Figé, rien ne peut sauter. Au relâchement, l'attribut
+   disparaît et le décor repart à la nouvelle vitesse — on voit alors le
+   changement clairement, ce qui est de toute façon plus lisible qu'une
+   variation continue. */
+html[data-reglage="1"] .bg,
+html[data-reglage="1"] .bg::before,
+html[data-reglage="1"] .bg::after,
+html[data-reglage="1"] .bg-nappe,
+html[data-reglage="1"] .bg-lueur,
+html[data-reglage="1"] .glyph-track,
+html[data-reglage="1"] .chrome img,
+html[data-reglage="1"] .barre::before,
+html[data-reglage="1"] .card-light::before,
+html[data-reglage="1"] .panneau-apercu::before,
+html[data-reglage="1"] .ruban {
+  animation-play-state: paused !important;
+}
+
+/* ============================================================
+   PAS DE ZOOM AUTOMATIQUE SUR LES CHAMPS
+   ============================================================
+
+   Safari sur iPhone zoome dès qu'on touche un champ dont le texte fait
+   moins de seize pixels. Il considère qu'on ne pourra pas lire ce
+   qu'on tape. Le problème n'est pas le zoom : c'est qu'il NE REVIENT
+   PAS en arrière une fois le champ quitté. On se retrouve avec une
+   page trop large, et il faut pincer l'écran pour la remettre d'aplomb
+   — c'est le défaut remonté en bêta.
+
+   Deux façons de l'empêcher. Interdire le zoom dans la balise viewport,
+   ce qui empêcherait aussi d'agrandir volontairement : hors de
+   question, c'est une aide indispensable à qui voit mal. Ou donner aux
+   champs la taille que Safari attend, ce qui est fait ici.
+
+   Seize pixels exactement, et seulement sur les écrans tactiles : sur
+   ordinateur, les champs gardent leur taille dessinée. La règle est
+   large à dessein — elle vise tous les champs, y compris ceux qu'on
+   écrira demain. */
+@media (max-width: 900px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

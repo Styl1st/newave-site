@@ -7,7 +7,14 @@ export default async function AdminBrands() {
 
   return (
     <>
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">
+      {/* COLLANTE, et c'est le remède au vrai défaut.
+          Après avoir enregistré une marque, le navigateur restaure la
+          position qu'on avait dans la liste : on revient donc au milieu
+          de soixante-dix lignes, et il faut remonter pour retrouver
+          « Nouvelle marque ». Plutôt que de lutter contre la
+          restauration — qui est un bon comportement, elle évite de
+          reperdre sa place — on garde le bouton sous la main. */}
+      <header className="sticky top-2.5 z-30 mb-5 flex flex-wrap items-end justify-between gap-4 rounded-[18px] bg-[rgba(8,2,30,0.55)] px-3 py-3 backdrop-blur-md sm:mb-7 sm:top-4 sm:px-4">
         <div>
           <p className="eyebrow m-0">Annuaire</p>
           <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">

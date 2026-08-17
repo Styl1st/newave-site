@@ -17,11 +17,22 @@ export default async function SectionAvis({
   cibleId,
   nom,
   chemin,
+  globale,
 }: {
   cible: "marque" | "piece";
   cibleId: string;
   nom: string;
   chemin: string;
+  /**
+   * La note d'ensemble d'une marque, pièces comprises.
+   *
+   * Elle diffère de la moyenne des avis listés ici, et c'est voulu :
+   * cette section montre ce qu'on a écrit SUR LA MARQUE, alors que la
+   * note affichée partout ailleurs agrège aussi les avis déposés sur
+   * ses pièces. Sans cette distinction, on lisait « 4,5 sur 5 » sur la
+   * carte et « aucun avis » sur la fiche.
+   */
+  globale?: { moyenne: number; avis: number };
 }) {
   const filtre = cible === "marque" ? { brand_id: cibleId } : { product_id: cibleId };
   const [avis, mien, profile] = await Promise.all([
@@ -50,12 +61,16 @@ export default async function SectionAvis({
           </h2>
         </div>
 
-        {total > 0 && (
+        {(globale?.avis || total) > 0 && (
           <div className="flex items-center gap-2.5 sm:block sm:text-right">
-            <Etoiles note={moyenne} />
+            <Etoiles note={globale?.avis ? globale.moyenne : moyenne} />
             <p className="m-0 text-[12.5px] font-bold text-white/70 sm:mt-1">
-              {enEtoiles(moyenne)} sur 5 · {total} avis
+              {enEtoiles(globale?.avis ? globale.moyenne : moyenne)} sur 5 ·{" "}
+              {globale?.avis || total} avis
             </p>
+            {globale?.avis && globale.avis > total ? (
+              <p className="m-0 text-[11.5px] text-white/45 sm:mt-0.5">pièces comprises</p>
+            ) : null}
           </div>
         )}
       </div>

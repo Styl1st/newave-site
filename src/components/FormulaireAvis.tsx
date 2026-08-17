@@ -57,6 +57,16 @@ export default function FormulaireAvis({
       return;
     }
 
+    /*
+     * On efface le message AVANT de partir.
+     *
+     * Sans ça, « Choisis d'abord une note » restait affiché pendant
+     * tout l'envoi, puis était remplacé : on le voyait donc réapparaître
+     * une fraction de seconde alors qu'on venait justement de choisir
+     * sa note, et on croyait à un refus.
+     */
+    setNote_(null);
+
     const formData = new FormData();
     formData.set("note", String(note));
     formData.set("commentaire", commentaire);
