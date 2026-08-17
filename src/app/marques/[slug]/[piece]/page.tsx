@@ -11,7 +11,7 @@ import { getProfile } from "@/lib/auth";
 import ProductCard from "@/components/ProductCard";
 import { getProduct, getProductsByBrand } from "@/lib/queries";
 import { getCatalogueInsight } from "@/lib/brand-space";
-import { getLikeCounts, getMyLikes } from "@/lib/likes";
+import { getLikeCounts, getMyLikes, getRangDeLaPiece } from "@/lib/likes";
 import { IconPencil } from "@/components/Icons";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 import BackLink from "@/components/BackLink";
@@ -95,9 +95,10 @@ export default async function PiecePage({ params }: Props) {
   // Le cœur manquait ici : on pouvait aimer une pièce depuis la fiche
   // de la marque, mais pas depuis les suggestions au bas d'une pièce.
   const idsCoeurs = [product.id, ...siblings.map((p) => p.id)];
-  const [coeurs, mesCoeurs] = await Promise.all([
+  const [coeurs, mesCoeurs, rang] = await Promise.all([
     getLikeCounts(idsCoeurs),
     getMyLikes(idsCoeurs),
+    getRangDeLaPiece(product.id),
   ]);
 
   return (
@@ -153,6 +154,39 @@ export default async function PiecePage({ params }: Props) {
                 deux chemins vers la même page ne se choisissent pas,
                 ils se subissent. */}
             <p className="eyebrow m-0">{brand.name}</p>
+
+            {/* Le classement se voyait uniquement depuis la page des
+                coups de cœur — c'est-à-dire par ceux qui le savaient
+                déjà. Arrivé par le catalogue ou par un lien partagé, on
+                ne voyait rien, alors que c'est là que l'information
+                compte : elle dit que d'autres ont aimé avant toi. */}
+            {rang && (
+              <p className="m-0 mt-2 inline-flex flex-wrap items-center gap-2 rounded-full bg-white/12 py-1.5 pl-1.5 pr-3.5 text-[12px] font-bold text-white/85">
+                <span
+                  aria-hidden
+                  className="grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[11px] font-black"
+                  style={
+                    rang.place <= 3
+                      ? {
+                          background: [
+                            "linear-gradient(140deg,#ffe9a8,#f5c73c 45%,#b8860b)",
+                            "linear-gradient(140deg,#ffffff,#d4d8e2 45%,#8d94a6)",
+                            "linear-gradient(140deg,#f6cfa8,#d08a4e 45%,#8a4f22)",
+                          ][rang.place - 1],
+                          color: ["#3a2200", "#242a38", "#3a1c04"][rang.place - 1],
+                        }
+                      : { background: "rgba(255,255,255,.22)", color: "#fff" }
+                  }
+                >
+                  {rang.place === 1 ? "1ᵉʳ" : `${rang.place}ᵉ`}
+                </span>
+                Coup de cœur de la communauté
+                <span className="font-semibold text-white/50">
+                  {rang.periode === "semaine" ? "cette semaine" : "depuis toujours"}
+                </span>
+              </p>
+            )}
+
             <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,31px)] font-extrabold leading-[1.1] tracking-[-0.03em] text-white">
               {product.name}
             </h1>

@@ -150,3 +150,49 @@ export async function getMostLiked(
     .map((r) => ({ product: parId.get(r.product_id), likes: r.likes }))
     .filter((x): x is { product: Product; likes: number } => Boolean(x.product));
 }
+
+/**
+ * La place d'une pièce au classement des coups de cœur, ou rien.
+ *
+ * Une pièce sur le podium ne le savait que depuis la page des
+ * classements. Quelqu'un qui arrive par le catalogue ou par un lien
+ * partagé ne voyait rien — alors que c'est justement là que
+ * l'information a de la valeur : elle dit que d'autres l'ont aimée
+ * avant lui.
+ *
+ * On ne regarde que les premières places. Annoncer « 47ᵉ » ne flatte
+ * personne et n'apprend rien ; au-delà d'une dizaine, le classement
+ * cesse d'être une distinction pour devenir une liste.
+ */
+export async function getRangDeLaPiece(
+  productId: string,
+  jusqua = 10
+): Promise<{ place: number; likes: number; periode: "semaine" | "toujours" } | null> {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  /*
+   * La semaine d'abord, « depuis toujours » ensuite.
+   *
+   * Une pièce première cette semaine est une actualité ; une pièce
+   * première de tous les temps est une référence. Quand les deux sont
+   * vraies, la semaine est la plus intéressante à dire — c'est celle
+   * qui bouge.
+   */
+  for (const periode of ["semaine", "toujours"] as const) {
+    const { data } = await supabase
+      .from(periode === "toujours" ? "product_like_counts_total" : "product_like_counts")
+      .select("product_id, likes")
+      .order("likes", { ascending: false })
+      .limit(jusqua);
+
+    const lignes = (data ?? []) as { product_id: string; likes: number }[];
+    const rang = lignes.findIndex((l) => l.product_id === productId);
+    // Un classement où tout le monde est à zéro coup de cœur n'en est
+    // pas un : on ne décerne pas une médaille pour une absence.
+    if (rang >= 0 && lignes[rang].likes > 0) {
+      return { place: rang + 1, likes: lignes[rang].likes, periode };
+    }
+  }
+  return null;
+}

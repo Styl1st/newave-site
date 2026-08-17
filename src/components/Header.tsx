@@ -131,13 +131,28 @@ export default async function Header() {
 
         {/* ---------- mobile et tablette ---------- */}
         <div className="relative z-2 flex items-center gap-2 md:hidden">
-          {profile && (
+          {profile ? (
             <Link
               href="/compte"
               aria-label="Mon compte"
               className="grid h-9 w-9 place-items-center rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] active:scale-95"
             >
               {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+            </Link>
+          ) : (
+            /*
+             * Se connecter était rangé dans le menu déroulant, à côté
+             * des pages du site. Or ce n'est pas une page parmi
+             * d'autres : pour qui n'a pas de compte, c'est LE geste
+             * suivant, et le cacher derrière trois traits revient à ne
+             * pas le proposer. La barre était de toute façon presque
+             * vide à cet endroit.
+             */
+            <Link
+              href="/connexion"
+              className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(35,12,85,0.3)] active:scale-95"
+            >
+              Connexion
             </Link>
           )}
           <MobileMenu
