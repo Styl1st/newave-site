@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BrandCard from "./BrandCard";
 import BrandPreview from "./BrandPreview";
 import Grille from "./Grille";
@@ -13,6 +13,28 @@ import type { Brand } from "@/lib/types";
  * un panneau qui surgit tout seul pendant qu'on parcourt la liste
  * interrompt plus qu'il n'aide.
  */
+
+/**
+ * Combien de marques d'un coup.
+ *
+ * CE N'EST PAS UNE QUESTION DE CONFORT DE LECTURE, c'est ce qui empêche
+ * le téléphone de recharger la page en boucle. Une couverture pèse
+ * quelques centaines de kilo-octets sur le réseau, mais une fois
+ * décodée pour être affichée elle occupe largeur × hauteur × 4 octets
+ * en mémoire vive : plusieurs mégaoctets par carte. Le navigateur les
+ * garde toutes tant qu'elles sont dans la page, même sorties de
+ * l'écran, et `loading="lazy"` n'y change rien puisqu'il ne retarde que
+ * le téléchargement.
+ *
+ * Passé une soixantaine de marques, l'onglet dépasse ce qu'iOS accorde
+ * à une page et Safari le relance. De l'extérieur, ça ressemble
+ * exactement à une page qui se rafraîchit toute seule sans fin.
+ *
+ * Vingt-quatre, c'est huit lignes de trois sur un écran large et déjà
+ * beaucoup à faire défiler. Le même remède que pour les pièces d'une
+ * marque, qui avait réglé le problème la première fois.
+ */
+const LOT = 24;
 export default function BrandGrid({
   brands,
   memoire = "marques",
@@ -37,11 +59,26 @@ export default function BrandGrid({
 }) {
   const suivies = new Set(favoris ?? []);
   const [open, setOpen] = useState<string | null>(null);
+  const [combien, setCombien] = useState(LOT);
+
+  /*
+   * Filtrer repart du début.
+   *
+   * Sans ça, quelqu'un qui a déroulé cent marques puis coche
+   * « Bijoux » verrait la page essayer d'en afficher cent d'un coup,
+   * ce qui est précisément la situation qu'on cherche à éviter. Le
+   * tableau reçu change de référence à chaque filtre, ce qui suffit à
+   * déclencher la remise à zéro.
+   */
+  useEffect(() => setCombien(LOT), [brands]);
+
+  const visibles = brands.slice(0, combien);
+  const reste = brands.length - visibles.length;
 
   return (
     <>
       <Grille variante="marques" memoire={memoire} aside={aside}>
-        {brands.map((b) => (
+        {visibles.map((b) => (
           /* `data-reveal` déplace l'animation de défilement sur
              l'ensemble carte + bouton. Quand seule la carte bougeait,
              le bouton restait en place et venait flotter au-dessus de
@@ -80,6 +117,23 @@ export default function BrandGrid({
           </div>
         ))}
       </Grille>
+
+      {reste > 0 && (
+        <div className="mt-7 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCombien((n) => n + LOT)}
+            className="card-light px-7 py-3.5"
+          >
+            <span className="relative z-3 text-[14px] font-extrabold">
+              Voir {Math.min(reste, LOT)} marque{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
+            </span>
+          </button>
+          <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/45">
+            {visibles.length} sur {brands.length}
+          </p>
+        </div>
+      )}
 
       {open && <BrandPreview slug={open} onClose={() => setOpen(null)} />}
     </>

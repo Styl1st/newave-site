@@ -18,10 +18,14 @@
  * Les hébergeurs d'images savent redimensionner à la volée. Il suffit
  * de le leur demander dans l'adresse, et c'est gratuit.
  *
- * QUAND ON NE CONNAÎT PAS L'HÉBERGEUR, ON NE TOUCHE À RIEN. Ajouter un
- * paramètre au hasard ne redimensionne pas, mais peut casser une
- * adresse signée — et une image cassée est bien pire qu'une image
- * lourde.
+ * QUAND ON NE CONNAÎT PAS L'HÉBERGEUR, ON PASSE PAR LE NÔTRE. Ajouter
+ * un paramètre au hasard à une adresse étrangère ne redimensionne rien
+ * et peut casser une adresse signée. Mais Next sait redimensionner
+ * lui-même n'importe quelle image distante, et c'est ce qui manquait :
+ * les couvertures de marques que tu envoies toi-même sont stockées
+ * chez Supabase, qui ne redimensionne pas, et repartaient donc en
+ * pleine définition dans chaque carte de l'annuaire. Une quarantaine
+ * de marques suffisait à refaire tomber la page.
  */
 
 /** Les hôtes dont on sait qu'ils redimensionnent avec `width`. */
@@ -36,15 +40,43 @@ function saitRedimensionner(hote: string): boolean {
   );
 }
 
+/**
+ * Les largeurs que l'optimiseur de Next accepte.
+ *
+ * Ce n'est pas une préférence, c'est une liste blanche : demander une
+ * taille absente répond 400 et l'image ne s'affiche pas du tout. Ce
+ * sont les valeurs par défaut de `deviceSizes` et `imageSizes` ; les
+ * changer dans `next.config.ts` obligerait à changer celle-ci aussi.
+ */
+const TAILLES_NEXT = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048];
+
+/**
+ * Ce que l'optimiseur ne sait pas traiter, ou n'a aucun intérêt à
+ * traiter.
+ *
+ * Le SVG surtout : Next le refuse par sécurité, et beaucoup de logos de
+ * marques en sont. Les faire passer par là les remplacerait tous par
+ * une image cassée, ce qui serait un remède bien pire que le mal.
+ */
+const A_LAISSER = /\.(svg|gif|avif)(\?|#|$)/i;
+
 export function vignette(url: string | null | undefined, largeur: number): string | undefined {
   if (!url) return undefined;
 
   try {
     const u = new URL(url);
-    if (!saitRedimensionner(u.hostname)) return url;
 
-    u.searchParams.set("width", String(Math.round(largeur)));
-    return u.toString();
+    if (saitRedimensionner(u.hostname)) {
+      u.searchParams.set("width", String(Math.round(largeur)));
+      return u.toString();
+    }
+
+    if (!/^https?:$/.test(u.protocol) || A_LAISSER.test(u.pathname)) return url;
+
+    // La plus petite taille autorisée qui couvre le besoin. Descendre
+    // en dessous rendrait l'image floue sur les écrans fins.
+    const w = TAILLES_NEXT.find((t) => t >= largeur) ?? TAILLES_NEXT[TAILLES_NEXT.length - 1];
+    return `/_next/image?url=${encodeURIComponent(u.toString())}&w=${w}&q=75`;
   } catch {
     // Adresse relative ou malformée : on la rend telle quelle.
     return url;
