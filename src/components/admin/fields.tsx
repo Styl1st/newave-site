@@ -1,4 +1,14 @@
-/** Champs de formulaire partagés par toute l'administration. */
+/**
+ * Champs de formulaire partagés par toute l'administration.
+ *
+ * UN MOT SUR L'ALIGNEMENT. Chaque champ est une colonne qui occupe
+ * toute la hauteur de sa case, et le contrôle est poussé en bas par
+ * `mt-auto`. Sans ça, un champ dont l'étiquette porte une phrase
+ * d'explication est plus haut que ses voisins, et sur une rangée de
+ * trois — pays, ville, année — les cases de saisie ne sont plus sur la
+ * même ligne. C'est le genre de décalage qu'on ne sait pas nommer mais
+ * qui donne l'impression d'un formulaire bâclé.
+ */
 
 export const FIELD =
   "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
@@ -24,9 +34,9 @@ export function Text({ name, label, hint, ...rest }: {
   hint?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <Label htmlFor={name} hint={hint}>{label}</Label>
-      <input id={name} name={name} className={FIELD} {...rest} />
+      <input id={name} name={name} className={`${FIELD} mt-auto`} {...rest} />
     </div>
   );
 }
@@ -51,9 +61,9 @@ export function Select({ name, label, hint, children, ...rest }: {
   children: React.ReactNode;
 } & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <Label htmlFor={name} hint={hint}>{label}</Label>
-      <select id={name} name={name} className={FIELD} {...rest}>
+      <select id={name} name={name} className={`${FIELD} mt-auto`} {...rest}>
         {children}
       </select>
     </div>

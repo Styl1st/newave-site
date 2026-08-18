@@ -78,6 +78,48 @@ export async function adminGetBrand(id: string): Promise<Brand | null> {
   return (data as Brand) ?? null;
 }
 
+/**
+ * Les villes déjà employées, rangées par pays.
+ *
+ * POURQUOI PAS UNE LISTE TOUTE FAITE. Il n'existe pas de liste courte
+ * des villes du monde : soit on en embarque un million, soit on en
+ * choisit deux cents et l'on décide à la place des marques où elles ont
+ * le droit d'être. Les deux sont mauvais.
+ *
+ * Le vrai problème n'était d'ailleurs pas de trouver les villes, c'est
+ * qu'on écrive « Saint-Étienne », « Saint Etienne » et « st etienne »
+ * pour la même, ce qui donne trois origines différentes dans les
+ * filtres. Proposer ce qui a DÉJÀ été saisi dans ce pays règle
+ * exactement ça, et la liste s'enrichit d'elle-même à mesure que
+ * l'annuaire grandit. Rien n'empêche d'écrire une ville nouvelle.
+ */
+export async function adminGetVilles(): Promise<Record<string, string[]>> {
+  const supabase = await createClient();
+  if (!supabase) return {};
+
+  const { data } = await supabase
+    .from("brands")
+    .select("country, city")
+    .not("city", "is", null);
+
+  const parPays: Record<string, Set<string>> = {};
+  for (const ligne of (data as { country: string | null; city: string | null }[] | null) ?? []) {
+    const pays = (ligne.country ?? "").trim();
+    const ville = (ligne.city ?? "").trim();
+    if (!ville) continue;
+    // Les villes d'une marque sans pays restent proposées : mieux vaut
+    // une suggestion approximative que pas de suggestion du tout.
+    (parPays[pays] ??= new Set()).add(ville);
+  }
+
+  return Object.fromEntries(
+    Object.entries(parPays).map(([pays, villes]) => [
+      pays,
+      [...villes].sort((a, b) => a.localeCompare(b, "fr")),
+    ])
+  );
+}
+
 export async function adminGetApplications(): Promise<Application[]> {
   const supabase = await createClient();
   if (!supabase) return [];

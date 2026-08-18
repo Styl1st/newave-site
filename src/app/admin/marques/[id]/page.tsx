@@ -10,7 +10,9 @@ import VisuelCouverture from "@/components/admin/VisuelCouverture";
 import AdminForm from "@/components/admin/AdminForm";
 import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields";
 import { deleteBrand, saveBrand } from "../../actions";
-import { adminGetBrand, adminGetBrandManagers } from "@/lib/admin-queries";
+import ChampsLieu from "@/components/admin/ChampsLieu";
+import { adminGetBrand, adminGetBrandManagers, adminGetVilles } from "@/lib/admin-queries";
+import { paysAvecActuel } from "@/lib/pays";
 import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { ACCES, ACCES_AIDE, ACCES_LABEL, unAcces } from "@/lib/acces";
 
@@ -42,6 +44,8 @@ export default async function EditBrand({ params }: Props) {
   const brand = isNew ? null : await adminGetBrand(id);
   if (!isNew && !brand) notFound();
   const managers = isNew ? [] : await adminGetBrandManagers(brand!.id);
+  // Les villes déjà employées dans l'annuaire, pour les proposer.
+  const villes = await adminGetVilles();
 
   const bouton =
     "rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]";
@@ -138,29 +142,18 @@ export default async function EditBrand({ params }: Props) {
           titre="Le classement"
           intro="Origine, catégories, gamme. C'est ce qui fait apparaître la marque dans les filtres."
         >
-          <div className="grid gap-6 sm:grid-cols-3">
-            {/* Vide par défaut, et non plus « France ». Un champ
-                pré-rempli ne se relit pas : on enregistrait des marques
-                danoises annoncées françaises sans que personne ne le
-                remarque. Laissé vide, il se devine à partir de la
-                boutique, ou il attire l'œil. */}
-            <Text
-              name="country"
-              label="Pays"
-              hint="Laisse vide et je le devine depuis la boutique."
-              defaultValue={brand?.country ?? ""}
-              placeholder="France"
-            />
-            <Text name="city" label="Ville" defaultValue={brand?.city ?? ""} placeholder="Paris" />
-            <Text
-              name="founded_year"
-              label="Année de création"
-              type="number"
-              min={1900}
-              max={2100}
-              defaultValue={brand?.founded_year ?? ""}
-            />
-          </div>
+          {/* Trois listes plutôt que trois champs libres. Le pays
+              surtout : « Etats-Unis », « USA » et « États-Unis »
+              faisaient trois origines distinctes dans les filtres, sans
+              que rien ne le signale. Vide reste possible, et veut dire
+              « devine-le depuis la boutique ». */}
+          <ChampsLieu
+            pays={paysAvecActuel(brand?.country)}
+            villes={villes}
+            paysActuel={brand?.country}
+            villeActuelle={brand?.city}
+            anneeActuelle={brand?.founded_year}
+          />
 
           <CheckGroup
             name="categories"

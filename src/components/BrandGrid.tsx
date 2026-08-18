@@ -77,13 +77,17 @@ export default function BrandGrid({
 
   return (
     <>
-      <Grille variante="marques" memoire={memoire} aside={aside}>
+      {/* Les cartes du dessous remontent combler le vide laissé par
+          celles du dessus. Une marque sans accroche est plus courte, et
+          il n'y a aucune raison que sa voisine du dessous attende la
+          fin de la rangée pour commencer. */}
+      <Grille variante="marques" memoire={memoire} aside={aside} mosaique>
         {visibles.map((b) => (
           /* `data-reveal` déplace l'animation de défilement sur
              l'ensemble carte + bouton. Quand seule la carte bougeait,
              le bouton restait en place et venait flotter au-dessus de
              la carte de la ligne du dessus. */
-          <div key={b.id} data-reveal className="relative h-full">
+          <div key={b.id} data-reveal className="relative">
             <BrandCard
               brand={b}
               note={notes?.[b.id]}

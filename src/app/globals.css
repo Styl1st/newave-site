@@ -143,16 +143,54 @@ body {
      laisser apparaître le vide. */
   background-repeat: no-repeat;
   background-color: var(--bg-1);
-  background-size: 180% 220%;
-  animation:
-    respire calc(18s / var(--vit)) ease-in-out infinite alternate,
-    teinte calc(41s / var(--vit)) ease-in-out infinite alternate;
+  animation: teinte calc(41s / var(--vit)) ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
+}
+
+/* LE DÉGRADÉ EST SUR SON PROPRE CALQUE, ET C'EST LA CORRECTION DE
+   PERFORMANCE LA PLUS IMPORTANTE DE CE FICHIER.
+
+   Il dérivait en animant `background-position`. Or une position de fond
+   ne peut pas être confiée à la carte graphique : le navigateur doit
+   REPEINDRE toute la surface à chaque image, soixante fois par seconde,
+   sur un élément qui couvre l'écran entier. C'est ce qui faisait ramer
+   la page sans qu'on touche à rien, et ça tournait même sur un onglet
+   où personne ne défilait.
+
+   Une transformation, elle, est une opération de composition : le
+   calque est peint UNE FOIS puis simplement déplacé. Le calque est plus
+   grand que l'écran pour qu'on puisse le promener sans jamais découvrir
+   le bord, et le mouvement est le même à l'œil. */
+.bg-degrade {
+  position: absolute;
+  inset: -25%;
+  /* DERRIÈRE LES NAPPES, DEVANT LE FOND. Les deux nappes sont des
+     pseudo-éléments de `.bg` : un enfant positionné se peindrait
+     par-dessus l'une d'elles et la ferait disparaître. `-1` le glisse
+     entre la couleur de fond du cadre et tout le reste. */
+  z-index: -1;
+  background: linear-gradient(168deg,
+    var(--bg-1) 0%,
+    var(--bg-2) 22%,
+    var(--bg-3) 44%,
+    var(--bg-4) 62%,
+    var(--bg-5) 82%,
+    var(--bg-6) 100%);
+  background-repeat: no-repeat;
+  will-change: transform;
+  animation: respire calc(18s / var(--vit)) ease-in-out infinite alternate;
   animation-delay: var(--phase, 0s);
 }
 
 @keyframes respire {
-  from { background-position: 0% 0%; }
-  to   { background-position: 100% 100%; }
+  from {
+    transform: translate3d(calc(-8% * var(--amp)), calc(-9% * var(--amp)), 0)
+      scale(calc(1 + .02 * var(--amp)));
+  }
+  to {
+    transform: translate3d(calc(8% * var(--amp)), calc(9% * var(--amp)), 0)
+      scale(calc(1 + .1 * var(--amp)));
+  }
 }
 
 /* ---------- la dérive des couleurs ----------
@@ -197,9 +235,15 @@ body {
 }
 
 .bg::before, .bg::after {
-  content: ''; position: absolute; inset: -45%;
-  /* Posé une fois, jamais animé. Voir teinteFloue. */
-  filter: blur(34px);
+  content: ''; position: absolute; inset: -26%;
+  /* Posé une fois, jamais animé. Voir teinteFloue.
+
+     LA TAILLE COMPTE AUTANT QUE LE RAYON. Un flou coûte proportionnel-
+     lement au nombre de pixels traités : à -45 %, chaque nappe faisait
+     près de quatre fois la surface de l'écran, et il y en avait trois.
+     À -26 % on en traite deux fois moins, pour une différence
+     invisible — ce sont des taches diffuses, pas des formes. */
+  filter: blur(26px);
 }
 
 .bg::before {
@@ -226,8 +270,8 @@ body {
 }
 
 .bg-nappe {
-  position: fixed; inset: -50%; z-index: 0; pointer-events: none;
-  filter: blur(34px);
+  position: fixed; inset: -28%; z-index: 0; pointer-events: none;
+  filter: blur(26px);
   background:
     radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .6) 0%, transparent 36%),
     radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .55) 0%, transparent 38%),
@@ -242,10 +286,12 @@ body {
 /* Lueur qui traverse l'ecran en diagonale. C'est elle qu'on remarque
    en premier, et celle qui empeche le fond de paraitre imprime. */
 .bg-lueur {
-  position: fixed; inset: -60%; z-index: 1; pointer-events: none;
+  /* La plus large des quatre couches, donc la plus chère : à -60 %,
+     elle faisait presque cinq fois la surface de l'écran. */
+  position: fixed; inset: -32%; z-index: 1; pointer-events: none;
   /* Aucune animation de filtre sur cette couche : le flou peut donc
      être posé une fois pour toutes. */
-  filter: blur(40px);
+  filter: blur(30px);
   will-change: transform;
   background: radial-gradient(
     ellipse 42% 34% at 50% 50%,
@@ -507,14 +553,25 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 }
 .apercu-carreau { animation: carreauEntree .42s cubic-bezier(.2,.8,.3,1) both; }
 
-/* La matière du panneau : le verre du site, un liseré chromé qui
-   dérive, et une lueur prise aux accents du thème. Sans cette lueur, un
-   grand rectangle sombre posé sur un fond sombre n'a pas de bord. */
+/* La matière du panneau d'aperçu.
+
+   MÊME PRINCIPE QUE LE BANDEAU DE CONFIRMATION : ce n'est pas du verre
+   posé sur la page, c'est le fond du site en plus petit. Le dégradé de
+   base reprend les teintes de l'ambiance, les nappes d'accents dérivent
+   par-dessus comme sur le décor, et le liseré chromé fait le tour.
+
+   Avant, la couleur était écrite en dur — un violet foncé — et le
+   panneau restait violet sur une ambiance verte, seul élément de la
+   page à ne pas suivre le thème choisi. */
 .panneau-apercu {
   position: relative;
+  isolation: isolate;
   border-radius: 26px;
-  background:
-    linear-gradient(158deg, rgba(38, 14, 88, .78), rgba(24, 9, 60, .88));
+  background: linear-gradient(158deg,
+    var(--bg-2) 0%,
+    var(--bg-3) 34%,
+    var(--bg-1) 72%,
+    var(--bg-6) 100%);
   backdrop-filter: blur(30px) saturate(1.4);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
   box-shadow:
@@ -522,9 +579,38 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     0 0 60px -12px rgba(var(--accent-1), .30),
     inset 0 1px 0 rgba(255, 255, 255, .16);
 }
+
+/* Les nappes, comme celles du fond mais resserrées sur la taille d'un
+   panneau. Elles passent derrière le contenu et par-dessus le dégradé :
+   c'est ce qui empêche un grand rectangle sombre de paraître imprimé.
+
+   Tenues à mi-opacité, et c'est délibéré : au-dessus, le texte blanc
+   se met à flotter quand une nappe claire passe dessous. */
+.panneau-apercu::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  opacity: .5;
+  filter: blur(38px);
+  background:
+    radial-gradient(circle at 24% 26%, rgba(var(--accent-1), .85) 0%, transparent 46%),
+    radial-gradient(circle at 78% 58%, rgba(var(--accent-2), .8) 0%, transparent 46%),
+    radial-gradient(circle at 52% 96%, rgba(var(--accent-3), .75) 0%, transparent 44%);
+  background-repeat: no-repeat;
+  animation: apercuNappe calc(24s / var(--vit)) ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes apercuNappe {
+  from { transform: translate3d(-3%, -2%, 0) scale(1.02); }
+  to   { transform: translate3d(4%, 3%, 0) scale(1.1); }
+}
+
 .panneau-apercu::before {
   content: '';
   position: absolute; inset: 0;
+  z-index: 2;
   border-radius: inherit;
   padding: 1.4px;
   background: var(--chrome-edge);
@@ -532,9 +618,56 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: .5;
+  opacity: .55;
   pointer-events: none;
   animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+}
+
+/* Le contenu passe devant les nappes. Sans ça, `z-index: -1` sur la
+   couche de couleur la ferait passer derrière le panneau tout entier
+   au lieu de se glisser entre le fond et le texte. */
+.panneau-apercu > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* La zone qui défile, sans ascenseur visible.
+   Le reste du site cache déjà le sien : en laisser un ici, gris et
+   carré au milieu d'un panneau arrondi, suffisait à faire ressortir
+   que ce bloc venait d'ailleurs. */
+.apercu-defilement {
+  scrollbar-width: none;
+}
+.apercu-defilement::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Les vignettes du panneau. Un liseré clair au repos, une lueur reprise
+   à l'ambiance au survol : la même grammaire que les cartes de
+   l'annuaire, en plus discret puisqu'on en montre douze d'un coup. */
+.apercu-carreau .apercu-cadre {
+  transition: box-shadow .3s, transform .3s;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+.apercu-carreau:hover .apercu-cadre {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .42),
+    0 12px 28px -10px rgba(var(--accent-1), .55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) :is(
+    .panneau-apercu::after,
+    .panneau-apercu::before
+  ) {
+    animation: none;
+  }
+}
+
+[data-fige="1"] .panneau-apercu::after,
+[data-fige="1"] .panneau-apercu::before {
+  animation: none !important;
 }
 
 /* L'en-tête reçoit un voile de couleur repris du thème : il sépare le
@@ -901,6 +1034,7 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
    Amplitude nulle : on coupe franchement plutôt que d'animer vers
    zéro, ce qui ferait tourner le processeur pour rien. */
 [data-fige="1"] .bg,
+[data-fige="1"] .bg-degrade,
 [data-fige="1"] .bg::before,
 [data-fige="1"] .bg::after,
 [data-fige="1"] .bg-nappe,
@@ -1845,12 +1979,12 @@ html[data-clair="1"] :is(input, textarea)::placeholder {
 @media (max-width: 900px) {
   .bg::before,
   .bg::after {
-    inset: -30%;
+    inset: -18%;
     filter: none;
   }
 
   .bg-nappe {
-    inset: -30%;
+    inset: -18%;
     filter: none;
   }
 
@@ -1893,6 +2027,7 @@ html[data-clair="1"] :is(input, textarea)::placeholder {
    changement clairement, ce qui est de toute façon plus lisible qu'une
    variation continue. */
 html[data-reglage="1"] .bg,
+html[data-reglage="1"] .bg-degrade,
 html[data-reglage="1"] .bg::before,
 html[data-reglage="1"] .bg::after,
 html[data-reglage="1"] .bg-nappe,
@@ -2179,4 +2314,24 @@ html[data-reglage="1"] .ruban {
     animation: none;
   }
   html:not([data-anim-choisi="1"]) .confirmation-trait { stroke-dashoffset: 0; }
+}
+
+/* ---------- mosaïque ----------
+   Les cartes du dessous remontent combler le vide laissé par celles du
+   dessus. La hauteur en rangées est posée en JavaScript (voir
+   `Grille`), mais tout le reste tient ici.
+
+   `align-items: start` est la ligne qui compte : sans elle, une carte
+   s'étirerait jusqu'au bout des rangées qu'on vient de lui attribuer,
+   sa hauteur changerait, on la remesurerait, et ainsi de suite.
+
+   L'espace entre deux cartes est une marge intérieure plutôt qu'un
+   `row-gap`, parce que la trame doit rester régulière pour que le
+   calcul tombe juste : un écart de seize pixels entre des rangées de
+   huit fausserait chaque hauteur d'un peu plus que la précédente. */
+.mosaique {
+  align-items: start;
+}
+.mosaique > * {
+  padding-bottom: 16px;
 }

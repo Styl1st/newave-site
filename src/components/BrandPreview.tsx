@@ -75,7 +75,17 @@ export default function BrandPreview({
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
       style={{ animation: "fadeIn .18s ease both" }}
     >
-      <div className="absolute inset-0 bg-[rgba(16,6,44,0.74)] backdrop-blur-lg" />
+      {/* Le voile prend la teinte de l'ambiance au centre et
+          s'assombrit sur les bords : la page reste devinée derrière,
+          et le panneau semble éclairer ce qu'il recouvre plutôt que
+          d'être posé sur un aplat gris. */}
+      <div
+        className="absolute inset-0 backdrop-blur-lg"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 50% 45%, rgba(var(--voile), .62) 0%, rgba(10, 3, 34, .84) 70%)",
+        }}
+      />
 
       <div
         onClick={(e) => e.stopPropagation()}
@@ -107,7 +117,7 @@ export default function BrandPreview({
         </div>
 
         {/* ---- contenu ---- */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-7">
+        <div className="apercu-defilement flex-1 overflow-y-auto p-4 sm:p-7">
           {failed && (
             <p className="m-0 text-center text-[14.5px] text-white/80">
               Impossible de charger les pièces pour l&apos;instant.
@@ -157,7 +167,7 @@ export default function BrandPreview({
                        en regardant l'écran sans rien faire. */
                     style={{ animationDelay: `${90 + Math.min(i, 11) * 30}ms` }}
                   >
-                    <div className="relative aspect-square overflow-hidden rounded-[14px] bg-white/10 ring-1 ring-white/10 transition duration-300 group-hover:ring-white/35">
+                    <div className="apercu-cadre relative aspect-square overflow-hidden rounded-[14px] bg-white/10">
                       {p.image && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
@@ -200,7 +210,7 @@ export default function BrandPreview({
 
         {/* ---- pied ---- */}
         {data && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/12 bg-[rgba(12,4,36,0.35)] p-5 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/12 bg-[rgba(8,2,30,0.38)] p-5 sm:px-8">
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.12em] text-white/55">
               {data.total} pièce{data.total > 1 ? "s" : ""}
               {data.total > data.products.length && ` · ${data.products.length} affichées`}

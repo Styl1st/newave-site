@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
+import CouvertureAnimee from "./CouvertureAnimee";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
@@ -43,6 +44,19 @@ export default function BrandCard({
    * passe devant, parce qu'une boutique fermée est l'information la
    * plus susceptible de faire changer d'avis.
    */
+  /*
+   * La ligne sous le nom.
+   *
+   * D'abord l'origine, qui est ce qu'on cherche le plus souvent dans un
+   * annuaire de marques indépendantes. À défaut, l'année de création :
+   * elle était enregistrée sans être montrée nulle part, et elle dit
+   * quelque chose de vrai plutôt que de laisser un blanc. Si l'on ne
+   * sait ni l'un ni l'autre, la ligne disparaît.
+   */
+  const origine =
+    [brand.city, brand.country].filter(Boolean).join(" · ") ||
+    (brand.founded_year ? `Depuis ${brand.founded_year}` : "");
+
   const acces = unAcces(brand.acces);
   const plateforme = plateformeDeVente(brand.shop_url ?? brand.website_url);
   const etiquettes = [
@@ -59,7 +73,21 @@ export default function BrandCard({
      * navigateur refuse cette imbrication, et le cœur ci-dessous doit
      * garder son propre clic. Toute la carte reste cliquable.
      */
-    <div className="card-light group relative flex h-full flex-col overflow-hidden">
+    /*
+     * PLUS DE HAUTEUR IMPOSÉE.
+     *
+     * Toutes les cartes d'une rangée s'alignaient sur la plus haute.
+     * Une marque sans accroche héritait donc de la hauteur de sa
+     * voisine bavarde, et se retrouvait avec un grand blanc entre son
+     * nom et ses étiquettes. On réservait de la place pour un texte qui
+     * n'existait pas.
+     *
+     * Chaque carte fait maintenant sa taille. Les hauts restent alignés
+     * puisque c'est une grille, les bas ne le sont plus, et une carte
+     * courte est simplement courte. Pour revenir en arrière il suffit
+     * de remettre `h-full` ici et sur le bloc en dessous.
+     */
+    <div className="card-light group relative flex flex-col overflow-hidden">
       <Link
         href={`/marques/${brand.slug}`}
         aria-label={brand.name}
@@ -67,22 +95,56 @@ export default function BrandCard({
         className="absolute inset-0 z-2"
       />
 
-      <div className="pointer-events-none relative z-3 flex h-full flex-col">
+      <div className="pointer-events-none relative z-3 flex flex-1 flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
             un aplat plutot qu'un trou : la grille reste alignee. */}
         <div className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
-          {visual ? (
+          {brand.cover_video_url ? (
+            /* L'illustration animée, la même que sur la fiche. Elle ne
+               se charge que lorsque la carte approche de l'écran et se
+               relâche dès qu'elle s'en va : voir `CouvertureAnimee`. */
+            <CouvertureAnimee
+              video={brand.cover_video_url}
+              affiche={vignette(brand.cover_url, 600)}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+            />
+          ) : visual && estUnLogo ? (
+            /*
+             * LE LOGO NE SE REMPLIT PAS, IL SE POSE.
+             *
+             * Il était étiré pour occuper le cadre, comme une
+             * couverture. Or un logo de marque indépendante fait
+             * souvent cent cinquante ou deux cents pixels de côté :
+             * l'agrandir à la taille d'une carte le rendait crénelé, et
+             * une marque présentée avec son logo en bouillie a l'air
+             * d'être mal traitée par nous.
+             *
+             * `h-auto w-auto` avec un plafond : l'image s'affiche à sa
+             * taille réelle tant qu'elle tient, et ne se réduit que si
+             * elle déborde. Elle n'est donc JAMAIS agrandie, et reste
+             * nette quoi qu'il arrive.
+             */
+            <div className="flex h-full w-full items-center justify-center p-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={vignette(visual, 400)}
+                srcSet={jeuDeVignettes(visual, 400)}
+                alt={brand.name}
+                loading="lazy"
+                decoding="async"
+                className="h-auto max-h-[76%] w-auto max-w-[76%] object-contain transition duration-500 group-hover:scale-[1.04]"
+              />
+            </div>
+          ) : visual ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={vignette(visual, 600)}
               srcSet={jeuDeVignettes(visual, 600)}
               sizes="(max-width: 640px) 92vw, 380px"
-              alt={estUnLogo ? brand.name : ""}
+              alt=""
               loading="lazy"
               decoding="async"
-              className={`h-full w-full transition duration-500 group-hover:scale-[1.04] ${
-                estUnLogo ? "object-contain p-6" : "object-cover"
-              }`}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -132,15 +194,29 @@ export default function BrandCard({
           <h3 className="m-0 truncate text-[16px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-ink)]">
             {brand.name}
           </h3>
-          <p className="m-0 mt-1 text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
-            {[brand.city, brand.country].filter(Boolean).join(" · ")}
-          </p>
 
-          <p className="m-0 mt-3 flex-1 text-[14px] leading-relaxed text-[#3a2c5e]">
-            {brand.tagline}
-          </p>
+          {/* Rien d'écrit, rien d'affiché.
+              Ces deux lignes étaient rendues même vides : une marque
+              sans ville ni pays laissait une ligne blanche, et une
+              marque sans accroche un trou de trois lignes au milieu de
+              sa carte. On ne réservait donc de la place que pour
+              montrer qu'il n'y avait rien à y mettre. */}
+          {origine && (
+            <p className="m-0 mt-1 text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
+              {origine}
+            </p>
+          )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          {brand.tagline?.trim() && (
+            <p className="m-0 mt-3 text-[14px] leading-relaxed text-[#3a2c5e]">{brand.tagline}</p>
+          )}
+
+          {/* `mt-auto` pousse les étiquettes en bas quand la carte est
+              plus haute que son contenu, ce qui arrive dès qu'une
+              voisine de la même rangée en dit plus. Sans lui, elles
+              flotteraient au milieu du vide plutôt que de tenir la base
+              de la carte. */}
+          <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4">
             {/*
               Deux pastilles PLEINES avant les catégories, et elles ne
               se saisissent nulle part : elles se déduisent de l'adresse

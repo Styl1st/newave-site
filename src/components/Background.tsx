@@ -57,7 +57,14 @@ export default function Background({
       aria-hidden="true"
       style={phase ? ({ "--phase": `-${Math.round(phase)}ms` } as React.CSSProperties) : undefined}
     >
-      <div className="bg" aria-hidden="true" />
+      {/* Le dégradé vit sur son propre calque, à l'intérieur du cadre.
+          Il dérivait en animant sa position de fond, ce qui oblige le
+          navigateur à repeindre tout l'écran à chaque image ; une
+          transformation se contente de déplacer un calque déjà peint.
+          Voir `.bg-degrade` dans globals.css. */}
+      <div className="bg" aria-hidden="true">
+        <div className="bg-degrade" />
+      </div>
       <div className="bg-nappe" aria-hidden="true" />
       <div className="bg-lueur" aria-hidden="true" />
       <Track seq={GLYPHS_L} side="left" />
