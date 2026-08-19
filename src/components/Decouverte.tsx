@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Brand } from "@/lib/types";
+import { melanger } from "@/lib/melange";
 
 /**
  * « Découvre de nouvelles marques ! »
@@ -37,14 +38,6 @@ const VITESSE = 52;
 /** Temps d'immobilité avant que la dérive ne reprenne la main. */
 const REPRISE_MS = 1800;
 
-function melanger<T>(liste: T[]): T[] {
-  const copie = [...liste];
-  for (let i = copie.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copie[i], copie[j]] = [copie[j], copie[i]];
-  }
-  return copie;
-}
 
 function Vignette({ brand }: { brand: Brand }) {
   const visuel = brand.cover_url ?? brand.logo_url;
@@ -58,7 +51,11 @@ function Vignette({ brand }: { brand: Brand }) {
       className="card-light w-[38vw] max-w-[190px] shrink-0 overflow-hidden sm:w-[190px]"
     >
       <span className="relative z-3 block">
-        <span className="visuel block aspect-4/3 w-full overflow-hidden rounded-t-[var(--radius)]">
+        <span
+          className={`visuel flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-t-[var(--radius)] ${
+            estUnLogo ? "plaque-logo p-4" : ""
+          }`}
+        >
           {visuel ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
@@ -67,7 +64,14 @@ function Vignette({ brand }: { brand: Brand }) {
               loading="lazy"
               decoding="async"
               draggable={false}
-              className={`h-full w-full ${estUnLogo ? "object-contain p-4" : "object-cover"}`}
+              /* Même traitement que dans l'annuaire : une plaque un peu
+                 soutenue et un liseré autour des formes, faute de quoi
+                 un logo blanc disparaît purement et simplement. */
+              className={
+                estUnLogo
+                  ? "max-h-[70%] w-full max-w-[124px] object-contain"
+                  : "h-full w-full object-cover"
+              }
             />
           ) : (
             <span className="flex h-full w-full items-center justify-center px-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-[#a795c9]">

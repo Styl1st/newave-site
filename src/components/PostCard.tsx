@@ -1,8 +1,16 @@
 import Link from "next/link";
+import { premiereImage } from "@/lib/medias";
 import type { Post } from "@/lib/types";
 
 export default function PostCard({ post }: { post: Post }) {
-  const cover = post.images?.[0] ?? post.image_url;
+  /*
+   * La première PHOTO, et non le premier média.
+   *
+   * Un post peut mêler photos et vidéos ; si la vidéo arrive en tête,
+   * la carte afficherait une balise image pointant sur un fichier
+   * `.mp4`, donc une vignette cassée. Voir `premiereImage`.
+   */
+  const cover = premiereImage(post.images) ?? post.video_poster ?? post.image_url;
   const extra = Math.max((post.images?.length ?? 0) - 1, 0);
 
   return (

@@ -28,10 +28,29 @@ export default function ProgressionLecture() {
     const racine = document.documentElement;
     let image = 0;
 
+    /*
+     * LA HAUTEUR DE LA PAGE EST MISE EN CACHE, ET C'EST TOUT LE SUJET.
+     *
+     * Elle était relue à chaque image pendant le défilement. Or lire
+     * `scrollHeight` force le navigateur à recalculer la mise en page
+     * de tout le document AVANT de répondre : c'est une opération qui
+     * parcourt chaque élément de la page. Sur une fiche de marque
+     * chargée de cent pièces, ça se fait soixante fois par seconde
+     * pendant qu'on défile, et c'est exactement la saccade qu'on sent.
+     *
+     * La hauteur, elle, ne change pas quand on défile. Elle change
+     * quand une image arrive, quand un panneau s'ouvre, quand on
+     * redimensionne : autant d'évènements déjà surveillés plus bas.
+     * On la relit à ces moments-là, et jamais entre deux.
+     */
+    let hauteur = 0;
+
+    const remesurerLaPage = () => {
+      hauteur = document.body.scrollHeight - window.innerHeight;
+    };
+
     const mesurer = () => {
       image = 0;
-
-      const hauteur = document.body.scrollHeight - window.innerHeight;
 
       /*
        * En dessous de six cents pixels à parcourir, la ligne ne
@@ -56,9 +75,15 @@ export default function ProgressionLecture() {
       if (!image) image = requestAnimationFrame(mesurer);
     };
 
-    mesurer();
+    /** Quand la page a pu changer de hauteur : on relit, puis on cale. */
+    const replanifier = () => {
+      remesurerLaPage();
+      planifier();
+    };
+
+    replanifier();
     window.addEventListener("scroll", planifier, { passive: true });
-    window.addEventListener("resize", planifier);
+    window.addEventListener("resize", replanifier);
 
     /*
      * La hauteur de la page bouge sans que l'on défile : les images se
@@ -66,13 +91,13 @@ export default function ProgressionLecture() {
      * observation, la ligne resterait calée sur l'ancienne hauteur et
      * n'atteindrait jamais le bout — ou l'atteindrait trop tôt.
      */
-    const observateur = new ResizeObserver(planifier);
+    const observateur = new ResizeObserver(replanifier);
     observateur.observe(document.body);
 
     return () => {
       if (image) cancelAnimationFrame(image);
       window.removeEventListener("scroll", planifier);
-      window.removeEventListener("resize", planifier);
+      window.removeEventListener("resize", replanifier);
       observateur.disconnect();
       delete racine.dataset.lecture;
     };

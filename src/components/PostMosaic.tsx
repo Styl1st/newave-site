@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { premiereImage } from "@/lib/medias";
 import { useMemo, useState } from "react";
 import { IconArrow } from "./Icons";
 import type { Post } from "@/lib/types";
+import { sansMarquage } from "./TexteRiche";
 
 /**
  * Mosaïque de posts, façon mur de magazine.
@@ -74,7 +76,7 @@ function MosaicCard({ post, index }: { post: Post; index: number }) {
   // La case cochée dans l'administration, et rien d'autre. Se fier au
   // lien revenait à coller « Vidéo » sur tous les carrousels.
   const videoAilleurs = Boolean(post.est_video && (post.instagram_url || post.tiktok_url));
-  const cover = post.video_poster ?? post.images?.[0] ?? post.image_url;
+  const cover = post.video_poster ?? premiereImage(post.images) ?? post.image_url;
   const extra = Math.max((post.images?.length ?? 0) - 1, 0);
 
   // Un léger décalage vertical, une carte sur trois. Assez pour casser
@@ -139,8 +141,10 @@ function MosaicCard({ post, index }: { post: Post; index: number }) {
           </Link>
 
           {post.caption && (
+            /* Sans les étoiles : un extrait n'affiche pas de mise en
+               forme, il affiche des caractères. Voir `sansMarquage`. */
             <p className="m-0 mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-[#4a3a78]">
-              {post.caption}
+              {sansMarquage(post.caption)}
             </p>
           )}
 

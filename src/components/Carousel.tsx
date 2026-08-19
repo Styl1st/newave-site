@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { estUneVideo } from "@/lib/medias";
 
 /**
  * Carrousel à défilement natif.
@@ -15,6 +16,13 @@ import { jeuDeVignettes, vignette } from "@/lib/vignette";
  * C'est le navigateur qui gère le geste, l'inertie et l'aimantation —
  * il le fait mieux que n'importe quel code, et sans rien écouter en
  * permanence. On ne lit la position que pour allumer la bonne pastille.
+ *
+ * PHOTOS ET VIDÉOS DANS LA MÊME SUITE. Une adresse qui finit en `.mp4`
+ * devient une vidéo, les autres restent des images : c'est tout ce qui
+ * distingue les deux, et ça suffit. Seule la vidéo affichée joue ; les
+ * autres sont en pause. Trois vidéos qui tournent en même temps dans un
+ * carrousel dont on n'en voit qu'une, c'est du travail pour rien et de
+ * la bande passante gaspillée.
  */
 export default function Carousel({
   images,
@@ -28,6 +36,9 @@ export default function Carousel({
   const bande = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
+  /** Un lecteur par vidéo, pour n'en laisser jouer qu'une. */
+  const lecteurs = useRef<(HTMLVideoElement | null)[]>([]);
+
   const relire = useCallback(() => {
     const el = bande.current;
     if (!el || el.clientWidth === 0) return;
@@ -40,6 +51,27 @@ export default function Carousel({
     el.addEventListener("scroll", relire, { passive: true });
     return () => el.removeEventListener("scroll", relire);
   }, [relire]);
+
+  /*
+   * Une seule vidéo à la fois : celle qu'on regarde.
+   *
+   * Elle démarre en arrivant et s'arrête en partant, comme sur un fil
+   * de réseau social. Les autres sont remises à zéro plutôt que
+   * simplement suspendues : retrouver une vidéo à sa dixième seconde
+   * parce qu'on est passé devant tout à l'heure donne l'impression
+   * d'avoir raté le début.
+   */
+  useEffect(() => {
+    lecteurs.current.forEach((v, i) => {
+      if (!v) return;
+      if (i === index) {
+        v.play().catch(() => {});
+        return;
+      }
+      v.pause();
+      if (v.currentTime > 0) v.currentTime = 0;
+    });
+  }, [index]);
 
   if (images.length === 0) return null;
 
@@ -73,22 +105,42 @@ export default function Carousel({
         style={{ touchAction: "pan-x pan-y" }}
         className="flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {images.map((src, i) => (
-          <div key={src + i} className="visuel w-full shrink-0 snap-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={vignette(src, 900)}
-              srcSet={jeuDeVignettes(src, 900)}
-              sizes="(max-width: 1024px) 100vw, 620px"
-              alt={i === 0 ? alt : ""}
-              /* La première est celle qu'on voit tout de suite : elle
-                 se charge sans attendre, les autres à l'approche. */
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
-              className="block w-full"
-            />
-          </div>
-        ))}
+        {images.map((src, i) =>
+          estUneVideo(src) ? (
+            <div key={src + i} className="visuel w-full shrink-0 snap-center">
+              <video
+                ref={(el) => {
+                  lecteurs.current[i] = el;
+                }}
+                src={src}
+                muted
+                loop
+                playsInline
+                /* La première peut être demandée tout de suite ; les
+                   autres attendent qu'on arrive dessus, sinon ouvrir un
+                   post en télécharge quatre d'un coup. */
+                preload={i === 0 ? "metadata" : "none"}
+                aria-label={i === 0 ? alt : undefined}
+                className="block w-full"
+              />
+            </div>
+          ) : (
+            <div key={src + i} className="visuel w-full shrink-0 snap-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={vignette(src, 900)}
+                srcSet={jeuDeVignettes(src, 900)}
+                sizes="(max-width: 1024px) 100vw, 620px"
+                alt={i === 0 ? alt : ""}
+                /* La première est celle qu'on voit tout de suite : elle
+                   se charge sans attendre, les autres à l'approche. */
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
+                className="block w-full"
+              />
+            </div>
+          )
+        )}
       </div>
 
       {images.length > 1 && (

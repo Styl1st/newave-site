@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { allegerImage, poids } from "@/lib/alleger-image";
+import { estUneVideo } from "@/lib/medias";
 import { Label } from "./fields";
 
 /**
@@ -45,15 +46,30 @@ export default function MultiImageUploader({
     let apres = 0;
 
     for (const file of files) {
-      if (file.size > 25 * 1024 * 1024) {
-        setNote(`« ${file.name} » dépasse 25 Mo, elle a été ignorée.`);
+      /*
+       * Une vidéo passe telle quelle.
+       *
+       * On ne sait pas la ré-encoder dans un navigateur, et personne ne
+       * veut attendre qu'on essaie. La limite est donc plus basse que
+       * pour une photo : une vidéo de post se rejoue à chaque ouverture,
+       * et au-delà de vingt mégaoctets c'est la page qui traîne.
+       */
+      const video = file.type.startsWith("video/") || estUneVideo(file.name);
+      const plafond = video ? 20 : 25;
+
+      if (file.size > plafond * 1024 * 1024) {
+        setNote(
+          `« ${file.name} » dépasse ${plafond} Mo, ${video ? "elle a été ignorée. Ré-exporte-la en 1080p." : "elle a été ignorée."}`
+        );
         continue;
       }
 
       // Redimensionnée et convertie dans le navigateur avant l'envoi.
       // Sur une série de huit photos de téléphone, c'est la différence
       // entre trente mégaoctets et un et demi.
-      const allege = await allegerImage(file, { maxCote: 1800, qualite: 0.82 });
+      const allege = video
+        ? { fichier: file, avant: file.size, apres: file.size, modifie: false }
+        : await allegerImage(file, { maxCote: 1800, qualite: 0.82 });
       avant += allege.avant;
       apres += allege.apres;
 
@@ -64,7 +80,11 @@ export default function MultiImageUploader({
 
       const { error } = await supabase.storage
         .from("media")
-        .upload(path, allege.fichier, { cacheControl: "31536000", upsert: false });
+        .upload(path, allege.fichier, {
+          cacheControl: "31536000",
+          upsert: false,
+          contentType: allege.fichier.type,
+        });
 
       if (error) {
         setNote(`Envoi refusé : ${error.message}`);
@@ -98,7 +118,10 @@ export default function MultiImageUploader({
 
   return (
     <div>
-      <Label htmlFor={`${name}-file`} hint="JPG, PNG ou WebP. Compressées automatiquement. La première sert de vignette.">
+      <Label
+        htmlFor={`${name}-file`}
+        hint="Photos et vidéos, dans l'ordre que tu veux. Les images sont compressées automatiquement. La première PHOTO sert de vignette : une vidéo ne peut pas jouer ce rôle dans les listes ni dans l'aperçu d'un lien partagé."
+      >
         {label}
       </Label>
 
@@ -106,8 +129,27 @@ export default function MultiImageUploader({
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {urls.map((url, i) => (
             <div key={url} className="relative overflow-hidden rounded-[13px] border border-white/25">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="block aspect-square w-full object-cover" />
+              {estUneVideo(url) ? (
+                <video
+                  src={url}
+                  muted
+                  loop
+                  playsInline
+                  /* Aucune lecture automatique ici : une planche de
+                     huit vignettes qui s'animent toutes en même temps
+                     rend le choix impossible. Au survol, suffit. */
+                  preload="metadata"
+                  onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.pause();
+                    e.currentTarget.currentTime = 0;
+                  }}
+                  className="block aspect-square w-full object-cover"
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={url} alt="" className="block aspect-square w-full object-cover" />
+              )}
               <input type="hidden" name={name} value={url} />
 
               {i === 0 && (
@@ -131,7 +173,7 @@ export default function MultiImageUploader({
       <input
         id={`${name}-file`}
         type="file"
-        accept="image/*"
+        accept="image/*,video/mp4,video/webm,video/quicktime"
         multiple
         onChange={onFiles}
         disabled={busy}

@@ -74,7 +74,12 @@ export default function ProductCard({
   // Hauteur pleine et colonne : sans ça, un nom sur deux lignes
   // décalait le prix et le cœur d'une carte à l'autre.
   return (
-    <div className="card-light group flex h-full flex-col overflow-hidden">
+    /*
+     * `carte-eco` : la carte se retire du travail du navigateur dès
+     * qu'elle sort de l'écran. C'est ce qui permet d'en empiler des
+     * centaines sans que l'onglet tombe. Voir globals.css.
+     */
+    <div className="card-light carte-eco group flex h-full flex-col overflow-hidden">
       <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">
           <div className="visuel relative aspect-square w-full overflow-hidden rounded-t-[var(--radius)]">

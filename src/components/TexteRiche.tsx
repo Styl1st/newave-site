@@ -27,6 +27,30 @@ import { Fragment } from "react";
 /** Le gras d'abord : sinon `**mot**` serait lu comme deux italiques. */
 const DECOUPE = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_)/g;
 
+/**
+ * Le même texte, débarrassé de ses marques, en une seule ligne.
+ *
+ * POUR TOUT CE QUI N'EST PAS LA FICHE. Un extrait de carte, une
+ * description de partage, un titre d'onglet : ces endroits n'affichent
+ * pas de mise en forme, ils affichent des caractères. Ils montraient
+ * donc les étoiles telles quelles — « **ZOAV, la seconde vie du
+ * denim** » — et l'on croyait à une coquille dans le texte de la
+ * marque alors que c'est nous qui ne savions pas le lire.
+ *
+ * Les retours à la ligne deviennent des espaces : sur une ou trois
+ * lignes tronquées, un paragraphe qui commence au milieu laisse un
+ * grand blanc au lieu de continuer la phrase.
+ */
+export function sansMarquage(texte: string | null | undefined): string {
+  if (!texte) return "";
+  return texte
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/_([^_\n]+)_/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function ligne(texte: string, cle: string) {
   return texte.split(DECOUPE).map((morceau, i) => {
     const k = `${cle}-${i}`;

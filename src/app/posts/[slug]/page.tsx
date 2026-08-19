@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import TexteRiche from "@/components/TexteRiche";
+import { premiereImage } from "@/lib/medias";
+import TexteRiche, { sansMarquage } from "@/components/TexteRiche";
 import LienVideo from "@/components/LienVideo";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,11 +22,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return { title: "Post introuvable" };
   return {
     title: post.title,
-    description: post.caption.slice(0, 160),
+    description: sansMarquage(post.caption).slice(0, 160),
     openGraph: {
       title: post.title,
-      description: post.caption.slice(0, 160),
-      images: post.images?.[0] ?? post.image_url ?? undefined,
+      description: sansMarquage(post.caption).slice(0, 160),
+      images: premiereImage(post.images) ?? post.video_poster ?? post.image_url ?? undefined,
     },
   };
 }

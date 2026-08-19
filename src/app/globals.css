@@ -2335,3 +2335,62 @@ html[data-reglage="1"] .ruban {
 .mosaique > * {
   padding-bottom: 16px;
 }
+
+/* ---------- la plaque d'un logo ----------
+   Quand une marque n'a pas de couverture, on montre son logo. Encore
+   faut-il le voir.
+
+   LE PROBLÈME N'A PAS DE BONNE RÉPONSE UNIQUE. Un logo blanc disparaît
+   sur un fond clair, un logo noir disparaît sur un fond sombre, et les
+   deux sont courants — le noir un peu plus, parce que c'est ce qu'on
+   dessine par défaut. Choisir un camp, c'est condamner l'autre moitié
+   des marques.
+
+   On garde donc une plaque claire, qui sert la majorité, et on rend le
+   logo lisible par son CONTOUR plutôt que par le fond. Une ombre portée
+   très serrée dessine un liseré sombre autour des formes : un logo
+   blanc s'y détache nettement, un logo noir ne s'en aperçoit même pas
+   puisque l'ombre se confond avec lui. Une seule règle, et les deux cas
+   sont réglés.
+
+   La plaque est aussi un peu plus soutenue qu'avant. Elle était presque
+   blanche, ce qui ne laissait aucune chance à un logo clair, même
+   souligné. */
+.plaque-logo {
+  background:
+    radial-gradient(130% 120% at 50% 0%, rgba(255, 255, 255, .85) 0%, transparent 62%),
+    linear-gradient(142deg, #e7ddfa 0%, #c9b7ef 100%);
+  /* Un liseré intérieur, pour que la plaque se distingue de la partie
+     blanche de la carte quand le logo est petit et laisse du vide. */
+  box-shadow: inset 0 -1px 0 rgba(23, 10, 51, .08);
+}
+
+.plaque-logo img {
+  filter:
+    drop-shadow(0 0 1px rgba(23, 10, 51, .55))
+    drop-shadow(0 2px 7px rgba(23, 10, 51, .22));
+}
+
+/* ---------- les cartes qu'on empile par centaines ----------
+   « Voir 24 pièces de plus » AJOUTE des cartes, il n'en retire aucune.
+   Après quatre clics, cent vignettes vivent dans la page : le
+   navigateur garde chacune décodée en mémoire, plusieurs mégaoctets
+   pièce, et finit par vider l'onglet et le recharger. C'est le
+   rechargement en boucle, revenu par une autre porte.
+
+   `content-visibility: auto` est la réponse prévue pour ça. Le
+   navigateur SAUTE entièrement le travail d'une carte sortie de
+   l'écran — mise en page, peinture, décodage d'image — et le reprend
+   quand elle revient. Une liste de cinq cents pièces ne coûte alors
+   guère plus qu'une liste de vingt.
+
+   `contain-intrinsic-size: auto 340px` est indispensable et pas
+   cosmétique : sans elle, une carte non rendue mesure zéro, la page
+   se rétracte d'un coup et l'ascenseur saute sous le doigt. Le mot
+   `auto` demande en plus au navigateur de RETENIR la vraie hauteur
+   une fois la carte affichée une première fois, si bien que la
+   deuxième visite est exacte au pixel. */
+.carte-eco {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}

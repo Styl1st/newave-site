@@ -9,6 +9,7 @@ import { lireLaBoutique } from "@/lib/lecture";
 import { boutiqueLisible, exigeUnCatalogue } from "@/lib/boutiques";
 import { doitAvoirDesPieces, unAcces } from "@/lib/acces";
 import { avecMessage } from "@/lib/flash";
+import { premiereImage } from "@/lib/medias";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
 
@@ -71,7 +72,15 @@ export async function savePost(formData: FormData): Promise<Result> {
     slug: toText(formData.get("slug")) || slugify(title),
     title,
     caption: toText(formData.get("caption")),
-    image_url: images[0] ?? toNullable(formData.get("image_url")),
+    /*
+     * La vignette est la première PHOTO, pas le premier média.
+     *
+     * Un post peut commencer par une vidéo, et `image_url` sert de
+     * vignette dans les listes et d'aperçu quand on partage le lien :
+     * ces deux endroits n'affichent rien du tout si on leur donne un
+     * fichier vidéo.
+     */
+    image_url: premiereImage(images) ?? toNullable(formData.get("image_url")),
     images,
     video_url: toNullable(formData.get("video_url")),
     video_poster: toNullable(formData.get("video_poster")),

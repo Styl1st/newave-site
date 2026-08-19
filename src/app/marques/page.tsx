@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import BrandDirectory from "@/components/BrandDirectory";
 import { getBrands } from "@/lib/queries";
+import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
 import { getNotesMarques } from "@/lib/avis";
 
@@ -14,7 +15,16 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function BrandsPage() {
-  const brands = await getBrands();
+  /*
+   * L'ordre est retiré à chaque visite.
+   *
+   * Les fiches sortaient de la plus récente à la plus ancienne : les
+   * mêmes marques tenaient la première page à chaque passage, et toutes
+   * les autres attendaient derrière un bouton que personne ne clique.
+   * Voir `ordonnerLAnnuaire` pour le détail, et notamment pourquoi les
+   * marques à la une sont mélangées entre elles plutôt que figées.
+   */
+  const brands = ordonnerLAnnuaire(await getBrands());
   const favoris = await getMyFavorites(brands.map((b) => b.id));
 
   /*

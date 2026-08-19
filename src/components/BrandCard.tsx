@@ -110,21 +110,24 @@ export default function BrandCard({
             />
           ) : visual && estUnLogo ? (
             /*
-             * LE LOGO NE SE REMPLIT PAS, IL SE POSE.
+             * TOUS LES LOGOS À LA MÊME TAILLE, SUR LA MÊME PLAQUE.
              *
-             * Il était étiré pour occuper le cadre, comme une
-             * couverture. Or un logo de marque indépendante fait
-             * souvent cent cinquante ou deux cents pixels de côté :
-             * l'agrandir à la taille d'une carte le rendait crénelé, et
-             * une marque présentée avec son logo en bouillie a l'air
-             * d'être mal traitée par nous.
+             * Deux versions ratées avant celle-ci. La première étirait
+             * le logo pour remplir le cadre comme une couverture : un
+             * logo de deux cents pixels finissait crénelé. La seconde
+             * l'affichait à sa taille réelle, toujours net mais du coup
+             * minuscule chez les uns et énorme chez les autres, et la
+             * grille partait dans tous les sens.
              *
-             * `h-auto w-auto` avec un plafond : l'image s'affiche à sa
-             * taille réelle tant qu'elle tient, et ne se réduit que si
-             * elle déborde. Elle n'est donc JAMAIS agrandie, et reste
-             * nette quoi qu'il arrive.
+             * Ici la boîte est fixe et le logo se met dedans. Il est
+             * donc cadré pareil pour tout le monde, et le plafond de
+             * largeur limite l'agrandissement des tout petits : personne
+             * n'est grossi plus que de raison.
+             *
+             * Voir `.plaque-logo` dans globals.css pour la question de
+             * la lisibilité, qui est un problème à part entière.
              */
-            <div className="flex h-full w-full items-center justify-center p-5">
+            <div className="plaque-logo flex h-full w-full items-center justify-center p-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={vignette(visual, 400)}
@@ -132,7 +135,7 @@ export default function BrandCard({
                 alt={brand.name}
                 loading="lazy"
                 decoding="async"
-                className="h-auto max-h-[76%] w-auto max-w-[76%] object-contain transition duration-500 group-hover:scale-[1.04]"
+                className="max-h-[62%] w-full max-w-[210px] object-contain transition duration-500 group-hover:scale-[1.04]"
               />
             </div>
           ) : visual ? (
