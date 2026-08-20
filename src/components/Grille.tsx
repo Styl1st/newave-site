@@ -58,23 +58,6 @@ function IconSerre() {
  */
 const PAS = 8;
 
-/**
- * En dessous, pas de mosaïque.
- *
- * CE N'EST PAS UN CHOIX ESTHÉTIQUE, C'EST CE QUI SAUVE LES TÉLÉPHONES.
- * Une mosaïque doit MESURER chaque carte pour savoir combien de rangées
- * lui donner, donc chaque carte doit être rendue, donc aucune ne peut
- * être mise de côté par le navigateur. Sur ordinateur c'est sans
- * conséquence ; sur téléphone, quatre-vingt-seize cartes rendues en
- * même temps dépassent ce qu'iOS accorde à un onglet, et la page se
- * relance.
- *
- * Et l'on ne perd rien : sous cette largeur l'annuaire tient sur une ou
- * deux colonnes, où il n'y a presque aucun trou à combler. La mosaïque
- * n'a d'intérêt qu'à partir de trois.
- */
-const LARGEUR_MOSAIQUE = "(min-width: 640px)";
-
 export default function Grille({
   variante,
   memoire,
@@ -140,35 +123,28 @@ export default function Grille({
   const conteneur = useRef<HTMLDivElement>(null);
   const nombre = Children.count(children);
 
-  /** L'écran est-il assez large pour une mosaïque ? Voir plus bas. */
-  const [large, setLarge] = useState(true);
-
   useEffect(() => {
     if (!mosaique) return;
     const boite = conteneur.current;
     if (!boite) return;
 
-    const assezLarge = window.matchMedia(LARGEUR_MOSAIQUE);
-
-    /** Tout remettre comme une grille ordinaire. */
-    const defaire = () => {
-      boite.style.removeProperty("grid-auto-rows");
-      boite.style.removeProperty("row-gap");
-      boite.classList.remove("mosaique");
-      for (const carte of Array.from(boite.children) as HTMLElement[]) {
-        carte.style.removeProperty("grid-row-end");
-      }
-    };
-
-    if (!assezLarge.matches) {
-      defaire();
-      // On réessaie si l'écran s'élargit : rotation d'un téléphone,
-      // fenêtre agrandie sur ordinateur.
-      const surChangement = () => setLarge(assezLarge.matches);
-      assezLarge.addEventListener("change", surChangement);
-      return () => assezLarge.removeEventListener("change", surChangement);
-    }
-
+    /*
+     * LA MOSAÏQUE ET LA MISE DE CÔTÉ DES CARTES HORS ÉCRAN SONT
+     * COMPATIBLES, contrairement à ce que j'avais cru.
+     *
+     * J'avais désactivé la mosaïque sur téléphone en pensant qu'elle
+     * empêchait le navigateur de mettre les cartes de côté : elle doit
+     * les mesurer, donc elles devaient bien être rendues. Les trous
+     * entre les rangées sont revenus sur mobile, pour rien.
+     *
+     * En réalité, lire la hauteur d'une carte mise de côté ne la force
+     * pas à se rendre : le navigateur répond avec la hauteur de réserve.
+     * Et comme cette réserve est déclarée en `auto` (voir
+     * `.carte-eco-etroit` dans globals.css), il RETIENT la vraie hauteur
+     * dès la première fois qu'il l'a affichée. Une carte déjà vue rend
+     * donc sa mesure exacte, une carte jamais vue rend une estimation,
+     * et le remesurage ci-dessous la corrige quand elle arrive.
+     */
     boite.classList.add("mosaique");
 
     /*
@@ -212,14 +188,7 @@ export default function Grille({
     const veille = new ResizeObserver(calculer);
     veille.observe(boite);
     for (const carte of Array.from(boite.children)) veille.observe(carte);
-
-    const surChangement = () => setLarge(assezLarge.matches);
-    assezLarge.addEventListener("change", surChangement);
-
-    return () => {
-      veille.disconnect();
-      assezLarge.removeEventListener("change", surChangement);
-    };
+    return () => veille.disconnect();
     /*
      * `Children.count` plutôt que `children`.
      *
@@ -229,7 +198,7 @@ export default function Grille({
      * cartes. Ce qui nous intéresse ici, c'est uniquement le NOMBRE de
      * cartes, et lui ne bouge que quand la liste change vraiment.
      */
-  }, [mosaique, nombre, densite, large]);
+  }, [mosaique, nombre, densite]);
 
   const onglet =
     "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition";

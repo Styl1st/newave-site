@@ -2401,20 +2401,25 @@ html[data-reglage="1"] .ruban {
    sortie de l'écran, et cent marques ne coûtent alors guère plus que
    vingt.
 
-   POURQUOI SEULEMENT LÀ. Au-dessus de cette largeur, l'annuaire est en
-   mosaïque, et une mosaïque doit mesurer chaque carte pour lui attribuer
-   ses rangées : une carte mise de côté renverrait la hauteur de réserve
-   au lieu de la sienne, et la mise en page se disloquerait. Les deux
-   techniques s'excluent, il fallait choisir selon l'écran. Le
-   rechargement en boucle est un problème de téléphone ; les trous entre
-   les cartes, un problème d'ordinateur.
+   LE MOT `auto` DEVANT LA HAUTEUR EST CE QUI REND TOUT POSSIBLE. Il
+   demande au navigateur de RETENIR la hauteur réelle d'une carte dès la
+   première fois qu'il l'a affichée. La valeur qui suit n'est donc
+   qu'une estimation de départ, pour les cartes que personne n'a encore
+   atteintes.
 
-   La hauteur de réserve est généreuse : sur une colonne, une carte de
-   l'annuaire fait dans les quatre cents pixels. Trop basse, la page se
-   rétracterait et l'ascenseur sauterait sous le pouce. */
+   C'est aussi ce qui réconcilie cette technique avec la mosaïque, que
+   j'avais crue incompatible : la mosaïque lit la hauteur de chaque
+   carte, et lire la hauteur d'une carte mise de côté ne la force pas à
+   se rendre. Elle obtient la vraie mesure pour les cartes déjà vues,
+   l'estimation pour les autres, et se corrige quand elles arrivent.
+
+   Réservé aux écrans étroits, parce que c'est là que le problème se
+   pose : sur ordinateur, cent cartes ne font pas tomber l'onglet, et
+   une estimation approximative y serait plus visible sur trois colonnes
+   que sur une. */
 @media (max-width: 639px) {
   .carte-eco-etroit {
     content-visibility: auto;
-    contain-intrinsic-size: auto 400px;
+    contain-intrinsic-size: auto 360px;
   }
 }
