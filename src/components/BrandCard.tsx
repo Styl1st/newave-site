@@ -141,9 +141,24 @@ export default function BrandCard({
           ) : visual ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={vignette(visual, 600)}
-              srcSet={jeuDeVignettes(visual, 600)}
-              sizes="(max-width: 640px) 92vw, 380px"
+              /*
+               * UNE SEULE DÉFINITION, ET PAS DE VERSION DOUBLE.
+               *
+               * Le jeu de vignettes propose « 1x » et « 2x », et un
+               * téléphone récent affiche trois pixels physiques pour un
+               * pixel de mise en page : il prenait donc toujours la
+               * grande, 1200 pixels de large. Or ces vignettes
+               * s'affichent sur 360 points de large. On téléchargeait
+               * quatre fois trop, et surtout on occupait quatre fois
+               * plus de mémoire une fois l'image décodée — c'est ce qui
+               * fait relancer la page passé quelques dizaines de
+               * marques.
+               *
+               * 640 pixels sur 360 points, c'est encore près du double
+               * de la définition d'affichage. La différence ne se voit
+               * pas sur une photo d'ambiance ; le coût, lui, se voyait.
+               */
+              src={vignette(visual, 640)}
               alt=""
               loading="lazy"
               decoding="async"

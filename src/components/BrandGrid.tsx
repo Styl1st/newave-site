@@ -87,7 +87,7 @@ export default function BrandGrid({
              l'ensemble carte + bouton. Quand seule la carte bougeait,
              le bouton restait en place et venait flotter au-dessus de
              la carte de la ligne du dessus. */
-          <div key={b.id} data-reveal className="relative">
+          <div key={b.id} data-reveal className="carte-eco-etroit relative">
             <BrandCard
               brand={b}
               note={notes?.[b.id]}

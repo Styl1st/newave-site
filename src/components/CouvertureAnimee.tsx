@@ -5,27 +5,32 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Une couverture animée dans une carte d'annuaire.
  *
- * POURQUOI CETTE VERSION RESSEMBLE À CELLE DE LA FICHE. La première
- * rendait une vidéo SANS adresse, avec pour consigne de ne rien
- * précharger, et lui donnait son adresse par script une fois la carte
- * approchée de l'écran. L'intention était bonne — ne charger que ce
- * qu'on regarde — mais ça ne partait jamais, et j'ai passé deux essais
- * à rafistoler un montage qui n'était pas le bon.
+ * TROIS VERSIONS, ET LA BONNE EXPLICATION SEULEMENT À LA TROISIÈME.
  *
- * La vidéo de la fiche d'une marque, elle, marche depuis toujours.
- * Elle a son adresse dès le départ, `preload="metadata"` et la lecture
- * automatique. C'est donc exactement ce qu'on écrit ici : plus aucune
- * différence avec le cas qui fonctionne, plus aucune place pour ce
- * genre de panne.
+ * La première ne posait pas d'adresse au montage et la donnait à
+ * l'approche de l'écran, ce qui était la bonne idée. Mais elle portait
+ * aussi `preload="none"` : le navigateur avait donc reçu la consigne de
+ * ne rien charger, et la respectait même une fois l'adresse arrivée.
+ * Rien ne démarrait jamais.
  *
- * L'économie de mémoire ne disparaît pas pour autant, elle change de
- * moment. Au lieu de retarder le chargement, on RELÂCHE ce qui est
- * sorti du champ de vision : la vidéo est mise en pause, son adresse
- * retirée et le tampon de décodage vidé. Une carte qu'on a dépassée ne
- * coûte donc plus rien, et c'était le vrai problème — pas les
- * quelques-unes qu'on est en train de regarder.
+ * J'en ai conclu, à tort, que c'était l'adresse posée tardivement qui
+ * ne marchait pas. La deuxième version a donc mis l'adresse dès le
+ * montage — et là, avec quatre-vingt-seize marques, ce sont
+ * quatre-vingt-seize chargements lancés d'un coup, ce qui a fait tomber
+ * les téléphones. J'ai alors coupé la vidéo sur mobile, ce qui réglait
+ * le symptôme en supprimant la fonctionnalité.
  *
- * L'image fixe reste dessous en affiche. C'est elle qu'on voit avant le
+ * LE VRAI PARTAGE EST AILLEURS. C'est la présence de l'ADRESSE au
+ * montage qui déclenche le chargement, pas le préchargement. Une balise
+ * sans adresse ne coûte rien, quelle que soit sa consigne de
+ * préchargement. On peut donc avoir les deux : aucune adresse au
+ * départ, `preload="metadata"` pour que le chargement parte franchement
+ * quand on la donne, et l'adresse posée uniquement à l'approche de
+ * l'écran.
+ *
+ * Résultat : trois ou quatre vidéos vivantes à tout instant, sur
+ * téléphone comme sur ordinateur, et l'image fixe partout ailleurs.
+ * Elle reste d'ailleurs en affiche : c'est elle qu'on voit avant le
  * chargement, pendant, et pour toujours si la vidéo ne vient jamais.
  */
 export default function CouvertureAnimee({
@@ -41,16 +46,13 @@ export default function CouvertureAnimee({
   const ref = useRef<HTMLVideoElement>(null);
 
   /*
-   * On part de « oui ».
+   * On part de « non », et c'est ce qui rend la chose tenable.
    *
-   * Le contraire paraît plus prudent, mais c'est ce qui clouait la
-   * première version : tant que rien ne disait explicitement que la
-   * carte était visible, la vidéo n'existait pas. Ici elle joue, et
-   * c'est l'observateur qui l'arrête si elle est loin. Le pire cas
-   * devient une vidéo qui tourne une demi-seconde de trop, au lieu
-   * d'une vidéo qui ne part jamais.
+   * L'observateur répond dès qu'il est posé, donc les cartes déjà à
+   * l'écran passent à « oui » en une image. Celles du bas de la liste,
+   * elles, n'auront jamais rien demandé.
    */
-  const [actif, setActif] = useState(true);
+  const [actif, setActif] = useState(false);
 
   /** Coupé pour de bon : réglage du site, ou économiseur de données. */
   const bloque = useRef(false);
@@ -82,15 +84,12 @@ export default function CouvertureAnimee({
       ([entree]) => setActif(entree.isIntersecting),
       {
         /*
-         * Assez large pour qu'une carte soit prête quand elle arrive,
-         * assez serré pour ne pas décoder dix vidéos à la fois.
-         *
-         * C'était quatre cents pixels, ce qui faisait tourner presque
-         * deux écrans de vidéos en même temps. Le décodage vidéo est du
-         * travail pour la carte graphique, la même qui peint déjà le
-         * décor animé : à ce compte-là, tout le site rame.
+         * Assez pour qu'une carte soit prête quand elle arrive, assez
+         * peu pour ne jamais décoder dix vidéos à la fois. Le décodage
+         * vidéo est du travail pour la carte graphique, la même qui
+         * peint déjà le décor animé.
          */
-        rootMargin: "150px 0px",
+        rootMargin: "120px 0px",
         threshold: 0,
       }
     );
@@ -104,9 +103,14 @@ export default function CouvertureAnimee({
     if (!el || bloque.current) return;
 
     if (actif) {
-      // Revenue dans le champ de vision après avoir été relâchée : on
-      // lui rend son adresse. `getAttribute` et non `el.src`, qui
-      // renvoie une adresse absolue même quand l'attribut est absent.
+      /*
+       * Elle arrive à l'écran : on lui donne son adresse.
+       *
+       * `getAttribute` et non `el.src`, qui renvoie une adresse absolue
+       * même quand l'attribut est absent. Et `load()` explicitement,
+       * pour que le chargement parte à cet instant plutôt qu'au bon
+       * vouloir du navigateur.
+       */
       if (!el.getAttribute("src")) {
         el.setAttribute("src", video);
         el.load();
@@ -129,7 +133,12 @@ export default function CouvertureAnimee({
   return (
     <video
       ref={ref}
-      src={video}
+      /*
+       * AUCUNE ADRESSE ICI, ET C'EST TOUT LE SUJET. Une balise vidéo
+       * sans adresse ne charge rien et ne coûte rien : on peut donc en
+       * poser cent dans une page. L'adresse est donnée plus haut, à
+       * l'approche de l'écran seulement.
+       */
       poster={affiche}
       autoPlay
       muted
@@ -140,6 +149,11 @@ export default function CouvertureAnimee({
       // certains navigateurs la lecture automatique est refusée à
       // l'instant du rendu mais acceptée quelques dixièmes plus tard.
       onLoadedData={(e) => {
+        if (!bloque.current) e.currentTarget.play().catch(() => {});
+      }}
+      // Deuxième filet : sur certains navigateurs `loadeddata` arrive
+      // avant que la lecture soit autorisée, `canplay` non.
+      onCanPlay={(e) => {
         if (!bloque.current) e.currentTarget.play().catch(() => {});
       }}
       // Une couverture n'a rien à raconter à un lecteur d'écran : le

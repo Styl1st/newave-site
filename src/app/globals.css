@@ -2394,3 +2394,27 @@ html[data-reglage="1"] .ruban {
   content-visibility: auto;
   contain-intrinsic-size: auto 340px;
 }
+
+/* ---------- l'annuaire sur téléphone ----------
+   Même remède que pour les pièces (voir `.carte-eco`), mais réservé aux
+   écrans étroits : le navigateur met de côté le travail d'une carte
+   sortie de l'écran, et cent marques ne coûtent alors guère plus que
+   vingt.
+
+   POURQUOI SEULEMENT LÀ. Au-dessus de cette largeur, l'annuaire est en
+   mosaïque, et une mosaïque doit mesurer chaque carte pour lui attribuer
+   ses rangées : une carte mise de côté renverrait la hauteur de réserve
+   au lieu de la sienne, et la mise en page se disloquerait. Les deux
+   techniques s'excluent, il fallait choisir selon l'écran. Le
+   rechargement en boucle est un problème de téléphone ; les trous entre
+   les cartes, un problème d'ordinateur.
+
+   La hauteur de réserve est généreuse : sur une colonne, une carte de
+   l'annuaire fait dans les quatre cents pixels. Trop basse, la page se
+   rétracterait et l'ascenseur sauterait sous le pouce. */
+@media (max-width: 639px) {
+  .carte-eco-etroit {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
+  }
+}

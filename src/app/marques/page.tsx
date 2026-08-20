@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BrandDirectory from "@/components/BrandDirectory";
+import RaccourciAdmin from "@/components/RaccourciAdmin";
 import { getBrands } from "@/lib/queries";
 import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
@@ -52,6 +53,11 @@ export default async function BrandsPage() {
           Chaque marque ici a été lue, vérifiée et choisie. Pas de classement payant,
           pas de placement déguisé.
         </p>
+
+        {/* Invisible pour les visiteurs. Voir `RaccourciAdmin`. */}
+        <div className="mt-5">
+          <RaccourciAdmin href="/admin/marques/nouveau">Ajouter une marque</RaccourciAdmin>
+        </div>
       </header>
 
       <BrandDirectory brands={brands} favoris={Array.from(favoris)} notes={notes} />
