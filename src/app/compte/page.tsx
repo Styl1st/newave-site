@@ -87,7 +87,7 @@ export default async function ComptePage() {
         <h2 className="m-0 text-[17px] font-extrabold text-white">Ton identité</h2>
         <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
           Ton nom affiché change tout de suite. Ton adresse email, elle, demande une
-          confirmation dans les deux boîtes — l&apos;ancienne et la nouvelle — pour que
+          confirmation dans les deux boîtes, l&apos;ancienne et la nouvelle, pour que
           personne ne puisse déplacer ton compte à ta place.
         </p>
         <DisplayNameForm current={profile.display_name ?? ""} />

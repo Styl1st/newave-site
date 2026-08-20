@@ -34,7 +34,7 @@ export default async function FavorisPage() {
         <div className="glass flex flex-col items-center gap-5 p-8 text-center sm:p-10">
           <p className="m-0 max-w-md text-[15px] leading-relaxed text-white/88">
             Tu n&apos;as encore rien mis de côté. Le cœur, sur une carte de marque, la
-            range ici — c&apos;est ta liste à toi, elle ne se voit nulle part ailleurs.
+            range ici. C&apos;est ta liste à toi, elle ne se voit nulle part ailleurs.
           </p>
           <Link href="/marques" className="card-light px-7 py-3.5">
             <span className="relative z-3 text-[14px] font-extrabold">

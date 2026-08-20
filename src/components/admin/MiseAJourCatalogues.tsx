@@ -102,7 +102,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           className="mt-0.5 h-4 w-4 shrink-0 accent-white"
         />
         <span className="text-[13px] leading-relaxed text-white/80">
-          <span className="font-extrabold text-white">Corriger aussi le pays</span> — à
+          <span className="font-extrabold text-white">Corriger aussi le pays</span>, à
           partir de ce que le site déclare et de l&apos;extension de son domaine. Les
           marques dont le pays est vide sont complétées ; les autres ne sont remplacées
           que sur un indice solide, jamais sur la seule monnaie.
@@ -118,7 +118,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           className="mt-0.5 h-4 w-4 shrink-0 accent-white"
         />
         <span className="text-[13px] leading-relaxed text-white/80">
-          <span className="font-extrabold text-white">Compléter les visuels manquants</span> —
+          <span className="font-extrabold text-white">Compléter les visuels manquants</span> :
           couverture et illustration animée, prises sur la page d&apos;accueil de chaque
           boutique. On ne remplit que ce qui est vide : rien de ce que tu as choisi ne
           sera remplacé.

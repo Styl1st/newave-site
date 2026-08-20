@@ -303,7 +303,7 @@ export default async function BrandPage({ params }: Props) {
             ) : (
               <>
                 Notre lecture automatique n&apos;a pas réussi à récupérer le catalogue de{" "}
-                {brand.name} — certaines boutiques ne l&apos;exposent tout simplement pas.
+                {brand.name}. Certaines boutiques ne l&apos;exposent tout simplement pas.
                 Ça ne veut pas dire qu&apos;il n&apos;y a rien : tout se trouve sur leur
                 site, par le bouton juste en dessous.
               </>

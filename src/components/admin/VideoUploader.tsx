@@ -48,7 +48,7 @@ export default function VideoUploader({
     if (mo > MAX_MO) {
       setNote(
         `Cette vidéo fait ${mo.toFixed(0)} Mo, et le maximum est de ${MAX_MO} Mo. ` +
-          "Ré-exporte-la en 1080p — dans HandBrake, le réglage « Fast 1080p30 » suffit — " +
+          "Ré-exporte-la en 1080p (dans HandBrake, le réglage « Fast 1080p30 » suffit) " +
           "et tu devrais tomber autour de 10 Mo pour trente secondes, sans différence visible " +
           "à l'écran. Autre possibilité : ne pas l'héberger du tout et coller le lien " +
           "Instagram ou TikTok plus bas, c'est plus léger pour tout le monde."
@@ -98,7 +98,7 @@ export default function VideoUploader({
     <div>
       <Label
         htmlFor={`${name}-file`}
-        hint={`MP4 en 1080p, ${MAX_MO} Mo maximum — vise plutôt 10 à 15 Mo. Laisse vide pour un post en images seulement.`}
+        hint={`MP4 en 1080p, ${MAX_MO} Mo maximum, et vise plutôt 10 à 15 Mo. Laisse vide pour un post en images seulement.`}
       >
         {label}
       </Label>

@@ -1,9 +1,73 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
-export const metadata: Metadata = {
-  title: "Accès",
-  robots: { index: false, follow: false },
-};
+/**
+ * L'aperçu du lien, quand on le colle quelque part.
+ *
+ * DEUX RAISONS FAISAIENT QU'IL N'Y EN AVAIT AUCUN, et les deux venaient
+ * de nous.
+ *
+ * La première : cette page demandait aux robots de ne pas la regarder,
+ * et le verrou du site ajoutait la même consigne dans les en-têtes de
+ * chaque réponse. Or ce sont exactement ces consignes que WhatsApp,
+ * Discord, LinkedIn ou Slack lisent avant de fabriquer une carte. On
+ * leur disait « passe ton chemin », ils passaient leur chemin, et le
+ * lien s'affichait nu.
+ *
+ * C'était une précaution mal placée. Ce qu'on veut protéger, c'est le
+ * CONTENU du site pendant la bêta ; cette page-ci, elle, ne dit rien
+ * d'autre que « le site existe et il n'est pas encore ouvert ». Elle
+ * peut donc être vue, partagée et référencée sans le moindre risque.
+ * Tout le reste demeure fermé et non indexable.
+ *
+ * La seconde : l'image annoncée était toujours celle du domaine
+ * définitif, même quand on partageait l'adresse de test. Un robot
+ * allait donc chercher l'affiche sur un domaine qui ne la servait pas
+ * encore, et repartait les mains vides. On lit maintenant le domaine
+ * réellement demandé, donc l'affiche est prise là où l'on se trouve.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const entetes = await headers();
+  const hote = entetes.get("host") ?? "newavesphere.fr";
+  const protocole = entetes.get("x-forwarded-proto") ?? "https";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? `${protocole}://${hote}`;
+
+  const titre = "NEWAVE SPHERE, média de marques & d'artistes indépendants";
+  const description =
+    "Marques naissantes, pièces uniques, démarches qui prennent le temps de bien faire. " +
+    "Le site est en test privé : il faut un code pour entrer.";
+
+  return {
+    title: "Accès",
+    description,
+    metadataBase: new URL(base),
+    alternates: { canonical: base },
+    openGraph: {
+      siteName: "neWave.sphere",
+      locale: "fr_FR",
+      type: "website",
+      url: base,
+      title: titre,
+      description,
+      images: [
+        {
+          url: "/og.jpg",
+          width: 1200,
+          height: 630,
+          alt: "NEWAVE SPHERE, média de marques et d'artistes indépendants",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: titre,
+      description,
+      images: ["/og.jpg"],
+    },
+    // Elle peut être vue : c'est une porte, pas un contenu.
+    robots: { index: true, follow: true },
+  };
+}
 
 type Props = { searchParams: Promise<{ suite?: string; erreur?: string }> };
 
@@ -52,7 +116,7 @@ export default async function AccesPage({ searchParams }: Props) {
           <p className="m-0 mt-3 text-[13.5px] leading-relaxed text-white/78">
             NEWAVE SPHERE est un média et un annuaire de marques indépendantes : on
             les lit, on les vérifie, on les met en avant. Le site n&apos;est pas encore
-            ouvert au public — tu fais partie des premiers à le voir.
+            ouvert au public. Tu fais partie des premiers à le voir.
           </p>
         </div>
 

@@ -28,7 +28,7 @@ const SECTIONS = [
     contenu: [
       "La base et les images sont hébergées par **Supabase**, sur des serveurs situés dans l'Union européenne.",
       "Le site est servi par **Vercel Inc.**, dont l'infrastructure est mondiale.",
-      "Les emails automatiques — confirmation d'inscription, mot de passe oublié — sont envoyés par **Resend**, aux États-Unis. Ils ne contiennent que ton adresse et un lien.",
+      "Les emails automatiques, confirmation d'inscription et mot de passe oublié, sont envoyés par **Resend**, aux États-Unis. Ils ne contiennent que ton adresse et un lien.",
       "La boîte **contact@newavesphere.fr** est hébergée par **OVHcloud**, en France.",
     ],
   },
@@ -53,7 +53,7 @@ const SECTIONS = [
       "**Ton compte et tes favoris** : l'exécution du service que tu as demandé en t'inscrivant. Sans ces données, il n'y a pas de compte.",
       "**Les avis** : ton consentement, donné au moment où tu écris. Tu peux retirer un avis quand tu veux, et il disparaît.",
       "**La mesure de fréquentation** : notre intérêt légitime à savoir quelles marques intéressent. Elle ne repose sur aucun identifiant, ce qui est précisément ce qui la rend acceptable sans te demander ton avis.",
-      "**Les emails de service** — confirmation d'inscription, mot de passe oublié : l'exécution du service. Ce ne sont pas des messages publicitaires et tu ne peux pas t'en désinscrire, parce que sans eux ton compte ne fonctionne pas.",
+      "**Les emails de service**, confirmation d'inscription et mot de passe oublié : l'exécution du service. Ce ne sont pas des messages publicitaires et tu ne peux pas t'en désinscrire, parce que sans eux ton compte ne fonctionne pas.",
     ],
   },
   {
@@ -68,7 +68,7 @@ const SECTIONS = [
     contenu: [
       "Une seule chose, et il faut le dire : les emails automatiques passent par **Resend**, société américaine. Le message contient ton adresse et un lien, rien d'autre.",
       "Ce transfert repose sur les clauses contractuelles types de la Commission européenne, le cadre prévu pour ces cas.",
-      "Tout le reste — ta base, tes favoris, tes avis, tes images — reste sur des serveurs situés dans l'Union.",
+      "Tout le reste reste sur des serveurs situés dans l'Union : ta base, tes favoris, tes avis, tes images.",
     ],
   },
   {

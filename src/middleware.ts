@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return withNoIndex(withPath(), Boolean(gate));
+  if (!url || !key) return withNoIndex(withPath(), Boolean(gate), path);
 
   let response = withPath();
 
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
   });
 
   await supabase.auth.getUser();
-  return withNoIndex(response, Boolean(gate));
+  return withNoIndex(response, Boolean(gate), path);
 }
 
 /**
@@ -75,8 +75,23 @@ export async function middleware(request: NextRequest) {
  * moteurs de ne rien indexer. Une adresse partagee par megarde ne doit
  * pas se retrouver dans Google.
  */
-function withNoIndex(response: NextResponse, gated: boolean): NextResponse {
-  if (gated) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+function withNoIndex(response: NextResponse, gated: boolean, path: string): NextResponse {
+  /*
+   * Sauf la page d'accès, et c'est le point qui manquait.
+   *
+   * Cet en-tête est ce que WhatsApp, Discord ou LinkedIn regardent
+   * avant de fabriquer l'aperçu d'un lien. On le posait sur TOUTES les
+   * réponses, page d'accès comprise : le lien qu'on partage pour
+   * inviter quelqu'un s'affichait donc nu, sans titre ni image, ce qui
+   * est exactement le contraire de ce qu'on cherche.
+   *
+   * La page d'accès ne montre rien du site, seulement son nom et une
+   * invitation à entrer. Elle peut être lue par n'importe qui, y compris
+   * par un robot. Tout le reste garde la consigne.
+   */
+  if (gated && path !== "/acces") {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
   return response;
 }
 

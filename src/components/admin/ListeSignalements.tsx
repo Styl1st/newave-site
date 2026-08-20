@@ -127,7 +127,7 @@ function Carte({ item }: { item: ASignaler }) {
         {item.signalements.map((s, i) => (
           <p key={i} className="m-0 text-[12.5px] leading-relaxed text-white/78">
             <span className="font-bold text-white">{libelleMotif(item.cible, s.motif)}</span>
-            {s.detail && <> — {s.detail}</>}
+            {s.detail && <> · {s.detail}</>}
           </p>
         ))}
       </div>

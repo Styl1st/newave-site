@@ -84,7 +84,7 @@ const SECTIONS: Bloc[] = [
   {
     titre: "Ce dont nous ne répondons pas",
     paragraphes: [
-      "Le site est fourni tel quel. Nous faisons ce qu'il faut pour qu'il fonctionne, mais nous ne garantissons ni une disponibilité continue, ni l'absence de défaut — c'est d'ailleurs pour cela qu'il est encore en test.",
+      "Le site est fourni tel quel. Nous faisons ce qu'il faut pour qu'il fonctionne, mais nous ne garantissons ni une disponibilité continue, ni l'absence de défaut. C'est d'ailleurs pour cela qu'il est encore en test.",
       "Nous ne répondons pas du contenu des sites vers lesquels nous renvoyons, ni des transactions qui s'y déroulent.",
       "Nous ne répondons pas non plus des avis déposés par les membres, tant qu'ils ne nous ont pas été signalés. Une fois un contenu illicite porté à notre connaissance, nous agissons dans les meilleurs délais.",
     ],

@@ -18,7 +18,7 @@ export default async function SignalementsPage() {
         <p className="m-0 mt-3 max-w-2xl text-[14px] leading-relaxed text-white/70">
           Tout ce que les visiteurs ont remonté : avis, pièces et fiches de marque, du
           plus signalé au moins signalé. Avant de trancher, ouvre la page où la chose
-          s&apos;affiche — un commentaire sec sous une pièce précise et le même sous une
+          s&apos;affiche. Un commentaire sec sous une pièce précise et le même sous une
           fiche entière ne disent pas la même chose.
         </p>
       </header>
