@@ -163,9 +163,42 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
 }
 
 /**
+ * La vitrine : des pièces de toutes les marques, mélangées.
+ *
+ * Une limite haute, et c'est volontaire. Cette page se parcourt, elle
+ * ne s'inventorie pas : personne n'ira au bout de trois mille pièces,
+ * et les descendre toutes coûterait à chaque visite ce qu'on met des
+ * semaines à économiser ailleurs. Quatre cents suffisent à remplir
+ * seize pages de vingt-quatre, et le tirage change à chaque passage.
+ *
+ * Les pièces retirées de la boutique sont écartées : leur fiche reste
+ * consultable parce qu'elle porte des coups de cœur, mais une vitrine
+ * qui propose ce qui ne se vend plus n'a aucun intérêt.
+ */
+export async function getVitrine(limite = 400): Promise<Product[]> {
+  const supabase = await createClient();
+  if (!supabase) return DEMO_PRODUCTS;
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(`*, ${BRAND_REF}`)
+    .eq("status", "published")
+    .is("retired_at", null)
+    /*
+     * Les plus récentes d'abord POUR LA SÉLECTION, pas pour
+     * l'affichage : c'est ce qui décide quelles quatre cents pièces
+     * descendent. L'ordre visible, lui, est retiré au sort ensuite.
+     */
+    .order("created_at", { ascending: false })
+    .limit(limite);
+
+  if (error || !data) return DEMO_PRODUCTS;
+  return data as unknown as Product[];
+}
+
+/**
  * Toutes les pieces, marques confondues.
- * Plus utilisee depuis la suppression de la page /pieces : gardee pour
- * le jour ou tu voudras une vitrine globale ou la marketplace.
+ * Gardee pour le jour ou tu voudras un inventaire complet.
  */
 export async function getProducts(): Promise<Product[]> {
   const supabase = await createClient();

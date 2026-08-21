@@ -7,6 +7,9 @@ import { getMesMarques } from "@/lib/brand-space";
 const NAV = [
   { href: "/", label: "Accueil" },
   { href: "/marques", label: "Marques" },
+  // Juste après l'annuaire : c'est le même contenu pris par l'autre
+  // bout, et les deux se répondent.
+  { href: "/pieces", label: "Pièces" },
   { href: "/posts", label: "Posts" },
   { href: "/populaires", label: "Coups de cœur" },
   { href: "/a-propos", label: "À propos" },
@@ -79,14 +82,16 @@ export default async function Header() {
 
         {/* ---------- ordinateur ---------- */}
         <nav className="relative z-2 hidden items-center gap-0.5 md:flex">
-          {/* Les deux derniers n'apparaissent qu'en grand : entre 768 et
+          {/* Les derniers n'apparaissent qu'en grand : entre 768 et
               1024 px la barre serait trop chargée, et ce sont les liens
-              les moins utiles. */}
-          {NAV.slice(0, 5).map((item, i) => (
+              les moins utiles. Le seuil a bougé avec l'arrivée des
+              pièces, sinon « À propos » disparaissait de la barre sans
+              que personne l'ait décidé. */}
+          {NAV.slice(0, 6).map((item, i) => (
             <LienNav
               key={item.href}
               href={item.href}
-              className={i >= 3 ? "hidden lg:inline-block" : ""}
+              className={i >= 4 ? "hidden lg:inline-block" : ""}
             >
               {item.label}
             </LienNav>
@@ -156,7 +161,7 @@ export default async function Header() {
             </Link>
           )}
           <MobileMenu
-            liens={NAV.slice(0, 5)}
+            liens={NAV.slice(0, 6)}
             compte={compte}
             action={{ href: "/candidature", label: "Proposer une marque" }}
           />

@@ -39,8 +39,23 @@ const REGLES: Regle[] = [
   },
   {
     rayon: "Accessoires",
+    /*
+     * TROIS MOTS PIÉGEUX ONT ÉTÉ RESSERRÉS ICI, et ce sont eux qui
+     * rangeaient des t-shirts et des jeans dans les accessoires.
+     *
+     * `tie` attrapait « tie-dye », qui est une teinture et non une
+     * cravate. Un t-shirt tie-dye, en streetwear, ce n'est pas un cas
+     * rare : c'est un classique.
+     *
+     * `patch` sans délimiteur attrapait « patchwork », donc une veste
+     * en patchwork devenait un accessoire.
+     *
+     * `case` attrapait « in case of », qui traîne dans une description
+     * anglaise sur deux. Une coque de téléphone se dit autrement, et
+     * l'on en vend de toute façon très peu ici.
+     */
     motifs:
-      /casquette|\bcap\b|bonnet|beanie|\bbob\b|bucket|\bsac\b|\bbag\b|tote|ceinture|\bbelt\b|[ée]charpe|scarf|\bgant|glove|chaussette|\bsock|lunette|porte-cl|portefeuille|wallet|bandana|cravate|\btie\b|pochette|\bcase\b|sticker|patch/i,
+      /casquette|\bcap\b|bonnet|beanie|\bbob\b|bucket|\bsac\b|\bbag\b|\btote\b|ceinture|\bbelt\b|[ée]charpe|scarf|\bgant|glove|chaussette|\bsock|lunette|porte-cl|portefeuille|wallet|bandana|cravate|\btie\b(?!-?\s?dye)|pochette|coque\b|sticker|\bpatch(?:es)?\b/i,
   },
   {
     rayon: "Vestes",
@@ -75,8 +90,13 @@ const REGLES: Regle[] = [
   },
   {
     rayon: "Hauts",
+    /*
+     * « jersey » et « maillot » manquaient, et c'est ce qui laissait un
+     * maillot de foot sans rayon : le nom ne disait rien, on tombait
+     * dans la description, et n'importe quel mot y décidait à sa place.
+     */
     motifs:
-      /t-?shirt|\btee\b|\btop\b|chemise|\bshirt\b|d[ée]bardeur|tank|sweat|hoodie|crewneck|polo|blouse|\bbody\b|manches? longues|longsleeve|zip-?up|\bcrop\b/i,
+      /t-?shirt|teeshirt|\btee\b|\btop\b|chemise|\bshirt\b|jersey|maillot|d[ée]bardeur|singlet|tank|sweat|hoodie|crewneck|polo|blouse|\bbody\b|manches? longues|longsleeve|zip-?up|\bcrop\b/i,
   },
 ];
 
