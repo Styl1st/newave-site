@@ -2,6 +2,7 @@ import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
 import CouvertureAnimee from "./CouvertureAnimee";
+import VisuelAdaptatif from "./VisuelAdaptatif";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
@@ -139,30 +140,19 @@ export default function BrandCard({
               />
             </div>
           ) : visual ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              /*
-               * UNE SEULE DÉFINITION, ET PAS DE VERSION DOUBLE.
-               *
-               * Le jeu de vignettes propose « 1x » et « 2x », et un
-               * téléphone récent affiche trois pixels physiques pour un
-               * pixel de mise en page : il prenait donc toujours la
-               * grande, 1200 pixels de large. Or ces vignettes
-               * s'affichent sur 360 points de large. On téléchargeait
-               * quatre fois trop, et surtout on occupait quatre fois
-               * plus de mémoire une fois l'image décodée — c'est ce qui
-               * fait relancer la page passé quelques dizaines de
-               * marques.
-               *
-               * 640 pixels sur 360 points, c'est encore près du double
-               * de la définition d'affichage. La différence ne se voit
-               * pas sur une photo d'ambiance ; le coût, lui, se voyait.
-               */
+            /*
+             * C'est L'IMAGE qui décide si on la recadre.
+             *
+             * Une couverture de marque n'est pas toujours une photo :
+             * c'est souvent un lettrage sur fond uni, ou une bannière
+             * trois fois plus large que haute. Remplie de force dans le
+             * cadre, elle perdait la moitié de son nom. Voir
+             * `VisuelAdaptatif`.
+             */
+            <VisuelAdaptatif
               src={vignette(visual, 640)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              cadre={16 / 10}
+              className="transition duration-500 group-hover:scale-[1.04]"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

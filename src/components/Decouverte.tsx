@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Brand } from "@/lib/types";
 import { melanger } from "@/lib/melange";
+import VisuelAdaptatif from "./VisuelAdaptatif";
 
 /**
  * « Découvre de nouvelles marques ! »
@@ -51,28 +52,45 @@ function Vignette({ brand }: { brand: Brand }) {
       className="card-light w-[38vw] max-w-[190px] shrink-0 overflow-hidden sm:w-[190px]"
     >
       <span className="relative z-3 block">
+        {/*
+          PLUS DE CLASSE `visuel` ICI, ET C'EST VOLONTAIRE.
+          
+          Elle imposait un cadre PORTRAIT, quatre sur cinq, hors de
+          toute couche de style, donc plus fort que le rapport écrit
+          juste ici. Or une couverture de marque est presque toujours en
+          paysage : la rentrer de force dans un cadre plus haut que large
+          revenait à en couper la moitié gauche et la moitié droite.
+          C'était ça, l'impression de zoom.
+          
+          Le cadre reprend donc les proportions des cartes de
+          l'annuaire, où les mêmes images tombent juste. Le dégradé
+          d'attente est repris tel quel, c'est la seule chose qu'on perd
+          en se passant de `visuel`.
+        */}
         <span
-          className={`visuel flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-t-[var(--radius)] ${
-            estUnLogo ? "plaque-logo p-4" : ""
+          className={`flex aspect-16/10 w-full items-center justify-center overflow-hidden rounded-t-[var(--radius)] ${
+            estUnLogo
+              ? "plaque-logo p-4"
+              : "bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
           }`}
         >
-          {visuel ? (
+          {visuel && estUnLogo ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={visuel}
-              alt={estUnLogo ? brand.name : ""}
+              alt={brand.name}
               loading="lazy"
               decoding="async"
               draggable={false}
               /* Même traitement que dans l'annuaire : une plaque un peu
                  soutenue et un liseré autour des formes, faute de quoi
                  un logo blanc disparaît purement et simplement. */
-              className={
-                estUnLogo
-                  ? "max-h-[70%] w-full max-w-[124px] object-contain"
-                  : "h-full w-full object-cover"
-              }
+              className="h-auto max-h-[76%] w-full max-w-[124px] object-contain"
             />
+          ) : visuel ? (
+            /* Une couverture peut être une photo comme un lettrage
+               large : c'est elle qui décide si on la recadre. */
+            <VisuelAdaptatif src={visuel} cadre={16 / 10} />
           ) : (
             <span className="flex h-full w-full items-center justify-center px-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-[#a795c9]">
               {brand.name}

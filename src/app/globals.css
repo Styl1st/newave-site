@@ -1570,10 +1570,37 @@ html[data-menu="1"] > body > footer {
    photos de mode : la plupart des boutiques y entrent sans perte
    visible. Si une pièce se retrouvait coupée, c'est ce rapport qu'il
    faudrait revoir, pas le remplissage. */
+/*
+   DANS `base`, ET C'EST TOUT LE SUJET DE CE BLOC.
+
+   Ces règles étaient écrites hors de toute couche. Or une déclaration
+   sans couche l'emporte sur TOUTE règle placée dans une couche, quelle
+   que soit sa précision — et les utilitaires de Tailwind vivent dans
+   une couche. Autrement dit, `.visuel` battait `aspect-16/10` et
+   `.visuel > img` battait `object-contain`, écrits pourtant noir sur
+   blanc dans le composant.
+
+   Conséquence : tout ce qu'on posait sur ces images était ignoré en
+   silence. Un logo qu'on demandait de montrer en entier était rogné,
+   une vignette qu'on voulait en 4/3 s'affichait en 4/5. On croyait à
+   un problème de redimensionnement d'images ; c'était une question de
+   priorité entre deux feuilles de style.
+
+   Le REMPLISSAGE a donc été rangé dans `base`, plus bas : il redevient
+   un comportement par défaut, que n'importe quelle classe écrite dans
+   un composant peut contredire. La FORME du cadre, elle, reste hors
+   couche : c'est ce qui tient l'uniformité des vignettes d'un bout à
+   l'autre du site, et personne n'a demandé à la changer. */
 .visuel {
   /* `height` l'emporte quand le cadre a déjà une hauteur — c'est le cas
      sur la fiche d'une pièce. Le rapport ne sert plus que de repli, là
-     où le carrousel n'est pas enfermé dans un cadre dimensionné. */
+     où le carrousel n'est pas enfermé dans un cadre dimensionné.
+
+     CE BLOC RESTE HORS COUCHE, DÉLIBÉRÉMENT. Le rapport 4/5 gagne donc
+     contre un `aspect-` écrit dans un composant, et c'est ce qui tient
+     l'uniformité des vignettes d'un bout à l'autre du site. Seul le
+     REMPLISSAGE de l'image a été rendu contournable, juste en dessous :
+     c'était lui le problème, pas la forme du cadre. */
   height: 100%;
   aspect-ratio: 4 / 5;
   background:
@@ -1604,14 +1631,17 @@ option {
   color: var(--color-ink);
 }
 
-.visuel > img {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Le sujet d'une photo de vêtement est au milieu : c'est donc par
-     les bords qu'il faut rogner, jamais par le centre. */
-  object-position: center;
+@layer base {
+  .visuel > img,
+  .visuel > video {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Le sujet d'une photo de vêtement est au milieu : c'est donc par
+       les bords qu'il faut rogner, jamais par le centre. */
+    object-position: center;
+  }
 }
 
 /* ---------- le panneau de modification ----------
