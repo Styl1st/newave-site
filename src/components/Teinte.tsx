@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { vignette } from "@/lib/vignette";
 
 /**
  * La carte prend la couleur de son image.
@@ -22,7 +23,20 @@ import { useEffect, useRef } from "react";
  * lecture pixel par pixel laisse la carte à sa teinte par défaut, celle
  * du site. C'est un embellissement, pas une information : il n'y a rien
  * à réparer quand il n'a pas lieu.
+ *
+ * ON LIT UNE IMAGE MINUSCULE, ET C'EST LE POINT LE PLUS IMPORTANT DU
+ * FICHIER. La lecture réclame l'image en mode « croisé », que le
+ * navigateur ne confond pas avec celle qu'il vient de télécharger pour
+ * l'afficher : c'est donc un second téléchargement, pour une image qui
+ * ne sera jamais montrée. À pleine taille, ce serait doubler le poids
+ * de la page pour de la décoration. Soixante-quatre pixels de large
+ * suffisent, puisqu'on réduit à vingt sur la toile de toute façon, et
+ * chez les hébergeurs qui savent redimensionner cela ne coûte plus
+ * que quelques kilo-octets.
  */
+
+/** Assez grand pour que la couleur survive, assez petit pour être gratuit. */
+const COTE_SONDE = 64;
 
 /** Ce qu'on a déjà tiré de chaque image. */
 const TEINTES = new Map<string, string | null>();
@@ -143,7 +157,7 @@ export default function Teinte({ src }: { src?: string | null }) {
     let vivant = true;
 
     const lire = () => {
-      couleurDominante(src).then((teinte) => {
+      couleurDominante(vignette(src, COTE_SONDE) ?? src).then((teinte) => {
         if (vivant && teinte) carte.style.setProperty("--teinte", teinte);
       });
     };

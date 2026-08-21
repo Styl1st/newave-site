@@ -580,17 +580,36 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   position: relative;
   isolation: isolate;
   border-radius: 26px;
-  background: linear-gradient(158deg,
-    var(--bg-2) 0%,
-    var(--bg-3) 34%,
-    var(--bg-1) 72%,
-    var(--bg-6) 100%);
-  backdrop-filter: blur(30px) saturate(1.4);
-  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  /*
+     TROIS COUCHES, ET AUCUNE COULEUR ÉCRITE EN DUR. Le dégradé du bas
+     donne la matière, les deux lueurs du haut donnent le relief : sans
+     elles le panneau était un grand rectangle d'une seule teinte, et
+     à côté du décor du site il avait l'air imprimé.
+
+     Les lueurs viennent des accents et non des fonds, parce que ce sont
+     eux qui portent la couleur vive d'une ambiance. Changer de thème
+     change donc l'éclairage du panneau, pas seulement sa base.
+  */
+  background:
+    radial-gradient(120% 82% at 10% -12%, rgba(var(--accent-3), .58) 0%, transparent 58%),
+    radial-gradient(105% 72% at 94% 4%, rgba(var(--accent-1), .42) 0%, transparent 62%),
+    linear-gradient(158deg,
+      var(--bg-2) 0%,
+      var(--bg-3) 34%,
+      var(--bg-1) 72%,
+      var(--bg-6) 100%);
+  /*
+     PLUS DE `backdrop-filter` ICI. Le dégradé au-dessus est opaque :
+     rien de la page ne traversait le panneau, et l'on demandait quand
+     même au navigateur de flouter tout ce qui se trouve derrière, à
+     chaque image. C'est le voile qui porte ce flou, et lui seul en a
+     besoin puisqu'il est translucide.
+  */
   box-shadow:
-    0 40px 90px -20px rgba(10, 3, 34, .72),
-    0 0 60px -12px rgba(var(--accent-1), .30),
-    inset 0 1px 0 rgba(255, 255, 255, .16);
+    0 40px 90px -20px rgba(var(--voile), .78),
+    0 0 78px -10px rgba(var(--accent-1), .42),
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -1px 0 rgba(var(--voile), .5);
 }
 
 /* Les nappes, comme celles du fond mais resserrées sur la taille d'un
@@ -604,8 +623,11 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   position: absolute;
   inset: -40%;
   z-index: -1;
-  opacity: .5;
-  filter: blur(38px);
+  /* Elles étaient à moitié effacées : une nappe qu'on ne voit pas ne
+     colore rien, et tout le travail de dérive ne servait qu'à
+     consommer. */
+  opacity: .68;
+  filter: blur(34px);
   background:
     radial-gradient(circle at 24% 26%, rgba(var(--accent-1), .85) 0%, transparent 46%),
     radial-gradient(circle at 78% 58%, rgba(var(--accent-2), .8) 0%, transparent 46%),
@@ -634,7 +656,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: .55;
+  opacity: .82;
   pointer-events: none;
   animation: liseré calc(26s / var(--vit)) ease-in-out .55s infinite alternate;
 }
@@ -2746,4 +2768,96 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
   height: 1px;
   background: rgb(var(--teinte) / .35);
   pointer-events: none;
+}
+
+/* ---------- l'en-tête et le pied du panneau d'aperçu ----------
+   Ils étaient en blanc translucide et en bleu nuit écrit en dur. Sur
+   une ambiance verte ou ambrée, ces deux bandes restaient les seules
+   pièces du panneau à ne pas suivre le thème, et c'est justement là
+   que tombe le regard : le titre en haut, le bouton en bas. */
+.apercu-entete {
+  /* Une lumière qui descend du haut, comme si le panneau était éclairé
+     par son propre bord. Rien d'autre : le titre doit rester ce qu'on
+     lit en premier. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0));
+  border-bottom: 1px solid rgba(var(--accent-3), .34);
+}
+
+.apercu-pied {
+  /* La même couleur que le voile, donc celle de l'ambiance, en plus
+     dense vers le bas : le pied paraît reposer sur le panneau au lieu
+     d'être une bande collée dessus. */
+  background: linear-gradient(0deg, rgba(var(--voile), .62), rgba(var(--voile), .16));
+  border-top: 1px solid rgba(var(--accent-3), .30);
+}
+
+/* Ce qu'on voit avant la photo : les carreaux du panneau d'aperçu, et
+   les rectangles qui battent pendant le chargement. Ils étaient en
+   blanc translucide, donc gris sur un fond violet et gris sur un fond
+   vert. Une pointe d'accent suffit à les rattacher à l'ambiance, et
+   l'attente ressemble alors au site plutôt qu'à un gabarit. */
+.apercu-cadre,
+.apercu-attente {
+  background-image: linear-gradient(
+    150deg,
+    rgba(var(--accent-3), .30),
+    rgba(var(--accent-1), .16)
+  );
+}
+
+/* ---------- à l'impression ----------
+   Le site est fait de fonds sombres, de nappes floutées et de liserés
+   chromés. Imprimé tel quel, il vide une cartouche pour rendre un texte
+   blanc sur gris. Il n'y avait aucune feuille d'impression du tout : le
+   navigateur imprimait donc le décor.
+
+   On ne garde ici que ce qui a du sens sur papier — le texte, les
+   images, les adresses des liens — et l'on éteint tout le reste. Rien
+   de ceci ne se voit à l'écran. */
+@media print {
+  /* Les fonds animés, le curseur dessiné, les voiles : autant de
+     couches qui n'existent que pour l'écran. */
+  .bg-degrade,
+  .curseur-point,
+  .panneau-apercu,
+  [data-curseur],
+  video,
+  nav,
+  footer,
+  .confirmation,
+  button {
+    display: none !important;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Les cartes redeviennent de simples blocs : plus d'ombre portée, de
+     liseré chromé ni de fond dégradé à imprimer. */
+  .card-light,
+  .pied-carte {
+    background: none !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+  .card-light::before,
+  .card-light::after,
+  .pied-carte::before {
+    display: none !important;
+  }
+
+  /* Une adresse écrite en toutes lettres : sur papier, un lien dont on
+     ne voit pas la destination ne mène nulle part. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 10px;
+    word-break: break-all;
+  }
+
+  /* Rien ne doit être coupé en deux par un saut de page. */
+  img, .card-light {
+    break-inside: avoid;
+  }
 }

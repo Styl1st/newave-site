@@ -85,8 +85,14 @@ export default function BrandPreview({
       <div
         className="absolute inset-0 backdrop-blur-lg"
         style={{
-          background:
-            "radial-gradient(120% 90% at 50% 45%, rgba(var(--voile), .62) 0%, rgba(10, 3, 34, .84) 70%)",
+          background: [
+            // La lueur de l'ambiance, juste derrière le panneau.
+            "radial-gradient(130% 95% at 50% 42%, rgba(var(--accent-3), .34) 0%, transparent 58%)",
+            /* Et le voile lui-même. Le bord reste sombre en dur : c'est
+               ce qui garantit que le panneau se détache, quelle que
+               soit la couleur choisie pour le fond. */
+            "radial-gradient(120% 90% at 50% 45%, rgba(var(--voile), .58) 0%, rgba(10, 3, 34, .86) 72%)",
+          ].join(", "),
         }}
       />
 
@@ -109,7 +115,7 @@ export default function BrandPreview({
         }}
       >
         {/* ---- en-tête ---- */}
-        <div className="apercu-entete relative flex items-start justify-between gap-4 border-b border-white/12 p-6 sm:px-8">
+        <div className="apercu-entete relative flex items-start justify-between gap-4 p-6 sm:px-8">
           <div className="min-w-0">
             <p className="eyebrow m-0">Aperçu</p>
             <h2 className="m-0 mt-1.5 truncate text-[clamp(17px,3.6vw,23px)] font-extrabold tracking-[-0.025em] text-white">
@@ -148,7 +154,7 @@ export default function BrandPreview({
                   /* Le retard décale aussi les squelettes : sans lui, huit
                      rectangles pulsent à l'unisson et l'on croit à un
                      bug d'affichage plutôt qu'à un chargement. */
-                  className="aspect-square animate-pulse rounded-[14px] bg-white/10"
+                  className="apercu-attente aspect-square animate-pulse rounded-[14px]"
                   style={{ animationDelay: `${i * 90}ms` }}
                 />
               ))}
@@ -186,7 +192,7 @@ export default function BrandPreview({
                        vignette par vignette sous les yeux. */
                     style={{ animationDelay: `${60 + Math.min(i, 11) * 22}ms` }}
                   >
-                    <div className="apercu-cadre relative aspect-square overflow-hidden rounded-[14px] bg-white/10">
+                    <div className="apercu-cadre relative aspect-square overflow-hidden rounded-[14px]">
                       {p.image && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
@@ -205,7 +211,10 @@ export default function BrandPreview({
                         </span>
                       )}
                       {!p.available && (
-                        <span className="absolute inset-x-0 bottom-0 bg-[rgba(20,8,50,0.75)] py-1.5 text-center text-[9.5px] font-black uppercase tracking-[0.1em] text-white">
+                        <span
+                          className="absolute inset-x-0 bottom-0 py-1.5 text-center text-[9.5px] font-black uppercase tracking-[0.1em] text-white"
+                          style={{ background: "rgba(var(--voile), .78)" }}
+                        >
                           Épuisé
                         </span>
                       )}
@@ -229,7 +238,7 @@ export default function BrandPreview({
 
         {/* ---- pied ---- */}
         {data && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/12 bg-[rgba(8,2,30,0.38)] p-5 sm:px-8">
+          <div className="apercu-pied flex flex-wrap items-center justify-between gap-3 p-5 sm:px-8">
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.12em] text-white/55">
               {data.total} pièce{data.total > 1 ? "s" : ""}
               {data.total > data.products.length && ` · ${data.products.length} affichées`}

@@ -81,10 +81,9 @@ export default function ProductCard({
      * centaines sans que l'onglet tombe. Voir globals.css.
      */
     <div className="card-light carte-eco group flex h-full flex-col overflow-hidden">
-      {/* La MÊME adresse que la vignette affichée : c'est déjà l'image
-          que le navigateur a chargée, et la mesure est retenue par
-          adresse, donc une photo qui revient ailleurs ne sera pas relue. */}
-      <Teinte src={vignette(cover, 400)} />
+      {/* L'adresse d'origine : `Teinte` en réclame lui-même une version
+          minuscule, qu'il ne sert à rien d'aller chercher en grand. */}
+      <Teinte src={cover} />
 
       <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">

@@ -157,6 +157,7 @@ export default function VisuelAdaptatif({
   className = "",
   eager = false,
   fondFlou = false,
+  logo = false,
   secours,
 }: {
   src?: string;
@@ -175,6 +176,20 @@ export default function VisuelAdaptatif({
    * vignette la couleur de la marque au lieu d'un aplat neutre.
    */
   fondFlou?: boolean;
+  /**
+   * C'est un LOGO, donc on ne le recadre sous aucun prétexte.
+   *
+   * Les marges vides sont désormais retirées à la source (voir
+   * `api/img`), et c'est justement ce qui rendait la règle générale
+   * dangereuse : un logotype bien détouré tombe pile dans la fourchette
+   * où l'on remplissait le cadre, et remplir un cadre veut dire rogner.
+   * On coupait donc les lettres des marques dont on venait tout juste de
+   * retirer les marges. Crayonné et ZOAV se sont retrouvés amputés.
+   *
+   * Une photo qu'on rogne reste une photo. Un nom qu'on rogne n'est plus
+   * un nom. Ces deux cas ne méritaient pas la même règle.
+   */
+  logo?: boolean;
   /**
    * L'image de repli, quand celle demandée est trop petite pour être
    * agrandie proprement.
@@ -229,6 +244,12 @@ export default function VisuelAdaptatif({
         return;
       }
 
+      // Un logo se montre en entier, et la discussion s'arrête là.
+      if (logo) {
+        setEntiere(true);
+        return;
+      }
+
       const forme = img.naturalWidth / img.naturalHeight;
       const ecart = forme > cadre ? forme / cadre : cadre / forme;
 
@@ -273,7 +294,7 @@ export default function VisuelAdaptatif({
         if (transparent === true) setEntiere(true);
       });
     },
-    [cadre, replie, secours, src]
+    [cadre, logo, replie, secours, src]
   );
 
   /*

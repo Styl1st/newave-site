@@ -105,10 +105,9 @@ export default function BrandCard({
         className="absolute inset-0 z-2"
       />
 
-      {/* La MÊME adresse que la vignette affichée : c'est déjà l'image
-          que le navigateur a chargée, et la mesure est retenue par
-          adresse, donc un logo qui revient ailleurs ne sera pas relu. */}
-      <Teinte src={vignette(visual, estUnLogo ? 400 : 640)} />
+      {/* L'adresse d'origine : `Teinte` en réclame lui-même une version
+          minuscule, qu'il ne sert à rien d'aller chercher en grand. */}
+      <Teinte src={visual} />
 
       <div className="pointer-events-none relative z-3 flex flex-1 flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
@@ -137,11 +136,18 @@ export default function BrandCard({
              * cent logos ne donnent plus cent cartes identiques.
              */
             <VisuelAdaptatif
-              src={vignette(visual, 400)}
-              srcSet={jeuDeVignettes(visual, 400)}
+              /*
+               * `logo: true` fait rogner les marges vides du fichier.
+               * Sans ça, un logotype exporté avec trois cents pixels de
+               * blanc autour du mot arrivait ici comme une bannière, et
+               * s'affichait en un mince bandeau au milieu de la carte.
+               */
+              src={vignette(visual, 400, { logo: true })}
+              srcSet={jeuDeVignettes(visual, 400, { logo: true })}
               alt={brand.name}
               cadre={16 / 10}
               fondFlou
+              logo
               /*
                * Un logo trop petit se replie sur la couverture.
                *
