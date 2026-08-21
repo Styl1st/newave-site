@@ -43,6 +43,18 @@ export type CatalogueItem = {
   images: string[];
   shop_url: string;
   available: boolean;
+  /**
+   * Ce que la BOUTIQUE dit du type de la pièce : « T-Shirts »,
+   * « Bottoms », « Jewelry »… plus ses étiquettes.
+   *
+   * C'est la meilleure source qui soit pour ranger une pièce dans un
+   * rayon, et de loin : c'est la marque elle-même qui l'a écrit, dans
+   * un champ prévu pour ça. On devinait à partir du nom faute de
+   * l'avoir lu, alors que Shopify le sert dans la même réponse.
+   *
+   * Facultatif : toutes les plateformes ne le donnent pas.
+   */
+  type?: string;
 };
 
 export type Resultat =

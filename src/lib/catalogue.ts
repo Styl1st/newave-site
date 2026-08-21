@@ -409,6 +409,10 @@ type ShopifyBrut = {
   title: string;
   handle: string;
   body_html?: string;
+  /** Le rayon déclaré par la marque : « T-Shirts », « Bottoms »… */
+  product_type?: string;
+  /** Ses étiquettes, souvent tout aussi parlantes. */
+  tags?: string[] | string;
   // Les trois axes que Shopify autorise, alignés sur `options`.
   variants?: ShopifyVariante[];
   images?: { src: string }[];
@@ -521,6 +525,17 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
       images: (p.images ?? []).map((i) => i.src).slice(0, 8),
       shop_url: `${base}/products/${p.handle}`,
       available: variants.some((v) => v.available),
+      /*
+       * Le type déclaré et les étiquettes, réunis en une seule chaîne.
+       *
+       * On ne cherche pas à les interpréter ici : c'est le travail de
+       * `deduireLeRayon`, qui saura y reconnaître « T-Shirts » comme il
+       * reconnaît « t-shirt » dans un titre. Les rassembler suffit, et
+       * évite d'avoir deux champs à transporter jusqu'à la base.
+       */
+      type: [p.product_type ?? "", Array.isArray(p.tags) ? p.tags.join(" ") : (p.tags ?? "")]
+        .join(" ")
+        .trim(),
     };
   });
 }

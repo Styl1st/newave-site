@@ -163,7 +163,7 @@ export async function synchroniserCatalogue(
         categories:
           trouvee.categories && trouvee.categories.length > 0
             ? trouvee.categories
-            : deduireLeRayon(ligne.name, ligne.description),
+            : deduireLeRayon(ligne.name, ligne.description, item.type),
         featured: trouvee.featured ?? false,
         // Elle est de retour dans la boutique : on lève l'archive.
         retired_at: null,
@@ -181,7 +181,7 @@ export async function synchroniserCatalogue(
       aCreer.push({
         ...ligne,
         slug: pieceSlug,
-        categories: deduireLeRayon(ligne.name, ligne.description),
+        categories: deduireLeRayon(ligne.name, ligne.description, item.type),
         status: options.statutDesNouvelles,
         position: rang++,
       });

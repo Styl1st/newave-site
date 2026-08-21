@@ -40,19 +40,39 @@ function enCentimes(p: Product): number | null {
 
 export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
   const [query, setQuery] = useState("");
+  /*
+   * DEUX FAMILLES DE FILTRES, ET ELLES NE SE COMBINENT PAS PAREIL.
+   *
+   * À l'intérieur d'une famille, c'est un OU : « Hauts ou Bas », « moins
+   * de 60 € ou 60 à 160 € ». Entre les deux familles, c'est un ET :
+   * « des hauts, ET à moins de 60 € ».
+   *
+   * C'est la règle habituelle des filtres de boutique, et surtout c'est
+   * la SEULE qui ait un sens ici : une pièce n'a qu'un rayon et qu'un
+   * prix. Demander un ET à l'intérieur d'une famille — un article qui
+   * serait à la fois un haut et un bas — ne peut RIEN donner, jamais.
+   *
+   * C'est exactement ce qui se passait : choisir « Bas » puis vouloir
+   * ajouter « Hauts » vidait la liste, le filtre s'effaçait tout seul,
+   * et la famille entière disparaissait de l'écran. Il ne restait que
+   * les prix.
+   */
   const [rayons, setRayons] = useState<string[]>([]);
-  const [tranche, setTranche] = useState<Tranche | null>(null);
+  const [tranches, setTranches] = useState<Tranche[]>([]);
   const [ouvert, setOuvert] = useState(false);
   const [combien, setCombien] = useState(LOT);
 
   const basculer = (r: string) =>
     setRayons((liste) => (liste.includes(r) ? liste.filter((x) => x !== r) : [...liste, r]));
 
-  const actifs = rayons.length + (tranche ? 1 : 0);
+  const basculerPrix = (t: Tranche) =>
+    setTranches((liste) => (liste.includes(t) ? liste.filter((x) => x !== t) : [...liste, t]));
+
+  const actifs = rayons.length + tranches.length;
 
   function reinitialiser() {
     setRayons([]);
-    setTranche(null);
+    setTranches([]);
   }
 
   /*
@@ -83,22 +103,32 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
     return t ? centimes >= t.min && centimes < t.max : true;
   };
 
-  const rayonsDisponibles = useMemo(() => {
-    const dedans = parRecherche.filter((p) => {
-      if (tranche && !dansLaTranche(p, tranche)) return false;
-      return rayons.every((r) => rayonDe(p) === r || p.categories.includes(r));
-    });
-    return compterLesRayons(dedans);
-  }, [parRecherche, tranche, rayons]);
+  const bonPrix = (p: Product) =>
+    tranches.length === 0 || tranches.some((t) => dansLaTranche(p, t));
+
+  const bonRayon = (p: Product) => rayons.length === 0 || rayons.includes(rayonDe(p));
+
+  /*
+   * Chaque famille se compte SANS ELLE-MÊME.
+   *
+   * Les rayons proposés tiennent compte du prix choisi, jamais des
+   * rayons déjà cochés : sinon en choisir un ferait disparaître tous les
+   * autres, et l'on ne pourrait plus en ajouter un second ni changer
+   * d'avis sans tout effacer.
+   */
+  const rayonsDisponibles = useMemo(
+    () => compterLesRayons(parRecherche.filter(bonPrix)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [parRecherche, tranches]
+  );
 
   const tranchesDisponibles = useMemo(() => {
-    const dedans = parRecherche.filter((p) =>
-      rayons.every((r) => rayonDe(p) === r || p.categories.includes(r))
-    );
+    const dedans = parRecherche.filter(bonRayon);
     return TRANCHES.filter((t) => dedans.some((p) => dansLaTranche(p, t.cle))).map((t) => ({
       ...t,
       total: dedans.filter((p) => dansLaTranche(p, t.cle)).length,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parRecherche, rayons]);
 
   // Un filtre devenu sans objet s'efface tout seul.
@@ -110,12 +140,9 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
   }, [rayonsDisponibles]);
 
   const resultats = useMemo(
-    () =>
-      parRecherche.filter((p) => {
-        if (tranche && !dansLaTranche(p, tranche)) return false;
-        return rayons.every((r) => rayonDe(p) === r || p.categories.includes(r));
-      }),
-    [parRecherche, rayons, tranche]
+    () => parRecherche.filter((p) => bonPrix(p) && bonRayon(p)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [parRecherche, rayons, tranches]
   );
 
   // Changer de filtre repart du début, sinon on demanderait à la page
@@ -179,11 +206,18 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
                 <span className="ml-1.5 opacity-45">×</span>
               </button>
             ))}
-            {tranche && (
-              <span className={`${chip} ${chipOn}`}>
-                {TRANCHES.find((t) => t.cle === tranche)?.label}
-              </span>
-            )}
+            {tranches.map((cle) => (
+              <button
+                key={cle}
+                type="button"
+                onClick={() => basculerPrix(cle)}
+                aria-label="Retirer ce filtre de prix"
+                className={`${chip} ${chipOn}`}
+              >
+                {TRANCHES.find((t) => t.cle === cle)?.label}
+                <span className="ml-1.5 opacity-45">×</span>
+              </button>
+            ))}
             <button
               type="button"
               onClick={reinitialiser}
@@ -198,7 +232,14 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
           <div id="filtres-pieces" className="mt-4 border-t border-white/15 pt-4">
             {rayonsDisponibles.length > 1 && (
               <>
-                <p className="eyebrow m-0 mb-2">Rayon</p>
+                <p className="eyebrow m-0 mb-2">
+                  Rayon
+                  {rayons.length > 0 && (
+                    <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
+                      plusieurs possibles
+                    </span>
+                  )}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setRayons([])}
@@ -233,21 +274,25 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setTranche(null)}
-                    className={`${chip} ${tranche === null ? chipOn : chipOff}`}
+                    onClick={() => setTranches([])}
+                    className={`${chip} ${tranches.length === 0 ? chipOn : chipOff}`}
                   >
                     Tous les prix
                   </button>
-                  {tranchesDisponibles.map((t) => (
-                    <button
-                      key={t.cle}
-                      onClick={() => setTranche(t.cle)}
-                      className={`${chip} ${tranche === t.cle ? chipOn : chipOff}`}
-                    >
-                      {t.label}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{t.total}</span>
-                    </button>
-                  ))}
+                  {tranchesDisponibles.map((t) => {
+                    const active = tranches.includes(t.cle);
+                    return (
+                      <button
+                        key={t.cle}
+                        onClick={() => basculerPrix(t.cle)}
+                        aria-pressed={active}
+                        className={`${chip} ${active ? chipOn : chipOff}`}
+                      >
+                        {t.label}
+                        <span className="ml-1.5 opacity-55 tabular-nums">{t.total}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}

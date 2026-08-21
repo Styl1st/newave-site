@@ -30,12 +30,12 @@ const REGLES: Regle[] = [
   {
     rayon: "Chaussures",
     motifs:
-      /chaussure|sneaker|basket|botte|bottine|\bboot|mocassin|sandale|derby|\bshoe|runner|\bmule|claquette|\bslide\b|espadrille/i,
+      /chaussure|sneaker|basket|botte|bottine|\bboot|mocassin|sandale|derby|\bshoe|runner|\bmule|claquette|\bslide\b|espadrille|footwear/i,
   },
   {
     rayon: "Bijoux",
     motifs:
-      /bijou|collier|bague\b|bracelet|boucle d|pendentif|piercing|necklace|\bring\b|earring|cha[îi]ne\b|\bchain\b/i,
+      /bijou|collier|bague\b|bracelet|boucle d|pendentif|piercing|necklace|\bring\b|earring|cha[îi]ne\b|\bchain\b|jewel(?:le)?ry/i,
   },
   {
     rayon: "Accessoires",
@@ -60,7 +60,7 @@ const REGLES: Regle[] = [
   {
     rayon: "Vestes",
     motifs:
-      /veste|jacket|manteau|\bcoat\b|blouson|bomber|parka|doudoune|puffer|trench|gilet|\bvest\b|varsity|coach|windbreaker|anorak|softshell|overshirt|surchemise/i,
+      /veste|jacket|manteau|\bcoat\b|blouson|bomber|parka|doudoune|puffer|trench|gilet|\bvest\b|varsity|coach|windbreaker|anorak|softshell|overshirt|surchemise|outerwear/i,
   },
   { rayon: "Robes", motifs: /\brobe\b|\bdress\b|combinaison/i },
   {
@@ -82,7 +82,7 @@ const REGLES: Regle[] = [
      * rapportait.
      */
     motifs:
-      /pantalon|\bjeans?\b|\bshorts?\b(?!\s*(?:sleeve|manche))|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda/i,
+      /pantalon|\bjeans?\b|\bshorts?\b(?!\s*(?:sleeve|manche))|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda|\bbottoms?\b|bas de survêtement/i,
   },
   {
     rayon: "Maille",
@@ -96,7 +96,7 @@ const REGLES: Regle[] = [
      * dans la description, et n'importe quel mot y décidait à sa place.
      */
     motifs:
-      /t-?shirt|teeshirt|\btee\b|\btop\b|chemise|\bshirt\b|jersey|maillot|d[ée]bardeur|singlet|tank|sweat|hoodie|crewneck|polo|blouse|\bbody\b|manches? longues|longsleeve|zip-?up|\bcrop\b/i,
+      /t-?shirt|teeshirt|\btee\b|\btop\b|chemise|\bshirt\b|jersey|maillot|d[ée]bardeur|singlet|tank|sweat|hoodie|crewneck|polo|blouse|\bbody\b|manches? longues|longsleeve|zip-?up|\bcrop\b|\btops\b|haut de survêtement/i,
   },
 ];
 
@@ -108,8 +108,26 @@ const REGLES: Regle[] = [
  * ranger une pièce à deux endroits ferait douter du classement partout
  * ailleurs.
  */
-export function deduireLeRayon(nom: string, description?: string | null): string[] {
+export function deduireLeRayon(
+  nom: string,
+  description?: string | null,
+  /**
+   * Ce que la boutique déclare : son rayon à elle, ses étiquettes.
+   * C'est la source la plus sûre, quand elle existe.
+   */
+  type?: string | null
+): string[] {
   /*
+   * TROIS SOURCES, DE LA PLUS SÛRE À LA MOINS SÛRE.
+   *
+   * 1. LE TYPE DÉCLARÉ PAR LA BOUTIQUE. Shopify a un champ pour ça, et
+   *    les marques le remplissent : « T-Shirts », « Bottoms »,
+   *    « Jewelry ». C'est la marque elle-même qui range sa pièce, on ne
+   *    devine plus rien. On ne le lisait pas, alors qu'il arrive dans la
+   *    même réponse que le prix et les photos.
+   * 2. LE NOM. Il désigne la pièce et rien d'autre.
+   * 3. LA DESCRIPTION, en dernier recours seulement.
+   *
    * LE NOM D'ABORD, LA DESCRIPTION SEULEMENT À DÉFAUT.
    *
    * Les deux étaient jetés dans la même chaîne, et c'était l'erreur de
@@ -124,6 +142,13 @@ export function deduireLeRayon(nom: string, description?: string | null): string
    * s'il n'a rien donné — un « Chihuahua » sans autre indice, par
    * exemple, où le texte reste le seul recours.
    */
+  const declare = (type ?? "").trim();
+  if (declare) {
+    for (const regle of REGLES) {
+      if (regle.motifs.test(declare)) return [regle.rayon];
+    }
+  }
+
   for (const regle of REGLES) {
     if (regle.motifs.test(nom)) return [regle.rayon];
   }
