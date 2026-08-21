@@ -129,9 +129,14 @@ export default async function PiecePage({ params }: Props) {
             et c'est la bande blanche. En fixant le rapport ici et en
             faisant descendre `h-full` jusqu'à l'image, il n'y a plus
             d'espace possible : les deux hauteurs sont la même. */}
+        {/* PLUS DE RAPPORT IMPOSÉ ICI. Le cadre prenait la forme d'une
+            photo de mode, quatre sur cinq, et toute photo qui n'avait
+            pas exactement ce rapport laissait voir le fond clair de la
+            carte sous elle. C'est le carrousel qui décide maintenant,
+            d'après la première image : voir `Carousel`. */}
         <div
           data-no-reveal
-          className="card-light rise aspect-4/5 self-start overflow-hidden lg:sticky lg:top-6"
+          className="card-light rise self-start overflow-hidden lg:sticky lg:top-6"
         >
           <div className="relative z-3 h-full">
             {images.length > 0 ? (

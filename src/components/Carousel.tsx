@@ -36,6 +36,24 @@ export default function Carousel({
   const bande = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
+  /*
+   * LE CADRE PREND LA FORME DE LA PHOTO, ET NON L'INVERSE.
+   *
+   * Il était fixé à quatre sur cinq pour tout le monde. Une photo de
+   * boutique qui n'a pas exactement ce rapport ne pouvait donc que
+   * perdre ses bords, ou laisser voir le fond clair de la carte en
+   * dessous d'elle : c'est la bande blanche, et elle revenait sans
+   * cesse parce qu'on s'attaquait au symptôme.
+   *
+   * On lit donc les proportions de la PREMIÈRE image au chargement, et
+   * le cadre s'y règle. Elle s'affiche alors en entier, sans rognure et
+   * sans bande, quelle que soit la façon dont la marque photographie.
+   * Les suivantes se recadrent sur le même gabarit : c'est le prix à
+   * payer pour que la bande ne saute pas d'une photo à l'autre, et les
+   * photos d'une même boutique partagent presque toujours un format.
+   */
+  const [forme, setForme] = useState<number | null>(null);
+
   /** Un lecteur par vidéo, pour n'en laisser jouer qu'une. */
   const lecteurs = useRef<(HTMLVideoElement | null)[]>([]);
 
@@ -85,7 +103,15 @@ export default function Carousel({
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div
+      className={`relative ${className}`}
+      /*
+       * Quatre sur cinq tant qu'on ne sait pas : c'est le format des
+       * photos de mode, donc le meilleur pari en attendant la vraie
+       * mesure. Elle arrive au premier affichage et corrige d'elle-même.
+       */
+      style={{ aspectRatio: forme ?? 4 / 5 }}
+    >
       <div
         ref={bande}
         /*
@@ -107,7 +133,10 @@ export default function Carousel({
       >
         {images.map((src, i) =>
           estUneVideo(src) ? (
-            <div key={src + i} className="visuel w-full shrink-0 snap-center">
+            <div
+              key={src + i}
+              className="w-full shrink-0 snap-center bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
+            >
               <video
                 ref={(el) => {
                   lecteurs.current[i] = el;
@@ -121,11 +150,19 @@ export default function Carousel({
                    post en télécharge quatre d'un coup. */
                 preload={i === 0 ? "metadata" : "none"}
                 aria-label={i === 0 ? alt : undefined}
-                className="block w-full"
+                onLoadedMetadata={(e) => {
+                  if (i === 0 && e.currentTarget.videoWidth) {
+                    setForme(e.currentTarget.videoWidth / e.currentTarget.videoHeight);
+                  }
+                }}
+                className="block h-full w-full object-cover"
               />
             </div>
           ) : (
-            <div key={src + i} className="visuel w-full shrink-0 snap-center">
+            <div
+              key={src + i}
+              className="w-full shrink-0 snap-center bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={vignette(src, 900)}
@@ -136,7 +173,12 @@ export default function Carousel({
                    se charge sans attendre, les autres à l'approche. */
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
-                className="block w-full"
+                onLoad={(e) => {
+                  if (i === 0 && e.currentTarget.naturalWidth) {
+                    setForme(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
+                  }
+                }}
+                className="block h-full w-full object-cover"
               />
             </div>
           )

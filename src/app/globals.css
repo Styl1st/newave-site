@@ -2453,3 +2453,105 @@ html[data-reglage="1"] .ruban {
     contain-intrinsic-size: auto 360px;
   }
 }
+
+/* ---------- le curseur ----------
+   Un point chromé qui colle au pointeur, et un anneau qui le rattrape.
+   La logique est dans `Curseur.tsx` ; ici, la matière.
+
+   Tout est conditionné à `html[data-curseur="1"]`, posé par le
+   composant SEULEMENT s'il a trouvé un pointeur fin. Sur un écran
+   tactile, aucune de ces règles ne s'applique : le curseur du système
+   n'est jamais masqué, et les deux calques restent invisibles. */
+.curseur-point,
+.curseur-anneau {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+/* Ils n'apparaissent qu'au premier mouvement. Avant ça, on ne sait pas
+   où est le pointeur : les afficher au centre de l'écran ferait croire
+   à un élément de la page. */
+html[data-curseur-vu="1"] .curseur-point,
+html[data-curseur-vu="1"] .curseur-anneau {
+  opacity: 1;
+}
+
+.curseur-point {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(8, 2, 30, .35), 0 2px 10px rgba(255, 255, 255, .5);
+  transition: width .18s, height .18s, opacity .2s;
+}
+
+.curseur-anneau {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  /* Le liseré chromé du site, en tout petit. C'est ce qui le rattache
+     à la barre du haut et aux panneaux plutôt qu'à un curseur générique
+     comme on en voit partout. */
+  background: var(--chrome-edge);
+  background-size: 220% 220%;
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%);
+  mask: radial-gradient(circle, transparent 60%, #000 62%);
+  opacity: 0;
+  transition: width .22s cubic-bezier(.2, .9, .25, 1),
+              height .22s cubic-bezier(.2, .9, .25, 1),
+              opacity .2s;
+  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+}
+html[data-curseur-vu="1"] .curseur-anneau { opacity: .85; }
+
+/* Au-dessus de ce qui est cliquable, l'anneau s'ouvre et le point se
+   réduit. En masquant le curseur du système, on a perdu la petite main
+   qui annonçait un lien : il faut bien la remplacer. */
+html[data-curseur-etat="actif"] .curseur-anneau {
+  width: 46px;
+  height: 46px;
+}
+html[data-curseur-etat="actif"] .curseur-point {
+  width: 4px;
+  height: 4px;
+}
+
+/* À l'appui, tout se resserre : c'est le retour tactile qu'on n'a pas. */
+html[data-curseur-appui="1"] .curseur-anneau {
+  width: 22px;
+  height: 22px;
+}
+
+/* Dans un champ de saisie, on rend la main au système. Son trait
+   vertical dit où le texte va s'insérer, ce qu'un point rond ne sait
+   pas dire, et personne n'a envie de taper à l'aveugle. */
+html[data-curseur-etat="saisie"] .curseur-point,
+html[data-curseur-etat="saisie"] .curseur-anneau {
+  opacity: 0;
+}
+
+/* Le curseur du système disparaît, sauf là où sa forme porte un sens. */
+html[data-curseur="1"] body,
+html[data-curseur="1"] a,
+html[data-curseur="1"] button,
+html[data-curseur="1"] [role="button"],
+html[data-curseur="1"] label,
+html[data-curseur="1"] summary {
+  cursor: none;
+}
+html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
+  cursor: auto;
+}
+
+/* Le mouvement en moins, la forme en plus : l'anneau ne dérive plus le
+   long de son dégradé, mais il reste là et continue de dire ce qui est
+   cliquable. Le rattrapage, lui, est coupé dans le composant. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) .curseur-anneau { animation: none; }
+}
+[data-fige="1"] .curseur-anneau { animation: none !important; }

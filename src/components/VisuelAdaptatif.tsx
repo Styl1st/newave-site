@@ -25,6 +25,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * Aucune analyse du contenu, aucune requête, aucune bibliothèque : deux
  * nombres que le navigateur connaît déjà.
+ *
+ * ET LA PLACE QUI RESTE EST REMPLIE PAR L'IMAGE ELLE-MÊME. Montrer une
+ * bannière en entier dans un cadre plus haut qu'elle laisse deux
+ * bandes vides au-dessus et en dessous : c'est correct, mais ça a l'air
+ * d'un accident. On y glisse donc un agrandissement flouté de la même
+ * image, comme le font les lecteurs vidéo pour les films au mauvais
+ * format. La vignette redevient pleine, la couleur vient de la marque,
+ * et le vide n'est plus un vide.
+ *
+ * Ça ne coûte pas une image de plus : c'est la même adresse, donc le
+ * navigateur réutilise ce qu'il a déjà décodé. Seul le flou est du
+ * travail supplémentaire, et il ne s'applique qu'aux vignettes qui en
+ * ont besoin.
  */
 
 /**
@@ -80,7 +93,7 @@ export default function VisuelAdaptatif({
     if (img?.complete) decider(img);
   }, [decider]);
 
-  return (
+  const image = (
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
       ref={ref}
@@ -91,7 +104,26 @@ export default function VisuelAdaptatif({
       loading={eager ? "eager" : "lazy"}
       decoding="async"
       onLoad={(e) => decider(e.currentTarget)}
-      className={`h-full w-full ${entiere ? "object-contain p-3" : "object-cover"} ${className}`}
+      className={`h-full w-full ${entiere ? "relative z-1 object-contain p-3" : "object-cover"} ${className}`}
     />
+  );
+
+  if (!entiere) return image;
+
+  return (
+    <>
+      {/* Le fond : la même image, agrandie et floutée. `aria-hidden` et
+          `alt` vide, c'est un décor, pas une information. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+        className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover opacity-55 blur-lg"
+      />
+      {image}
+    </>
   );
 }
