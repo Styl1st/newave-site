@@ -41,9 +41,14 @@ const REPRISE_MS = 1800;
 
 
 function Vignette({ brand }: { brand: Brand }) {
-  const visuel = brand.cover_url ?? brand.logo_url;
-  // Un logo se montre en entier, une photo se recadre. Voir BrandCard.
-  const estUnLogo = !brand.cover_url && Boolean(brand.logo_url);
+  /*
+   * Le logo d'abord, la couverture à défaut : même règle que dans
+   * l'annuaire. Une couverture importée d'une boutique est souvent la
+   * photo d'une pièce prise au hasard, et sur une vignette de
+   * découverte elle raconte cet article plutôt que la marque.
+   */
+  const visuel = brand.logo_url ?? brand.cover_url;
+  const estUnLogo = Boolean(brand.logo_url);
 
   return (
     <Link

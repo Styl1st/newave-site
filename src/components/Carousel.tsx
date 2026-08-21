@@ -129,7 +129,20 @@ export default function Carousel({
          * exactement ce qu'on veut, et c'est lui qui décide, pas nous.
          */
         style={{ touchAction: "pan-x pan-y" }}
-        className="flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        /*
+         * `sans-ascenseur` PLUTÔT QUE DES VARIANTES ÉCRITES À LA MAIN.
+         *
+         * Il y avait ici trois classes fabriquées entre crochets pour
+         * masquer la barre de défilement. Elles ne prenaient pas, et la
+         * barre restait : c'est la bande claire qu'on voyait sous la
+         * photo, avec les pastilles posées dessus. Ce n'était donc ni un
+         * problème de cadrage ni un problème de format, mais une barre
+         * de défilement bien réelle qu'on croyait cachée.
+         *
+         * Le site a déjà une classe pour ça, employée ailleurs et qui
+         * marche. On s'en sert.
+         */
+        className="sans-ascenseur flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
       >
         {images.map((src, i) =>
           estUneVideo(src) ? (

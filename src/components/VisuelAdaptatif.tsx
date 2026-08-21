@@ -41,6 +41,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 
 /**
+ * En deçà, un logo est trop petit pour servir d'illustration.
+ *
+ * Une carte d'annuaire fait dans les trois cent quatre-vingts points de
+ * large, et deux fois plus de pixels sur un écran fin. Un fichier de
+ * cent cinquante pixels y est agrandi trois fois : il en ressort en
+ * bouillie, et c'est la marque qui a l'air négligée.
+ *
+ * On mesure le plus GRAND côté : beaucoup de logos sont des bandeaux
+ * larges et bas, parfaitement nets malgré leurs quatre-vingts pixels de
+ * hauteur.
+ */
+const LOGO_TROP_PETIT = 220;
+
+/**
  * À partir de quel écart on renonce à recadrer.
  *
  * Un tiers de différence, dans un sens ou dans l'autre. En deçà, ce
@@ -60,6 +74,8 @@ export default function VisuelAdaptatif({
   cadre,
   className = "",
   eager = false,
+  fondFlou = false,
+  secours,
 }: {
   src?: string;
   srcSet?: string;
@@ -68,18 +84,74 @@ export default function VisuelAdaptatif({
   cadre: number;
   className?: string;
   eager?: boolean;
+  /**
+   * Remplir la place restante avec un agrandissement flouté de l'image.
+   *
+   * Réservé aux LOGOS. Sur une photo, le procédé fait double emploi :
+   * l'image est déjà une ambiance, la flouter derrière elle brouille
+   * les deux. Sur un logo posé sur fond uni, en revanche, il donne à la
+   * vignette la couleur de la marque au lieu d'un aplat neutre.
+   */
+  fondFlou?: boolean;
+  /**
+   * L'image de repli, quand celle demandée est trop petite pour être
+   * agrandie proprement.
+   *
+   * Sert aux logos : mieux vaut la couverture de la boutique, même
+   * quelconque, qu'un logotype de cent pixels étiré en bouillie.
+   */
+  secours?: string;
 }) {
   const ref = useRef<HTMLImageElement>(null);
   const [entiere, setEntiere] = useState(false);
 
+  /*
+   * L'adresse réellement affichée. Elle peut basculer sur le repli une
+   * fois la première image mesurée, et une seule fois : sans ce garde-
+   * fou, un repli lui-même trop petit relancerait la bascule sans fin.
+   */
+  const [source, setSource] = useState<string | undefined>(src);
+  const [replie, setReplie] = useState(false);
+
+  // Une nouvelle adresse annule tout ce qu'on avait décidé de
+  // l'ancienne : sans ça, une carte recyclée par React garderait le
+  // repli de la marque précédente.
+  useEffect(() => {
+    setSource(src);
+    setReplie(false);
+    setEntiere(false);
+  }, [src]);
+
   const decider = useCallback(
     (img: HTMLImageElement) => {
       if (!img.naturalWidth || !img.naturalHeight) return;
+
+      /*
+       * Trop petite pour être agrandie : on prend l'autre.
+       *
+       * La mesure n'est possible qu'APRÈS le chargement, donc on
+       * affiche brièvement le logo pixellisé avant de basculer. C'est
+       * inévitable côté navigateur, et ça reste préférable à l'inverse :
+       * décider en amont supposerait de connaître les dimensions de
+       * chaque fichier, ce que la base ne stocke pas.
+       */
+      if (
+        !replie &&
+        secours &&
+        secours !== src &&
+        Math.max(img.naturalWidth, img.naturalHeight) < LOGO_TROP_PETIT
+      ) {
+        setReplie(true);
+        setSource(secours);
+        setEntiere(false);
+        return;
+      }
+
       const forme = img.naturalWidth / img.naturalHeight;
       const ecart = forme > cadre ? forme / cadre : cadre / forme;
       setEntiere(ecart > ECART_TOLERE);
     },
-    [cadre]
+    [cadre, replie, secours, src]
   );
 
   /*
@@ -97,18 +169,35 @@ export default function VisuelAdaptatif({
     /* eslint-disable-next-line @next/next/no-img-element */
     <img
       ref={ref}
-      src={src}
-      srcSet={srcSet}
+      src={source}
+      // Le jeu de tailles ne vaut que pour l'image d'origine : une fois
+      // repliée sur la couverture, il ne lui correspond plus.
+      srcSet={replie ? undefined : srcSet}
       sizes={sizes}
       alt={alt}
       loading={eager ? "eager" : "lazy"}
       decoding="async"
       onLoad={(e) => decider(e.currentTarget)}
-      className={`h-full w-full ${entiere ? "relative z-1 object-contain p-3" : "object-cover"} ${className}`}
+      /*
+       * `relative` SANS RANG EXPLICITE, et c'est important.
+       *
+       * Il y avait `z-1`, pour passer devant le fond flouté. Un rang
+       * positif fait passer l'élément devant TOUT ce qui est posé sans
+       * rang à lui : le bouton « Aperçu », le cœur et l'étiquette « À la
+       * une » se retrouvaient derrière l'image, donc invisibles et
+       * incliquables sur certaines marques.
+       *
+       * `relative` seul suffit : entre deux éléments positionnés sans
+       * rang, c'est l'ordre du document qui tranche, et le fond est
+       * écrit avant. Les boutons, eux, sont écrits après.
+       */
+      className={`h-full w-full ${
+        entiere ? "relative object-contain p-3" : "object-cover"
+      } ${fondFlou && !replie ? "visuel-detoure" : ""} ${className}`}
     />
   );
 
-  if (!entiere) return image;
+  if (!entiere || !fondFlou || replie) return image;
 
   return (
     <>
@@ -116,7 +205,7 @@ export default function VisuelAdaptatif({
           `alt` vide, c'est un décor, pas une information. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src}
+        src={source}
         alt=""
         aria-hidden
         loading={eager ? "eager" : "lazy"}

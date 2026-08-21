@@ -23,17 +23,25 @@ export default function BrandCard({
   /** La moyenne des avis. Absente ou vide = rien ne s'affiche. */
   note?: { moyenne: number; avis: number };
 }) {
-  const visual = brand.cover_url ?? brand.logo_url;
-
   /*
-   * Une photo de couverture se recadre sans dommage : on cherche une
-   * ambiance, pas un cadrage précis. Un logo, non — c'est une marque
-   * déposée, dessinée dans un format choisi. Le rogner pour remplir un
-   * rectangle en coupe le nom, ce qui est à la fois laid et une petite
-   * trahison. On l'affiche donc en entier, quitte à laisser du vide
-   * autour.
+   * LE LOGO PASSE DEVANT LA COUVERTURE.
+   *
+   * C'était l'inverse : la couverture d'abord, le logo seulement à
+   * défaut. Or une couverture importée d'une boutique, c'est souvent la
+   * photo d'UNE pièce prise au hasard du catalogue. Sur une carte
+   * d'annuaire, elle raconte cet article-là et pas la marque : on
+   * reconnaissait un sac rose, pas GoodLou.
+   *
+   * Un logo, lui, EST l'identité. C'est ce qu'on cherche à reconnaître
+   * en parcourant une grille de cent marques, et c'est ce que la marque
+   * elle-même a dessiné pour être reconnue.
+   *
+   * L'illustration animée reste prioritaire sur les deux : quand une
+   * marque s'est donné la peine d'en faire une, c'est ce qu'elle a de
+   * mieux à montrer.
    */
-  const estUnLogo = !brand.cover_url && Boolean(brand.logo_url);
+  const visual = brand.logo_url ?? brand.cover_url;
+  const estUnLogo = Boolean(brand.logo_url);
 
   /*
    * Ce qui n'est pas un style mais qu'il faut savoir avant de cliquer :
@@ -111,34 +119,36 @@ export default function BrandCard({
             />
           ) : visual && estUnLogo ? (
             /*
-             * TOUS LES LOGOS À LA MÊME TAILLE, SUR LA MÊME PLAQUE.
+             * LE LOGO, SUR SON PROPRE FLOU.
              *
-             * Deux versions ratées avant celle-ci. La première étirait
-             * le logo pour remplir le cadre comme une couverture : un
-             * logo de deux cents pixels finissait crénelé. La seconde
-             * l'affichait à sa taille réelle, toujours net mais du coup
-             * minuscule chez les uns et énorme chez les autres, et la
-             * grille partait dans tous les sens.
+             * J'avais essayé une plaque claire fixe avec le logo posé
+             * dessus, et un flou ajouté par-dessus la plaque. Ça faisait
+             * deux fonds superposés, et le logo semblait dédoublé.
              *
-             * Ici la boîte est fixe et le logo se met dedans. Il est
-             * donc cadré pareil pour tout le monde, et le plafond de
-             * largeur limite l'agrandissement des tout petits : personne
-             * n'est grossi plus que de raison.
-             *
-             * Voir `.plaque-logo` dans globals.css pour la question de
-             * la lisibilité, qui est un problème à part entière.
+             * On revient au procédé simple, celui des lecteurs vidéo :
+             * le logo en entier, et derrière lui le même agrandi et
+             * flouté. Un seul fond, la couleur vient de la marque, et
+             * cent logos ne donnent plus cent cartes identiques.
              */
-            <div className="plaque-logo flex h-full w-full items-center justify-center p-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={vignette(visual, 400)}
-                srcSet={jeuDeVignettes(visual, 400)}
-                alt={brand.name}
-                loading="lazy"
-                decoding="async"
-                className="max-h-[62%] w-full max-w-[210px] object-contain transition duration-500 group-hover:scale-[1.04]"
-              />
-            </div>
+            <VisuelAdaptatif
+              src={vignette(visual, 400)}
+              srcSet={jeuDeVignettes(visual, 400)}
+              alt={brand.name}
+              cadre={16 / 10}
+              fondFlou
+              /*
+               * Un logo trop petit se replie sur la couverture.
+               *
+               * Beaucoup de marques n'ont qu'un logotype de cent
+               * cinquante pixels, prévu pour un pied de page. Agrandi à
+               * la taille d'une carte, il en ressort en bouillie, et
+               * c'est la marque qui a l'air négligée. Mieux vaut sa
+               * couverture, même quelconque. La mesure se fait au
+               * chargement : voir `VisuelAdaptatif`.
+               */
+              secours={brand.cover_url ? vignette(brand.cover_url, 640) : undefined}
+              className="transition duration-500 group-hover:scale-[1.04]"
+            />
           ) : visual ? (
             /*
              * C'est L'IMAGE qui décide si on la recadre.

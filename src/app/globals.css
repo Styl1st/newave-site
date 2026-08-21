@@ -2455,85 +2455,119 @@ html[data-reglage="1"] .ruban {
 }
 
 /* ---------- le curseur ----------
-   Un point chromé qui colle au pointeur, et un anneau qui le rattrape.
-   La logique est dans `Curseur.tsx` ; ici, la matière.
+   Une flèche aux couleurs de l'ambiance, et rien d'autre. La logique
+   est dans `Curseur.tsx` ; ici, la matière.
+
+   IL Y AVAIT UN ANNEAU QUI LA SUIVAIT, ET IL EST PARTI. Il annonçait
+   ce qui est cliquable, en remplacement de la petite main du système
+   qu'on masque. C'est la flèche elle-même qui s'en charge : elle
+   s'ouvre au survol d'un lien, se resserre à l'appui. Une pièce au lieu
+   de deux, et plus rien à faire tourner en permanence.
 
    Tout est conditionné à `html[data-curseur="1"]`, posé par le
    composant SEULEMENT s'il a trouvé un pointeur fin. Sur un écran
    tactile, aucune de ces règles ne s'applique : le curseur du système
-   n'est jamais masqué, et les deux calques restent invisibles. */
-.curseur-point,
-.curseur-anneau {
+   n'est jamais masqué, et le calque reste invisible. */
+.curseur-point {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
+  line-height: 0;
   will-change: transform;
+  /* Le point de départ des agrandissements est la POINTE, pas le
+     centre : sinon la flèche s'écarterait du pixel visé en grossissant. */
+  transform-origin: 2px 2px;
+  transition: opacity .2s;
 }
 
-/* Ils n'apparaissent qu'au premier mouvement. Avant ça, on ne sait pas
-   où est le pointeur : les afficher au centre de l'écran ferait croire
-   à un élément de la page. */
-html[data-curseur-vu="1"] .curseur-point,
-html[data-curseur-vu="1"] .curseur-anneau {
-  opacity: 1;
+/* Elle n'apparaît qu'au premier mouvement. Avant ça, on ne sait pas où
+   est le pointeur : la montrer en haut à gauche ferait croire à un
+   élément de la page. */
+html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
+
+.curseur-point > svg {
+  display: block;
+  transition: transform .16s cubic-bezier(.2, .9, .25, 1);
 }
 
-.curseur-point {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgba(8, 2, 30, .35), 0 2px 10px rgba(255, 255, 255, .5);
-  transition: width .18s, height .18s, opacity .2s;
+/* Le contour blanc, tracé sous la flèche : c'est lui qui la détache
+   d'une photo sombre comme d'une plaque claire. Sans lui, une ambiance
+   foncée rendrait le curseur invisible sur son propre fond. */
+.curseur-contour {
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 3.2;
+  stroke-linejoin: round;
 }
 
-.curseur-anneau {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  /* Le liseré chromé du site, en tout petit. C'est ce qui le rattache
-     à la barre du haut et aux panneaux plutôt qu'à un curseur générique
-     comme on en voit partout. */
-  background: var(--chrome-edge);
-  background-size: 220% 220%;
-  -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%);
-  mask: radial-gradient(circle, transparent 60%, #000 62%);
-  opacity: 0;
-  transition: width .22s cubic-bezier(.2, .9, .25, 1),
-              height .22s cubic-bezier(.2, .9, .25, 1),
-              opacity .2s;
-  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
-}
-html[data-curseur-vu="1"] .curseur-anneau { opacity: .85; }
+/* La flèche prend la teinte de l'ambiance choisie dans le compte,
+   ASSOMBRIE. L'accent brut est une couleur de décor : elle est faite
+   pour éclairer un fond, pas pour être lue à vingt pixels. Mélangée à
+   l'encre du site, elle garde son identité et gagne le poids qui la
+   rend nette sur une photo claire.
 
-/* Au-dessus de ce qui est cliquable, l'anneau s'ouvre et le point se
-   réduit. En masquant le curseur du système, on a perdu la petite main
-   qui annonçait un lien : il faut bien la remplacer. */
-html[data-curseur-etat="actif"] .curseur-anneau {
-  width: 46px;
-  height: 46px;
-}
-html[data-curseur-etat="actif"] .curseur-point {
-  width: 4px;
-  height: 4px;
+   `color-mix` n'est pas compris partout : la teinte brute reste écrite
+   au-dessus, elle sert de repli. */
+.curseur-fleche {
+  fill: rgb(var(--accent-3));
+  fill: color-mix(in srgb, rgb(var(--accent-3)) 45%, var(--color-ink));
+  /*
+   * PLUS D'OMBRE PORTÉE ICI. Un filtre se recalcule à chaque image, et
+   * celui-ci suivait la souris : sur un écran rapide, c'est ce qui
+   * faisait décrocher la flèche du pointeur. Le contour blanc en dessous
+   * suffit largement à la détacher du fond, et lui ne coûte rien
+   * puisqu'il est peint une fois pour toutes.
+   */
 }
 
-/* À l'appui, tout se resserre : c'est le retour tactile qu'on n'a pas. */
-html[data-curseur-appui="1"] .curseur-anneau {
-  width: 22px;
-  height: 22px;
+/* ---------- les trois dessins ----------
+   La flèche, la main ouverte, le poing. Tous les trois sont dans la
+   page ; seul le CSS décide lequel se montre, selon l'état écrit sur
+   <html> par le composant.
+
+   La flèche se pointe par son coin haut gauche, les mains par leur
+   centre : d'où le décalage sur ces dernières. Une main dont le poignet
+   tomberait sur le pixel visé donnerait l'impression d'attraper à côté. */
+.curseur-point > svg { display: none; }
+.curseur-point > [data-glyphe="fleche"] { display: block; }
+
+html[data-curseur-etat="saisir"] .curseur-point > [data-glyphe="fleche"] { display: none; }
+html[data-curseur-etat="saisir"] .curseur-point > [data-glyphe="main"] {
+  display: block;
+  margin: -12px 0 0 -12px;
+}
+html[data-curseur-etat="saisir"][data-curseur-appui="1"] .curseur-point > [data-glyphe="main"] {
+  display: none;
+}
+html[data-curseur-etat="saisir"][data-curseur-appui="1"] .curseur-point > [data-glyphe="poing"] {
+  display: block;
+  margin: -12px 0 0 -12px;
+}
+
+/* Le curseur du système reste masqué sur ces vignettes : sans ça, on
+   verrait la main du système ET la nôtre. */
+html[data-curseur="1"] [data-saisissable],
+html[data-curseur="1"] [data-saisissable] * {
+  cursor: none;
+}
+
+/* Au survol d'un lien elle s'ouvre, à l'appui elle se resserre. C'est
+   ce qui remplace la petite main : sans aucun changement, on ne
+   saurait plus ce qui répond au clic. */
+html[data-curseur-etat="actif"] .curseur-point > svg {
+  transform: scale(1.22);
+}
+html[data-curseur-appui="1"] .curseur-point > svg {
+  transform: scale(.88);
 }
 
 /* Dans un champ de saisie, on rend la main au système. Son trait
-   vertical dit où le texte va s'insérer, ce qu'un point rond ne sait
-   pas dire, et personne n'a envie de taper à l'aveugle. */
-html[data-curseur-etat="saisie"] .curseur-point,
-html[data-curseur-etat="saisie"] .curseur-anneau {
-  opacity: 0;
-}
+   vertical dit où le texte va s'insérer, ce qu'une flèche ne sait pas
+   dire, et personne n'a envie de taper à l'aveugle. */
+html[data-curseur-etat="saisie"] .curseur-point { opacity: 0; }
 
 /* Le curseur du système disparaît, sauf là où sa forme porte un sens. */
 html[data-curseur="1"] body,
@@ -2548,10 +2582,71 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
   cursor: auto;
 }
 
-/* Le mouvement en moins, la forme en plus : l'anneau ne dérive plus le
-   long de son dégradé, mais il reste là et continue de dire ce qui est
-   cliquable. Le rattrapage, lui, est coupé dans le composant. */
+/* Moins d'animations : la flèche reste, seul le passage d'une taille à
+   l'autre devient instantané. C'est le mouvement qui gêne, pas
+   l'information qu'il porte. */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-anim-choisi="1"]) .curseur-anneau { animation: none; }
+  html:not([data-anim-choisi="1"]) .curseur-point > svg { transition: none; }
 }
-[data-fige="1"] .curseur-anneau { animation: none !important; }
+[data-fige="1"] .curseur-point > svg { transition: none; }
+
+/* Le détourage d'un logo posé sur son propre flou.
+   Sans lui, un logo blanc sur fond blanc disparaît dans son propre
+   agrandissement : le liseré sombre le fait ressortir sans toucher aux
+   logos foncés, sur lesquels il se confond. Voir `VisuelAdaptatif`. */
+.visuel-detoure {
+  filter:
+    drop-shadow(0 0 1px rgba(23, 10, 51, .5))
+    drop-shadow(0 2px 8px rgba(23, 10, 51, .28));
+}
+
+/* La vignette qu'on tient dans la main.
+   Une ombre longue et une lumière au bord : c'est ce qui la décolle du
+   plan des autres. La transformation, elle, est écrite en JavaScript
+   image par image — la mettre ici aussi la ferait lutter contre le
+   suivi du pointeur. */
+.vignette-portee {
+  box-shadow:
+    0 26px 50px -12px rgba(8, 2, 30, .62),
+    0 0 0 1px rgba(255, 255, 255, .5) inset;
+  opacity: .96;
+}
+
+/* ---------- le relief des cartes ----------
+   Une carte survolée s'incline vers le curseur. La position est lue par
+   `Relief.tsx`, qui écrit trois variables ; ici, la mise en scène.
+
+   `perspective` VIT SUR LA GRILLE, pas sur la carte. Cette propriété
+   s'applique aux ENFANTS de l'élément qui la porte : posée sur la carte
+   elle-même, elle ne ferait rien. Sur la grille, toutes les cartes
+   partagent le même point de fuite, ce qui est aussi plus juste à
+   l'œil : elles appartiennent au même plan. */
+@media (hover: hover) and (pointer: fine) {
+  main .grid {
+    perspective: 1200px;
+  }
+
+  /* `rotate` ET NON `transform`, c'est le point délicat.
+
+     `transform` est déjà pris : le défilement animé du site fait tourner
+     les cartes sur un cylindre, et une animation l'emporte toujours sur
+     une règle ordinaire. L'inclinaison serait donc ignorée sur toute
+     page assez longue pour défiler, c'est-à-dire sur l'annuaire.
+
+     `rotate` est une propriété à part entière, appliquée AVANT
+     `transform`. Les deux se composent au lieu de se disputer. */
+  .card-light[data-relief="1"] {
+    rotate: var(--relief-x, 0) var(--relief-y, 0) 0 var(--relief-angle, 0deg);
+    /* Court : au-delà, la carte traîne derrière le curseur et l'on perd
+       la sensation de la toucher. */
+    transition: rotate .09s linear, box-shadow .3s;
+  }
+
+  /* Le retour à plat, lui, prend son temps. */
+  .card-light {
+    transition: rotate .4s cubic-bezier(.2, .9, .25, 1);
+  }
+}
+
+/* Le réglage du site l'emporte, comme partout ailleurs. */
+[data-fige="1"] .card-light[data-relief="1"] { rotate: none; }

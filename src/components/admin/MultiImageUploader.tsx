@@ -136,16 +136,89 @@ export default function MultiImageUploader({
   const grille = useRef<HTMLDivElement>(null);
   const [saisi, setSaisi] = useState<number | null>(null);
 
-  /** Sur quelle vignette le pointeur se trouve-t-il ? */
+  /*
+   * LA VIGNETTE SUIT LE DOIGT, PAR-DESSUS LES AUTRES.
+   *
+   * Sans ça, on déplace une image sans jamais la voir bouger : elle
+   * reste à sa place et saute d'un coup à la suivante. On ne sait pas
+   * si le geste est pris en compte, et l'on relâche trop tôt.
+   *
+   * On garde donc l'élément sous la main et on lui écrit sa position
+   * directement, image par image. Écrire dans le DOM plutôt que de
+   * passer par un état React n'est pas un raccourci : un rendu complet
+   * de la planche à chaque mouvement de souris ferait exactement la
+   * saccade qu'on cherche à éviter.
+   *
+   * L'origine est reprise à CHAQUE échange. Au moment où deux vignettes
+   * permutent, celle qu'on tient change de case : si l'on continuait de
+   * compter depuis le point de départ, elle ferait un bond de la
+   * largeur d'une case. En repartant de la position du pointeur, elle
+   * reste sous lui.
+   */
+  const porteur = useRef<HTMLElement | null>(null);
+  const depart = useRef({ x: 0, y: 0 });
+  const image = useRef(0);
+  const dernier = useRef({ x: 0, y: 0 });
+
+  /**
+   * La vignette la plus proche du pointeur.
+   *
+   * ON CHERCHE LE CENTRE LE PLUS PROCHE, ET NON LA CASE SURVOLÉE. La
+   * première version demandait « dans quel rectangle est le pointeur ».
+   * Ça paraît plus juste, et c'est ce qui faisait sauter le glisser :
+   * la vignette attrapée est légèrement agrandie, donc son rectangle
+   * déborde sur ses voisines. Dès qu'on approchait d'une frontière,
+   * deux cases se disputaient le pointeur et les images s'échangeaient
+   * en boucle.
+   *
+   * Le centre le plus proche ne peut pas osciller : une fois la
+   * vignette déposée à sa nouvelle place, c'est le centre de CETTE
+   * place qui est le plus proche, et plus rien ne bouge tant qu'on ne
+   * s'est pas franchement dirigé vers une autre.
+   */
   function vignetteSous(x: number, y: number): number | null {
     const boite = grille.current;
     if (!boite) return null;
+
+    let meilleure: number | null = null;
+    let distance = Infinity;
+
     const cartes = Array.from(boite.children) as HTMLElement[];
     for (let i = 0; i < cartes.length; i++) {
       const r = cartes[i].getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+      const dx = x - (r.left + r.width / 2);
+      const dy = y - (r.top + r.height / 2);
+      const d = dx * dx + dy * dy;
+      if (d < distance) {
+        distance = d;
+        meilleure = i;
+      }
     }
-    return null;
+    return meilleure;
+  }
+
+  /** La carte de rang `i`, dans le DOM. */
+  function carte(i: number): HTMLElement | null {
+    return (grille.current?.children[i] as HTMLElement | undefined) ?? null;
+  }
+
+  function poser(el: HTMLElement | null, x: number, y: number) {
+    if (!el) return;
+    el.style.transition = "none";
+    /*
+     * Une inclinaison proportionnelle au déplacement horizontal, très
+     * faible. C'est ce qui donne l'impression de SOULEVER l'image
+     * plutôt que de la faire glisser à plat, et trois degrés suffisent :
+     * au-delà, on ne vise plus rien.
+     */
+    el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.06) rotate(${Math.max(-3, Math.min(3, x * 0.03))}deg)`;
+  }
+
+  function reposer(el: HTMLElement | null) {
+    if (!el) return;
+    // Elle retombe dans sa case au lieu d'y sauter.
+    el.style.transition = "transform .24s cubic-bezier(.2,.9,.25,1)";
+    el.style.transform = "";
   }
 
   function attraper(e: React.PointerEvent, i: number) {
@@ -153,13 +226,51 @@ export default function MultiImageUploader({
     if (e.button !== 0) return;
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
+    porteur.current = carte(i);
+    depart.current = { x: e.clientX, y: e.clientY };
+    dernier.current = { x: 0, y: 0 };
     setSaisi(i);
+  }
+
+  /**
+   * Attraper en cliquant l'image elle-même, à la souris.
+   *
+   * C'est le geste qu'on essaie d'instinct, et la poignée en haut à
+   * droite demandait de viser un carré de sept pixels avant de pouvoir
+   * commencer.
+   *
+   * AU DOIGT, ON GARDE LA POIGNÉE, et ce n'est pas un oubli. Pour
+   * traiter un glissement nous-mêmes, il faut refuser le geste au
+   * navigateur ; si toute la vignette le refusait, on ne pourrait plus
+   * faire défiler la page en posant le doigt sur une photo, c'est-à-dire
+   * sur la moitié de l'écran. La poignée, elle, est assez petite pour
+   * qu'on ne la touche jamais par hasard.
+   */
+  function attraperDepuisLImage(e: React.PointerEvent, i: number) {
+    if (e.pointerType === "touch") return;
+    attraper(e, i);
   }
 
   function deplacer(e: React.PointerEvent) {
     if (saisi === null) return;
+
+    dernier.current = {
+      x: e.clientX - depart.current.x,
+      y: e.clientY - depart.current.y,
+    };
+
+    // Une seule écriture par image : la souris en envoie bien plus.
+    if (!image.current) {
+      image.current = requestAnimationFrame(() => {
+        image.current = 0;
+        poser(porteur.current, dernier.current.x, dernier.current.y);
+      });
+    }
+
     const cible = vignetteSous(e.clientX, e.clientY);
     if (cible === null || cible === saisi) return;
+
     /*
      * On réordonne EN CONTINU plutôt qu'au lâcher. La vignette suit le
      * doigt de case en case, donc on voit le résultat pendant le geste
@@ -167,9 +278,23 @@ export default function MultiImageUploader({
      */
     move(saisi, cible);
     setSaisi(cible);
+
+    // Elle vient de changer de case : on repart d'ici, sinon elle
+    // ferait un bond de la largeur d'une case.
+    depart.current = { x: e.clientX, y: e.clientY };
+    dernier.current = { x: 0, y: 0 };
+    poser(porteur.current, 0, 0);
   }
 
-  const lacher = () => setSaisi(null);
+  function lacher() {
+    if (image.current) {
+      cancelAnimationFrame(image.current);
+      image.current = 0;
+    }
+    reposer(porteur.current);
+    porteur.current = null;
+    setSaisi(null);
+  }
 
   const iconBtn =
     "grid h-7 w-7 place-items-center rounded-full bg-black/55 text-[13px] font-black text-white backdrop-blur-sm transition hover:bg-black/80 disabled:opacity-30";
@@ -185,8 +310,8 @@ export default function MultiImageUploader({
 
       {urls.length > 1 && (
         <p className="m-0 mb-2 text-[12px] font-medium text-white/55">
-          Attrape la poignée en haut à droite d&apos;une vignette pour la déplacer, ou
-          sers-toi des flèches.
+          Attrape une vignette pour la déplacer. Au doigt, sers-toi de la poignée en haut
+          à droite, ou des flèches.
         </p>
       )}
 
@@ -195,10 +320,17 @@ export default function MultiImageUploader({
           {urls.map((url, i) => (
             <div
               key={url}
-              className={`relative overflow-hidden rounded-[13px] border transition ${
+              onPointerDown={(e) => attraperDepuisLImage(e, i)}
+              onPointerMove={deplacer}
+              onPointerUp={lacher}
+              onPointerCancel={lacher}
+              /* Le curseur du site s'occupe de la main ouverte et du
+                 poing : cet attribut est ce qui le lui dit. */
+              data-saisissable=""
+              className={`relative overflow-hidden rounded-[13px] border select-none ${
                 saisi === i
-                  ? "z-10 scale-[1.03] border-white opacity-90 shadow-[0_14px_34px_rgba(8,2,30,.5)]"
-                  : "border-white/25"
+                  ? "vignette-portee z-20 border-white"
+                  : "border-white/25 transition"
               }`}
             >
               {estUneVideo(url) ? (
@@ -207,6 +339,10 @@ export default function MultiImageUploader({
                   muted
                   loop
                   playsInline
+                  /* Sinon le navigateur lance SON glisser-déposer natif
+                     dès qu'on tire sur l'image, et le nôtre n'est jamais
+                     prévenu du mouvement. */
+                  draggable={false}
                   /* Aucune lecture automatique ici : une planche de
                      huit vignettes qui s'animent toutes en même temps
                      rend le choix impossible. Au survol, suffit. */
@@ -220,7 +356,12 @@ export default function MultiImageUploader({
                 />
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={url} alt="" className="block aspect-square w-full object-cover" />
+                <img
+                  src={url}
+                  alt=""
+                  draggable={false}
+                  className="block aspect-square w-full object-cover"
+                />
               )}
               <input type="hidden" name={name} value={url} />
 

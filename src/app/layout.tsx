@@ -9,6 +9,7 @@ import Tracker from "@/components/Tracker";
 import PageTransition from "@/components/PageTransition";
 import ProgressionLecture from "@/components/ProgressionLecture";
 import Curseur from "@/components/Curseur";
+import Relief from "@/components/Relief";
 import Reveal from "@/components/Reveal";
 import Confirmations from "@/components/Confirmations";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
@@ -137,6 +138,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Le curseur du site. Il ne se pose que s'il trouve un
             pointeur fin : sur téléphone, ce composant ne fait rien. */}
         {!nu && <Curseur />}
+        {/* Les cartes s'inclinent vers le curseur. Un seul écouteur pour
+            toute la page, et rien du tout sur écran tactile. */}
+        {!nu && <Relief />}
         {/* Monté une seule fois pour tout le site : n'importe quelle
             page peut lui envoyer une confirmation sans que rien ne les
             relie. `Suspense` est exigé par Next dès qu'un composant lit
