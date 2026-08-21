@@ -50,8 +50,24 @@ const REGLES: Regle[] = [
   { rayon: "Robes", motifs: /\brobe\b|\bdress\b|combinaison/i },
   {
     rayon: "Bas",
+    /*
+     * `short` SANS DÉLIMITEUR ÉTAIT LA CAUSE D'UN CLASSEMENT ABSURDE.
+     *
+     * Il attrapait « short sleeve », qui figure dans la description de
+     * presque tous les t-shirts anglophones : la moitié des hauts d'une
+     * marque se retrouvait rangée dans les bas. C'est ce qu'on voyait en
+     * ouvrant le rayon « Bas » et en tombant sur des tee-shirts.
+     *
+     * Le mot est donc délimité, et suivi d'un refus explicite quand une
+     * histoire de manches le suit.
+     *
+     * `\bbas\b` a disparu pour une raison voisine : en français, « bas »
+     * est neuf fois sur dix une position — « en bas », « le bas du dos »
+     * — et une fois sur dix un vêtement. Le garder coûtait plus qu'il ne
+     * rapportait.
+     */
     motifs:
-      /pantalon|\bjean\b|\bjeans\b|short|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda|\bbas\b/i,
+      /pantalon|\bjeans?\b|\bshorts?\b(?!\s*(?:sleeve|manche))|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda/i,
   },
   {
     rayon: "Maille",
@@ -73,7 +89,27 @@ const REGLES: Regle[] = [
  * ailleurs.
  */
 export function deduireLeRayon(nom: string, description?: string | null): string[] {
-  const texte = `${nom} ${description ?? ""}`;
+  /*
+   * LE NOM D'ABORD, LA DESCRIPTION SEULEMENT À DÉFAUT.
+   *
+   * Les deux étaient jetés dans la même chaîne, et c'était l'erreur de
+   * fond. Une description de boutique parle de coupe, de matière, de
+   * livraison, de la pièce avec laquelle on peut la porter : elle
+   * contient donc des dizaines de mots qui désignent d'autres
+   * vêtements. Un t-shirt dont le texte conseille « à porter avec un
+   * jean » finissait dans les bas.
+   *
+   * Le nom, lui, désigne la pièce et rien d'autre. On l'interroge donc
+   * en premier, en entier, et l'on ne descend dans la description que
+   * s'il n'a rien donné — un « Chihuahua » sans autre indice, par
+   * exemple, où le texte reste le seul recours.
+   */
+  for (const regle of REGLES) {
+    if (regle.motifs.test(nom)) return [regle.rayon];
+  }
+
+  const texte = description ?? "";
+  if (!texte.trim()) return [];
 
   for (const regle of REGLES) {
     if (regle.motifs.test(texte)) return [regle.rayon];

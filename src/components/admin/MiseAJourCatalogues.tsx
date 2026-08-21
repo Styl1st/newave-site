@@ -20,6 +20,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
   const [note, setNote] = useState<string | null>(null);
   const [corrigerPays, setCorrigerPays] = useState(false);
   const [completerVisuels, setCompleterVisuels] = useState(false);
+  const [reclasser, setReclasser] = useState(false);
 
   /** Le rang atteint, et le drapeau d'arrêt. */
   const rang = useRef(0);
@@ -54,6 +55,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
         formData.set("depuis", String(rang.current));
         if (corrigerPays) formData.set("pays", "1");
         if (completerVisuels) formData.set("visuels", "1");
+        if (reclasser) formData.set("rayons", "1");
 
         const res = await rafraichirLesCatalogues(formData);
         if (!res.ok) {
@@ -122,6 +124,24 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           couverture et illustration animée, prises sur la page d&apos;accueil de chaque
           boutique. On ne remplit que ce qui est vide : rien de ce que tu as choisi ne
           sera remplacé.
+        </span>
+      </label>
+
+      <label className="mt-2.5 flex cursor-pointer items-start gap-2.5 rounded-[13px] border border-white/18 bg-white/6 p-3">
+        <input
+          type="checkbox"
+          checked={reclasser}
+          onChange={(e) => setReclasser(e.target.checked)}
+          disabled={enCours}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+        />
+        <span className="text-[13px] leading-relaxed text-white/80">
+          <span className="font-extrabold text-white">Reclasser les pièces par rayon</span> :
+          hauts, bas, vestes, chaussures. À cocher après une correction des règles de
+          classement, parce que le rayon d&apos;une pièce n&apos;est deviné qu&apos;à sa
+          création et ne bouge plus ensuite. Attention, ça <strong className="font-extrabold text-white">écrase</strong> les
+          rayons choisis à la main : rien en base ne les distingue de ceux qui ont été
+          devinés.
         </span>
       </label>
 

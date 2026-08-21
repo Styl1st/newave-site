@@ -21,7 +21,29 @@ export default function BrandDirectory({
   notes?: Record<string, { moyenne: number; avis: number }>;
 }) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+  /*
+   * PLUSIEURS CATÉGORIES À LA FOIS, ET ELLES SE CUMULENT.
+   *
+   * Il n'y en avait qu'une : choisir « Denim » effaçait « Streetwear ».
+   * On ne pouvait donc pas chercher une marque qui fait les deux, ce
+   * qui est pourtant la façon normale d'affiner une recherche.
+   *
+   * Le cumul est un ET, pas un OU. Un OU donnerait toutes les marques
+   * streetwear PLUS toutes les marques denim, ce qui élargit au lieu de
+   * réduire et ne ressemble pas à ce qu'on attend en cochant une case de
+   * plus.
+   *
+   * Le ET a un défaut connu, mener vite à une liste vide, et c'est
+   * exactement ce que le comptage plus bas empêche : une puce ne
+   * s'affiche que si elle laisse au moins une marque debout. On ne peut
+   * donc pas construire une combinaison qui ne donne rien.
+   */
+  const [choisies, setChoisies] = useState<string[]>([]);
+
+  const basculer = (c: string) =>
+    setChoisies((liste) =>
+      liste.includes(c) ? liste.filter((x) => x !== c) : [...liste, c]
+    );
   const [tier, setTier] = useState<PriceTier | null>(null);
   const [ouvert, setOuvert] = useState(false);
   /*
@@ -41,10 +63,10 @@ export default function BrandDirectory({
   // Le compteur sur le bouton : sans lui, un filtre actif derrière un
   // panneau replié devient invisible, et la liste paraît incomplète
   // sans qu'on comprenne pourquoi.
-  const actifs = (category ? 1 : 0) + (tier ? 1 : 0);
+  const actifs = choisies.length + (tier ? 1 : 0);
 
   function reinitialiser() {
-    setCategory(null);
+    setChoisies([]);
     setTier(null);
   }
 
@@ -106,23 +128,27 @@ export default function BrandDirectory({
     const compte = new Map<string, number>();
     for (const b of base) {
       if (tier && b.price_tier !== tier) continue;
+      // On compte SUR LA SÉLECTION EN COURS : le nombre affiché à côté
+      // d'une puce est donc « ce qu'il restera si je l'ajoute », et non
+      // un total abstrait qui promettrait plus qu'il ne tient.
+      if (!choisies.every((c) => b.categories.includes(c))) continue;
       for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
     }
     // Les mieux représentées d'abord : c'est ce qui donne le plus de
     // chances de tomber sur quelque chose au premier clic.
     return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [base, tier]);
+  }, [base, tier, choisies]);
 
   const gammes = useMemo(() => {
     const compte = new Map<PriceTier, number>();
     for (const b of base) {
-      if (category && !b.categories.includes(category)) continue;
+      if (!choisies.every((c) => b.categories.includes(c))) continue;
       if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
     }
     // L'ordre reste accessible → premium : un classement par nombre
     // mettrait les prix dans le désordre, ce qui se lit très mal.
     return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
-  }, [base, category]);
+  }, [base, choisies]);
 
   /*
    * Un filtre qui n'a plus d'objet s'efface tout seul.
@@ -133,8 +159,11 @@ export default function BrandDirectory({
    * calculent sans le filtre qu'elles vérifient.
    */
   useEffect(() => {
-    if (category && !categories.some(([c]) => c === category)) setCategory(null);
-  }, [categories, category]);
+    const disponibles = new Set(categories.map(([c]) => c));
+    setChoisies((liste) =>
+      liste.every((c) => disponibles.has(c)) ? liste : liste.filter((c) => disponibles.has(c))
+    );
+  }, [categories]);
 
   useEffect(() => {
     if (tier && !gammes.some(([t]) => t === tier)) setTier(null);
@@ -144,10 +173,9 @@ export default function BrandDirectory({
     () =>
       base.filter((b) => {
         if (tier && b.price_tier !== tier) return false;
-        if (category && !b.categories.includes(category)) return false;
-        return true;
+        return choisies.every((c) => b.categories.includes(c));
       }),
-    [base, category, tier]
+    [base, choisies, tier]
   );
 
   const chip =
@@ -229,9 +257,21 @@ export default function BrandDirectory({
 
         {actifs > 0 && !ouvert && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {category && (
-              <span className={`${chip} ${chipOn}`}>{category}</span>
-            )}
+            {/* Cliquables pour se retirer : quand le panneau est
+                replié, c'est le seul moyen d'en enlever une sans tout
+                effacer. */}
+            {choisies.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => basculer(c)}
+                aria-label={`Retirer le filtre ${c}`}
+                className={`${chip} ${chipOn}`}
+              >
+                {c}
+                <span className="ml-1.5 opacity-45">×</span>
+              </button>
+            ))}
             {tier && <span className={`${chip} ${chipOn}`}>{PRICE_TIER_LABEL[tier]}</span>}
             <button
               type="button"
@@ -250,24 +290,35 @@ export default function BrandDirectory({
                 ne renseigne sur rien. */}
             {categories.length > 0 && (
               <>
-                <p className="eyebrow m-0 mb-2">Catégorie</p>
+                <p className="eyebrow m-0 mb-2">
+                  Catégorie
+                  {choisies.length > 0 && (
+                    <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
+                      elles se cumulent
+                    </span>
+                  )}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setCategory(null)}
-                    className={`${chip} ${category === null ? chipOn : chipOff}`}
+                    onClick={() => setChoisies([])}
+                    className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
                   >
                     Toutes
                   </button>
-                  {categories.map(([c, n]) => (
-                    <button
-                      key={c}
-                      onClick={() => setCategory(c)}
-                      className={`${chip} ${category === c ? chipOn : chipOff}`}
-                    >
-                      {c}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                    </button>
-                  ))}
+                  {categories.map(([c, n]) => {
+                    const active = choisies.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => basculer(c)}
+                        aria-pressed={active}
+                        className={`${chip} ${active ? chipOn : chipOff}`}
+                      >
+                        {c}
+                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}

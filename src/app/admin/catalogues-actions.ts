@@ -11,6 +11,8 @@ import {
 import { lireLaBoutique } from "@/lib/lecture";
 import { boutiqueLisible, exigeUnCatalogue, plateformeDeVente } from "@/lib/boutiques";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
+import { deduireLeRayon } from "@/lib/rayons";
+import { PRODUCT_CATEGORIES } from "@/lib/taxonomy";
 import { rafraichirLesTaux } from "@/lib/devises";
 
 /**
@@ -120,6 +122,22 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
   const completerVisuels = formData.get("visuels") === "1";
 
   /*
+   * Reclasser les pièces par rayon.
+   *
+   * Le rayon n'est deviné qu'à la création d'une pièce : une fois posé,
+   * il ne bouge plus, pour ne jamais écraser une correction faite à la
+   * main. C'est la bonne règle au quotidien, et exactement ce qui bloque
+   * quand la DÉDUCTION elle-même était fautive : des centaines de
+   * t-shirts rangés dans les bas ne se corrigeraient jamais tout seuls.
+   *
+   * D'où cette case, décochée par défaut et à n'utiliser qu'après une
+   * correction des règles. Elle recalcule le rayon de chaque pièce et
+   * écrase celui qui était en place, y compris s'il avait été choisi à
+   * la main : rien en base ne permet de distinguer les deux.
+   */
+  const reclasser = formData.get("rayons") === "1";
+
+  /*
    * Les taux de change d'abord, et une seule fois.
    *
    * L'ordre compte : la lecture d'un catalogue calcule au passage
@@ -211,6 +229,10 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
      */
     const siteAElle = exigeUnCatalogue(adresse);
 
+    // Les rayons, si on l'a demandé. Sans rapport avec la boutique :
+    // ça ne relit que ce qu'on a déjà en base.
+    if (reclasser) note += await reclasserLesRayons(supabase, marque.id);
+
     if (siteAElle && completerVisuels && (!marque.cover_url || !marque.cover_video_url)) {
       const base = normalizeShopUrl(adresse);
       const trouves = base ? await fetchVisuels(base) : null;
@@ -285,4 +307,71 @@ export async function rafraichirLesCatalogues(formData: FormData): Promise<{
     parcourues: marques.length,
     restantes: Math.max(0, (count ?? 0) - (depuis + marques.length)),
   };
+}
+
+/** Les rayons de la taxonomie, pour les distinguer des autres étiquettes. */
+const RAYONS: readonly string[] = PRODUCT_CATEGORIES;
+
+type Piece = {
+  id: string;
+  name: string;
+  description: string | null;
+  categories: string[] | null;
+};
+
+/**
+ * Recalculer le rayon de chaque pièce d'une marque.
+ *
+ * On ne remplace QUE le rayon. La colonne peut porter d'autres
+ * étiquettes, et les perdre au passage serait un dégât collatéral que
+ * personne n'a demandé.
+ *
+ * Les écritures sont groupées par liste d'arrivée : une marque de cent
+ * quarante pièces tient en trois ou quatre requêtes au lieu de cent
+ * quarante, ce qui compte quand la fonction dispose d'une minute pour
+ * traiter trois marques.
+ */
+async function reclasserLesRayons(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  brandId: string
+): Promise<string> {
+  const { data } = await supabase
+    .from("products")
+    .select("id, name, description, categories")
+    .eq("brand_id", brandId);
+
+  const pieces = (data as Piece[] | null) ?? [];
+  if (pieces.length === 0) return "";
+
+  const lots = new Map<string, { etiquettes: string[]; ids: string[] }>();
+
+  for (const piece of pieces) {
+    const actuelles = piece.categories ?? [];
+    const ancien = actuelles.find((c) => RAYONS.includes(c)) ?? null;
+    const nouveau = deduireLeRayon(piece.name, piece.description)[0] ?? null;
+    if (ancien === nouveau) continue;
+
+    const autres = actuelles.filter((c) => !RAYONS.includes(c));
+    const etiquettes = nouveau ? [nouveau, ...autres] : autres;
+    const cle = etiquettes.join("\u0000");
+
+    const lot = lots.get(cle) ?? { etiquettes, ids: [] };
+    lot.ids.push(piece.id);
+    lots.set(cle, lot);
+  }
+
+  if (lots.size === 0) return "";
+
+  let changees = 0;
+  for (const lot of lots.values()) {
+    const { error } = await supabase
+      .from("products")
+      .update({ categories: lot.etiquettes })
+      .in("id", lot.ids);
+    if (!error) changees += lot.ids.length;
+  }
+
+  return changees > 0
+    ? ` ${changees} pièce${changees > 1 ? "s" : ""} reclassée${changees > 1 ? "s" : ""}.`
+    : "";
 }
