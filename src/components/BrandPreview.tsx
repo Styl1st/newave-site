@@ -73,7 +73,10 @@ export default function BrandPreview({
       aria-label={data ? `Pièces de ${data.brand.name}` : "Aperçu des pièces"}
       onClick={onClose}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
-      style={{ animation: "fadeIn .18s ease both" }}
+      /* Le voile prend un peu plus de temps qu'avant : à dix-huit
+         centièmes il apparaissait d'un coup, et l'œil lisait ça comme
+         un à-coup au moment même où le panneau se met en route. */
+      style={{ animation: "fadeIn .3s ease both" }}
     >
       {/* Le voile prend la teinte de l'ambiance au centre et
           s'assombrit sur les bords : la page reste devinée derrière,
@@ -90,7 +93,20 @@ export default function BrandPreview({
       <div
         onClick={(e) => e.stopPropagation()}
         className="panneau-apercu relative flex max-h-[86svh] w-full max-w-4xl flex-col overflow-hidden"
-        style={{ animation: "apercuEntree .42s cubic-bezier(.19,.84,.3,1) both" }}
+        /*
+         * Plus long et plus souple qu'avant. La courbe démarre vite et
+         * se pose très progressivement : c'est ce qui donne l'impression
+         * d'un objet qui arrive plutôt que d'un calque dont on monte
+         * l'opacité.
+         *
+         * `will-change` prévient le navigateur de préparer son calque
+         * AVANT le premier mouvement. Sans lui, la première image du
+         * panneau sert à le fabriquer, et c'est elle qu'on voit sauter.
+         */
+        style={{
+          animation: "apercuEntree .52s cubic-bezier(.16,1,.3,1) both",
+          willChange: "transform, opacity",
+        }}
       >
         {/* ---- en-tête ---- */}
         <div className="apercu-entete relative flex items-start justify-between gap-4 border-b border-white/12 p-6 sm:px-8">
@@ -165,7 +181,10 @@ export default function BrandPreview({
                        une grille qui se remplit n'est plus élégante, elle
                        est lente, et c'est la dernière ligne qu'on attend
                        en regardant l'écran sans rien faire. */
-                    style={{ animationDelay: `${90 + Math.min(i, 11) * 30}ms` }}
+                    /* Décalage raccourci : la grille entière se pose en
+                       moins d'un tiers de seconde au lieu de se dérouler
+                       vignette par vignette sous les yeux. */
+                    style={{ animationDelay: `${60 + Math.min(i, 11) * 22}ms` }}
                   >
                     <div className="apercu-cadre relative aspect-square overflow-hidden rounded-[14px] bg-white/10">
                       {p.image && (

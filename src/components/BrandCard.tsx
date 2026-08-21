@@ -3,6 +3,7 @@ import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
 import CouvertureAnimee from "./CouvertureAnimee";
 import VisuelAdaptatif from "./VisuelAdaptatif";
+import Teinte from "./Teinte";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
@@ -103,6 +104,11 @@ export default function BrandCard({
         data-calque=""
         className="absolute inset-0 z-2"
       />
+
+      {/* La MÊME adresse que la vignette affichée : c'est déjà l'image
+          que le navigateur a chargée, et la mesure est retenue par
+          adresse, donc un logo qui revient ailleurs ne sera pas relu. */}
+      <Teinte src={vignette(visual, estUnLogo ? 400 : 640)} />
 
       <div className="pointer-events-none relative z-3 flex flex-1 flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
@@ -208,7 +214,9 @@ export default function BrandCard({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
+        {/* Le bandeau prend la couleur de l'image au-dessus de lui.
+            Voir `Teinte` et `.pied-carte`. */}
+        <div className="pied-carte flex flex-1 flex-col p-5">
           <h3 className="m-0 truncate text-[16px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-ink)]">
             {brand.name}
           </h3>

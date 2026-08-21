@@ -28,8 +28,14 @@ import { useEffect } from "react";
 /** Ce qui s'incline : toutes les cartes claires du site. */
 const CARTES = ".card-light";
 
-/** L'inclinaison maximale, au coin de la carte. Trois degrés suffisent. */
-const AMPLITUDE = 3.2;
+/** L'inclinaison maximale, au coin de la carte. Cinq degrés suffisent. */
+const AMPLITUDE = 5;
+
+/*
+ * La HAUTEUR du décollement, elle, n'est pas ici : elle est fixe et vit
+ * dans `globals.css`, avec l'agrandissement et l'ombre. Seul ce qui
+ * dépend de la position du curseur est calculé de ce côté-ci.
+ */
 
 export default function Relief() {
   useEffect(() => {
@@ -73,6 +79,7 @@ export default function Relief() {
       el.style.removeProperty("--relief-x");
       el.style.removeProperty("--relief-y");
       el.style.removeProperty("--relief-angle");
+      el.style.removeProperty("--relief-dx");
       delete el.dataset.relief;
     };
 
@@ -105,6 +112,19 @@ export default function Relief() {
         "--relief-angle",
         `${(Math.min(0.5, Math.hypot(px, py)) * 2 * AMPLITUDE).toFixed(2)}deg`
       );
+
+      /*
+       * LA CARTE SE DÉCALE VERS LE CURSEUR EN PLUS DE PENCHER.
+       *
+       * Un objet qu'on soulève ne reste pas au-dessus de sa case : il
+       * glisse un peu du côté où on le tient. Deux ou trois pixels
+       * suffisent, et c'est ce détail qui fait passer l'effet d'un
+       * basculement à plat à un vrai décollement.
+       *
+       * La hauteur, elle, est fixe et vit dans le CSS : elle ne dépend
+       * pas de l'endroit qu'on survole.
+       */
+      carte.style.setProperty("--relief-dx", `${(px * 7).toFixed(1)}px`);
     };
 
     const surMouvement = (e: PointerEvent) => {

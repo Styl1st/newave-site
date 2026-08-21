@@ -537,10 +537,23 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    l'opacité » et « un objet qui se pose » : l'œil lit une mise au point
    plutôt qu'un fondu. Il se lève avant la fin du mouvement, sinon on
    perçoit deux temps. */
+/* PLUS DE FLOU DANS CETTE ANIMATION, ET C'EST TOUT LE SUJET.
+
+   Elle faisait passer le panneau de neuf pixels de flou à zéro. Or ce
+   panneau porte DÉJÀ un flou d'arrière-plan de trente pixels, et abrite
+   une nappe de couleur floutée à trente-huit. Animer un filtre par-
+   dessus tout ça revient à demander au navigateur trois passes de flou
+   sur une surface de mille pixels de large, à chaque image de
+   l'ouverture. C'est là qu'était la saccade, pas dans la courbe.
+
+   Il ne reste que l'opacité et le déplacement, les deux seules choses
+   qu'une carte graphique sait faire sans repeindre. Le mouvement part
+   d'un peu plus loin et se pose plus longuement pour compenser la
+   douceur perdue : à l'œil c'est plus ample qu'avant, et sans commune
+   mesure côté coût. */
 @keyframes apercuEntree {
-  from   { opacity: 0; transform: translateY(26px) scale(.965); filter: blur(9px); }
-  55%    { filter: blur(0); }
-  to     { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(30px) scale(.955); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Les vignettes se posent une par une. Le décalage est court — trente
@@ -548,10 +561,10 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
    d'une douzaine, une grille qui se remplit lentement n'est plus
    élégante, elle est lente. */
 @keyframes carreauEntree {
-  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  from { opacity: 0; transform: translateY(14px) scale(.965); }
   to   { opacity: 1; transform: none; }
 }
-.apercu-carreau { animation: carreauEntree .42s cubic-bezier(.2,.8,.3,1) both; }
+.apercu-carreau { animation: carreauEntree .5s cubic-bezier(.16,1,.3,1) both; }
 
 /* La matière du panneau d'aperçu.
 
@@ -598,7 +611,10 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     radial-gradient(circle at 78% 58%, rgba(var(--accent-2), .8) 0%, transparent 46%),
     radial-gradient(circle at 52% 96%, rgba(var(--accent-3), .75) 0%, transparent 44%);
   background-repeat: no-repeat;
-  animation: apercuNappe calc(24s / var(--vit)) ease-in-out infinite alternate;
+  /* Elle ne démarre qu'une fois le panneau posé. Une nappe floutée qui
+     dérive PENDANT l'ouverture, c'est une couche de plus à recomposer à
+     chaque image, au pire moment. */
+  animation: apercuNappe calc(24s / var(--vit)) ease-in-out .55s infinite alternate;
   pointer-events: none;
 }
 
@@ -620,7 +636,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: .55;
   pointer-events: none;
-  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+  animation: liseré calc(26s / var(--vit)) ease-in-out .55s infinite alternate;
 }
 
 /* Le contenu passe devant les nappes. Sans ça, `z-index: -1` sur la
@@ -2637,16 +2653,97 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
      `transform`. Les deux se composent au lieu de se disputer. */
   .card-light[data-relief="1"] {
     rotate: var(--relief-x, 0) var(--relief-y, 0) 0 var(--relief-angle, 0deg);
-    /* Court : au-delà, la carte traîne derrière le curseur et l'on perd
-       la sensation de la toucher. */
-    transition: rotate .09s linear, box-shadow .3s;
+    /*
+     * ELLE SE SOULÈVE, PAS SEULEMENT ELLE PENCHE.
+     *
+     * `translate` et `scale` sont, comme `rotate`, des propriétés à part
+     * entière : elles se composent avec le `transform` déjà pris par le
+     * défilement animé, au lieu de l'écraser. On peut donc décoller la
+     * carte sans rien casser.
+     *
+     * Le déplacement horizontal vient du curseur — un objet qu'on
+     * soulève glisse du côté où on le tient — tandis que la hauteur est
+     * fixe : douze pixels, comme une vignette qu'on attrape dans
+     * l'administration, en plus retenu.
+     */
+    translate: var(--relief-dx, 0) -12px;
+    scale: 1.035;
+    /* Au-dessus de ses voisines, sinon l'ombre passe dessous et
+       l'illusion tombe. */
+    z-index: 5;
+    box-shadow:
+      0 30px 54px -18px rgba(24, 8, 66, .48),
+      0 10px 20px -12px rgba(24, 8, 66, .32),
+      inset 0 1px 0 #fff;
+    /* Court sur l'inclinaison : au-delà, la carte traîne derrière le
+       curseur et l'on perd la sensation de la toucher. Le décollement,
+       lui, a le droit de prendre son élan. */
+    transition:
+      rotate .09s linear,
+      translate .22s cubic-bezier(.2, .9, .25, 1),
+      scale .22s cubic-bezier(.2, .9, .25, 1),
+      box-shadow .28s ease;
   }
 
-  /* Le retour à plat, lui, prend son temps. */
+  /* Le retour à plat prend son temps : c'est ce qui donne le poids. */
   .card-light {
-    transition: rotate .4s cubic-bezier(.2, .9, .25, 1);
+    transition:
+      rotate .45s cubic-bezier(.2, .9, .25, 1),
+      translate .35s cubic-bezier(.2, .9, .25, 1),
+      scale .35s cubic-bezier(.2, .9, .25, 1);
+  }
+
+  /* Le soulèvement remplace le petit saut d'origine : les deux
+     cumulés faisaient bondir la carte de quinze pixels. */
+  .card-light[data-relief="1"]:has(> a[data-calque]:hover),
+  a.card-light[data-relief="1"]:hover,
+  button.card-light[data-relief="1"]:hover {
+    transform: none;
   }
 }
 
 /* Le réglage du site l'emporte, comme partout ailleurs. */
 [data-fige="1"] .card-light[data-relief="1"] { rotate: none; }
+
+/* ---------- le bandeau prend la couleur de son image ----------
+   Sous chaque vignette, le bloc de texte était blanc pour tout le
+   monde : cent cartes, cent bandeaux identiques, alors que les images
+   au-dessus n'ont rien à voir entre elles.
+
+   `Teinte` lit la couleur dominante de l'image et la pose sur la carte
+   dans `--teinte`. Ici on s'en sert pour un dégradé très pâle, qui part
+   du haut du bandeau — juste sous la photo, là où la transition doit se
+   faire — et s'éteint avant le bas.
+
+   LA VALEUR PAR DÉFAUT COMPTE AUTANT QUE LE RESTE. Toutes les images ne
+   se laissent pas lire : un hébergeur qui refuse la lecture pixel par
+   pixel laisse la carte sur le violet du site, et personne ne voit la
+   différence. C'est un embellissement, pas une information. */
+.card-light {
+  --teinte: 124 92 200;
+}
+
+.pied-carte {
+  position: relative;
+  background-image: linear-gradient(
+    180deg,
+    rgb(var(--teinte) / .19) 0%,
+    rgb(var(--teinte) / .09) 45%,
+    rgb(var(--teinte) / .03) 100%
+  );
+  /* La couleur arrive après le chargement de l'image : sans transition,
+     le bandeau change de teinte d'un coup sous les yeux. */
+  transition: background-image .5s ease;
+}
+
+/* Un trait de la même couleur, juste sous la photo. Il rattrape la
+   frontière entre l'image et le texte, qui sans lui se voit comme une
+   coupure nette. */
+.pied-carte::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: rgb(var(--teinte) / .35);
+  pointer-events: none;
+}

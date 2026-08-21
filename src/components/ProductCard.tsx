@@ -2,6 +2,7 @@ import Link from "next/link";
 import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
 import Etoiles from "./Etoiles";
+import Teinte from "./Teinte";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
@@ -80,6 +81,11 @@ export default function ProductCard({
      * centaines sans que l'onglet tombe. Voir globals.css.
      */
     <div className="card-light carte-eco group flex h-full flex-col overflow-hidden">
+      {/* La MÊME adresse que la vignette affichée : c'est déjà l'image
+          que le navigateur a chargée, et la mesure est retenue par
+          adresse, donc une photo qui revient ailleurs ne sera pas relue. */}
+      <Teinte src={vignette(cover, 400)} />
+
       <div className="relative z-3 flex flex-1 flex-col">
         <ProductLink href={href} external={!internal} className="block">
           <div className="visuel relative aspect-square w-full overflow-hidden rounded-t-[var(--radius)]">
@@ -144,7 +150,9 @@ export default function ProductCard({
         {/* `piece-infos` sert de prise au mode grille serrée : c'est le
             CSS qui resserre ce bloc, la carte n'a pas à savoir dans
             quelle densité elle est affichée. */}
-        <div className="piece-infos flex flex-1 flex-col p-4">
+        {/* Le bandeau prend la couleur de la photo au-dessus de lui.
+            Voir `Teinte` et `.pied-carte`. */}
+        <div className="piece-infos pied-carte flex flex-1 flex-col p-4">
           {showBrand && product.brand && (
             <Link
               href={`/marques/${product.brand.slug}`}
