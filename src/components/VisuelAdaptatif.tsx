@@ -244,14 +244,28 @@ export default function VisuelAdaptatif({
         return;
       }
 
-      // Un logo se montre en entier, et la discussion s'arrête là.
-      if (logo) {
+      const forme = img.naturalWidth / img.naturalHeight;
+      const ecart = forme > cadre ? forme / cadre : cadre / forme;
+
+      /*
+       * UN LOGO PLUS LARGE QUE SON CADRE NE SE ROGNE JAMAIS.
+       *
+       * C'est le cas du mot posé à l'horizontale, et remplir le cadre
+       * reviendrait à lui couper les deux bouts. Crayonné et ZOAV s'y
+       * étaient laissé prendre.
+       *
+       * ET C'EST BIEN LA SEULE EXCEPTION. J'avais d'abord interdit tout
+       * recadrage sur les logos, ce qui était une correction bien trop
+       * large : un logo CARRÉ, lui, se retrouvait posé au milieu de deux
+       * grandes bandes vides, alors qu'il remplissait très bien la carte
+       * jusque-là. Rogner le haut et le bas d'un carré ne coûte rien,
+       * rogner les côtés d'un mot coûte le nom de la marque. Ces deux
+       * cas n'ont donc pas la même règle.
+       */
+      if (logo && forme > cadre) {
         setEntiere(true);
         return;
       }
-
-      const forme = img.naturalWidth / img.naturalHeight;
-      const ecart = forme > cadre ? forme / cadre : cadre / forme;
 
       // Proche du cadre : on remplit, sans se poser de question.
       if (ecart <= ECART_TOLERE) {

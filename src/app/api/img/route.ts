@@ -91,7 +91,39 @@ function estInterdite(u: URL): boolean {
   return false;
 }
 
+/** Une adresse lisible, ou rien. Ne lève jamais. */
+function adresseOuRien(brute: string | null): string | null {
+  if (!brute) return null;
+  try {
+    return new URL(brute).toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * L'ULTIME FILET.
+ *
+ * Chaque opération risquée est déjà protégée en dessous, mais « chaque
+ * opération que j'ai pensé à protéger » n'est pas la même chose que
+ * « toutes ». Une exception oubliée sort en erreur 500, et une erreur
+ * 500 dans un attribut `src`, c'est un cadre cassé sur la carte d'une
+ * marque.
+ *
+ * La promesse de cette route est qu'elle ne peut pas casser une image.
+ * Elle ne tient que si elle est vraie même quand je me suis trompé.
+ */
 export async function GET(requete: Request) {
+  try {
+    return await servir(requete);
+  } catch {
+    const cible = adresseOuRien(new URL(requete.url).searchParams.get("u"));
+    if (cible) return NextResponse.redirect(cible, 302);
+    return new NextResponse("Image indisponible", { status: 400 });
+  }
+}
+
+async function servir(requete: Request) {
   /*
    * CETTE ROUTE SERT DES IMAGES, PAS DES PAGES.
    *

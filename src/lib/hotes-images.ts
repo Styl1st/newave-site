@@ -47,6 +47,20 @@ function ajouter(liste: Set<string>, adresse: string | null | undefined) {
   }
 }
 
+/*
+ * RIEN DE CE QUI SE PASSE ICI NE DOIT CASSER UNE IMAGE.
+ *
+ * Cette fonction interroge le réseau. Une base momentanément
+ * injoignable, une clé absente, une coupure : n'importe laquelle de ces
+ * pannes levait une exception qui remontait jusqu'à la route, laquelle
+ * répondait alors 500. Le navigateur recevait une erreur là où il
+ * attendait une image, et affichait un cadre cassé.
+ *
+ * Une liste d'hébergeurs est un CONFORT : elle sert à décider si l'on
+ * optimise. Ne pas savoir doit vouloir dire « on n'optimise pas », et
+ * jamais « on n'affiche pas ». Tout est donc attrapé ici, au plus près
+ * de ce qui peut échouer.
+ */
 async function relire(): Promise<void> {
   derniereLecture = Date.now();
 
@@ -101,18 +115,24 @@ export async function hoteConnu(hote: string): Promise<boolean> {
   const nom = hote.toLowerCase();
   const maintenant = Date.now();
 
-  if (!hotes || maintenant > expire) await relire();
-  if (hotes?.has(nom)) return true;
+  try {
+    if (!hotes || maintenant > expire) await relire();
+    if (hotes?.has(nom)) return true;
 
-  /*
-   * Une marque enregistrée à l'instant n'est pas encore dans la liste.
-   * On s'autorise une relecture immédiate, mais pas plus d'une toutes
-   * les trente secondes.
-   */
-  if (maintenant - derniereLecture > REPOS) {
-    await relire();
-    return hotes?.has(nom) ?? false;
+    /*
+     * Une marque enregistrée à l'instant n'est pas encore dans la liste.
+     * On s'autorise une relecture immédiate, mais pas plus d'une toutes
+     * les trente secondes.
+     */
+    if (maintenant - derniereLecture > REPOS) {
+      await relire();
+      return hotes?.has(nom) ?? false;
+    }
+
+    return false;
+  } catch {
+    // On ne sait pas, donc on n'optimise pas. L'image s'affichera
+    // quand même, servie par son hébergeur.
+    return false;
   }
-
-  return false;
 }
