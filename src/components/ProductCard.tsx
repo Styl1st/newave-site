@@ -3,7 +3,8 @@ import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
 import Etoiles from "./Etoiles";
 import Teinte from "./Teinte";
-import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import VignetteDefilante from "./VignetteDefilante";
+import { estUneVideo } from "@/lib/medias";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
@@ -16,21 +17,32 @@ function ProductLink({
   external,
   className,
   children,
+  // Le lien posé en calque n'a pas de texte visible : son intitulé doit
+  // donc lui être donné, sans quoi un lecteur d'écran annonce « lien »
+  // et rien d'autre.
+  "aria-label": etiquette,
 }: {
   href: string;
   external: boolean;
   className?: string;
   children: React.ReactNode;
+  "aria-label"?: string;
 }) {
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer sponsored" className={className}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        className={className}
+        aria-label={etiquette}
+      >
         {children}
       </a>
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} aria-label={etiquette}>
       {children}
     </Link>
   );
@@ -65,7 +77,24 @@ export default function ProductCard({
   const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
   const off = discountPercent(product);
-  const cover = product.images?.[0] ?? product.image_url;
+  /*
+   * Toutes les photos, et non plus la seule première.
+   *
+   * `images` est le carrousel de la fiche ; `image_url` la vignette
+   * retenue pour les listes. Une pièce importée d'une boutique a
+   * presque toujours les deux, une pièce saisie à la main parfois
+   * seulement la seconde.
+   */
+  /*
+   * ET SEULEMENT LES PHOTOS. Une pièce peut porter une vidéo dans son
+   * carrousel, et la fiche sait l'afficher ; une balise `img`, non.
+   * Feuilleter jusqu'à elle donnait un cadre cassé au milieu de la
+   * série. Elle reste visible sur la fiche, qui a le lecteur qu'il
+   * faut.
+   */
+  const visuels = (product.images?.length ? product.images : [product.image_url])
+    .filter((m): m is string => Boolean(m) && !estUneVideo(m));
+  const cover = visuels[0];
 
   const slug = brandSlug ?? product.brand?.slug;
   const internal = Boolean(slug && product.slug);
@@ -86,25 +115,17 @@ export default function ProductCard({
       <Teinte src={cover} />
 
       <div className="relative z-3 flex flex-1 flex-col">
-        <ProductLink href={href} external={!internal} className="block">
-          <div className="visuel relative aspect-square w-full overflow-hidden rounded-t-[var(--radius)]">
+        <div className="visuel relative aspect-square w-full overflow-hidden rounded-t-[var(--radius)]">
             {cover ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                /* On demande l'image à la taille où on la montre. Une
-                   photo de boutique fait 2000 pixels de large et pèse
-                   vingt mégaoctets une fois décodée en mémoire : trente
-                   vignettes suffisaient à faire recharger la page sur
-                   un téléphone. Voir lib/vignette.ts. */
-                src={vignette(cover, 400)}
-                srcSet={jeuDeVignettes(cover, 400)}
-                sizes="(max-width: 640px) 45vw, 300px"
+              /* Les flèches de défilement sont des BOUTONS, et un bouton
+                 ne peut pas vivre dans un lien : le navigateur refuse
+                 cette imbrication. Le lien vers la fiche est donc posé
+                 en calque par-dessus la photo, plus bas, exactement
+                 comme sur les cartes de marque. */
+              <VignetteDefilante
+                images={visuels}
                 alt={product.name}
-                loading="lazy"
-                decoding="async"
-                className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${
-                  product.retired_at ? "opacity-70 grayscale-[.35]" : ""
-                }`}
+                className={product.retired_at ? "opacity-70 grayscale-[.35]" : ""}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
@@ -132,8 +153,18 @@ export default function ProductCard({
                 </span>
               )
             )}
-          </div>
-        </ProductLink>
+          {/* Le lien recouvre la photo entière, sous les flèches. Toute
+              la vignette reste cliquable, et les flèches gardent leur
+              propre clic. */}
+          <ProductLink
+            href={href}
+            external={!internal}
+            className="absolute inset-0 z-1"
+            aria-label={product.name}
+          >
+            <span className="sr-only">{product.name}</span>
+          </ProductLink>
+        </div>
 
         {canManage && brandSlug && (
           <Link

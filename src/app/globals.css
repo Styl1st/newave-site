@@ -3097,3 +3097,105 @@ input[type="range"]:active::-webkit-slider-thumb {
 input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 4px rgba(var(--accent-1), .3);
 }
+
+/* ---------- feuilleter une pièce depuis la grille ----------
+
+   Les flèches posées sur la vignette d'une pièce, et les points qui
+   disent combien il reste de photos.
+
+   ELLES N'EXISTENT QUE LÀ OÙ IL Y A UNE SOURIS. Sur un écran tactile il
+   n'y a pas de survol : elles resteraient affichées en permanence, en
+   travers de la photo, sur toutes les cartes à la fois. Le média
+   `hover: hover` est ce qui distingue les deux, mieux qu'une largeur
+   d'écran — une tablette est large ET tactile. */
+.defile {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.defile-fleche,
+.defile-points {
+  opacity: 0;
+  transition: opacity .22s ease, transform .22s cubic-bezier(.2, .9, .3, 1.3);
+}
+
+.defile-fleche {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-top: -15px;
+  border-radius: 50%;
+  color: #fff;
+  /* La même matière que le reste du site : un verre sombre teinté par
+     l'ambiance, et non un rond gris de lecteur vidéo. */
+  background: rgba(var(--voile), .62);
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 6px 16px -6px rgba(var(--voile), .95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.defile-gauche { left: 8px; transform: translateX(-6px); }
+.defile-droite { right: 8px; transform: translateX(6px); }
+
+.defile-points {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9px;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  transform: translateY(5px);
+}
+
+.defile-points span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .45);
+  box-shadow: 0 1px 3px rgba(var(--voile), .9);
+  transition: background .2s ease, width .2s ease;
+}
+
+.defile-points span[data-actif] {
+  width: 14px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .defile-fleche,
+  .group:hover .defile-points {
+    opacity: 1;
+    transform: none;
+  }
+
+  .defile-fleche {
+    pointer-events: auto;
+  }
+
+  .defile-fleche:hover {
+    background: rgba(var(--voile), .85);
+    border-color: rgba(255, 255, 255, .55);
+  }
+
+  .defile-fleche:active {
+    scale: .92;
+  }
+}
+
+/* Au clavier, la flèche doit se voir même sans survol : sans ça, on
+   tabule sur un bouton invisible. */
+.defile-fleche:focus-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}

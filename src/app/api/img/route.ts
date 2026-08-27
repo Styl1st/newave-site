@@ -332,6 +332,7 @@ async function servir(requete: Request) {
     // Certaines photos de boutique portent leur orientation dans les
     // métadonnées. Sans ça, elles arrivent couchées.
     let image = sharp(octets).rotate();
+    let rogne = false;
 
     /*
      * LE ROGNAGE DES MARGES VIDES, DEMANDÉ SEULEMENT POUR LES LOGOS.
@@ -371,6 +372,7 @@ async function servir(requete: Request) {
         // quelque chose.
         if (gagne > ROGNAGE_UTILE && essai.info.width > 8 && essai.info.height > 8) {
           image = sharp(essai.data);
+          rogne = true;
         }
       } catch {
         // Un logo d'une seule couleur fait échouer le rognage : sharp ne
@@ -378,7 +380,22 @@ async function servir(requete: Request) {
       }
     }
 
-    const cadree = image.resize({ width: largeur, withoutEnlargement: true });
+    /*
+     * UN LOGO ROGNÉ A LE DROIT D'ÊTRE AGRANDI, ET C'EST UNE CORRECTION.
+     *
+     * On refuse d'agrandir, partout ailleurs, parce qu'étirer une petite
+     * image ne fait qu'en montrer les défauts. Mais retirer les marges
+     * d'un logo réduit énormément le fichier : un logotype de quatre
+     * cents pixels dont le mot n'en occupe que cent quatre-vingts
+     * ressort à cent quatre-vingts.
+     *
+     * Le site mesure alors une image trop petite pour être affichée
+     * proprement, et se rabat sur la couverture de la boutique. La
+     * marque perdait donc son logo à cause d'une amélioration de son
+     * logo. On lui rend la taille demandée : c'est exactement la même
+     * définition qu'avant le rognage, marges en moins.
+     */
+    const cadree = image.resize({ width: largeur, withoutEnlargement: !rogne });
 
     /*
      * LE FOND UNI D'UN LOGO DEVIENT TRANSPARENT.
@@ -398,7 +415,15 @@ async function servir(requete: Request) {
      * ON NE LE FAIT QUE SUR LES LOGOS, ET SEULEMENT SI LE FOND EST
      * VRAIMENT UNI. Le détail des précautions est dans `detourer`.
      */
-    const finale = params.get("t") === "1" ? await detourer(sharp, cadree) : cadree;
+    /*
+     * `IMG_DETOURAGE=0` coupe le détourage sans toucher au code. Il est
+     * récent, il touche aux pixels eux-mêmes, et c'est le genre de
+     * traitement dont on ne découvre les cas particuliers qu'en
+     * production : mieux vaut pouvoir l'éteindre en une variable que
+     * défaire un déploiement.
+     */
+    const detourage = params.get("t") === "1" && process.env.IMG_DETOURAGE !== "0";
+    const finale = detourage ? await detourer(sharp, cadree) : cadree;
 
     const reduite = await finale.webp({ quality: 78 }).toBuffer();
 
@@ -419,6 +444,13 @@ async function servir(requete: Request) {
 }
 
 /* ------------------------------------------------------------------ */
+
+/**
+ * La part de l'image qu'on accepte d'effacer.
+ *
+ * Au-delà, ce n'était pas un fond qu'on retirait, c'était le sujet.
+ */
+const SURFACE_MAX = 0.88;
 
 /** Sous cet écart, un pixel EST le fond. Il disparaît entièrement. */
 const FOND_CERTAIN = 12;
@@ -506,7 +538,11 @@ async function detourer(
     if (!clair && !sombre) return image;
 
     const sortie = Buffer.from(data);
+    let effaces = 0;
+    let pixels = 0;
+
     for (let i = 0; i < data.length; i += c) {
+      pixels++;
       const ecart = Math.max(
         Math.abs(data[i] - moyenne[0]),
         Math.abs(data[i + 1] - moyenne[1]),
@@ -515,12 +551,28 @@ async function detourer(
 
       if (ecart <= FOND_CERTAIN) {
         sortie[i + 3] = 0;
+        effaces++;
       } else if (ecart < DESSIN_CERTAIN) {
         // La zone de transition : les bords adoucis des lettres.
         const part = (ecart - FOND_CERTAIN) / (DESSIN_CERTAIN - FOND_CERTAIN);
         sortie[i + 3] = Math.round(data[i + 3] * part);
       }
     }
+
+    /*
+     * SI PRESQUE TOUT A DISPARU, C'EST QU'ON S'EST TROMPÉ.
+     *
+     * Un logo, c'est un dessin posé sur un fond : le fond occupe la
+     * majeure partie de l'image, mais pas la totalité. Quand il ne
+     * reste presque rien, c'est que la couleur qu'on a prise pour le
+     * fond était en réalité celle du dessin — un lettrage très clair
+     * sur un blanc cassé, par exemple. On rend alors l'image intacte.
+     *
+     * Ce garde-fou existe parce que le symptôme est le pire de tous :
+     * la marque perd purement et simplement son illustration, et rien
+     * n'indique pourquoi.
+     */
+    if (effaces / Math.max(pixels, 1) > SURFACE_MAX) return image;
 
     return sharp(sortie, { raw: { width: l, height: h, channels: 4 } });
   } catch {
