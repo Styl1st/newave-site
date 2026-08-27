@@ -163,7 +163,7 @@ export default function ProductBulkList({
                     checked={checked}
                     onChange={() => toggle(p.id)}
                     aria-label={`Sélectionner ${p.name}`}
-                    className="h-5 w-5 rounded-md accent-[#7b52e8]"
+                    className="case"
                   />
                 </label>
 

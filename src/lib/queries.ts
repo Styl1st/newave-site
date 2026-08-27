@@ -165,17 +165,30 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
 /**
  * La vitrine : des pièces de toutes les marques, mélangées.
  *
- * Une limite haute, et c'est volontaire. Cette page se parcourt, elle
- * ne s'inventorie pas : personne n'ira au bout de trois mille pièces,
- * et les descendre toutes coûterait à chaque visite ce qu'on met des
- * semaines à économiser ailleurs. Quatre cents suffisent à remplir
- * seize pages de vingt-quatre, et le tirage change à chaque passage.
+ * ON PREND QUELQUES PIÈCES DE CHAQUE MARQUE, ET SURTOUT PAS LES PLUS
+ * RÉCENTES.
+ *
+ * C'est ce qu'on faisait, et c'était le bug : les quatre cents pièces
+ * les plus récentes. Or un catalogue s'importe d'un bloc, marque par
+ * marque. Les quatre cents dernières arrivées, ce sont donc les pièces
+ * des trois ou quatre marques importées en dernier, et rien d'autre.
+ * Le mélange qui suit avait beau être irréprochable, il ne pouvait
+ * mélanger que ces trois marques-là : on tombait sur les mêmes en
+ * boucle.
+ *
+ * `position` est le rang d'une pièce DANS SA MARQUE, à partir de zéro.
+ * Demander les rangs inférieurs à dix, c'est donc demander au plus dix
+ * pièces à chacune, quelle que soit la taille de son catalogue, et
+ * toutes les marques sont servies dans la même requête. Une boutique de
+ * six pièces pèse alors autant qu'une de six cents.
+ *
+ * L'ordre visible est retiré au sort ensuite : voir `repartirParMarque`.
  *
  * Les pièces retirées de la boutique sont écartées : leur fiche reste
  * consultable parce qu'elle porte des coups de cœur, mais une vitrine
  * qui propose ce qui ne se vend plus n'a aucun intérêt.
  */
-export async function getVitrine(limite = 400): Promise<Product[]> {
+export async function getVitrine(parMarque = 10): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return DEMO_PRODUCTS;
 
@@ -184,13 +197,14 @@ export async function getVitrine(limite = 400): Promise<Product[]> {
     .select(`*, ${BRAND_REF}`)
     .eq("status", "published")
     .is("retired_at", null)
+    .lt("position", parMarque)
     /*
-     * Les plus récentes d'abord POUR LA SÉLECTION, pas pour
-     * l'affichage : c'est ce qui décide quelles quatre cents pièces
-     * descendent. L'ordre visible, lui, est retiré au sort ensuite.
+     * Un plafond de sécurité, pas un critère de choix. Il n'existe que
+     * pour le jour où l'annuaire comptera mille marques : personne ne
+     * descend dix mille vignettes, et les envoyer coûterait à chaque
+     * visite ce qu'on met des semaines à économiser ailleurs.
      */
-    .order("created_at", { ascending: false })
-    .limit(limite);
+    .limit(1500);
 
   if (error || !data) return DEMO_PRODUCTS;
   return data as unknown as Product[];

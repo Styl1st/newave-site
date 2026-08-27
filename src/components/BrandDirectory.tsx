@@ -6,6 +6,7 @@ import { IconChevron, IconFiltre } from "./Icons";
 import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { estUnArtiste } from "@/lib/boutiques";
+import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
@@ -45,6 +46,20 @@ export default function BrandDirectory({
       liste.includes(c) ? liste.filter((x) => x !== c) : [...liste, c]
     );
   const [tier, setTier] = useState<PriceTier | null>(null);
+  /*
+   * LE VESTIAIRE, ET IL SE CHOISIT SEUL.
+   *
+   * Une seule valeur à la fois, contrairement aux catégories : personne
+   * ne cherche « féminin ET masculin », c'est déjà ce que veut dire ne
+   * rien cocher. Une liste à cocher aurait proposé une combinaison qui
+   * n'apporte rien.
+   *
+   * Et il ne se cumule pas non plus AVEC lui-même : « Mixte » est une
+   * réponse, pas une absence de réponse. Une marque mixte ne ressort
+   * donc pas sous « Femme », sans quoi le filtre ne réduirait presque
+   * rien et n'aurait aucun intérêt.
+   */
+  const [audience, setAudience] = useState<Audience | null>(null);
   const [ouvert, setOuvert] = useState(false);
   /*
    * Marque ou artiste : la distinction la plus utile de l'annuaire.
@@ -63,11 +78,12 @@ export default function BrandDirectory({
   // Le compteur sur le bouton : sans lui, un filtre actif derrière un
   // panneau replié devient invisible, et la liste paraît incomplète
   // sans qu'on comprenne pourquoi.
-  const actifs = choisies.length + (tier ? 1 : 0);
+  const actifs = choisies.length + (tier ? 1 : 0) + (audience ? 1 : 0);
 
   function reinitialiser() {
     setChoisies([]);
     setTier(null);
+    setAudience(null);
   }
 
   /*
@@ -128,6 +144,7 @@ export default function BrandDirectory({
     const compte = new Map<string, number>();
     for (const b of base) {
       if (tier && b.price_tier !== tier) continue;
+      if (audience && uneAudience(b.audience) !== audience) continue;
       // On compte SUR LA SÉLECTION EN COURS : le nombre affiché à côté
       // d'une puce est donc « ce qu'il restera si je l'ajoute », et non
       // un total abstrait qui promettrait plus qu'il ne tient.
@@ -137,18 +154,33 @@ export default function BrandDirectory({
     // Les mieux représentées d'abord : c'est ce qui donne le plus de
     // chances de tomber sur quelque chose au premier clic.
     return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [base, tier, choisies]);
+  }, [base, tier, audience, choisies]);
 
   const gammes = useMemo(() => {
     const compte = new Map<PriceTier, number>();
     for (const b of base) {
       if (!choisies.every((c) => b.categories.includes(c))) continue;
+      if (audience && uneAudience(b.audience) !== audience) continue;
       if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
     }
     // L'ordre reste accessible → premium : un classement par nombre
     // mettrait les prix dans le désordre, ce qui se lit très mal.
     return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
-  }, [base, choisies]);
+  }, [base, choisies, audience]);
+
+  const vestiaires = useMemo(() => {
+    const compte = new Map<Audience, number>();
+    for (const b of base) {
+      if (tier && b.price_tier !== tier) continue;
+      if (!choisies.every((c) => b.categories.includes(c))) continue;
+      const a = uneAudience(b.audience);
+      compte.set(a, (compte.get(a) ?? 0) + 1);
+    }
+    // L'ordre de la constante, pas celui des effectifs : « Mixte,
+    // Femme, Homme » doit rester au même endroit d'une recherche à
+    // l'autre, sinon on clique à côté en revenant.
+    return AUDIENCES.filter((a) => compte.has(a)).map((a) => [a, compte.get(a) ?? 0] as const);
+  }, [base, tier, choisies]);
 
   /*
    * Un filtre qui n'a plus d'objet s'efface tout seul.
@@ -169,13 +201,18 @@ export default function BrandDirectory({
     if (tier && !gammes.some(([t]) => t === tier)) setTier(null);
   }, [gammes, tier]);
 
+  useEffect(() => {
+    if (audience && !vestiaires.some(([a]) => a === audience)) setAudience(null);
+  }, [vestiaires, audience]);
+
   const results = useMemo(
     () =>
       base.filter((b) => {
         if (tier && b.price_tier !== tier) return false;
+        if (audience && uneAudience(b.audience) !== audience) return false;
         return choisies.every((c) => b.categories.includes(c));
       }),
-    [base, choisies, tier]
+    [base, choisies, tier, audience]
   );
 
   const chip =
@@ -231,7 +268,7 @@ export default function BrandDirectory({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Chercher une marque, un style…"
-            className="min-w-0 flex-1 rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+            className="champ min-w-0 flex-1"
           />
           <button
             type="button"
@@ -285,6 +322,40 @@ export default function BrandDirectory({
 
         {ouvert && (
           <div id="filtres" className="mt-4 border-t border-white/15 pt-4">
+            {/* LE VESTIAIRE PASSE AVANT LE STYLE.
+                C'est la première question d'un visiteur en arrivant :
+                est-ce que ça s'adresse à moi. On cherche un style DANS
+                un vestiaire, jamais l'inverse, donc ce choix vient en
+                premier dans le panneau.
+
+                Et il ne s'affiche que si l'annuaire contient vraiment
+                plusieurs vestiaires : une seule puce ne serait pas un
+                filtre, juste une étiquette sur laquelle cliquer pour
+                rien. */}
+            {vestiaires.length > 1 && (
+              <>
+                <p className="eyebrow m-0 mb-2">Vestiaire</p>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setAudience(null)}
+                    className={`${chip} ${audience === null ? chipOn : chipOff}`}
+                  >
+                    Tout
+                  </button>
+                  {vestiaires.map(([a, n]) => (
+                    <button
+                      key={a}
+                      onClick={() => setAudience(audience === a ? null : a)}
+                      className={`${chip} ${audience === a ? chipOn : chipOff}`}
+                    >
+                      {AUDIENCE_FILTRE[a]}
+                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* Une famille sans aucune option ne s'affiche pas du
                 tout : un intertitre suivi d'un seul bouton « Toutes »
                 ne renseigne sur rien. */}
@@ -322,7 +393,6 @@ export default function BrandDirectory({
                 </div>
               </>
             )}
-
             {gammes.length > 1 && (
               <>
                 <p

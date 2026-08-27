@@ -166,7 +166,7 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Chercher une pièce, une marque…"
-            className="min-w-0 flex-1 rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+            className="champ min-w-0 flex-1"
           />
           <button
             type="button"

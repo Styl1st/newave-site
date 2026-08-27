@@ -101,7 +101,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           checked={corrigerPays}
           onChange={(e) => setCorrigerPays(e.target.checked)}
           disabled={enCours}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+          className="case mt-0.5"
         />
         <span className="text-[13px] leading-relaxed text-white/80">
           <span className="font-extrabold text-white">Corriger aussi le pays</span>, à
@@ -117,7 +117,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           checked={completerVisuels}
           onChange={(e) => setCompleterVisuels(e.target.checked)}
           disabled={enCours}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+          className="case mt-0.5"
         />
         <span className="text-[13px] leading-relaxed text-white/80">
           <span className="font-extrabold text-white">Compléter les visuels manquants</span> :
@@ -133,7 +133,7 @@ export default function MiseAJourCatalogues({ total }: { total: number }) {
           checked={reclasser}
           onChange={(e) => setReclasser(e.target.checked)}
           disabled={enCours}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-white"
+          className="case mt-0.5"
         />
         <span className="text-[13px] leading-relaxed text-white/80">
           <span className="font-extrabold text-white">Reclasser les pièces par rayon</span> :

@@ -378,10 +378,29 @@ async function servir(requete: Request) {
       }
     }
 
-    const reduite = await image
-      .resize({ width: largeur, withoutEnlargement: true })
-      .webp({ quality: 78 })
-      .toBuffer();
+    const cadree = image.resize({ width: largeur, withoutEnlargement: true });
+
+    /*
+     * LE FOND UNI D'UN LOGO DEVIENT TRANSPARENT.
+     *
+     * C'est l'idée que tu avais eue, et c'est la bonne : plutôt que de
+     * chercher à masquer les marges autour d'un logo, on enlève le fond
+     * du fichier pour que la carte se voie à travers. Le logo prend
+     * alors la couleur de l'ambiance choisie, quelle qu'elle soit, sans
+     * qu'on ait à la connaître ici.
+     *
+     * Ça règle le problème par le bon bout. Jusqu'ici on choisissait
+     * entre deux défauts : montrer le logo en entier et laisser deux
+     * bandes de blanc sur les côtés, ou remplir la carte en le rognant.
+     * Un logo détouré n'a plus de bandes à cacher, donc plus rien à
+     * rogner.
+     *
+     * ON NE LE FAIT QUE SUR LES LOGOS, ET SEULEMENT SI LE FOND EST
+     * VRAIMENT UNI. Le détail des précautions est dans `detourer`.
+     */
+    const finale = params.get("t") === "1" ? await detourer(sharp, cadree) : cadree;
+
+    const reduite = await finale.webp({ quality: 78 }).toBuffer();
 
     return new NextResponse(new Uint8Array(reduite), {
       headers: { ...entetes, "content-type": "image/webp" },
@@ -396,5 +415,115 @@ async function servir(requete: Request) {
      * que nous auprès de cet hôte.
      */
     return versLaSource();
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+/** Sous cet écart, un pixel EST le fond. Il disparaît entièrement. */
+const FOND_CERTAIN = 12;
+
+/** Au-delà, un pixel appartient au dessin. Il reste intact. */
+const DESSIN_CERTAIN = 44;
+
+/**
+ * Le fond uni d'un logo, rendu transparent.
+ *
+ * POURQUOI PAS EN CSS. Le mélange qui efface le blanc d'une image
+ * efface aussi les logos blancs sur fond noir, qui disparaîtraient
+ * purement et simplement. Le navigateur ne sait pas ce qui est fond et
+ * ce qui est dessin ; ici, on regarde les pixels, donc on peut le
+ * savoir.
+ *
+ * TROIS PRÉCAUTIONS, ET AUCUNE N'EST FACULTATIVE.
+ *
+ * On ne touche à rien si le bord n'est pas d'une seule couleur : un
+ * dégradé, une photo, une bannière illustrée gardent tout leur fond.
+ * On ne touche à rien non plus si cette couleur n'est ni très claire ni
+ * très sombre : un fond rouge vif ou bleu marine est un choix
+ * graphique de la marque, pas un blanc d'export à nettoyer.
+ * Et la transparence est PROGRESSIVE entre les deux seuils : un
+ * découpage net laisserait un liseré d'escalier sur chaque lettre,
+ * puisque les bords d'un dessin sont toujours adoucis.
+ *
+ * En cas de doute ou d'échec, on renvoie l'image telle qu'elle est
+ * arrivée. Un fond blanc n'a jamais cassé personne.
+ */
+async function detourer(
+  sharp: typeof import("sharp"),
+  image: import("sharp").Sharp
+): Promise<import("sharp").Sharp> {
+  try {
+    const { data, info } = await image
+      .clone()
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width: l, height: h, channels: c } = info;
+    if (c !== 4 || l < 8 || h < 8) return image;
+
+    const px = (x: number, y: number) => (y * l + x) * c;
+
+    /*
+     * On lit le bord, et pas seulement les quatre coins. Un coin peut
+     * être occupé par le dessin, ou par un artefact de compression :
+     * une trentaine de points répartis tout autour donnent une réponse
+     * autrement plus sûre pour le même prix.
+     */
+    const bord: number[][] = [];
+    const pas = Math.max(1, Math.floor(l / 12));
+    const pasV = Math.max(1, Math.floor(h / 12));
+    for (let x = 0; x < l; x += pas) {
+      bord.push([data[px(x, 0)], data[px(x, 0) + 1], data[px(x, 0) + 2], data[px(x, 0) + 3]]);
+      const b = px(x, h - 1);
+      bord.push([data[b], data[b + 1], data[b + 2], data[b + 3]]);
+    }
+    for (let y = 0; y < h; y += pasV) {
+      const g = px(0, y);
+      const d = px(l - 1, y);
+      bord.push([data[g], data[g + 1], data[g + 2], data[g + 3]]);
+      bord.push([data[d], data[d + 1], data[d + 2], data[d + 3]]);
+    }
+
+    // Le fond est déjà transparent : il n'y a rien à faire, et c'est
+    // le cas le plus fréquent sur un logo bien exporté.
+    if (bord.every((p) => p[3] < 24)) return image;
+
+    const moyenne = [0, 1, 2].map((i) => bord.reduce((t, p) => t + p[i], 0) / bord.length);
+
+    // Le bord doit être d'UNE couleur. Sinon c'est une image, pas un
+    // fond, et on n'y touche pas.
+    const dispersion = Math.max(
+      ...bord.map((p) => Math.max(...[0, 1, 2].map((i) => Math.abs(p[i] - moyenne[i]))))
+    );
+    if (dispersion > 20) return image;
+
+    // Ni très clair ni très sombre : c'est une couleur choisie, on la
+    // respecte.
+    const clair = moyenne.every((v) => v > 226);
+    const sombre = moyenne.every((v) => v < 34);
+    if (!clair && !sombre) return image;
+
+    const sortie = Buffer.from(data);
+    for (let i = 0; i < data.length; i += c) {
+      const ecart = Math.max(
+        Math.abs(data[i] - moyenne[0]),
+        Math.abs(data[i + 1] - moyenne[1]),
+        Math.abs(data[i + 2] - moyenne[2])
+      );
+
+      if (ecart <= FOND_CERTAIN) {
+        sortie[i + 3] = 0;
+      } else if (ecart < DESSIN_CERTAIN) {
+        // La zone de transition : les bords adoucis des lettres.
+        const part = (ecart - FOND_CERTAIN) / (DESSIN_CERTAIN - FOND_CERTAIN);
+        sortie[i + 3] = Math.round(data[i + 3] * part);
+      }
+    }
+
+    return sharp(sortie, { raw: { width: l, height: h, channels: 4 } });
+  } catch {
+    return image;
   }
 }

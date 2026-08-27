@@ -45,8 +45,8 @@ const RESEAUX_CONNUS = [
   { cle: "vinted", nom: "Vinted" },
 ] as const;
 
-const CHAMP =
-  "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
+// La matière des champs vit dans `globals.css`. Voir `.champ`.
+const CHAMP = "champ";
 const LABEL = "eyebrow mb-2 block";
 const PRINCIPAL =
   "rounded-full bg-white px-7 py-3.5 text-[14px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-55";

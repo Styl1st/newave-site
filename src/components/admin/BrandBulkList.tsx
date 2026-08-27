@@ -490,7 +490,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                         checked={coche}
                         onChange={() => basculer(b.id)}
                         aria-label={`Sélectionner ${b.name}`}
-                        className="h-5 w-5 rounded-md accent-[#7b52e8]"
+                        className="case"
                       />
                     </label>
 

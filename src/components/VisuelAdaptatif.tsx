@@ -147,6 +147,14 @@ async function aUnFondTransparent(url: string): Promise<boolean | null> {
   });
 }
 
+/**
+ * Jusqu'où on accepte d'agrandir un logo pour remplir sa carte.
+ *
+ * Deux, c'est-à-dire : on tolère de perdre la moitié de la hauteur.
+ * Au-delà, ce qui reste visible ne ressemble plus à un logo.
+ */
+const ZOOM_MAX = 2;
+
 export default function VisuelAdaptatif({
   src,
   srcSet,
@@ -264,6 +272,46 @@ export default function VisuelAdaptatif({
        */
       if (logo && forme > cadre) {
         setEntiere(true);
+        return;
+      }
+
+      /*
+       * TOUT AUTRE LOGO REMPLIT LA CARTE, ET LA TRANSPARENCE N'A PLUS
+       * SON MOT À DIRE.
+       *
+       * C'était elle qui décidait jusqu'ici, et elle décidait mal. Un
+       * logo carré au fond transparent était montré en entier, donc posé
+       * au milieu de deux bandes vides. Le flou censé les remplir ne
+       * pouvait rien y faire : flouter du transparent donne du
+       * transparent, et l'on voyait le dégradé de la carte de part et
+       * d'autre du logo. C'est la marge que tu vois sur mobile.
+       *
+       * Un carré qu'on remplit perd un tiers de sa hauteur, ce qui, sur
+       * un logo centré, ne coûte à peu près rien. C'est sans commune
+       * mesure avec la marge, qui donne à la carte l'air inachevé.
+       *
+       * Au passage, on ne va plus lire les pixels de chaque logo pour
+       * décider : une lecture en moins par carte, et un aléa en moins,
+       * puisqu'elle échouait chez les hébergeurs sans autorisation
+       * croisée.
+       */
+      if (logo) {
+        /*
+         * MAIS ON NE REMPLIT PAS À N'IMPORTE QUEL PRIX.
+         *
+         * Remplir un cadre large avec une image HAUTE, c'est l'agrandir
+         * jusqu'à ce que sa largeur suffise, puis jeter tout ce qui
+         * dépasse en haut et en bas. Sur un logo carré, ça coûte un
+         * tiers de la hauteur et personne ne le remarque. Sur un
+         * logotype vertical, deux fois plus haut que large, il ne
+         * reste à l'écran qu'une bande prise au milieu, démesurément
+         * agrandie : c'est l'image « zoomée à fond » qu'on voyait sur
+         * certaines cartes.
+         *
+         * Au-delà du double, on renonce et on montre l'image entière.
+         * Une marge est disgracieuse ; un logo méconnaissable est pire.
+         */
+        setEntiere(cadre / forme > ZOOM_MAX);
         return;
       }
 

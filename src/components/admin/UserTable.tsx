@@ -79,7 +79,7 @@ export default function UserTable({ users, meId }: { users: Row[]; meId: string 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Chercher par email ou par nom…"
-          className="w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+          className="champ"
         />
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setFilter("tous")} className={`${chip} ${filter === "tous" ? on : off}`}>

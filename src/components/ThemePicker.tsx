@@ -377,7 +377,7 @@ export default function ThemePicker({
                 }}
                 placeholder="Son nom…"
                 maxLength={24}
-                className="w-36 rounded-[9px] border border-white/50 bg-white/94 px-2.5 py-1.5 text-[12px] font-bold text-[var(--color-ink)]"
+                className="champ champ-petit w-36"
               />
               <button
                 type="button"
@@ -467,7 +467,7 @@ export default function ThemePicker({
                 }}
                 placeholder="Son nom…"
                 maxLength={30}
-                className="w-full rounded-[9px] border border-white/50 bg-white/94 px-2.5 py-1.5 text-[12.5px] font-bold text-[var(--color-ink)]"
+                className="champ champ-petit"
               />
               <div className="flex gap-1.5">
                 <button

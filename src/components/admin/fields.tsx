@@ -10,8 +10,15 @@
  * qui donne l'impression d'un formulaire bâclé.
  */
 
-export const FIELD =
-  "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
+/*
+ * Une seule classe, définie dans `globals.css`.
+ *
+ * C'était ici un long enchaînement de classes utilitaires, recopié à
+ * l'identique dans six autres fichiers. Le champ était donc un
+ * rectangle blanc, et le rendre présentable voulait dire le corriger
+ * sept fois — ce qui, en pratique, veut dire l'oublier quelque part.
+ */
+export const FIELD = "champ";
 
 export function Label({ htmlFor, children, hint }: {
   htmlFor: string;
@@ -49,7 +56,7 @@ export function Area({ name, label, hint, rows = 5, ...rest }: {
   return (
     <div>
       <Label htmlFor={name} hint={hint}>{label}</Label>
-      <textarea id={name} name={name} rows={rows} className={`${FIELD} resize-y`} {...rest} />
+      <textarea id={name} name={name} rows={rows} className={FIELD} {...rest} />
     </div>
   );
 }
@@ -81,7 +88,7 @@ export function Check({ name, label, defaultChecked }: {
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="h-5 w-5 rounded-md accent-[#7b52e8]"
+        className="case"
       />
       {label}
     </label>

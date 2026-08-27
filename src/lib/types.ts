@@ -12,6 +12,15 @@ export type Brand = {
   city: string | null;
   founded_year: number | null;
   categories: string[];
+  /**
+   * À qui la marque s'adresse : `mixte`, `femme`, `homme`.
+   *
+   * Facultatif dans le type parce que la colonne est arrivée avec la
+   * migration 26 : une base qui ne l'a pas encore renvoie des fiches
+   * sans ce champ, et le site doit continuer de fonctionner. Voir
+   * `lib/audience`.
+   */
+  audience?: string | null;
   price_tier: PriceTier;
   website_url: string | null;
   shop_url: string | null;

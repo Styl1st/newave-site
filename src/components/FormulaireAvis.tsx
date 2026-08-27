@@ -154,7 +154,7 @@ export default function FormulaireAvis({
         rows={4}
         maxLength={2000}
         placeholder="Quelques phrases, si tu veux. C'est facultatif."
-        className="mt-4 w-full resize-y rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-medium text-[var(--color-ink)] placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+        className="champ mt-4"
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-3">

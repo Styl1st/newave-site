@@ -47,7 +47,7 @@ export default function BrandSpaceList({ brands }: { brands: Brand[] }) {
             }}
             placeholder="Chercher une marque…"
             aria-label="Chercher une marque"
-            className="w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+            className="champ"
           />
           <p className="m-0 mt-2.5 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
             {resultats.length} marque{resultats.length > 1 ? "s" : ""}

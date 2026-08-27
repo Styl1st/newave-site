@@ -8,6 +8,7 @@ import { deduireLePays, normalizeShopUrl } from "@/lib/catalogue";
 import { lireLaBoutique } from "@/lib/lecture";
 import { boutiqueLisible, exigeUnCatalogue } from "@/lib/boutiques";
 import { doitAvoirDesPieces, unAcces } from "@/lib/acces";
+import { uneAudience } from "@/lib/audience";
 import { avecMessage } from "@/lib/flash";
 import { premiereImage } from "@/lib/medias";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
@@ -189,6 +190,7 @@ export async function saveBrand(formData: FormData): Promise<Result> {
      * de publier ces marques, qui sont souvent celles qu'on ne trouve
      * nulle part ailleurs.
      */
+    audience: uneAudience(toText(formData.get("audience"))),
     acces: unAcces(toText(formData.get("acces"))),
     status,
     published_at:

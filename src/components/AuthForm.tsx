@@ -7,8 +7,8 @@ import ConnexionFournisseurs from "./ConnexionFournisseurs";
 
 type Mode = "connexion" | "inscription" | "oubli";
 
-const FIELD =
-  "w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-semibold text-[var(--color-ink)] placeholder:font-medium placeholder:text-[#8a7bab] focus:outline-none focus:ring-[3px] focus:ring-white/55";
+// La matière des champs vit dans `globals.css`. Voir `.champ`.
+const FIELD = "champ";
 const LABEL = "eyebrow mb-2 block";
 
 export default function AuthForm({ suite }: { suite: string }) {

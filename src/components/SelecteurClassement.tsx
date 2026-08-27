@@ -50,7 +50,7 @@ export default function SelecteurClassement({
         <select
           value={actif}
           onChange={(e) => router.push(adresse(e.target.value))}
-          className="w-full rounded-[13px] border border-white/60 bg-white/94 px-4 py-3 text-[14px] font-bold text-[var(--color-ink)] focus:outline-none focus:ring-[3px] focus:ring-white/55"
+          className="champ"
         >
           {onglets.map((o) => (
             <option key={o.id} value={o.id}>

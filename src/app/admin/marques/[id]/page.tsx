@@ -15,6 +15,7 @@ import { adminGetBrand, adminGetBrandManagers, adminGetVilles } from "@/lib/admi
 import { paysAvecActuel } from "@/lib/pays";
 import { BRAND_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { ACCES, ACCES_AIDE, ACCES_LABEL, unAcces } from "@/lib/acces";
+import { AUDIENCES, AUDIENCE_AIDE, AUDIENCE_LABEL, uneAudience } from "@/lib/audience";
 
 /**
  * Enregistrer une fiche peut déclencher la lecture de la boutique, et
@@ -188,6 +189,22 @@ export default async function EditBrand({ params }: Props) {
               invitation, ou font patienter sur une liste : le dire
               permet de les publier au lieu de les retenir en brouillon
               pour un catalogue vide qui est leur état normal. */}
+          {/* À qui ça s'adresse. C'est la première question que se pose
+              un visiteur, et il fallait ouvrir la fiche pour y
+              répondre. Rangé ici et non dans les catégories : voir
+              `lib/audience` pour le pourquoi. */}
+          <Select
+            name="audience"
+            label="À qui ça s'adresse"
+            hint={AUDIENCE_AIDE[uneAudience(brand?.audience)]}
+            defaultValue={uneAudience(brand?.audience)}
+          >
+            {AUDIENCES.map((valeur) => (
+              <option key={valeur} value={valeur}>
+                {AUDIENCE_LABEL[valeur]}
+              </option>
+            ))}
+          </Select>
           <Select
             name="acces"
             label="Comment on achète"
