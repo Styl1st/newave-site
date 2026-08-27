@@ -2661,7 +2661,20 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
    l'œil : elles appartiennent au même plan. */
 @media (hover: hover) and (pointer: fine) {
   main .grid {
-    perspective: 1200px;
+    /*
+     * PLUS LOIN, DONC MOINS DÉFORMÉ.
+     *
+     * Ce nombre est la distance de l'œil à la page. À douze cents
+     * pixels, on regardait une vignette de trois cents pixels le nez
+     * dessus : la moindre inclinaison écrasait un côté et étirait
+     * l'autre, et une pièce photographiée devenait un trapèze.
+     *
+     * En reculant, la fuite se calme sans disparaître. C'est le réglage
+     * qui compte le plus ici, bien plus que l'angle : c'est lui qui fait
+     * la différence entre un objet qu'on incline et une image qu'on
+     * tord.
+     */
+    perspective: 2200px;
   }
 
   /* `rotate` ET NON `transform`, c'est le point délicat.
@@ -2688,22 +2701,28 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
      * fixe : douze pixels, comme une vignette qu'on attrape dans
      * l'administration, en plus retenu.
      */
-    translate: var(--relief-dx, 0) -12px;
-    scale: 1.035;
+    translate: var(--relief-dx, 0) -8px;
+    scale: 1.018;
     /* Au-dessus de ses voisines, sinon l'ombre passe dessous et
        l'illusion tombe. */
     z-index: 5;
     box-shadow:
-      0 30px 54px -18px rgba(24, 8, 66, .48),
-      0 10px 20px -12px rgba(24, 8, 66, .32),
+      0 24px 44px -18px rgba(24, 8, 66, .42),
+      0 8px 16px -12px rgba(24, 8, 66, .28),
       inset 0 1px 0 #fff;
     /* Court sur l'inclinaison : au-delà, la carte traîne derrière le
        curseur et l'on perd la sensation de la toucher. Le décollement,
        lui, a le droit de prendre son élan. */
+    /*
+     * L'inclinaison suit le curseur d'un peu plus loin qu'avant : à neuf
+     * centièmes elle collait au pixel, et le moindre tremblement de la
+     * main se voyait sur la carte. Quatorze suffisent à lisser le geste
+     * sans qu'on sente de retard.
+     */
     transition:
-      rotate .09s linear,
-      translate .22s cubic-bezier(.2, .9, .25, 1),
-      scale .22s cubic-bezier(.2, .9, .25, 1),
+      rotate .14s ease-out,
+      translate .24s cubic-bezier(.2, .9, .25, 1),
+      scale .24s cubic-bezier(.2, .9, .25, 1),
       box-shadow .28s ease;
   }
 

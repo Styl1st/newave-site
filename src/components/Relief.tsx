@@ -28,8 +28,20 @@ import { useEffect } from "react";
 /** Ce qui s'incline : toutes les cartes claires du site. */
 const CARTES = ".card-light";
 
-/** L'inclinaison maximale, au coin de la carte. Cinq degrés suffisent. */
-const AMPLITUDE = 5;
+/**
+ * L'inclinaison maximale, atteinte au coin de la carte.
+ *
+ * ELLE ÉTAIT DE CINQ DEGRÉS, ET C'ÉTAIT TROP. Sur une carte de marque,
+ * qui est un bloc, cinq degrés passent. Sur la photo d'un vêtement, ils
+ * se voient tout de suite : un pantalon droit part de travers, une
+ * manche s'allonge d'un côté. L'œil connaît la forme d'un vêtement, et
+ * il repère la déformation bien plus vite que sur un aplat de couleur.
+ *
+ * Trois degrés suffisent à faire sentir que la carte est un objet posé
+ * sur la page plutôt qu'une image imprimée dedans, ce qui est tout ce
+ * qu'on lui demande.
+ */
+const AMPLITUDE = 3;
 
 /*
  * La HAUTEUR du décollement, elle, n'est pas ici : elle est fixe et vit
@@ -124,7 +136,7 @@ export default function Relief() {
        * La hauteur, elle, est fixe et vit dans le CSS : elle ne dépend
        * pas de l'endroit qu'on survole.
        */
-      carte.style.setProperty("--relief-dx", `${(px * 7).toFixed(1)}px`);
+      carte.style.setProperty("--relief-dx", `${(px * 4).toFixed(1)}px`);
     };
 
     const surMouvement = (e: PointerEvent) => {
