@@ -45,7 +45,20 @@ export default function BrandPreview({
 
     fetch(`/api/marques/${slug}/pieces`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((json: PreviewData) => alive && setData(json))
+      .then(
+        (json: PreviewData) =>
+          alive &&
+          setData({
+            ...json,
+            /*
+             * Même règle que dans les grilles : une pièce sans photo
+             * laisserait un carreau gris au milieu de l'aperçu, alors
+             * que c'est précisément un panneau d'images. Le total, lui,
+             * reste celui du catalogue entier.
+             */
+            products: json.products.filter((p) => p.image),
+          })
+      )
       .catch(() => alive && setFailed(true));
 
     return () => {

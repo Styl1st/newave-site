@@ -35,3 +35,27 @@ export function premiereImage(medias: readonly string[] | null | undefined): str
 export function contientUneVideo(medias: readonly string[] | null | undefined): boolean {
   return (medias ?? []).some(estUneVideo);
 }
+
+/**
+ * Cette pièce a-t-elle de quoi être MONTRÉE ?
+ *
+ * Une pièce sans photo s'affichait comme un rectangle gris portant
+ * « Visuel à venir ». Sur une grille faite pour être parcourue à l'œil,
+ * c'est un trou : rien à regarder, rien à comparer, et la promesse d'une
+ * image qui n'arrivera pas, puisque ces pièces viennent d'un import où
+ * la boutique n'en fournissait aucune.
+ *
+ * On les écarte donc des grilles. Leur fiche reste accessible et leur
+ * enregistrement intact : ce n'est pas une suppression, c'est une pièce
+ * qu'on ne met pas en vitrine tant qu'elle n'a rien à y montrer.
+ *
+ * Les vidéos ne comptent pas ici. La fiche sait les lire, une vignette
+ * non : voir `ProductCard`.
+ */
+export function aUneIllustration(piece: {
+  images?: string[] | null;
+  image_url?: string | null;
+}): boolean {
+  const medias = piece.images?.length ? piece.images : [piece.image_url];
+  return medias.some((m) => Boolean(m) && !estUneVideo(m));
+}

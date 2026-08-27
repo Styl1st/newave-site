@@ -12,6 +12,7 @@ import PostCard from "@/components/PostCard";
 import RayonsPieces from "@/components/RayonsPieces";
 import { getBrand, getBrandBrouillon, getPostsByBrand, getProductsByBrand } from "@/lib/queries";
 import { isFavorite } from "@/lib/favorites";
+import { aUneIllustration } from "@/lib/medias";
 import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes } from "@/lib/likes";
 import { getNotesMarques, getNotesPieces } from "@/lib/avis";
@@ -53,12 +54,22 @@ export default async function BrandPage({ params }: Props) {
 
   const enApercu = brand.status !== "published";
 
-  const [products, posts, favorited, insight] = await Promise.all([
+  const [tous, posts, favorited, insight] = await Promise.all([
     getProductsByBrand(brand.id),
     getPostsByBrand(brand.id),
     isFavorite(brand.id),
     getCatalogueInsight(brand.id),
   ]);
+
+  /*
+   * Le catalogue montré ne garde que les pièces illustrées.
+   *
+   * Une carte « Visuel à venir » au milieu d'une grille de photos fait
+   * une tache, et n'apporte rien : on ne peut ni la regarder ni la
+   * comparer. Les compteurs plus bas suivent la même liste, sinon la
+   * page annoncerait vingt-neuf pièces pour en afficher vingt-quatre.
+   */
+  const products = tous.filter(aUneIllustration);
 
   const ids = products.map((p) => p.id);
   /*

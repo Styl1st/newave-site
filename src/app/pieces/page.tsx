@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import PieceDirectory from "@/components/PieceDirectory";
 import { getVitrine } from "@/lib/queries";
 import { repartirParMarque } from "@/lib/melange";
+import { aUneIllustration } from "@/lib/medias";
 
 export const metadata: Metadata = {
   title: "Les pièces",
@@ -27,7 +28,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function PiecesPage() {
-  const pieces = repartirParMarque(await getVitrine());
+  /*
+   * Une pièce sans photo n'a rien à faire dans une vitrine. Voir
+   * `aUneIllustration` : ce n'est pas une suppression, sa fiche reste
+   * accessible.
+   */
+  const pieces = repartirParMarque((await getVitrine()).filter(aUneIllustration));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">

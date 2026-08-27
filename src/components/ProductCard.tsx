@@ -153,6 +153,30 @@ export default function ProductCard({
                 </span>
               )
             )}
+          {/*
+            LE CŒUR SUR LA PHOTO.
+            Il était en bas de la carte, à côté du prix, et il fallait
+            donc lire la fiche jusqu'au bout pour le trouver. Or on
+            reconnaît une pièce qu'on aime à l'image, pas à son nom :
+            le geste appartient à la photo. Quatre coins, quatre rôles,
+            comme sur les cartes de marque : la remise en haut à
+            gauche, le crayon en haut à droite, l'état en bas à gauche,
+            le cœur en bas à droite.
+
+            `z-3` le place au-dessus du lien qui recouvre la photo,
+            sans quoi cliquer dessus ouvrirait la fiche.
+          */}
+          {likes && (
+            <div className="absolute bottom-2.5 right-2.5 z-3">
+              <LikeButton
+                productId={product.id}
+                initialLiked={likes.liked}
+                initialCount={likes.count}
+                taille="pastille"
+              />
+            </div>
+          )}
+
           {/* Le lien recouvre la photo entière, sous les flèches. Toute
               la vignette reste cliquable, et les flèches gardent leur
               propre clic. */}
@@ -224,14 +248,6 @@ export default function ProductCard({
               )}
             </span>
 
-            {likes && (
-              <LikeButton
-                productId={product.id}
-                initialLiked={likes.liked}
-                initialCount={likes.count}
-                taille="compact"
-              />
-            )}
           </div>
         </div>
       </div>
