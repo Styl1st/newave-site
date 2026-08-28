@@ -332,7 +332,6 @@ async function servir(requete: Request) {
     // Certaines photos de boutique portent leur orientation dans les
     // métadonnées. Sans ça, elles arrivent couchées.
     let image = sharp(octets).rotate();
-    let rogne = false;
 
     /*
      * LE ROGNAGE DES MARGES VIDES, DEMANDÉ SEULEMENT POUR LES LOGOS.
@@ -372,7 +371,6 @@ async function servir(requete: Request) {
         // quelque chose.
         if (gagne > ROGNAGE_UTILE && essai.info.width > 8 && essai.info.height > 8) {
           image = sharp(essai.data);
-          rogne = true;
         }
       } catch {
         // Un logo d'une seule couleur fait échouer le rognage : sharp ne
@@ -381,21 +379,20 @@ async function servir(requete: Request) {
     }
 
     /*
-     * UN LOGO ROGNÉ A LE DROIT D'ÊTRE AGRANDI, ET C'EST UNE CORRECTION.
+     * ON N'AGRANDIT JAMAIS, PAS MÊME UN LOGO ROGNÉ.
      *
-     * On refuse d'agrandir, partout ailleurs, parce qu'étirer une petite
-     * image ne fait qu'en montrer les défauts. Mais retirer les marges
-     * d'un logo réduit énormément le fichier : un logotype de quatre
-     * cents pixels dont le mot n'en occupe que cent quatre-vingts
-     * ressort à cent quatre-vingts.
+     * J'avais autorisé l'agrandissement après rognage, pour qu'un logo
+     * débarrassé de ses marges retrouve la taille demandée. C'était une
+     * erreur, et elle expliquait les logos flous : en renvoyant du
+     * quatre cents pixels étiré depuis du cent quatre-vingts, on
+     * empêchait le site de voir que le fichier était trop petit. Il
+     * croyait tenir une image nette et l'affichait telle quelle.
      *
-     * Le site mesure alors une image trop petite pour être affichée
-     * proprement, et se rabat sur la couverture de la boutique. La
-     * marque perdait donc son logo à cause d'une amélioration de son
-     * logo. On lui rend la taille demandée : c'est exactement la même
-     * définition qu'avant le rognage, marges en moins.
+     * La taille renvoyée doit dire la vérité sur la définition
+     * disponible. C'est elle qui décide, plus haut, si la marque mérite
+     * son logo ou son défilé de pièces : voir `IllustrationMarque`.
      */
-    const cadree = image.resize({ width: largeur, withoutEnlargement: !rogne });
+    const cadree = image.resize({ width: largeur, withoutEnlargement: true });
 
     /*
      * LE FOND UNI D'UN LOGO DEVIENT TRANSPARENT.

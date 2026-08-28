@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Le curseur du site : une flèche aux couleurs de l'ambiance choisie.
@@ -45,6 +45,19 @@ const SAISIE =
   "input:not([type]), input[type='text'], input[type='email'], input[type='password'], input[type='search'], input[type='url'], input[type='number'], textarea, [contenteditable='true']";
 
 export default function Curseur() {
+  /*
+   * La mesure de fluidité tombe une seconde après l'arrivée sur la
+   * page, donc APRÈS que ce composant se soit installé. Sans cet
+   * écouteur, il continuerait de tourner sur une machine qu'on vient
+   * justement de déclarer trop lente. Voir `Menagement`.
+   */
+  const [allege, setAllege] = useState(false);
+  useEffect(() => {
+    const surAllege = () => setAllege(true);
+    window.addEventListener("newave:allege", surAllege);
+    return () => window.removeEventListener("newave:allege", surAllege);
+  }, []);
+
   const fleche = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +67,13 @@ export default function Curseur() {
      * au milieu de la page.
      */
     if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    /*
+     * Sur une machine qui peine, on ne dessine plus rien de tout ça :
+     * voir `Menagement`. Le curseur du système est toujours fluide,
+     * puisqu'il n'est pas dessiné par la page.
+     */
+    if (allege || document.documentElement.dataset.allege === "1") return;
 
     const racine = document.documentElement;
     const el = fleche.current;
@@ -174,7 +194,7 @@ export default function Curseur() {
       delete racine.dataset.curseurEtat;
       delete racine.dataset.curseurAppui;
     };
-  }, []);
+  }, [allege]);
 
   return (
     <div ref={fleche} className="curseur-point" aria-hidden>

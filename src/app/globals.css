@@ -3218,3 +3218,131 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+
+/* ---------- le défilé des pièces, à la place d'un logo flou ----------
+
+   Toutes les photos sont empilées au même endroit et se relaient en
+   fondu. Une seule est opaque à la fois.
+
+   POURQUOI EMPILER PLUTÔT QUE REMPLACER. Changer l'adresse d'une seule
+   balise ferait clignoter en blanc à chaque passage, le temps que la
+   suivante arrive. Empilées, elles sont déjà décodées : le fondu n'a
+   plus qu'à jouer sur l'opacité, ce que le navigateur fait sur son
+   propre calque sans rien recalculer. */
+.vitrine-marque {
+  position: absolute;
+  inset: 0;
+}
+
+.vitrine-marque img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  /* Long, parce qu'il ne se passe rien d'autre : un fondu court sur une
+     carte qu'on ne regarde pas attire l'œil pour rien. */
+  transition: opacity 1.1s ease;
+}
+
+.vitrine-marque img[data-visible] {
+  opacity: 1;
+}
+
+/* Quand la marque a une couverture, elle est peinte sur le cadre lui-même
+   et reste visible tant qu'aucune pièce n'est arrivée. Le défilé se pose
+   simplement par-dessus. */
+.vitrine-sur-couverture img[data-visible] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) .vitrine-marque img {
+    transition: none;
+  }
+}
+
+/* ---------- le mode allégé ----------
+
+   Posé sur <html> par `Menagement` quand la page tourne sous quarante
+   images par seconde. Il ne change ni les couleurs, ni les images, ni
+   les arrondis, ni les liserés : on retire le MOUVEMENT et les effets
+   de matière, pas l'identité du site.
+
+   L'ORDRE DES RETRAITS SUIT LEUR COÛT RÉEL.
+
+   Le verre dépoli d'abord. `backdrop-filter` oblige le navigateur à
+   relire et reflouter tout ce qui se trouve derrière l'élément, à
+   chaque image, et il y en a seize sur le site. C'est de très loin la
+   dépense la plus lourde, et sur une puce graphique intégrée elle
+   suffit à elle seule à faire tomber la page à quinze images.
+
+   Les dérives du fond ensuite : elles repeignent en continu des zones
+   grandes comme l'écran.
+
+   Le curseur dessiné enfin. Il redevient celui du système, donc
+   parfaitement fluide, puisqu'il n'est plus dessiné par la page. C'est
+   le symptôme qu'on remarque en premier, mais c'était rarement la
+   cause. */
+html[data-allege="1"] :is(
+  .glass,
+  .champ,
+  .case,
+  .panneau-apercu,
+  .apercu-carreau,
+  .defile-fleche,
+  .confirmation,
+  .bg-degrade
+) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Les nappes et le dégradé cessent de dériver. Ils restent PEINTS :
+   c'est le fond du site, pas une animation décorative. */
+html[data-allege="1"] :is(
+  .bg,
+  .bg-degrade,
+  .bg-nappe,
+  .bg-lueur,
+  .bg::before,
+  .bg::after,
+  .glyph-track,
+  .panneau-apercu::before,
+  .panneau-apercu::after
+) {
+  animation: none !important;
+}
+
+/* Un flou de quarante pixels sur une surface large est aussi cher qu'un
+   verre dépoli. On le réduit sans le supprimer : sans lui, les nappes
+   redeviennent des taches aux bords nets. */
+html[data-allege="1"] .bg-nappe,
+html[data-allege="1"] .bg-lueur {
+  filter: blur(24px) !important;
+}
+
+/* Le curseur du système reprend sa place. */
+html[data-allege="1"][data-curseur="1"],
+html[data-allege="1"][data-curseur="1"] * {
+  cursor: auto;
+}
+html[data-allege="1"] .curseur-point {
+  display: none !important;
+}
+
+/* Plus d'inclinaison ni de décollement : une carte survolée se contente
+   de son ombre, qui ne coûte rien puisqu'elle ne bouge pas. */
+html[data-allege="1"] .card-light[data-relief="1"] {
+  rotate: none;
+  translate: none;
+  scale: 1;
+}
+
+/* Le défilé des pièces s'arrête aussi : plusieurs fondus simultanés sur
+   une grille de cartes, c'est exactement ce qu'une machine lente ne sait
+   pas faire. La première photo reste affichée. */
+html[data-allege="1"] .vitrine-marque img {
+  transition: none !important;
+}

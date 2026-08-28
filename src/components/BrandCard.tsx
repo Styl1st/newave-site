@@ -3,6 +3,7 @@ import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
 import CouvertureAnimee from "./CouvertureAnimee";
 import VisuelAdaptatif from "./VisuelAdaptatif";
+import IllustrationMarque from "./IllustrationMarque";
 import Teinte from "./Teinte";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
@@ -112,7 +113,20 @@ export default function BrandCard({
       <div className="pointer-events-none relative z-3 flex flex-1 flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
             un aplat plutot qu'un trou : la grille reste alignee. */}
-        <div className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
+        <div
+          className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
+          /* La couverture sert de fond au défilé des pièces quand la
+             marque n'en a aucune : voir `IllustrationMarque`. */
+          style={
+            estUnLogo && brand.cover_url
+              ? {
+                  backgroundImage: `url(${vignette(brand.cover_url, 640)})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
+        >
           {brand.cover_video_url ? (
             /* L'illustration animée, la même que sur la fiche. Elle ne
                se charge que lorsque la carte approche de l'écran et se
@@ -135,30 +149,24 @@ export default function BrandCard({
              * flouté. Un seul fond, la couleur vient de la marque, et
              * cent logos ne donnent plus cent cartes identiques.
              */
-            <VisuelAdaptatif
-              /*
-               * `logo: true` fait rogner les marges vides du fichier.
-               * Sans ça, un logotype exporté avec trois cents pixels de
-               * blanc autour du mot arrivait ici comme une bannière, et
-               * s'affichait en un mince bandeau au milieu de la carte.
-               */
-              src={vignette(visual, 400, { logo: true })}
-              srcSet={jeuDeVignettes(visual, 400, { logo: true })}
-              alt={brand.name}
-              cadre={16 / 10}
-              fondFlou
-              logo
-              /*
-               * Un logo trop petit se replie sur la couverture.
-               *
-               * Beaucoup de marques n'ont qu'un logotype de cent
-               * cinquante pixels, prévu pour un pied de page. Agrandi à
-               * la taille d'une carte, il en ressort en bouillie, et
-               * c'est la marque qui a l'air négligée. Mieux vaut sa
-               * couverture, même quelconque. La mesure se fait au
-               * chargement : voir `VisuelAdaptatif`.
-               */
-              secours={brand.cover_url ? vignette(brand.cover_url, 640) : undefined}
+            /*
+             * UN LOGO FLOU EST REMPLACÉ PAR LE DÉFILÉ DES PIÈCES.
+             *
+             * Il se repliait sur la couverture de la boutique, et avant
+             * ça on essayait de le rattraper : rogner ses marges, poser
+             * un flou derrière, détourer son fond, l'agrandir. Rien ne
+             * rend nets des pixels qui n'existent pas.
+             *
+             * Ce que fabrique une marque est photographié pour être
+             * vendu, donc grand et beau. C'est une meilleure carte de
+             * visite qu'une image floue de son nom. Voir
+             * `IllustrationMarque` pour l'ordre complet.
+             */
+            <IllustrationMarque
+              logo={visual}
+              couverture={brand.cover_url}
+              slug={brand.slug}
+              nom={brand.name}
               className="transition duration-500 group-hover:scale-[1.04]"
             />
           ) : visual ? (

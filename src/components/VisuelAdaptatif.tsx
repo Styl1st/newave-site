@@ -52,7 +52,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * larges et bas, parfaitement nets malgré leurs quatre-vingts pixels de
  * hauteur.
  */
-const LOGO_TROP_PETIT = 220;
+const LOGO_TROP_PETIT = 340;
 
 /**
  * À partir de quel écart on hésite à recadrer.
@@ -167,6 +167,7 @@ export default function VisuelAdaptatif({
   fondFlou = false,
   logo = false,
   secours,
+  onTropPetit,
 }: {
   src?: string;
   srcSet?: string;
@@ -206,6 +207,16 @@ export default function VisuelAdaptatif({
    * quelconque, qu'un logotype de cent pixels étiré en bouillie.
    */
   secours?: string;
+  /**
+   * Prévenir plutôt que se replier soi-même.
+   *
+   * Quand ce rappel est fourni, le composant ne bascule sur rien : il
+   * signale que le fichier est trop petit, et laisse l'appelant décider
+   * quoi montrer à la place. C'est ce qui permet à une carte de marque
+   * de remplacer un logo en bouillie par le défilé de ses pièces, ce
+   * qu'un composant d'image n'a aucun moyen de savoir faire.
+   */
+  onTropPetit?: () => void;
 }) {
   const ref = useRef<HTMLImageElement>(null);
   const [entiere, setEntiere] = useState(false);
@@ -240,12 +251,14 @@ export default function VisuelAdaptatif({
        * décider en amont supposerait de connaître les dimensions de
        * chaque fichier, ce que la base ne stocke pas.
        */
-      if (
-        !replie &&
-        secours &&
-        secours !== src &&
-        Math.max(img.naturalWidth, img.naturalHeight) < LOGO_TROP_PETIT
-      ) {
+      const tropPetite = Math.max(img.naturalWidth, img.naturalHeight) < LOGO_TROP_PETIT;
+
+      if (tropPetite && onTropPetit) {
+        onTropPetit();
+        return;
+      }
+
+      if (!replie && secours && secours !== src && tropPetite) {
         setReplie(true);
         setSource(secours);
         setEntiere(false);
@@ -356,7 +369,7 @@ export default function VisuelAdaptatif({
         if (transparent === true) setEntiere(true);
       });
     },
-    [cadre, logo, replie, secours, src]
+    [cadre, logo, onTropPetit, replie, secours, src]
   );
 
   /*

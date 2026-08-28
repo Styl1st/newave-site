@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Les cartes s'inclinent vers le curseur.
@@ -50,8 +50,28 @@ const AMPLITUDE = 3;
  */
 
 export default function Relief() {
+  /*
+   * La mesure de fluidité tombe une seconde après l'arrivée sur la
+   * page, donc APRÈS que ce composant se soit installé. Sans cet
+   * écouteur, il continuerait de tourner sur une machine qu'on vient
+   * justement de déclarer trop lente. Voir `Menagement`.
+   */
+  const [allege, setAllege] = useState(false);
+  useEffect(() => {
+    const surAllege = () => setAllege(true);
+    window.addEventListener("newave:allege", surAllege);
+    return () => window.removeEventListener("newave:allege", surAllege);
+  }, []);
+
   useEffect(() => {
     if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    /*
+     * Sur une machine qui peine, on ne dessine plus rien de tout ça :
+     * voir `Menagement`. Le curseur du système est toujours fluide,
+     * puisqu'il n'est pas dessiné par la page.
+     */
+    if (allege || document.documentElement.dataset.allege === "1") return;
 
     const racine = document.documentElement;
     /*
@@ -185,7 +205,7 @@ export default function Relief() {
       document.removeEventListener("pointerleave", surSortie);
       window.removeEventListener("blur", surSortie);
     };
-  }, []);
+  }, [allege]);
 
   return null;
 }
