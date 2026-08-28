@@ -40,11 +40,18 @@ type Reponse = { products?: { image?: string | null }[] };
 export default function VitrineMarque({
   slug,
   nom,
-  className = "",
+  onVide,
 }: {
   slug: string;
   nom: string;
-  className?: string;
+  /**
+   * Prévenir qu'il n'y a rien à montrer.
+   *
+   * Une marque sans pièce publiée laisserait sinon un cadre vide, ce
+   * qui est pire que l'image floue qu'on cherchait à remplacer.
+   * L'appelant remet alors l'original : voir `IllustrationMarque`.
+   */
+  onVide?: () => void;
 }) {
   const ancre = useRef<HTMLDivElement>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -79,12 +86,15 @@ export default function VitrineMarque({
               const j = Math.floor(Math.random() * (i + 1));
               [images[i], images[j]] = [images[j], images[i]];
             }
+            if (images.length === 0) {
+              onVide?.();
+              return;
+            }
             setPhotos(images.slice(0, MAX));
           })
           .catch(() => {
-            // Pas de pièces, pas de vitrine. L'appelant montre alors sa
-            // couverture ou le nom de la marque : voir
-            // `IllustrationMarque`.
+            // Marque introuvable, réseau coupé : on rend la main.
+            if (vivant) onVide?.();
           });
       },
       { rootMargin: "300px" }
@@ -95,7 +105,7 @@ export default function VitrineMarque({
       vivant = false;
       guetteur.disconnect();
     };
-  }, [slug]);
+  }, [slug, onVide]);
 
   // Faire défiler, et seulement tant que la carte est à l'écran.
   useEffect(() => {
@@ -150,7 +160,7 @@ export default function VitrineMarque({
   const actuelle = total > 0 ? rang % total : 0;
 
   return (
-    <div ref={ancre} className={`vitrine-marque ${className}`}>
+    <div ref={ancre} className="vitrine-marque">
       {photos.map((photo, i) => (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img

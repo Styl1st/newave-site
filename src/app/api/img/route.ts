@@ -161,6 +161,13 @@ async function servir(requete: Request) {
   let source: URL;
   try {
     source = new URL(brute);
+    /*
+     * Une adresse en `http` est bloquée par le navigateur dans une page
+     * en `https`, sans erreur visible. On la relève ici comme dans
+     * `vignette` : c'est la même correction, appliquée des deux côtés,
+     * parce que les deux chemins existent.
+     */
+    if (source.protocol === "http:") source.protocol = "https:";
   } catch {
     return new NextResponse("Adresse illisible", { status: 400 });
   }
@@ -195,10 +202,10 @@ async function servir(requete: Request) {
    * SERVEUR qui n'a pas le droit de se promener, pas le visiteur.
    */
   if (estInterdite(source)) {
-    // Seuls `http` et `https` se redirigent. Le reste n'a rien à faire
-    // dans un attribut `src`, et servirait à autre chose qu'à afficher
-    // une image.
-    if (source.protocol === "http:" || source.protocol === "https:") return versLaSource();
+    // `http` a été relevé en `https` plus haut : ce qui arrive ici est
+    // soit une adresse locale, soit un protocole qui n'a rien à faire
+    // dans un attribut `src`.
+    if (source.protocol === "https:") return versLaSource();
     return new NextResponse("Adresse refusée", { status: 400 });
   }
 
@@ -413,13 +420,21 @@ async function servir(requete: Request) {
      * VRAIMENT UNI. Le détail des précautions est dans `detourer`.
      */
     /*
-     * `IMG_DETOURAGE=0` coupe le détourage sans toucher au code. Il est
-     * récent, il touche aux pixels eux-mêmes, et c'est le genre de
-     * traitement dont on ne découvre les cas particuliers qu'en
-     * production : mieux vaut pouvoir l'éteindre en une variable que
-     * défaire un déploiement.
+     * LE DÉTOURAGE EST ÉTEINT PAR DÉFAUT, ET C'EST UN AVEU.
+     *
+     * Il rend transparent le fond uni d'un logo pour que la carte se
+     * voie à travers. L'idée est bonne, le code est écrit, mais je ne
+     * l'ai jamais vu tourner : `sharp` ne s'exécute pas dans mon
+     * environnement, et tout ce que j'ai écrit sur cette fonction vient
+     * du raisonnement, pas de l'observation. Entre-temps, des logos qui
+     * marchaient se sont mis à ne plus s'afficher.
+     *
+     * Un embellissement non vérifié qui touche aux pixels d'une image
+     * n'a rien à faire en marche par défaut. `IMG_DETOURAGE=1`
+     * l'allume, pour le jour où on pourra le regarder tranquillement
+     * sur quelques marques.
      */
-    const detourage = params.get("t") === "1" && process.env.IMG_DETOURAGE !== "0";
+    const detourage = params.get("t") === "1" && process.env.IMG_DETOURAGE === "1";
     const finale = detourage ? await detourer(sharp, cadree) : cadree;
 
     const reduite = await finale.webp({ quality: 78 }).toBuffer();

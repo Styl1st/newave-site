@@ -2,10 +2,9 @@ import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
 import CouvertureAnimee from "./CouvertureAnimee";
-import VisuelAdaptatif from "./VisuelAdaptatif";
 import IllustrationMarque from "./IllustrationMarque";
 import Teinte from "./Teinte";
-import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { plateformeDeVente } from "@/lib/boutiques";
@@ -113,20 +112,7 @@ export default function BrandCard({
       <div className="pointer-events-none relative z-3 flex flex-1 flex-col">
         {/* Le visuel donne le ton avant meme le clic. Sans image, on garde
             un aplat plutot qu'un trou : la grille reste alignee. */}
-        <div
-          className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
-          /* La couverture sert de fond au défilé des pièces quand la
-             marque n'en a aucune : voir `IllustrationMarque`. */
-          style={
-            estUnLogo && brand.cover_url
-              ? {
-                  backgroundImage: `url(${vignette(brand.cover_url, 640)})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : undefined
-          }
-        >
+        <div className="relative aspect-16/10 w-full overflow-hidden rounded-t-[var(--radius)] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]">
           {brand.cover_video_url ? (
             /* L'illustration animée, la même que sur la fiche. Elle ne
                se charge que lorsque la carte approche de l'écran et se
@@ -136,52 +122,23 @@ export default function BrandCard({
               affiche={vignette(brand.cover_url, 600)}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
-          ) : visual && estUnLogo ? (
-            /*
-             * LE LOGO, SUR SON PROPRE FLOU.
-             *
-             * J'avais essayé une plaque claire fixe avec le logo posé
-             * dessus, et un flou ajouté par-dessus la plaque. Ça faisait
-             * deux fonds superposés, et le logo semblait dédoublé.
-             *
-             * On revient au procédé simple, celui des lecteurs vidéo :
-             * le logo en entier, et derrière lui le même agrandi et
-             * flouté. Un seul fond, la couleur vient de la marque, et
-             * cent logos ne donnent plus cent cartes identiques.
-             */
-            /*
-             * UN LOGO FLOU EST REMPLACÉ PAR LE DÉFILÉ DES PIÈCES.
-             *
-             * Il se repliait sur la couverture de la boutique, et avant
-             * ça on essayait de le rattraper : rogner ses marges, poser
-             * un flou derrière, détourer son fond, l'agrandir. Rien ne
-             * rend nets des pixels qui n'existent pas.
-             *
-             * Ce que fabrique une marque est photographié pour être
-             * vendu, donc grand et beau. C'est une meilleure carte de
-             * visite qu'une image floue de son nom. Voir
-             * `IllustrationMarque` pour l'ordre complet.
-             */
-            <IllustrationMarque
-              logo={visual}
-              couverture={brand.cover_url}
-              slug={brand.slug}
-              nom={brand.name}
-              className="transition duration-500 group-hover:scale-[1.04]"
-            />
           ) : visual ? (
             /*
-             * C'est L'IMAGE qui décide si on la recadre.
+             * UNE IMAGE FLOUE EST REMPLACÉE PAR LE DÉFILÉ DES PIÈCES.
              *
-             * Une couverture de marque n'est pas toujours une photo :
-             * c'est souvent un lettrage sur fond uni, ou une bannière
-             * trois fois plus large que haute. Remplie de force dans le
-             * cadre, elle perdait la moitié de son nom. Voir
-             * `VisuelAdaptatif`.
+             * Logo ou couverture, même règle. Ma version précédente ne
+             * branchait le défilé que sur la branche « logo », et une
+             * marque sur deux n'en a pas d'enregistré : sa couverture
+             * partait dans l'ancien chemin, sans aucune vérification de
+             * définition, et restait floue. C'était le trou.
+             *
+             * Voir `IllustrationMarque` pour l'ordre complet.
              */
-            <VisuelAdaptatif
-              src={vignette(visual, 640)}
-              cadre={16 / 10}
+            <IllustrationMarque
+              source={visual}
+              estUnLogo={estUnLogo}
+              slug={brand.slug}
+              nom={brand.name}
               className="transition duration-500 group-hover:scale-[1.04]"
             />
           ) : (

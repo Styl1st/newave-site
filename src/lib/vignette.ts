@@ -107,6 +107,24 @@ export function vignette(
     const u = new URL(url);
     const l = Math.round(largeur);
 
+    /*
+     * TOUT PASSE EN HTTPS, ET C'EST LA CORRECTION LA PLUS UTILE DE CE
+     * FICHIER.
+     *
+     * Des marques ont enregistré leur adresse en `http` tout court.
+     * NEWAVE est servi en `https`, et un navigateur REFUSE de charger
+     * une image non chiffrée dans une page chiffrée : il la bloque, sans
+     * erreur visible, sans rien dans la console pour le visiteur
+     * ordinaire. La carte reste blanche.
+     *
+     * On ne perd rien à forcer : un hébergeur qui ne sait pas répondre
+     * en `https` ne pouvait de toute façon pas afficher cette image chez
+     * nous. Au pire elle reste absente, comme avant ; au mieux, et c'est
+     * le cas général puisque tous les CDN modernes le savent, elle
+     * apparaît enfin.
+     */
+    u.protocol = "https:";
+
     if (options.logo && process.env.NEXT_PUBLIC_IMAGES_DIRECTES !== "1") {
       return `/api/img?w=${l}&t=1&u=${encodeURIComponent(u.toString())}`;
     }

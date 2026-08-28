@@ -3250,13 +3250,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   opacity: 1;
 }
 
-/* Quand la marque a une couverture, elle est peinte sur le cadre lui-même
-   et reste visible tant qu'aucune pièce n'est arrivée. Le défilé se pose
-   simplement par-dessus. */
-.vitrine-sur-couverture img[data-visible] {
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
   html:not([data-anim-choisi="1"]) .vitrine-marque img {
     transition: none;
@@ -3346,3 +3339,7 @@ html[data-allege="1"] .card-light[data-relief="1"] {
 html[data-allege="1"] .vitrine-marque img {
   transition: none !important;
 }
+
+/* La classe `vitrine-sur-couverture` a disparu avec la refonte du
+   cadrage : le défilé occupe désormais tout le cadre, et la couverture
+   n'a plus à rester visible derrière lui. */
