@@ -1307,6 +1307,29 @@ function absolue(url: string, base: string): string | null {
   }
 }
 
+/**
+ * Une adresse d'image débarrassée de ses consignes de découpe.
+ *
+ * Les CDN de boutiques acceptent des paramètres de taille dans
+ * l'adresse, et les pages en mettent partout : `?width=32&height=32&
+ * crop=center` pour une icône d'onglet, par exemple. Enregistrer
+ * l'adresse telle quelle, c'est enregistrer la vignette et perdre
+ * définitivement le fichier d'origine.
+ *
+ * On garde donc l'adresse nue. La taille sera demandée au moment de
+ * l'affichage, à la dimension utile : voir `lib/vignette`.
+ */
+function sansDecoupe(adresse: string | null): string | null {
+  if (!adresse) return adresse;
+  try {
+    const u = new URL(adresse);
+    for (const cle of ["width", "height", "crop", "size"]) u.searchParams.delete(cle);
+    return u.toString();
+  } catch {
+    return adresse;
+  }
+}
+
 export async function fetchIdentite(entree: string): Promise<Identite | null> {
   const base = normalizeShopUrl(entree);
   if (!base) return null;
@@ -1387,6 +1410,25 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
       apple: /apple-touch-icon/i.test(balise),
     }))
     .filter((i) => i.href)
+    /*
+     * ON ÉCARTE LES FAVICONS, ET C'EST UNE CORRECTION IMPORTANTE.
+     *
+     * Une icône d'onglet fait seize ou trente-deux pixels : c'est sa
+     * raison d'être. Prise pour un logo de marque et affichée sur une
+     * carte de trois cents pixels, elle donne une bouillie que rien ne
+     * rattrape ensuite. Le logo de Kwest était enregistré ainsi, en
+     * trente-deux pixels de côté.
+     *
+     * Mieux vaut ne PAS avoir de logo qu'en avoir un illisible : sans
+     * logo, la carte montre le défilé des pièces de la marque, ce qui
+     * est autrement plus flatteur qu'un carré flou. Voir
+     * `IllustrationMarque`.
+     *
+     * Une icône dont la taille n'est pas déclarée passe, faute de savoir :
+     * beaucoup d'`apple-touch-icon` correctes n'annoncent rien, et elles
+     * font cent quatre-vingts pixels.
+     */
+    .filter((i) => i.taille === 0 || i.taille >= 128)
     // Les icônes Apple font 180 px, souvent la meilleure version carrée.
     .sort((a, b) => Number(b.apple) - Number(a.apple) || b.taille - a.taille);
 
@@ -1426,7 +1468,7 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
   return {
     name: nom ? nomPropre(nom) : null,
     description,
-    logo: absolue(ldLogo ?? icones[0]?.href ?? "", base),
+    logo: sansDecoupe(absolue(ldLogo ?? icones[0]?.href ?? "", base)),
     cover: absolue(
       balise(html, "og:image") ??
         balise(html, "twitter:image") ??

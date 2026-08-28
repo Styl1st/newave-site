@@ -29,8 +29,14 @@ import { vignette } from "@/lib/vignette";
  * qui clignote au lieu d'une page qui respire.
  */
 
-/** Combien de temps chaque pièce reste affichée. */
-const DUREE = 3400;
+/**
+ * Combien de temps chaque pièce reste affichée.
+ *
+ * Cinq secondes : assez pour regarder la pièce sans la subir, assez peu
+ * pour qu'on voie le changement se produire au lieu de le découvrir en
+ * revenant sur la page.
+ */
+const DUREE = 5000;
 
 /** Au-delà, on n'en garde pas plus : c'est une vitrine, pas un catalogue. */
 const MAX = 6;
@@ -162,22 +168,51 @@ export default function VitrineMarque({
   return (
     <div ref={ancre} className="vitrine-marque">
       {photos.map((photo, i) => (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
+        /*
+         * DEUX FOIS LA MÊME PHOTO, ET C'EST VOULU.
+         *
+         * Une photo de vêtement est verticale, le cadre d'une carte est
+         * horizontal. La remplir de force revenait à n'en garder que la
+         * bande centrale : sur un pantalon, on voyait les cuisses et
+         * rien d'autre, ni la taille ni l'ourlet. C'est précisément la
+         * pièce qu'on cherchait à montrer qu'on perdait.
+         *
+         * Elle est donc affichée ENTIÈRE, et le vide sur les côtés est
+         * comblé par la même image agrandie et floutée. C'est le procédé
+         * des lecteurs vidéo, et il ne coûte rien de plus : c'est la même
+         * adresse, donc la même image déjà décodée par le navigateur.
+         */
+        <div
           key={photo}
-          src={vignette(photo, 400)}
-          alt={i === actuelle ? `Une pièce de ${nom}` : ""}
-          aria-hidden={i !== actuelle}
-          /*
-           * La première est demandée tout de suite, les autres quand
-           * leur tour approche. `loading="lazy"` ne suffirait pas : une
-           * image superposée aux autres est considérée comme visible
-           * par le navigateur, qui les chargerait donc toutes d'un coup.
-           */
-          loading={i === 0 ? "eager" : "lazy"}
-          decoding="async"
+          className="vitrine-photo"
           data-visible={i === actuelle ? "1" : undefined}
-        />
+          aria-hidden={i !== actuelle}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="vitrine-flou"
+            src={vignette(photo, 400)}
+            alt=""
+            aria-hidden
+            loading={i === 0 ? "eager" : "lazy"}
+            decoding="async"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="vitrine-nette"
+            src={vignette(photo, 400)}
+            alt={i === actuelle ? `Une pièce de ${nom}` : ""}
+            /*
+             * La première est demandée tout de suite, les autres quand
+             * leur tour approche. `loading="lazy"` ne suffirait pas : une
+             * image superposée aux autres est considérée comme visible
+             * par le navigateur, qui les chargerait donc toutes d'un
+             * coup.
+             */
+            loading={i === 0 ? "eager" : "lazy"}
+            decoding="async"
+          />
+        </div>
       ))}
     </div>
   );

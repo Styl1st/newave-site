@@ -125,6 +125,25 @@ export function vignette(
      */
     u.protocol = "https:";
 
+    /*
+     * ON EFFACE LES CONSIGNES DE DÉCOUPE, ET AVANT TOUT LE RESTE.
+     *
+     * Beaucoup d'adresses enregistrées à l'import portent déjà des
+     * paramètres de taille : le logo de Kwest était stocké en
+     * `?crop=center&height=32&width=32`, soit la vignette de
+     * trente-deux pixels que la boutique utilise dans son onglet.
+     *
+     * Ce nettoyage était plus bas, dans la branche des hébergeurs qui
+     * savent redimensionner. Les LOGOS n'y passent jamais : ils partent
+     * par NEWAVE juste au-dessus, et emportaient donc leur `width=32`
+     * avec eux. On récupérait fidèlement une image de trente-deux
+     * pixels, précisément le cas qu'on voulait corriger.
+     *
+     * En le remontant ici, il vaut pour tous les chemins. Une adresse
+     * de favicon redevient le fichier d'origine.
+     */
+    for (const cle of ["width", "height", "crop", "size"]) u.searchParams.delete(cle);
+
     if (options.logo && process.env.NEXT_PUBLIC_IMAGES_DIRECTES !== "1") {
       return `/api/img?w=${l}&t=1&u=${encodeURIComponent(u.toString())}`;
     }
