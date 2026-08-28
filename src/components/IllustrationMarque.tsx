@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import VisuelAdaptatif from "./VisuelAdaptatif";
 import VitrineMarque from "./VitrineMarque";
-import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { vignette } from "@/lib/vignette";
 
 /**
  * Ce qu'on montre d'une marque, et dans quel ordre.
@@ -65,12 +65,30 @@ export default function IllustrationMarque({
     return <VitrineMarque slug={slug} nom={nom} onVide={rienAMontrer} />;
   }
 
-  const largeur = estUnLogo ? 400 : 640;
+  /*
+   * PAS DE JEU DE TAILLES SUR UN LOGO, ET C'EST UNE CORRECTION DE BOGUE.
+   *
+   * On proposait deux versions, une pour les écrans ordinaires et une
+   * pour les écrans fins, avec les descripteurs `1x` et `2x`. Or quand
+   * le navigateur retient la version `2x`, il DIVISE PAR DEUX les
+   * dimensions qu'il annonce : c'est la règle, une image prévue pour
+   * une densité double occupe deux fois moins de place.
+   *
+   * Notre mesure lisait donc 250 pour un logo de 500 pixels
+   * parfaitement net, le déclarait trop petit, et basculait sur le
+   * défilé des pièces. Human With Attitude a un beau logo et montrait
+   * une casquette.
+   *
+   * Une seule taille, généreuse, et les dimensions annoncées redeviennent
+   * les vraies. Un logo pèse quelques dizaines de kilo-octets : demander
+   * 640 pixels à tout le monde ne coûte rien comparé à se tromper sur la
+   * moitié des marques.
+   */
+  const largeur = 640;
 
   return (
     <VisuelAdaptatif
       src={vignette(source, largeur, { logo: estUnLogo })}
-      srcSet={estUnLogo ? jeuDeVignettes(source, largeur, { logo: true }) : undefined}
       alt={nom}
       cadre={16 / 10}
       fondFlou={estUnLogo}
