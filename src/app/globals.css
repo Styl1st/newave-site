@@ -3270,6 +3270,14 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   padding: 6px;
 }
 
+/* Sauf la couverture d'une marque quand c'est une PHOTO : elle a été
+   choisie pour être une image d'ambiance, elle a le droit de remplir le
+   cadre. Un logo, lui, jamais : on lui couperait le nom. */
+.vitrine-nette[data-remplit] {
+  object-fit: cover;
+  padding: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html:not([data-anim-choisi="1"]) .vitrine-photo {
     transition: none;
@@ -3370,3 +3378,191 @@ html[data-allege="1"] .vitrine-flou {
 /* La classe `vitrine-sur-couverture` a disparu avec la refonte du
    cadrage : le défilé occupe désormais tout le cadre, et la couverture
    n'a plus à rester visible derrière lui. */
+
+/* ---------- le bandeau d'une fiche de marque ----------
+
+   Les pièces défilent, le logo se pose dans un coin. Le détail du
+   raisonnement est dans `BandeauMarque` ; ici, la mise en scène. */
+.bandeau-marque {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(160deg, #efe6ff, #d9c9f7);
+  /* Le balayage horizontal nous appartient, le défilement vertical
+     reste à la page : sans ça, un geste de travers bloque l'un ou
+     l'autre. */
+  touch-action: pan-y;
+}
+
+.bandeau-marque img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* La couverture, le temps que les pièces arrivent. */
+.bandeau-fond {
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .6s ease;
+}
+.bandeau-fond[data-visible] { opacity: 1; }
+
+.bandeau-photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .9s ease;
+}
+.bandeau-photo[data-visible] { opacity: 1; }
+
+/* Une photo de vêtement est verticale, un bandeau est très horizontal :
+   la montrer entière laisserait deux grands vides sur les côtés. Le flou
+   les comble avec la même image. */
+.bandeau-flou {
+  object-fit: cover;
+  transform: scale(1.15);
+  filter: blur(28px);
+  opacity: .65;
+}
+
+.bandeau-nette {
+  object-fit: contain;
+  padding: 10px;
+}
+
+/* ---- le logo, dans son coin ----
+   La plaque n'est pas décorative : un lettrage noir sur une photo sombre
+   disparaît, un logo blanc sur un fond clair aussi. */
+.bandeau-signature {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  max-width: 42%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow:
+    0 8px 22px -10px rgba(24, 8, 66, .5),
+    inset 0 0 0 1px rgba(255, 255, 255, .8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.bandeau-signature img {
+  position: static;
+  width: auto;
+  height: 34px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.bandeau-signature span {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+/* ---- les commandes ---- */
+.bandeau-fleche {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(var(--voile), .6);
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 6px 18px -8px rgba(var(--voile), .95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background .2s ease, border-color .2s ease, opacity .2s ease;
+}
+
+.bandeau-gauche { left: 12px; }
+.bandeau-droite { right: 12px; }
+
+.bandeau-fleche:hover {
+  background: rgba(var(--voile), .88);
+  border-color: rgba(255, 255, 255, .55);
+}
+.bandeau-fleche:active { scale: .93; }
+
+/* Sur ordinateur, elles s'effacent tant qu'on ne survole pas : le
+   bandeau doit rester une image. Sur écran tactile il n'y a pas de
+   survol, donc elles restent visibles. */
+@media (hover: hover) and (pointer: fine) {
+  .bandeau-fleche { opacity: 0; }
+  .bandeau-marque:hover .bandeau-fleche,
+  .bandeau-fleche:focus-visible { opacity: 1; }
+}
+
+.bandeau-points {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.bandeau-points button {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .5);
+  box-shadow: 0 1px 4px rgba(var(--voile), .9);
+  transition: width .25s ease, background .25s ease;
+}
+
+.bandeau-points button[data-actif] {
+  width: 20px;
+  background: #fff;
+}
+
+html[data-allege="1"] :is(.bandeau-photo, .bandeau-fond, .bandeau-fleche) {
+  transition: none !important;
+}
+html[data-allege="1"] .bandeau-flou {
+  filter: none;
+  opacity: .4;
+}
+
+/* Le léger agrandissement au survol, repris ici : il vivait dans une
+   classe passée à l'ancienne illustration, qui a disparu avec le défilé.
+   Sur le conteneur, il vaut pour toutes les images du tour de rôle. */
+.card-light .vitrine-marque {
+  transition: scale .5s ease;
+}
+.group:hover .vitrine-marque {
+  scale: 1.04;
+}
+
+/* Le balayage horizontal appartient à la vitrine, le défilement vertical
+   reste à la page. Sans ça, un geste de travers bloque l'un ou l'autre. */
+.vitrine-marque {
+  touch-action: pan-y;
+}
+
+/* Sur écran tactile, les flèches restent cachées — on balaye — mais les
+   points doivent se voir : sans eux, rien n'indique qu'il y a autre
+   chose à regarder derrière l'illustration. */
+@media (hover: none) {
+  .vitrine-marque .defile-points {
+    opacity: 1;
+    transform: none;
+  }
+}

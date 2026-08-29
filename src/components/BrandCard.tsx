@@ -122,31 +122,26 @@ export default function BrandCard({
               affiche={vignette(brand.cover_url, 600)}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
-          ) : visual ? (
+          ) : (
             /*
-             * UNE IMAGE FLOUE EST REMPLACÉE PAR LE DÉFILÉ DES PIÈCES.
+             * LE DÉFILÉ, MÊME SANS ILLUSTRATION.
              *
-             * Logo ou couverture, même règle. Ma version précédente ne
-             * branchait le défilé que sur la branche « logo », et une
-             * marque sur deux n'en a pas d'enregistré : sa couverture
-             * partait dans l'ancien chemin, sans aucune vérification de
-             * définition, et restait floue. C'était le trou.
+             * Il y avait une branche « pas de visuel » qui affichait le
+             * nom de la marque sur un aplat. C'était un trou dans la
+             * carte, et l'impression qu'il manquait quelque chose —
+             * alors que la marque a des pièces, et qu'elles sont belles.
              *
-             * Voir `IllustrationMarque` pour l'ordre complet.
+             * Tout passe désormais par `IllustrationMarque` : elle
+             * commence par l'illustration quand il y en a une, enchaîne
+             * sur les pièces, et ne se rabat sur le nom que si vraiment
+             * il n'y a rien.
              */
             <IllustrationMarque
               source={visual}
               estUnLogo={estUnLogo}
               slug={brand.slug}
               nom={brand.name}
-              className="transition duration-500 group-hover:scale-[1.04]"
             />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="text-[13px] font-black uppercase tracking-[0.18em] text-[#a795c9]">
-                {brand.name}
-              </span>
-            </div>
           )}
 
           {brand.featured && <span className="badge absolute left-3 top-3">À la une</span>}

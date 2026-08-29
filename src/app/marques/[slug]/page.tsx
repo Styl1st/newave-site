@@ -5,7 +5,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import SectionAvis from "@/components/SectionAvis";
 import BoutonSignaler from "@/components/BoutonSignaler";
 import TexteRiche from "@/components/TexteRiche";
-import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { vignette } from "@/lib/vignette";
 import { plateformeDeVente } from "@/lib/boutiques";
 import { ACCES_ETIQUETTE, ACCES_MESSAGE, unAcces } from "@/lib/acces";
 import PostCard from "@/components/PostCard";
@@ -21,6 +21,7 @@ import { getProfile } from "@/lib/auth";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import Link from "next/link";
 import BackLink from "@/components/BackLink";
+import BandeauMarque from "@/components/BandeauMarque";
 import BarreGerant from "@/components/BarreGerant";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -173,27 +174,31 @@ export default async function BrandPage({ params }: Props) {
          * l'adresse de destination est lue en base et jamais dans
          * l'URL, et le départ est compté comme les autres.
          */
-        <a
-          href={`/api/go/marque/${brand.id}`}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          aria-label={`Voir la boutique ${brand.name}`}
-          className="card-light group rise rise-1 mt-8 block overflow-hidden"
-        >
+        /*
+         * LE BANDEAU N'EST PLUS UN LIEN GÉANT.
+         *
+         * Toute la surface renvoyait vers la boutique. Ça marchait tant
+         * qu'il n'y avait qu'une image ; avec un carrousel, un bouton ne
+         * peut pas vivre dans un lien — le navigateur refuse cette
+         * imbrication — et surtout un balayage au doigt se terminerait
+         * par une navigation involontaire vers la boutique.
+         *
+         * Le bouton « Voir la boutique », qui existait déjà comme
+         * étiquette, devient donc un vrai lien dans son coin. On perd le
+         * clic n'importe où, on gagne un bandeau qu'on peut manipuler.
+         */
+        <div className="card-light rise rise-1 relative mt-8 overflow-hidden">
           <div className="relative z-3">
             {brand.cover_video_url ? (
               /*
-               * L'illustration animée, quand la marque en a une.
+               * L'illustration animée, quand la marque en a une. Elle
+               * marche, on n'y touche pas : ni carrousel ni logo posé
+               * dessus, la marque a déjà dit ce qu'elle voulait montrer.
                *
                * Muette, en boucle, sans commande : c'est un décor, pas
                * une vidéo qu'on regarde. `playsInline` est
                * indispensable — sans lui, iPhone passe en plein écran
                * dès le lancement et vole la page.
-               *
-               * L'image fixe sert de `poster` : elle s'affiche
-               * immédiatement, pendant que la vidéo se charge, et
-               * reste seule visible si la lecture échoue ou si la
-               * personne a demandé moins d'animations.
                *
                * Elle ne sert QUE sur cette page. Dans la grille de
                * l'annuaire, quarante vidéos en lecture simultanée
@@ -212,27 +217,29 @@ export default async function BrandPage({ params }: Props) {
                 className="block aspect-16/9 w-full object-cover"
               />
             ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={vignette(brand.cover_url, 1200)}
-                srcSet={jeuDeVignettes(brand.cover_url, 1200)}
-                sizes="(max-width: 1024px) 100vw, 900px"
-                alt=""
-                className="block aspect-16/9 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+              /* Les pièces défilent, le logo se pose dans un coin.
+                 Voir `BandeauMarque`. */
+              <BandeauMarque
+                slug={brand.slug}
+                nom={brand.name}
+                logo={brand.logo_url}
+                couverture={brand.cover_url}
               />
             )}
 
-            {/* Discret, et seulement au survol sur ordinateur : la
-                photo doit rester une photo. Sur téléphone il est
-                toujours visible, faute de survol pour le révéler. */}
-            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.72)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] transition sm:opacity-0 sm:group-hover:opacity-100">
+            <a
+              href={`/api/go/marque/${brand.id}`}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="absolute bottom-3 right-3 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.72)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] backdrop-blur-sm transition hover:bg-[rgba(14,5,38,0.95)]"
+            >
               Voir la boutique
               <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M7 17 17 7M9 7h8v8" />
               </svg>
-            </span>
+            </a>
           </div>
-        </a>
+        </div>
       )}
 
       <div className="glass rise rise-1 mt-6 p-4 sm:p-7">

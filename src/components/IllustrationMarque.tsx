@@ -1,103 +1,67 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import VisuelAdaptatif from "./VisuelAdaptatif";
 import VitrineMarque from "./VitrineMarque";
-import { vignette } from "@/lib/vignette";
 
 /**
- * Ce qu'on montre d'une marque, et dans quel ordre.
+ * Ce qu'on montre d'une marque sur sa carte d'annuaire.
  *
- * 1. L'ILLUSTRATION ANIMÉE, gérée en amont dans `BrandCard`. Elle
- *    marche, on n'y touche pas.
+ * L'illustration d'abord, comme une couverture, puis ses pièces qui
+ * défilent. Toute la mécanique est dans `VitrineMarque` : le chargement
+ * différé, la mesure de l'illustration, le tour de rôle, l'arrêt hors de
+ * l'écran.
  *
- * 2. L'IMAGE DE LA MARQUE, LOGO OU COUVERTURE, MAIS SEULEMENT SI ELLE
- *    EST NETTE.
+ * CE COMPOSANT NE FAIT QU'UNE CHOSE : décider quoi afficher quand il n'y
+ * a vraiment rien. Ni illustration lisible, ni pièce publiée, et la
+ * carte se contente du nom de la marque sur son aplat. C'est rare, mais
+ * c'est le seul cas où le défilé ne peut rien.
  *
- * 3. LE DÉFILÉ DE SES PIÈCES quand elle ne l'est pas. On a passé des
- *    semaines à essayer de rendre présentable un logotype de cent
- *    cinquante pixels : rognage des marges, flou derrière, détourage du
- *    fond, agrandissement. Rien ne rend nets des pixels qui n'existent
- *    pas. Ses pièces, elles, sont photographiées pour être vendues.
+ * UNE MARQUE SANS ILLUSTRATION PASSE QUAND MÊME PAR ICI. Elle ne le
+ * faisait pas : la carte affichait directement son nom, ce qui donnait
+ * un aplat vide avec « MINUS TWØ » écrit dessus, et l'impression qu'il
+ * manquait quelque chose. Ses pièces, elles, existaient depuis le début.
  *
- * 4. L'IMAGE D'ORIGINE quand même, si la marque n'a aucune pièce. Floue
- *    vaut mieux qu'absente.
- *
- * CE COMPOSANT VAUT POUR LE LOGO COMME POUR LA COUVERTURE, et c'était le
- * trou de ma version précédente : je ne l'avais branché que sur la
- * branche « logo ». Or une marque sur deux n'a pas de logo enregistré,
- * et sa couverture partait alors dans l'ancien chemin, sans aucune
- * vérification de définition. C'est pour ça que le défilé ne se
- * déclenchait jamais sur ces cartes, et que leur image restait floue.
- *
- * ON NE PEUT PAS DÉCIDER PLUS TÔT. La définition d'un fichier ne se
- * connaît qu'une fois l'image chargée, et la base ne la stocke pas.
+ * L'illustration animée, elle, ne passe pas par ici : `BrandCard` la
+ * traite en amont. Une marque qui s'est donné la peine d'en faire une a
+ * déjà dit ce qu'elle voulait montrer.
  */
 export default function IllustrationMarque({
   source,
   estUnLogo,
   slug,
   nom,
-  className = "",
 }: {
-  source: string;
-  /** Un logo se traite autrement qu'une photo : voir `VisuelAdaptatif`. */
+  /** L'illustration, quand la marque en a une. Sinon, ses pièces seules. */
+  source?: string | null;
+  /** Un logo se montre en entier ; une photo peut remplir le cadre. */
   estUnLogo: boolean;
   slug: string;
   nom: string;
-  className?: string;
 }) {
-  const [insuffisante, setInsuffisante] = useState(false);
-  const [sansPieces, setSansPieces] = useState(false);
+  const [rien, setRien] = useState(false);
 
-  // `useCallback` parce que ces rappels sont dans les dépendances de la
-  // décision, côté `VisuelAdaptatif` : une fonction recréée à chaque
-  // rendu y relancerait la mesure en boucle.
-  const signaler = useCallback(() => setInsuffisante(true), []);
-  const rienAMontrer = useCallback(() => setSansPieces(true), []);
+  // `useCallback` parce que ce rappel est dans les dépendances d'un
+  // effet : une fonction recréée à chaque rendu le relancerait en
+  // boucle.
+  const signalerLeVide = useCallback(() => setRien(true), []);
 
-  /*
-   * Le défilé remplace l'image, sauf si la marque n'a aucune pièce à
-   * montrer. Dans ce cas on revient à l'image d'origine, même imparfaite :
-   * une carte vide serait pire qu'une carte floue.
-   */
-  if (insuffisante && !sansPieces) {
-    return <VitrineMarque slug={slug} nom={nom} onVide={rienAMontrer} />;
+  if (rien) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <span className="text-[13px] font-black uppercase tracking-[0.18em] text-[#a795c9]">
+          {nom}
+        </span>
+      </div>
+    );
   }
 
-  /*
-   * PAS DE JEU DE TAILLES SUR UN LOGO, ET C'EST UNE CORRECTION DE BOGUE.
-   *
-   * On proposait deux versions, une pour les écrans ordinaires et une
-   * pour les écrans fins, avec les descripteurs `1x` et `2x`. Or quand
-   * le navigateur retient la version `2x`, il DIVISE PAR DEUX les
-   * dimensions qu'il annonce : c'est la règle, une image prévue pour
-   * une densité double occupe deux fois moins de place.
-   *
-   * Notre mesure lisait donc 250 pour un logo de 500 pixels
-   * parfaitement net, le déclarait trop petit, et basculait sur le
-   * défilé des pièces. Human With Attitude a un beau logo et montrait
-   * une casquette.
-   *
-   * Une seule taille, généreuse, et les dimensions annoncées redeviennent
-   * les vraies. Un logo pèse quelques dizaines de kilo-octets : demander
-   * 640 pixels à tout le monde ne coûte rien comparé à se tromper sur la
-   * moitié des marques.
-   */
-  const largeur = 640;
-
   return (
-    <VisuelAdaptatif
-      src={vignette(source, largeur, { logo: estUnLogo })}
-      alt={nom}
-      cadre={16 / 10}
-      fondFlou={estUnLogo}
-      logo={estUnLogo}
-      /* Une fois qu'on sait qu'il n'y a pas de pièces, on cesse de
-         prévenir : sinon la mesure rebasculerait sans fin entre les
-         deux affichages. */
-      onTropPetit={sansPieces ? undefined : signaler}
-      className={className}
+    <VitrineMarque
+      slug={slug}
+      nom={nom}
+      couverture={source}
+      estUnLogo={estUnLogo}
+      onVide={signalerLeVide}
     />
   );
 }

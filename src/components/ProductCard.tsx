@@ -92,8 +92,16 @@ export default function ProductCard({
    * série. Elle reste visible sur la fiche, qui a le lecteur qu'il
    * faut.
    */
-  const visuels = (product.images?.length ? product.images : [product.image_url])
-    .filter((m): m is string => Boolean(m) && !estUneVideo(m));
+  const visuels = [
+    // Dédoublonné : une pièce déclinée en plusieurs tailles porte
+    // souvent deux fois la même photo, et l'on tournerait alors sur la
+    // même image en croyant en changer.
+    ...new Set(
+      (product.images?.length ? product.images : [product.image_url]).filter(
+        (m): m is string => Boolean(m) && !estUneVideo(m)
+      )
+    ),
+  ];
   const cover = visuels[0];
 
   const slug = brandSlug ?? product.brand?.slug;
