@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { vignette } from "@/lib/vignette";
+import { enSonde, vignette } from "@/lib/vignette";
 
 /**
  * La carte prend la couleur de son image.
@@ -157,7 +157,14 @@ export default function Teinte({ src }: { src?: string | null }) {
     let vivant = true;
 
     const lire = () => {
-      couleurDominante(vignette(src, COTE_SONDE) ?? src).then((teinte) => {
+      /*
+       * `enSonde` prévient `/api/img` qu'on lit sans afficher. Sans ce
+       * marquage, une image que la route n'a pas pu traiter nous
+       * renvoyait chez son hébergeur, où la lecture croisée est refusée :
+       * la teinte échouait, et la console se remplissait d'erreurs CORS
+       * rouges — une par marque, à chaque affichage de l'annuaire.
+       */
+      couleurDominante(enSonde(vignette(src, COTE_SONDE) ?? src)).then((teinte) => {
         if (vivant && teinte) carte.style.setProperty("--teinte", teinte);
       });
     };

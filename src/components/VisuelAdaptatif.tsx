@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { enSonde } from "@/lib/vignette";
 
 /**
  * Une couverture qui décide elle-même si elle se recadre ou non.
@@ -113,6 +114,21 @@ async function aUnFondTransparent(url: string): Promise<boolean | null> {
     sonde.crossOrigin = "anonymous";
 
     sonde.onload = () => {
+      /*
+       * UN PIXEL N'EST PAS UN VISUEL.
+       *
+       * C'est ce que `/api/img` répond à une sonde quand elle n'a rien pu
+       * lire (voir `pixelVide`). Sans cette ligne, on le mesurerait comme
+       * une vraie image : entièrement transparent, donc « logo détouré »,
+       * donc montré en entier — exactement la mauvaise conclusion, et
+       * tirée précisément dans les cas où l'on ne sait rien.
+       *
+       * `null` veut dire « je n'ai pas pu voir », et l'appelant le traite
+       * alors comme un fond opaque : c'est le cas le plus fréquent et le
+       * moins risqué à l'affichage.
+       */
+      if (sonde.naturalWidth <= 1 && sonde.naturalHeight <= 1) return repondre(null);
+
       try {
         const toile = document.createElement("canvas");
         toile.width = 24;
@@ -364,7 +380,13 @@ export default function VisuelAdaptatif({
        * plus courant, et le plus propre quand on se trompe.
        */
       setEntiere(false);
-      const adresse = img.currentSrc || img.src;
+      /*
+       * `enSonde` : on relit l'image en mode croisé, et une image que
+       * `/api/img` n'a pas su traiter nous renverrait sinon chez son
+       * hébergeur, qui refuse cette lecture. On y gagnait une erreur CORS
+       * dans la console et rien d'autre.
+       */
+      const adresse = enSonde(img.currentSrc || img.src);
       aUnFondTransparent(adresse).then((transparent) => {
         if (transparent === true) setEntiere(true);
       });

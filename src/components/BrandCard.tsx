@@ -6,8 +6,6 @@ import IllustrationMarque from "./IllustrationMarque";
 import Teinte from "./Teinte";
 import { vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
-import { PRICE_TIER_LABEL } from "@/lib/types";
-import { plateformeDeVente } from "@/lib/boutiques";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 
 export default function BrandCard({
@@ -45,36 +43,44 @@ export default function BrandCard({
   const estUnLogo = Boolean(brand.logo_url);
 
   /*
-   * Ce qui n'est pas un style mais qu'il faut savoir avant de cliquer :
-   * où ça se vend, et si c'est ouvert aujourd'hui.
+   * LA CARTE NE DIT PLUS QUE DEUX CHOSES : QUI, ET D'OÙ.
    *
-   * Une seule des deux, au plus. Deux pastilles noires côte à côte
-   * plus deux catégories, ça fait quatre étiquettes sur une carte
-   * large de trois cents pixels : plus personne ne lit rien. L'accès
-   * passe devant, parce qu'une boutique fermée est l'information la
-   * plus susceptible de faire changer d'avis.
-   */
-  /*
-   * La ligne sous le nom.
+   * Elle portait aussi l'accroche de la marque, une ou deux catégories,
+   * une pastille de boutique et la gamme de prix. Six lignes de texte
+   * sous chaque photo, sur une grille de cent trente-six cartes : ça ne
+   * se lit pas, ça se saute. Et la plupart des accroches disaient la
+   * même chose que la ligne du dessous — « Marque indépendante de
+   * streetwear, France » sous une carte déjà étiquetée FRANCE.
    *
-   * D'abord l'origine, qui est ce qu'on cherche le plus souvent dans un
-   * annuaire de marques indépendantes. À défaut, l'année de création :
-   * elle était enregistrée sans être montrée nulle part, et elle dit
-   * quelque chose de vrai plutôt que de laisser un blanc. Si l'on ne
-   * sait ni l'un ni l'autre, la ligne disparaît.
+   * Ce qui décide de cliquer, dans une grille, c'est la photo. Le texte
+   * n'est là que pour nommer ce qu'on regarde. Tout le reste — les
+   * styles, les prix, où ça se vend — est sur la fiche, à un clic, et
+   * les filtres au-dessus de la grille servent déjà à trier là-dessus.
+   *
+   * La ligne sous le nom : l'origine, qui est ce qu'on cherche le plus
+   * souvent dans un annuaire de marques indépendantes. À défaut,
+   * l'année de création. Si l'on ne sait ni l'un ni l'autre, la ligne
+   * disparaît plutôt que de laisser un blanc.
    */
   const origine =
     [brand.city, brand.country].filter(Boolean).join(" · ") ||
     (brand.founded_year ? `Depuis ${brand.founded_year}` : "");
 
+  /*
+   * LA SEULE ÉTIQUETTE QUI RESTE, ET C'EST LA SEULE QUI PRÉVIENT.
+   *
+   * « Bientôt », « Ventes privées », « Liste d'attente » ne décrivent
+   * pas la marque : ils disent qu'il n'y a rien à acheter aujourd'hui.
+   * Une carte muette laisse croire à un catalogue, et l'on ne
+   * l'apprend qu'après avoir ouvert la fiche — un aller-retour pour
+   * rien, et l'impression d'une page cassée plutôt que d'une boutique
+   * qui n'a pas encore ouvert.
+   *
+   * Une boutique ouverte n'affiche rien : c'est le cas normal, et une
+   * pastille sur cent trente-six cartes ne dirait plus rien du tout.
+   */
   const acces = unAcces(brand.acces);
-  const plateforme = plateformeDeVente(brand.shop_url ?? brand.website_url);
-  const etiquettes = [
-    acces === "ouvert" ? null : ACCES_ETIQUETTE[acces],
-    plateforme?.etiquette ?? null,
-  ]
-    .filter((e): e is string => Boolean(e))
-    .slice(0, 1);
+  const etiquetteAcces = acces === "ouvert" ? null : ACCES_ETIQUETTE[acces];
 
   return (
     /*
@@ -182,62 +188,31 @@ export default function BrandCard({
 
         {/* Le bandeau prend la couleur de l'image au-dessus de lui.
             Voir `Teinte` et `.pied-carte`. */}
-        <div className="pied-carte flex flex-1 flex-col p-5">
+        {/* Deux lignes, et le bandeau se referme dessus. Le `p-5` d'avant
+            réservait la marge d'un bloc de six lignes : sur une carte de
+            cent quatre-vingts pixels, il restait plus de vide que de
+            texte une fois le reste parti. */}
+        <div className="pied-carte flex flex-col p-4 sm:p-5">
           <h3 className="m-0 truncate text-[16px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-ink)]">
             {brand.name}
           </h3>
 
-          {/* Rien d'écrit, rien d'affiché.
-              Ces deux lignes étaient rendues même vides : une marque
-              sans ville ni pays laissait une ligne blanche, et une
-              marque sans accroche un trou de trois lignes au milieu de
-              sa carte. On ne réservait donc de la place que pour
-              montrer qu'il n'y avait rien à y mettre. */}
+          {/* Rien d'écrit, rien d'affiché : une marque sans ville ni pays
+              laissait une ligne blanche sous son nom. On ne réservait de
+              la place que pour montrer qu'il n'y avait rien à y mettre. */}
           {origine && (
-            <p className="m-0 mt-1 text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
+            <p className="m-0 mt-1 truncate text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
               {origine}
             </p>
           )}
 
-          {brand.tagline?.trim() && (
-            <p className="m-0 mt-3 text-[14px] leading-relaxed text-[#3a2c5e]">{brand.tagline}</p>
+          {etiquetteAcces && (
+            <div className="mt-2.5">
+              <span className="inline-block rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white">
+                {etiquetteAcces}
+              </span>
+            </div>
           )}
-
-          {/* `mt-auto` pousse les étiquettes en bas quand la carte est
-              plus haute que son contenu, ce qui arrive dès qu'une
-              voisine de la même rangée en dit plus. Sans lui, elles
-              flotteraient au milieu du vide plutôt que de tenir la base
-              de la carte. */}
-          <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4">
-            {/*
-              Deux pastilles PLEINES avant les catégories, et elles ne
-              se saisissent nulle part : elles se déduisent de l'adresse
-              de la boutique et de son état d'ouverture.
-              « Vinted » ou « Bientôt » changent complètement ce à quoi
-              s'attendre en cliquant — pièce unique, ou rien en vente
-              aujourd'hui — et l'apprendre APRÈS avoir ouvert la fiche,
-              c'est un aller-retour pour rien.
-            */}
-            {etiquettes.map((e) => (
-              <span
-                key={e}
-                className="rounded-full bg-[var(--color-ink)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-white"
-              >
-                {e}
-              </span>
-            ))}
-            {brand.categories.slice(0, etiquettes.length > 0 ? 1 : 2).map((c) => (
-              <span
-                key={c}
-                className="rounded-full bg-[rgba(23,10,51,0.07)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#4a3a78]"
-              >
-                {c}
-              </span>
-            ))}
-            <span className="ml-auto text-[11px] font-bold text-[#6a5a92]">
-              {PRICE_TIER_LABEL[brand.price_tier]}
-            </span>
-          </div>
         </div>
       </div>
     </div>

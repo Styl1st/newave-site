@@ -3209,6 +3209,61 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 }
 
+/* ---------- et sur un écran tactile ----------
+
+   ELLES Y ÉTAIENT INVISIBLES, ET ELLES LE RESTAIENT. Le raisonnement
+   du dessus s'arrêtait à « pas de survol, donc pas de flèches », en
+   comptant sur le balayage au doigt pour les remplacer. Mais un
+   balayage ne s'annonce pas : rien, sur une carte, ne disait qu'il y
+   avait six pièces derrière la première photo. La fonction existait et
+   personne ne pouvait la trouver. Sur téléphone, c'est-à-dire là où
+   l'annuaire se parcourt le plus.
+
+   ELLES SONT DONC POSÉES EN PERMANENCE, MAIS EN RETRAIT. À pleine
+   opacité sur chaque carte d'une grille, elles tireraient l'œil autant
+   que les photos ; à 72 %, on les voit quand on les cherche et elles
+   s'effacent quand on regarde la marque. Les points, eux, restent
+   pleins : ils ne demandent rien, ils disent seulement combien il
+   reste à voir.
+
+   Le balayage ne bouge pas — il reste le geste naturel, les flèches
+   sont là pour dire qu'il existe. */
+@media (hover: none), (pointer: coarse) {
+  .defile-fleche {
+    opacity: .72;
+    transform: none;
+    pointer-events: auto;
+    /* Trente pixels se visent ; trente-quatre se touchent. */
+    width: 34px;
+    height: 34px;
+    margin-top: -17px;
+  }
+
+  .defile-points {
+    opacity: 1;
+    transform: none;
+  }
+
+  .defile-fleche:active {
+    opacity: 1;
+    scale: .92;
+  }
+}
+
+/* En mode grille serrée sur téléphone, une vignette fait cent dix
+   pixels de large : deux ronds de trente-quatre y couvriraient les
+   deux tiers de la photo. */
+@media (hover: none) and (max-width: 639px) {
+  .grille-serre .defile-fleche {
+    width: 26px;
+    height: 26px;
+    margin-top: -13px;
+  }
+
+  .grille-serre .defile-gauche { left: 5px; }
+  .grille-serre .defile-droite { right: 5px; }
+}
+
 /* Au clavier, la flèche doit se voir même sans survol : sans ça, on
    tabule sur un bouton invisible. */
 .defile-fleche:focus-visible {

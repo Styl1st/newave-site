@@ -189,6 +189,63 @@ export function vignette(
 }
 
 /**
+ * La même adresse, mais demandée en tant que SONDE.
+ *
+ * UNE SONDE EST UNE IMAGE QU'ON LIT SANS JAMAIS L'AFFICHER. Deux
+ * endroits du site en posent une : `Teinte`, qui en tire la couleur
+ * dominante d'une carte, et `VisuelAdaptatif`, qui regarde si un logo a
+ * un fond transparent. Toutes deux réclament l'image en mode « croisé »
+ * (`crossOrigin`), sans quoi la toile refuserait de rendre ses pixels.
+ *
+ * ET C'EST LÀ QUE LE REPLI DE `/api/img` SE RETOURNE CONTRE NOUS. La
+ * route ne casse jamais un visuel : à la moindre contrariété — hôte
+ * inconnu, réponse qui n'est pas une image, boutique qui renvoie sa page
+ * d'accueil à la place du fichier — elle redirige vers l'adresse
+ * d'origine. Pour une balise `img` ordinaire, c'est exactement ce qu'il
+ * faut. Pour une demande croisée, c'est fatal : le navigateur suit la
+ * redirection, arrive chez un hébergeur qui n'envoie pas d'en-tête
+ * `Access-Control-Allow-Origin`, et refuse tout en bloc. La sonde
+ * échoue, et surtout elle écrit une erreur CORS rouge dans la console —
+ * une par marque concernée, à chaque chargement de l'annuaire.
+ *
+ * En marquant la demande d'un `s=1`, la route sait qu'elle parle à une
+ * sonde et cesse de rediriger : elle répond un pixel transparent, depuis
+ * notre propre domaine. La sonde conclut « je n'ai rien pu lire », ce
+ * qui est la vérité, et la console reste vide.
+ *
+ * Une adresse qui ne passe pas par nous est rendue telle quelle : on ne
+ * réécrit pas l'adresse d'un hébergeur.
+ */
+export function enSonde(adresse: string): string {
+  try {
+    const base = typeof location !== "undefined" ? location.href : "https://newave.invalid";
+    const u = new URL(adresse, base);
+    if (u.pathname !== "/api/img") return adresse;
+
+    const cible = u.searchParams.get("u");
+    if (!cible) return adresse;
+
+    /*
+     * `u` DOIT RESTER LE DERNIER PARAMÈTRE, et ce n'est pas cosmétique.
+     * `VisuelAdaptatif` reconnaît un JPEG à la terminaison de l'adresse
+     * pour s'épargner une lecture inutile — un JPEG ne sait pas être
+     * transparent. En laissant `s=1` se ranger à la fin, l'adresse ne se
+     * terminait plus par `.jpg` et cette économie disparaissait : une
+     * requête de plus par photo, pour une réponse connue d'avance.
+     */
+    u.searchParams.delete("u");
+    u.searchParams.set("s", "1");
+    const avant = u.searchParams.toString();
+
+    // Relative : la sonde doit rester sur notre domaine, sinon on
+    // recrée le problème qu'on est en train de régler.
+    return `${u.pathname}?${avant}&u=${encodeURIComponent(cible)}`;
+  } catch {
+    return adresse;
+  }
+}
+
+/**
  * Le jeu d'adresses pour les écrans à forte densité.
  *
  * Sans lui, un téléphone récent afficherait une image prévue pour la

@@ -54,6 +54,51 @@ const POIDS_MAX = 12 * 1024 * 1024;
 const CACHE = "public, max-age=31536000, s-maxage=31536000, immutable";
 
 /**
+ * UN PIXEL TRANSPARENT, ET LA SEULE RÉPONSE QU'UNE SONDE DOIT RECEVOIR
+ * QUAND ON N'A RIEN À LUI MONTRER.
+ *
+ * Le repli de cette route est une redirection vers l'hébergeur, et c'est
+ * ce qui garantit qu'elle ne peut pas casser un visuel. Mais deux
+ * endroits du site demandent une image POUR LA LIRE et non pour
+ * l'afficher — la couleur dominante d'une carte, le fond transparent
+ * d'un logo — et ceux-là réclament l'image en mode « croisé ». Une
+ * redirection croisée vers un hébergeur qui n'autorise pas la lecture se
+ * solde par un refus CORS : la sonde échoue, et le navigateur écrit une
+ * erreur rouge dans la console à chaque marque concernée.
+ *
+ * Ces demandes se signalent avec `s=1`. On leur répond alors depuis
+ * notre propre domaine, par une image valide et vide. Elles concluent
+ * « rien à lire » — ce qui est exact — au lieu de buter sur un mur, et
+ * la console reste propre.
+ *
+ * L'AFFICHAGE, LUI, NE PASSE JAMAIS PAR ICI. Une balise `img` ordinaire
+ * ne porte pas ce paramètre et continue d'être redirigée vers
+ * l'hébergeur : la promesse de la route est intacte.
+ */
+const PIXEL = new Uint8Array(
+  Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=",
+    "base64"
+  )
+);
+
+function pixelVide() {
+  // Une copie par réponse : le corps est consommé au fil de l'eau, et
+  // l'on ne prête pas deux fois le même tampon.
+  return new NextResponse(new Uint8Array(PIXEL), {
+    status: 200,
+    headers: {
+      "content-type": "image/png",
+      // Une heure, comme la redirection qu'il remplace : l'hébergeur
+      // qui nous refuse l'entrée nous la refusera encore tout à l'heure.
+      "cache-control": "public, max-age=3600",
+      "access-control-allow-origin": "*",
+      vary: "Sec-Fetch-Dest",
+    },
+  });
+}
+
+/**
  * Ce qu'on ne touche pas du tout, et qu'on renvoie donc chez l'hébergeur.
  *
  * Un SVG est un fichier texte : le rasteriser l'abîmerait, et le relayer
@@ -117,7 +162,12 @@ export async function GET(requete: Request) {
   try {
     return await servir(requete);
   } catch {
-    const cible = adresseOuRien(new URL(requete.url).searchParams.get("u"));
+    const params = new URL(requete.url).searchParams;
+    // Même ici : une sonde ne suit pas la redirection de repli, elle s'y
+    // casse le nez. Voir `pixelVide`.
+    if (params.get("s") === "1") return pixelVide();
+
+    const cible = adresseOuRien(params.get("u"));
     if (cible) return NextResponse.redirect(cible, 302);
     return new NextResponse("Image indisponible", { status: 400 });
   }
@@ -179,12 +229,21 @@ async function servir(requete: Request) {
    * l'entrée nous la refusera encore dans dix minutes, et sans ce cache
    * chaque affichage de la page relancerait la fonction pour aboutir au
    * même constat.
+   *
+   * SAUF POUR UNE SONDE, qui ne peut pas suivre cette redirection : elle
+   * demande l'image en mode croisé, et l'hébergeur d'en face n'autorise
+   * pas la lecture. Elle reçoit un pixel vide, depuis chez nous. Voir
+   * `pixelVide`.
    */
+  const sonde = params.get("s") === "1";
+
   const versLaSource = () =>
-    NextResponse.redirect(source.toString(), {
-      status: 302,
-      headers: { "cache-control": "public, max-age=3600", vary: "Sec-Fetch-Dest" },
-    });
+    sonde
+      ? pixelVide()
+      : NextResponse.redirect(source.toString(), {
+          status: 302,
+          headers: { "cache-control": "public, max-age=3600", vary: "Sec-Fetch-Dest" },
+        });
 
   /*
    * REFUSER D'ALLER CHERCHER UNE IMAGE N'EST PAS UNE RAISON DE LA
