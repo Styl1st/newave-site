@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#140a2e; color:#f2ecff; font-family:Archivo, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  a { color:#f2ecff; text-decoration:none; }
+  a:hover { color:#ffffff; }
+  @keyframes respire { from { transform:translate3d(-8%,-9%,0) scale(1.02); } to { transform:translate3d(8%,9%,0) scale(1.1); } }
+  @keyframes nappe1 { 0%{transform:translate3d(-22%,-16%,0) scale(1) rotate(0deg);opacity:.9} 50%{transform:translate3d(6%,10%,0) scale(1.25) rotate(6deg);opacity:1} 100%{transform:translate3d(24%,20%,0) scale(1.4) rotate(11deg);opacity:.85} }
+  @keyframes nappe2 { 0%{transform:translate3d(20%,18%,0) scale(1.3) rotate(0deg);opacity:.85} 50%{transform:translate3d(-4%,-6%,0) scale(1.05) rotate(-7deg);opacity:1} 100%{transform:translate3d(-26%,-22%,0) scale(1.35) rotate(-13deg);opacity:.9} }
+  @keyframes balayage { 0%{transform:translate3d(-38%,-28%,0) scale(1)} 50%{transform:translate3d(10%,14%,0) scale(1.3)} 100%{transform:translate3d(40%,30%,0) scale(1.05)} }
+  @keyframes float1 { 0%,100%{translate:0 0} 50%{translate:0 18px} }
+  @keyframes float2 { 0%,100%{translate:0 0} 50%{translate:0 -20px} }
+  @keyframes liseré { from{background-position:0% 50%} to{background-position:100% 50%} }
+  @keyframes defile { from{transform:translateY(0)} to{transform:translateY(-50%)} }
+  @keyframes invite { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(7px);opacity:1} }
+</style>
+</helmet>
+
+<section style="padding:56px 48px 40px;max-width:none">
+  <div style="max-width:960px;margin:0 0 44px">
+    <p style="margin:0;font:900 11px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,236,255,.55)">Tour 2 · Passer à l'échelle</p>
+    <h1 style="margin:14px 0 0;font:800 40px/1.05 Archivo;letter-spacing:-.03em;color:#fff">136 marques, sans noyer personne</h1>
+    <p style="margin:18px 0 0;max-width:760px;font:500 16px/1.65 Archivo;color:rgba(242,236,255,.78);text-wrap:pretty">Quatre mécanismes empilés dans <a href="#2a">2a</a>, et un seul principe : on ne fait défiler que si on a choisi de défiler.<br>
+    <strong style="font-weight:800;color:#fff">1.</strong> La recherche reste collée en haut pendant tout le défilement, avec suggestions dès la 2<sup>e</sup> lettre (marques, catégories, villes).
+    <strong style="font-weight:800;color:#fff">2.</strong> Un index A→Z qui saute directement à la lettre, avec le nombre par lettre.
+    <strong style="font-weight:800;color:#fff">3.</strong> Le mode Liste : une ligne par marque, et surtout <em>4 pièces en vignette dans la ligne</em> — on voit ce que fait la marque sans ouvrir sa fiche.
+    <strong style="font-weight:800;color:#fff">4.</strong> Les filtres deviennent une seule ligne collante avec compteurs, jamais un panneau à déplier.</p>
+  </div>
+
+  <div id="2a" style="width:1180px">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+      <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">2a</span>
+      <h2 style="margin:0;font:800 20px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Annuaire à l'échelle — recherche collante, index A→Z, mode Liste</h2>
+    </div>
+
+    <div data-scene="" style="position:relative;overflow:hidden;border-radius:26px;background:#33217f;box-shadow:0 40px 90px -30px rgba(20,6,50,.8)">
+      <div data-decor="" style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+        <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#33217f 0%,#4e5bc0 22%,#9e63d6 44%,#c255c4 62%,#5a54c8 82%,#31217c 100%);animation:respire 18s ease-in-out infinite alternate"></div>
+        <div style="position:absolute;inset:-26%;filter:blur(26px);background:radial-gradient(circle at 30% 26%,rgba(232,111,216,.76) 0%,transparent 42%),radial-gradient(circle at 74% 60%,rgba(90,114,224,.8) 0%,transparent 42%),radial-gradient(circle at 48% 94%,rgba(180,122,234,.72) 0%,transparent 40%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 82%);animation:nappe1 13s ease-in-out infinite alternate"></div>
+        <div style="position:absolute;inset:-32%;filter:blur(30px);background:radial-gradient(ellipse 42% 34% at 50% 50%,rgba(255,255,255,.12) 0%,rgba(255,255,255,.05) 45%,transparent 70%);animation:balayage 21s ease-in-out infinite alternate"></div>
+        <div style="position:absolute;top:-80px;right:-118px;width:310px;filter:drop-shadow(0 18px 34px rgba(45,15,95,.42))"><img src="assets/chrome2.webp" alt="" style="display:block;width:100%;height:auto;rotate:14deg;scale:-1 1;animation:float2 18s ease-in-out infinite"></div>
+        <div style="position:absolute;bottom:-116px;left:-124px;width:315px;filter:drop-shadow(0 18px 34px rgba(45,15,95,.42))"><img src="assets/chrome3.webp" alt="" style="display:block;width:100%;height:auto;rotate:160deg;animation:float2 20s ease-in-out infinite reverse"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(44,16,100,.5) 0%,rgba(44,16,100,.04) 26%,rgba(44,16,100,.08) 72%,rgba(44,16,100,.6) 100%)"></div>
+      </div>
+
+      <div style="position:relative;z-index:10;padding:14px 28px 44px">
+        <div style="position:relative;border-radius:999px;background-color:rgba(8,2,30,.58);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.62),rgba(44,16,100,.4));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.62),inset 0 1px 0 rgba(255,255,255,.18);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 8px 16px">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:28px;width:auto;filter:drop-shadow(0 4px 14px rgba(60,25,120,.55))">
+          <nav style="display:flex;align-items:center;gap:2px">
+            <a href="#2a" style="padding:8px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)">Accueil</a>
+            <a href="#2a" style="padding:8px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:#fff;background-image:linear-gradient(118deg,rgba(232,111,216,.58) 0%,rgba(180,122,234,.52) 52%,rgba(90,114,224,.56) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 3px 12px -3px rgba(232,111,216,.55)">Marques</a>
+            <a href="#2a" style="padding:8px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)">Pièces</a>
+            <a href="#2a" style="padding:8px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)">Posts</a>
+            <a href="#2a" style="padding:8px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)">Coups de cœur</a>
+            <a href="#2a" style="margin-left:6px;padding:9px 16px;border-radius:999px;background:#fff;color:#170a33;font:900 12.5px/1 Archivo;box-shadow:0 4px 16px -3px rgba(232,111,216,.5),0 2px 6px rgba(8,2,30,.32)">Proposer une marque</a>
+          </nav>
+        </div>
+
+        <header style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin:40px 0 24px">
+          <div>
+            <p style="margin:0;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.7)">L'annuaire</p>
+            <h2 style="margin:8px 0 0;font:800 38px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Les marques</h2>
+          </div>
+          <p style="margin:0 0 6px;font:700 11px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">136 marques · 21 artistes</p>
+        </header>
+
+        <!-- barre de recherche collante + suggestions ouvertes -->
+        <div style="position:relative;z-index:20;border-radius:20px;background-color:rgba(8,2,30,.28);background-image:linear-gradient(150deg,rgba(44,16,100,.52),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;border-radius:13px;padding:13px 16px;background-image:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));background-color:rgba(44,16,100,.4);border:1px solid rgba(232,111,216,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 0 3px rgba(232,111,216,.3)">
+              <span style="font:700 14px/1.4 Archivo;color:#fff">pol</span><span style="width:1.5px;height:16px;background:#fff"></span>
+              <span style="margin-left:auto;font:800 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)">⌘ K</span>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:8px;border-radius:13px;padding:13px 16px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);color:#fff;font:800 13px/1 Archivo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8Z"></path></svg>Filtres</span>
+          </div>
+
+          <!-- suggestions -->
+          <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.16);padding-top:12px">
+            <p style="margin:0 0 8px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">Marques · 2 résultats</p>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.14)">
+                <span style="width:34px;height:34px;border-radius:10px;background:repeating-linear-gradient(135deg,#fff 0 6px,#efe6ff 6px 12px);display:grid;place-items:center;font:900 8.5px/1 Archivo;color:#7b6aa8">PF</span>
+                <span style="font:800 14px/1 Archivo;color:#fff"><mark style="background:rgba(232,111,216,.45);color:#fff;padding:1px 2px;border-radius:3px">Pol</mark>len Fabrics</span>
+                <span style="font:600 11.5px/1 Archivo;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55)">Denim · France · 14 pièces</span>
+                <span style="margin-left:auto;font:800 10.5px/1 Archivo;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)">Entrée ↵</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:12px">
+                <span style="width:34px;height:34px;border-radius:10px;background:repeating-linear-gradient(135deg,#fff 0 6px,#efe6ff 6px 12px);display:grid;place-items:center;font:900 8.5px/1 Archivo;color:#7b6aa8">PN</span>
+                <span style="font:800 14px/1 Archivo;color:#fff">Studio <mark style="background:rgba(232,111,216,.45);color:#fff;padding:1px 2px;border-radius:3px">Pol</mark>aire</span>
+                <span style="font:600 11.5px/1 Archivo;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55)">Maille · Nantes · 6 pièces</span>
+              </div>
+            </div>
+            <p style="margin:14px 0 8px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">Pièces · 31 résultats</p>
+            <div style="display:flex;gap:8px">
+              <span style="width:56px;height:56px;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="width:56px;height:56px;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="width:56px;height:56px;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="width:56px;height:56px;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.1);display:grid;place-items:center;font:800 11px/1 Archivo;color:#fff">+27</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ligne de filtres collante -->
+        <div style="display:flex;align-items:center;gap:8px;margin:16px 0 10px;padding:10px 12px;border-radius:999px;background-color:rgba(8,2,30,.44);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);overflow:hidden">
+          <span style="padding:8px 14px;border-radius:999px;background:#fff;color:#170a33;font:800 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Tout 136</span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Marques 115</span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Artistes 21</span>
+          <span style="width:1px;height:18px;background:rgba(255,255,255,.22);margin:0 4px"></span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Streetwear 34</span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Denim 22</span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Bijoux 19</span>
+          <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11px/1 Archivo;letter-spacing:.07em;text-transform:uppercase">Maille 17</span>
+          <span style="margin-left:auto;display:flex;gap:4px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);padding:4px;flex:0 0 auto">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;color:rgba(255,255,255,.7);font:700 11px/1 Archivo"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.4"></rect><rect x="9" y="1" width="6" height="6" rx="1.4"></rect><rect x="1" y="9" width="6" height="6" rx="1.4"></rect><rect x="9" y="9" width="6" height="6" rx="1.4"></rect></svg>Confort</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;color:rgba(255,255,255,.7);font:700 11px/1 Archivo"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="1" width="3.4" height="3.4" rx=".9"></rect><rect x="6.3" y="1" width="3.4" height="3.4" rx=".9"></rect><rect x="11.6" y="1" width="3.4" height="3.4" rx=".9"></rect><rect x="1" y="6.3" width="3.4" height="3.4" rx=".9"></rect><rect x="6.3" y="6.3" width="3.4" height="3.4" rx=".9"></rect><rect x="11.6" y="6.3" width="3.4" height="3.4" rx=".9"></rect><rect x="1" y="11.6" width="3.4" height="3.4" rx=".9"></rect><rect x="6.3" y="11.6" width="3.4" height="3.4" rx=".9"></rect><rect x="11.6" y="11.6" width="3.4" height="3.4" rx=".9"></rect></svg>Grille</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;background:#fff;color:#170a33;font:700 11px/1 Archivo"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><rect x="1" y="2" width="14" height="2.6" rx="1.1"></rect><rect x="1" y="6.7" width="14" height="2.6" rx="1.1"></rect><rect x="1" y="11.4" width="14" height="2.6" rx="1.1"></rect></svg>Liste</span>
+          </span>
+        </div>
+
+        <!-- index A→Z -->
+        <div style="display:flex;align-items:center;gap:2px;padding:8px 4px 14px;flex-wrap:wrap">
+          <span style="font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:8px">Aller à</span>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;background:#fff;color:#170a33;font:900 12px/1 Archivo">A</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">B</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">C</a>
+          <span style="display:grid;place-items:center;min-width:26px;height:26px;color:rgba(255,255,255,.24);font:800 12px/1 Archivo">D</span>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">E</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">F</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">G</a>
+          <span style="display:grid;place-items:center;min-width:26px;height:26px;color:rgba(255,255,255,.24);font:800 12px/1 Archivo">H</span>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">K</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">M</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">O</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">P</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">R</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">S</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">T</a>
+          <a href="#2a" style="display:grid;place-items:center;min-width:26px;height:26px;border-radius:8px;color:#fff;font:800 12px/1 Archivo">V</a>
+          <span style="margin-left:12px;font:600 11.5px/1 Archivo;color:rgba(255,255,255,.5)">A — 9 marques</span>
+        </div>
+
+        <!-- mode Liste : une ligne par marque, 4 pièces dedans -->
+        <p style="margin:6px 0 10px;font:800 26px/1 Archivo;letter-spacing:-.03em;color:rgba(255,255,255,.42)">A</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+            <span style="flex:0 0 auto;width:62px;height:62px;border-radius:14px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+            <div style="flex:0 0 240px;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px"><h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Atelier Sable</h3><span style="font:900 9px/1 Archivo;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:linear-gradient(120deg,#7b52e8,#c05fd8);padding:4px 9px 5px;border-radius:999px">À la une</span></div>
+              <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Marseille · Bijoux, Céramique</p>
+            </div>
+            <div style="display:flex;gap:6px;flex:1;min-width:0">
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+8</span>
+            </div>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
+          </div>
+
+          <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+            <span style="flex:0 0 auto;width:62px;height:62px;border-radius:14px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#e0d2fa 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+            <div style="flex:0 0 240px;min-width:0">
+              <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Aube Studio</h3>
+              <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Lyon · Maille</p>
+            </div>
+            <div style="display:flex;gap:6px;flex:1;min-width:0">
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+2</span>
+            </div>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
+          </div>
+
+          <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+            <span style="flex:0 0 auto;width:62px;height:62px;border-radius:14px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+            <div style="flex:0 0 240px;min-width:0">
+              <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Argile</h3>
+              <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Artiste · Pièces uniques</p>
+            </div>
+            <div style="display:flex;gap:6px;flex:1;min-width:0">
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:rgba(23,10,51,.06);display:grid;place-items:center;font:600 8.5px/1.3 ui-monospace,Menlo,monospace;text-align:center;color:#8b7cb0">pas<br>encore</span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:rgba(23,10,51,.04)"></span>
+            </div>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:rgba(23,10,51,.1);color:#170a33;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase">Voir la fiche</span>
+            <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
+          </div>
+        </div>
+
+        <p style="margin:26px 0 10px;font:800 26px/1 Archivo;letter-spacing:-.03em;color:rgba(255,255,255,.42)">B</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+            <span style="flex:0 0 auto;width:62px;height:62px;border-radius:14px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#e0d2fa 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+            <div style="flex:0 0 240px;min-width:0">
+              <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Basalte</h3>
+              <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Paris · Streetwear</p>
+            </div>
+            <div style="display:flex;gap:6px;flex:1;min-width:0">
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+31</span>
+            </div>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
+          </div>
+          <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+            <span style="flex:0 0 auto;width:62px;height:62px;border-radius:14px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+            <div style="flex:0 0 240px;min-width:0">
+              <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Bruit Blanc</h3>
+              <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Bruxelles · Denim, Maille</p>
+            </div>
+            <div style="display:flex;gap:6px;flex:1;min-width:0">
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+5</span>
+            </div>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-radius:999px;background-color:rgba(8,2,30,.44);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2)">
+          <p style="margin:0;font:700 11px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">24 sur 136 affichées</p>
+          <span style="font:800 13px/1 Archivo;color:#fff">Charger 24 marques de plus</span>
+          <span style="font:600 11.5px/1 Archivo;color:rgba(255,255,255,.5)">ou tape ⌘K pour chercher directement</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mouvement&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:1.6,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Mouvement&quot;},&quot;decor&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Mouvement&quot;},&quot;densite&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;confort&quot;,&quot;serré&quot;],&quot;default&quot;:&quot;confort&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Grille&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this.appliquer();
+    this._move = (e) => {
+      const f = this.force();
+      if (!f) return;
+      for (const el of this._tilts) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < -200 || r.top > innerHeight + 200) continue;
+        const dx = (e.clientX - (r.left + r.width / 2)) / Math.max(r.width, 1);
+        const dy = (e.clientY - (r.top + r.height / 2)) / Math.max(r.height, 1);
+        const near = Math.abs(dx) < 1.1 && Math.abs(dy) < 1.1;
+        const base = el.dataset.rot || "";
+        el.style.transition = "transform .35s cubic-bezier(.2,.8,.3,1)";
+        el.style.transform = near
+          ? `${base} perspective(900px) rotateY(${(dx * 5 * f).toFixed(2)}deg) rotateX(${(-dy * 4 * f).toFixed(2)}deg) translateY(${(-4 * f).toFixed(1)}px)`
+          : base;
+      }
+    };
+    window.addEventListener("mousemove", this._move, { passive: true });
+  }
+
+  componentDidUpdate() { this.appliquer(); }
+
+  componentWillUnmount() {
+    window.removeEventListener("mousemove", this._move);
+  }
+
+  force() {
+    const v = this.props.mouvement;
+    const f = v == null ? 1 : Number(v);
+    return isFinite(f) ? f : 1;
+  }
+
+  appliquer() {
+    const root = document;
+    this._tilts = Array.from(root.querySelectorAll("[data-tilt]"));
+    for (const el of this._tilts) {
+      if (el.dataset.rot === undefined) {
+        const r = getComputedStyle(el).rotate;
+        el.dataset.rot = r && r !== "none" ? `rotate(${r})` : "";
+      }
+      if (!this.force()) el.style.transform = el.dataset.rot;
+    }
+    const visible = this.props.decor ?? true;
+    for (const d of root.querySelectorAll("[data-decor]")) {
+      d.style.opacity = visible ? "1" : "0";
+    }
+    const serre = this.props.densite === "serré";
+    const map = { "[data-grille-a]": serre ? 4 : 3, "[data-grille-c]": serre ? 4 : 3, "[data-grille-d]": serre ? 3 : 2 };
+    for (const sel in map) {
+      for (const g of root.querySelectorAll(sel)) {
+        g.style.gridTemplateColumns = `repeat(${map[sel]},minmax(0,1fr))`;
+      }
+    }
+  }
+}
+
+</script>
+</body>
+</html>
