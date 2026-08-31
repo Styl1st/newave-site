@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "./supabase/server";
 import { createPublicClient } from "./supabase/public";
 import { DEMO_BRANDS, DEMO_POSTS, DEMO_PRODUCTS } from "./demo-data";
-import type { Brand, Post, Product } from "./types";
+import type { Brand, Post, Product, Recherche } from "./types";
 
 /**
  * Chaque fonction interroge Supabase et retombe sur les donnees de
@@ -306,4 +306,143 @@ export async function getPostsByBrand(brandId: string): Promise<Post[]> {
   report("posts de la marque", error);
   if (error || !data) return [];
   return data as unknown as Post[];
+}
+
+/* ---------------- recherche ---------------- */
+
+/* Les formes de la réponse sont dans `types.ts` : un composant client
+   les importe, et il ne doit surtout pas importer ce fichier-ci. */
+const RIEN: Recherche = { marques: [], pieces: [], totalPieces: 0 };
+
+/**
+ * CE QUE L'ON LAISSE PASSER DANS UNE RECHERCHE, ET POURQUOI SI PEU.
+ *
+ * La saisie part dans un filtre PostgREST, où elle est écrite au milieu
+ * d'une expression : `name=ilike.%…%`. Une virgule y sépare deux
+ * conditions, une parenthèse ouvre un groupe, un point commence un
+ * opérateur. Une recherche contenant l'un de ces caractères ne renvoie
+ * donc pas « rien », elle renvoie une erreur de syntaxe — et, sur une
+ * base moins bien tenue que celle-ci, elle est l'entrée d'une injection.
+ *
+ * `%` et `_` sont les jokers de `like` : les laisser passer permettrait
+ * de demander la base entière en tapant un seul caractère.
+ *
+ * On ne garde donc que ce qui compose un nom de marque ou de pièce :
+ * des lettres — accentuées comprises —, des chiffres, l'espace, le
+ * trait d'union et l'apostrophe.
+ */
+function nettoyerLaRecherche(brut: string): string {
+  return brut
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{N}\s'’-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
+}
+
+/**
+ * Les marques et les pièces qui portent ce mot.
+ *
+ * SERVIE PAR LE CLIENT PUBLIC, ET C'EST CE QUI LA REND PARTAGEABLE. La
+ * réponse ne dépend de personne — ce sont des fiches publiées — donc
+ * elle peut être gardée par un cache commun à tous les visiteurs plutôt
+ * que recalculée à chaque frappe. Voir les en-têtes de `/api/recherche`.
+ *
+ * DEUX LETTRES AU MINIMUM. À une seule, on ne cherche pas, on parcourt :
+ * la réponse ferait plusieurs centaines de lignes et n'apprendrait rien.
+ */
+export async function rechercher(brut: string): Promise<Recherche> {
+  const q = nettoyerLaRecherche(brut);
+  if (q.length < 2) return RIEN;
+
+  const motif = `%${q}%`;
+  const bas = q.toLowerCase();
+
+  const supabase = createPublicClient();
+
+  /* Sans base, on cherche dans les données de démonstration : le site
+     doit rester utilisable pendant que tu travailles le design. */
+  if (!supabase) {
+    const marques = DEMO_BRANDS.filter((b) => b.name.toLowerCase().includes(bas));
+    const pieces = DEMO_PRODUCTS.filter((p) => p.name.toLowerCase().includes(bas));
+    return {
+      marques: marques.slice(0, 6).map((b) => ({
+        slug: b.slug,
+        name: b.name,
+        ville: [b.city, b.country].filter(Boolean).join(" · "),
+        categorie: b.categories[0] ?? null,
+        visuel: b.logo_url ?? b.cover_url,
+      })),
+      pieces: pieces.slice(0, 4).map((p) => ({
+        id: p.id,
+        adresse: `/marques/${p.brand?.slug ?? ""}/${p.slug ?? p.id}`,
+        name: p.name,
+        image: p.images?.[0] ?? p.image_url,
+      })),
+      totalPieces: pieces.length,
+    };
+  }
+
+  const [reponseMarques, reponsePieces] = await Promise.all([
+    supabase
+      .from("brands")
+      .select("slug,name,city,country,categories,logo_url,cover_url")
+      .eq("status", "published")
+      .ilike("name", motif)
+      .limit(6),
+    supabase
+      .from("products")
+      .select(`id,slug,name,image_url,images, ${BRAND_REF}`, { count: "exact" })
+      .eq("status", "published")
+      .is("retired_at", null)
+      .ilike("name", motif)
+      .limit(4),
+  ]);
+
+  report("recherche de marques", reponseMarques.error);
+  report("recherche de pièces", reponsePieces.error);
+
+  type LigneMarque = {
+    slug: string;
+    name: string;
+    city: string | null;
+    country: string | null;
+    categories: string[] | null;
+    logo_url: string | null;
+    cover_url: string | null;
+  };
+
+  type LignePiece = {
+    id: string;
+    slug: string | null;
+    name: string;
+    image_url: string | null;
+    images: string[] | null;
+    brand: { slug: string; name: string } | null;
+  };
+
+  const marques = ((reponseMarques.data ?? []) as LigneMarque[]).map((b) => ({
+    slug: b.slug,
+    name: b.name,
+    ville: [b.city, b.country].filter(Boolean).join(" · "),
+    categorie: b.categories?.[0] ?? null,
+    visuel: b.logo_url ?? b.cover_url,
+  }));
+
+  const pieces = ((reponsePieces.data ?? []) as unknown as LignePiece[])
+    /* Une pièce dont on ne connaît plus la marque n'a pas d'adresse :
+       l'afficher mènerait à une page qui n'existe pas. */
+    .filter((p) => p.brand?.slug)
+    .map((p) => ({
+      id: p.id,
+      adresse: `/marques/${p.brand!.slug}/${p.slug ?? p.id}`,
+      name: p.name,
+      image: p.images?.[0] ?? p.image_url,
+    }));
+
+  return {
+    marques,
+    pieces,
+    totalPieces: reponsePieces.count ?? pieces.length,
+  };
 }

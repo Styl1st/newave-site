@@ -440,6 +440,175 @@ sous un filet : pastille 7px `#57d99a` avec halo `box-shadow:0 0 0 3px rgba(87,2
 
 ---
 
+---
+
+### 8. Éditer une marque — badge `9a`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Route :** `/admin/marques/[id]` ·
+**Remplace :** la mise en page de `app/admin/marques/[id]/page.tsx` + `AdminForm.tsx`
+
+**Purpose.** La page actuelle est un formulaire d'un seul tenant : quatre sections
+empilées (`<Bloc>`), un unique `SubmitBar` tout en bas, `BrandManagers` détaché en
+dessous. Trois problèmes concrets :
+
+1. **On ne sait pas ce qui manque pour publier.** `obstacleAPublication()` connaît la
+   réponse, mais elle n'est rendue qu'au moment d'échouer — ou pire, en publication
+   groupée, sous la forme « laissées de côté ».
+2. **On ne voit pas le résultat.** Une accroche est « affichée sur la carte de
+   l'annuaire », mais la carte n'est visible nulle part pendant qu'on la rédige.
+3. **On perd le fil.** Rien n'indique qu'on a modifié quelque chose ni où l'on en est.
+
+**Layout.** `grid-template-columns:208px minmax(0,1fr) 320px; gap:20px; align-items:start`,
+sous deux barres : la nav d'administration existante, puis un **en-tête de fiche collant**
+(`position:sticky`) qui porte le logo 46px, le fil d'Ariane, le nom, le badge d'état,
+l'état d'enregistrement, et les actions déjà présentes (`PublishToggle`, Voir la page,
+Pièces, Statistiques, Supprimer — ce dernier replié dans un menu `⋮`).
+
+*Colonne 1 — le sommaire (208px, `.glass`).* Une entrée par `<Bloc>`, plus « Les
+gérants ». Chaque entrée porte **soit une coche verte** (section complète), **soit une
+pastille ambre avec le nombre de champs vides**. C'est un repère, pas une étape : tout
+reste modifiable dans n'importe quel ordre. Ancres avec défilement doux — **jamais
+`scrollIntoView`**.
+
+*Colonne 2 — le formulaire.* Les `<Bloc>` existants, dans leur ordre actuel (L'identité /
+La démarche / Le classement / Liens et publication), chacun dans son propre `.glass`
+plutôt qu'un seul grand. Champs : classe `.champ` inchangée. Ajouts de confort :
+- **compteur de caractères** sous l'accroche (« 29 / 70 ») + rappel « Vu à droite, dans
+  l'aperçu » ;
+- **`VisuelCouverture`** en deux tuiles côte à côte — la couverture posée, et une zone de
+  dépôt vidéo explicite (« Glisse une vidéo ici · MP4, 10 s max. Elle remplace l'image. »)
+  au lieu de deux champs séparés ;
+- **catégories en pastilles cochables** (`CheckGroup`) plutôt qu'une liste de cases, avec
+  le compte « 2 choisies » ;
+- **gamme de prix en segmenté € / €€ / €€€** avec le libellé complet en dessous, au lieu
+  d'un `<select>`.
+
+⚠️ Le champ **« Comment on achète » (`acces`) commande la check-list** — il faut que ça se
+voie. Une note sous le champ l'explique : « Boutique en ligne » exige un catalogue ;
+« sur commande », « bientôt » et « profil Instagram » ne l'exigent pas.
+
+*Colonne 3 — l'aperçu et la check-list.*
+- **Aperçu vivant** (`border-radius:20px`, en-tête `rgba(8,2,30,.52)`) qui rend la vraie
+  carte d'annuaire — le même composant `BrandCard` — à partir des valeurs en cours de
+  saisie. Bascule Carte / Page.
+- **« Prêt à publier »** — barre de progression + les **trois** conditions de
+  `src/lib/publication.ts`, et rien d'autre :
+
+  | Condition | Prédicat réel |
+  |---|---|
+  | Un visuel | `cover_url` **ou** `logo_url` |
+  | Du texte | `tagline` **ou** `description` |
+  | Au moins une pièce | `pieces > 0`, **sauf si `exigeDesPieces === false`** (voir `doitAvoirDesPieces` dans `acces.ts`) |
+
+  ⚠️ **La boutique, les catégories, le pays et le logo seul ne bloquent PAS la
+  publication.** Le code le dit explicitement (« Une boutique fermée n'est pas une fiche
+  incomplète ») — ne pas les ajouter à la liste. Chaque condition non remplie affiche le
+  **message exact renvoyé par `obstacleAPublication()`**, pas une reformulation, et un
+  raccourci vers le champ ou l'action qui la lève (ici « Importer depuis la boutique »).
+- **`BrandManagers`** remonte dans cette colonne, en carte compacte.
+
+*Barre d'enregistrement flottante*, centrée en bas d'écran, visible **seulement quand il y
+a des modifications** : pastille ambre + « 3 modifications non enregistrées » / Annuler /
+**Enregistrer** (blanc) / **Enregistrer et publier** (dégradé d'accents, **désactivé tant
+que la check-list n'est pas complète**, avec en infobulle le message d'obstacle).
+
+**Comportement à porter.** Détection de l'état modifié (comparaison au `defaultValue`) ;
+avertissement avant de quitter ; la check-list se recalcule à la frappe côté client avec
+**la même fonction** `obstacleAPublication()` que le serveur — c'est tout l'intérêt d'avoir
+une définition unique, et l'importer côté client est explicitement le but du fichier.
+
+---
+
+### 9. Tableau de bord d'administration — badge `9b`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Route :** `/admin` ·
+**Remplace :** `app/admin/page.tsx` + réorganise `StatsPanel.tsx`
+
+**Purpose.** Aujourd'hui : quatre compteurs cliquables, puis `StatsPanel` (quatre
+chiffres, un histogramme, quatre classements), puis « Actions rapides » tout en bas. On
+ouvre l'administration pour **faire quelque chose**, et l'écran commence par des nombres
+qui ne demandent rien. Le titre passe de « Tableau de bord » à **« Ce qui t'attend »**.
+
+**Layout.**
+
+1. **Actions rapides remontées dans l'en-tête**, à droite du titre : Nouvelle marque
+   (`.card-light`), Nouveau post, Mettre à jour les catalogues.
+2. **La file de travail** — `grid-template-columns:repeat(2,1fr); gap:14px`, quatre cartes
+   qui portent chacune un **compte, une phrase concrète, et un lien direct** :
+
+   | Carte | Compte | Fond | Phrase |
+   |---|---|---|---|
+   | Candidatures à traiter | `applicationsNew` | `.card-light`, pastille `#c2273f` | ancienneté de la plus vieille |
+   | Signalements ouverts | signalements non traités | `.card-light`, pastille `#c2273f` | de quoi il s'agit |
+   | Brouillons publiables | `peutEtrePubliee()` sur les brouillons | `.glass`, pastille `#1d7a4f` | « déjà cochées à l'arrivée » |
+   | Fiches incomplètes | l'inverse | `.glass`, pastille `rgba(240,192,90,.9)` | la répartition par obstacle |
+
+   Les deux dernières mènent à `/admin/marques` **avec le filtre déjà appliqué et la
+   sélection déjà faite** — c'est ce qui les rend utiles plutôt que décoratives.
+   ⚠️ La répartition (« 9 sans visuel, 6 sans catalogue, 2 sans texte ») doit venir de
+   `obstacleAPublication()`, pas d'une heuristique locale.
+3. **L'état du site en une seule ligne** — les compteurs de `adminCounts()` en bandeau
+   `rgba(8,2,30,.44)`, séparés par des filets 1×38px : chiffre 800/26px, libellé
+   700/10px majuscules, note 600/11px. Ils informent, ils ne réclament pas : d'où leur
+   passage de quatre grosses cartes à une ligne.
+4. **Fréquentation** — `grid-template-columns:minmax(0,1fr) 330px`. À gauche : trois
+   chiffres avec **leur évolution** (`#7de2ab` en hausse, `#f0a5b6` en baisse), une bascule
+   7 j / 30 j / 90 j, l'histogramme existant (30 barres, `gap:2px`, dégradé blanc vertical,
+   dernière barre plus claire), et la note de confidentialité **inchangée**. À droite : les
+   `Classement` existants **fusionnés en un seul bloc à onglets** (Clics / Favoris / Vues)
+   plutôt que quatre panneaux — même barres, même données.
+5. **« Dernières actions »** — ⚠️ **proposition**, signalée comme telle dans le design :
+   il n'y a pas de journal d'activité aujourd'hui. Demanderait une table d'audit.
+
+---
+
+### 10. Liste des marques (administration) — badge `9c`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Route :** `/admin/marques` ·
+**Remplace :** la mise en page de `BrandBulkList.tsx`
+
+**Purpose.** Le composant fait déjà le bon travail (filtres cumulables, sélection portant
+sur les lignes affichées, confirmation à deux appuis). Ce qui manque est visuel : les
+filtres sont repliés derrière un bouton, la barre d'action est **en haut** alors qu'on
+coche en bas, et rien dans la ligne ne dit si la fiche est publiable.
+
+**Trois changements, aucun sur la logique.**
+
+1. **Vues enregistrées** en première ligne de filtres, à la place du repli : Toutes 136 ·
+   Publiables 11 · Incomplètes 17 · Sans catalogue 22 · À la une 5, plus une tuile
+   pointillée « Enregistrer cette vue ». Ce sont des combinaisons de `TESTS` déjà
+   existantes, nommées. La recherche et les quatre `<select>` (Pays, Catégorie, Gamme,
+   Trier) restent sur la ligne du dessous, **dépliés** — cinq contrôles ne sont pas un mur.
+   Les faces `avec`/`sans` de `CRITERES` restent accessibles derrière « Filtres » pour les
+   cas fins.
+2. **Ligne en tableau**, `grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px; gap:14px`,
+   avec une ligne d'en-têtes 900/9.5px : case · logo · marque · **Publiable ?** ·
+   catalogue · état · flèche. La colonne **Publiable ?** est une barre de progression
+   + un libellé tiré de `obstacleAPublication()* : « Prête » / « Complète » en `#1d7a4f`,
+   « Sans visuel » en `#c2273f`, etc. Ligne cochée : `outline:3px solid #fff` (l'actuel
+   `ring-3 ring-white`).
+3. **Barre d'action flottante en bas** (`position:fixed`, centrée, pilule
+   `rgba(8,2,30,.72)` + `blur(24px)`) au lieu de la barre en haut : « 3 sélectionnées ·
+   sur 11 affichées · Tout cocher » puis Publier / Retirer / Supprimer. Le libellé
+   « sur N affichées » rend visible la règle déjà appliquée par le code — la sélection ne
+   porte jamais sur des lignes masquées.
+
+---
+
+## Ce qui reste à ne pas casser dans l'administration
+
+- `src/lib/publication.ts` est **la** définition. Ne pas la dupliquer, ne pas l'assouplir
+  dans un chemin (formulaire, bouton de ligne, sélection multiple) : c'est exactement ce
+  que le fichier dit vouloir éviter.
+- Le `maxDuration = 60` de la fiche marque : enregistrer peut déclencher la lecture d'une
+  boutique.
+- La confirmation à deux appuis (`useConfirmationCle`) plutôt qu'un `confirm()` natif —
+  les navigateurs mobiles escamotent le second.
+- `data-no-reveal` sur tout l'espace d'administration : pas d'animation d'apparition sur
+  une table de travail.
+- La nav d'administration s'enroule sur deux rangs sur mobile, elle ne défile pas
+  latéralement.
+
 ## Composants partagés
 
 ### Barre de nav en verre
@@ -680,7 +849,7 @@ dessin stable d'un appareil à l'autre).
 | Fichier | Contenu |
 |---|---|
 | `Annuaire NEWAVE.dc.html` | Écran `2a` — l'annuaire à l'échelle. Contient aussi `1a`, la recréation fidèle de l'annuaire **actuel** (utile comme point de comparaison) et les explorations `1b`/`1c`/`1d`, écartées. |
-| `NEWAVE - pages.dc.html` | Écrans `3b` accueil · `5a` pièces · `6b` posts · `7a` classement · `7b` favoris · `8a`/`8b` compte. |
+| `NEWAVE - pages.dc.html` | Écrans `3b` accueil · `5a` pièces · `6b` posts · `7a` classement · `7b` favoris · `8a`/`8b` compte · `9a` éditer une marque · `9b` tableau de bord · `9c` liste des marques. |
 | `assets/` | Les 5 fichiers de marque, pour que les HTML s'ouvrent hors ligne. |
 | `support.js` | Runtime des fichiers de design. **Aucun intérêt pour l'implémentation** — ne pas le porter. |
 
@@ -697,6 +866,7 @@ et les intitulés indiquent lesquelles ont été retenues.
 3. **`3b` l'accueil** — assemble des composants déjà écrits aux étapes 1 et 2.
 4. **`6b` les posts** — indépendant, peu de logique.
 5. **`7a`/`7b`** — dépendent de l'aperçu de pièces (étape 1) et du delta hebdomadaire.
-6. **`8a`/`8b` le compte** — réorganisation de composants existants, aucune donnée
+6. **`9a` la fiche marque** — c'est l'écran le plus utilisé au quotidien, et le seul qui demande une vraie nouveauté fonctionnelle (la check-list live). `9b` et `9c` en découlent : ils réutilisent `obstacleAPublication()` côté client.
+7. **`8a`/`8b` le compte** — réorganisation de composants existants, aucune donnée
    nouvelle ; c'est le moins risqué, et il peut passer en premier si tu préfères
    commencer petit.

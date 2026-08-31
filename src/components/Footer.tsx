@@ -2,11 +2,17 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 mt-24 w-full">
+    <footer className="relative z-10 mt-20 w-full">
       <div className="mx-auto w-full max-w-6xl px-[var(--pad)] pb-12">
         <div className="flex flex-col items-center gap-5 border-t border-white/15 pt-10 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col items-center gap-3 sm:items-start">
-            <img src="/brand/mark-white.webp" alt="" className="h-10 w-auto opacity-70" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/mark-white.webp"
+              alt=""
+              loading="lazy"
+              className="h-10 w-auto opacity-70"
+            />
             <p className="m-0 text-[10px] font-bold uppercase tracking-[0.22em] text-white/80">
               © {new Date().getFullYear()} NEWAVE SPHERE
             </p>

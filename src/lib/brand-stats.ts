@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/server";
+import { parTranches } from "./stats";
 import type { Jour, Ligne } from "./stats";
 
 export type BrandStats = {
@@ -40,38 +41,76 @@ export async function getBrandStats(brandId: string, slug: string): Promise<Bran
   depuis.setHours(0, 0, 0, 0);
   const depuisISO = depuis.toISOString();
 
-  const [piecesRes, vuesRes, clicsRes, favorisRes] = await Promise.all([
-    supabase.from("products").select("id, name, slug, status").eq("brand_id", brandId),
+  type Piece = { id: string; name: string; slug: string | null; status: string };
+
+  /*
+   * LES TOTAUX SONT COMPTÉS PAR POSTGRES, LES LIGNES RAPATRIÉES PAR
+   * TRANCHES.
+   *
+   * `vues30` valait `vues.length`, et PostgREST ne rend jamais plus de
+   * mille lignes sans le dire : le compteur affichait « 1000 » et restait
+   * dessus pour toujours. Le détail est dans `parTranches`, avec le
+   * deuxième piège — les mille lignes rendues sont les plus ANCIENNES,
+   * donc le graphique perdait ses derniers jours.
+   */
+  const [vuesTotal, clicsTotal, favorisRes, pieces, vues, clics] = await Promise.all([
     // Toutes les pages de cette marque : sa fiche et celles de ses pièces.
     supabase
       .from("page_views")
-      .select("path, created_at")
+      .select("*", { count: "exact", head: true })
       .like("path", `/marques/${slug}%`)
       .gte("created_at", depuisISO),
     supabase
       .from("outbound_clicks")
-      .select("product_id, created_at")
+      .select("*", { count: "exact", head: true })
       .eq("brand_id", brandId)
       .gte("created_at", depuisISO),
-    supabase.from("favorites").select("brand_id", { count: "exact", head: true }).eq("brand_id", brandId),
+    supabase
+      .from("favorites")
+      .select("brand_id", { count: "exact", head: true })
+      .eq("brand_id", brandId),
+
+    parTranches<Piece>((de, a) =>
+      supabase
+        .from("products")
+        .select("id, name, slug, status")
+        .eq("brand_id", brandId)
+        .order("id")
+        .range(de, a)
+    ),
+    parTranches<{ path: string; created_at: string }>((de, a) =>
+      supabase
+        .from("page_views")
+        .select("path, created_at")
+        .like("path", `/marques/${slug}%`)
+        .gte("created_at", depuisISO)
+        .order("created_at", { ascending: true })
+        .range(de, a)
+    ),
+    parTranches<{ product_id: string | null; created_at: string }>((de, a) =>
+      supabase
+        .from("outbound_clicks")
+        .select("product_id, created_at")
+        .eq("brand_id", brandId)
+        .gte("created_at", depuisISO)
+        .order("created_at", { ascending: true })
+        .range(de, a)
+    ),
   ]);
 
-  const pieces = (piecesRes.data ?? []) as {
-    id: string;
-    name: string;
-    slug: string | null;
-    status: string;
-  }[];
-  const vues = (vuesRes.data ?? []) as { path: string; created_at: string }[];
-  const clics = (clicsRes.data ?? []) as { product_id: string | null; created_at: string }[];
-
-  const likesRes = pieces.length
-    ? await supabase
-        .from("product_like_counts")
-        .select("product_id, likes")
-        .in("product_id", pieces.map((p) => p.id))
-    : { data: [] };
-  const likes = (likesRes.data ?? []) as { product_id: string; likes: number }[];
+  const likes = pieces.length
+    ? await parTranches<{ product_id: string; likes: number }>((de, a) =>
+        supabase
+          .from("product_like_counts")
+          .select("product_id, likes")
+          .in(
+            "product_id",
+            pieces.map((p) => p.id)
+          )
+          .order("product_id")
+          .range(de, a)
+      )
+    : [];
 
   const parJour = new Map<string, number>();
   for (let i = 0; i < JOURS; i++) {
@@ -121,12 +160,21 @@ export async function getBrandStats(brandId: string, slug: string): Promise<Bran
 
   return {
     jours,
-    vues30: vues.length,
+    vues30: vuesTotal.count ?? vues.length,
     vues7: sept,
     evolution: septAvant > 0 ? Math.round(((sept - septAvant) / septAvant) * 100) : null,
-    clics30: clics.length,
+    clics30: clicsTotal.count ?? clics.length,
     clics7: clics.filter((c) => recent(c.created_at)).length,
-    tauxSortie: vues.length > 0 ? Math.round((clics.length / vues.length) * 100) : null,
+    /*
+     * Le taux se calcule sur les DEUX totaux exacts, jamais sur les
+     * longueurs rapatriées. Mélanger les deux donnerait un rapport entre
+     * un chiffre plafonné et un chiffre juste — un taux de sortie
+     * fantaisiste, et personne pour s'en apercevoir.
+     */
+    tauxSortie:
+      (vuesTotal.count ?? 0) > 0
+        ? Math.round(((clicsTotal.count ?? 0) / (vuesTotal.count ?? 1)) * 100)
+        : null,
     favoris: favorisRes.count ?? 0,
     likes: likes.reduce((n, l) => n + l.likes, 0),
     piecesPubliees: pieces.filter((p) => p.status === "published").length,

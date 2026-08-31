@@ -37,8 +37,19 @@ export default function FavoriteButton({
 }: {
   brandId: string;
   initial: boolean;
-  /** « compacte » pour une pastille posée sur une carte de l'annuaire. */
-  taille?: "normale" | "compacte";
+  /**
+   * Où le bouton est posé, plus que sa taille.
+   *
+   * `compacte` : une pastille sur le VISUEL d'une carte. Le fond sombre
+   * n'est pas décoratif, c'est ce qui garantit qu'un cœur blanc reste
+   * lisible quelle que soit la photo dessous.
+   *
+   * `claire` : la même pastille, mais sur une surface CLAIRE — la ligne
+   * de marque de l'annuaire, qui est une carte blanche et non une
+   * photo. Le fond sombre y faisait une tache d'encre, et le cœur blanc
+   * y était le seul élément à ne pas suivre le reste de la ligne.
+   */
+  taille?: "normale" | "compacte" | "claire";
   /** Nom de la marque, pour que le bouton reste compréhensible sans texte. */
   etiquette?: string;
 }) {
@@ -65,7 +76,8 @@ export default function FavoriteButton({
     });
   }
 
-  if (taille === "compacte") {
+  if (taille === "compacte" || taille === "claire") {
+    const surClair = taille === "claire";
     // Posée sur le visuel d'une carte : le fond sombre garantit que
     // l'étoile reste lisible quelle que soit la photo dessous.
     return (
@@ -79,10 +91,14 @@ export default function FavoriteButton({
             : `Mettre ${etiquette ?? "cette marque"} en favori`
         }
         title={favorited ? "En favori" : "Mettre en favori"}
-        className={`grid h-9 w-9 place-items-center rounded-full text-[15px] backdrop-blur-sm transition active:scale-90 disabled:opacity-60 ${
-          favorited
-            ? "bg-white text-[var(--color-ink)]"
-            : "bg-[rgba(20,8,50,0.62)] text-white hover:bg-[rgba(20,8,50,0.92)]"
+        className={`grid h-9 w-9 place-items-center rounded-full text-[15px] transition active:scale-90 disabled:opacity-60 ${
+          surClair
+            ? favorited
+              ? "bg-[var(--color-ink)] text-white"
+              : "bg-[rgba(20,8,50,0.1)] text-[var(--color-ink)] hover:bg-[rgba(20,8,50,0.18)]"
+            : favorited
+              ? "bg-white text-[var(--color-ink)] backdrop-blur-sm"
+              : "bg-[rgba(20,8,50,0.62)] text-white backdrop-blur-sm hover:bg-[rgba(20,8,50,0.92)]"
         }`}
       >
         <Coeur plein={favorited} />

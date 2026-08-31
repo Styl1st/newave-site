@@ -1,6 +1,13 @@
 "use client";
 
-import { Children, useEffect, useRef, useState } from "react";
+import { Children, useEffect, useRef } from "react";
+import {
+  CLASSES,
+  SelecteurDensite,
+  useDensite,
+  type Densite,
+  type Variante,
+} from "./densite";
 
 /**
  * Une grille dont on choisit la densité.
@@ -9,44 +16,12 @@ import { Children, useEffect, useRef, useState } from "react";
  * vignettes, ou d'un coup d'œil, pour balayer tout ce qu'il y a. Le
  * choix se garde d'une visite à l'autre — le redemander à chaque page
  * reviendrait à ne pas l'avoir écouté.
+ *
+ * LE RAIL DE BOUTONS PEUT VIVRE AILLEURS. L'annuaire refondu le veut
+ * dans sa ligne de filtres collante, à côté des pastilles : il passe
+ * alors `densite` et `onDensite`, garde l'état chez lui, et met
+ * `selecteur` à faux. Les autres listes ne changent pas d'un iota.
  */
-
-type Densite = "confort" | "serre";
-type Variante = "pieces" | "marques";
-
-const CLASSES: Record<Variante, Record<Densite, string>> = {
-  pieces: {
-    confort: "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4",
-    serre: "grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6",
-  },
-  marques: {
-    confort: "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3",
-    serre: "grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4",
-  },
-};
-
-function IconConfort() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
-      <rect x="1" y="1" width="6" height="6" rx="1.4" />
-      <rect x="9" y="1" width="6" height="6" rx="1.4" />
-      <rect x="1" y="9" width="6" height="6" rx="1.4" />
-      <rect x="9" y="9" width="6" height="6" rx="1.4" />
-    </svg>
-  );
-}
-
-function IconSerre() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
-      {[1, 6.3, 11.6].map((y) =>
-        [1, 6.3, 11.6].map((x) => (
-          <rect key={`${x}-${y}`} x={x} y={y} width="3.4" height="3.4" rx=".9" />
-        ))
-      )}
-    </svg>
-  );
-}
 
 /**
  * La hauteur d'une rangée de mosaïque, en pixels.
@@ -64,11 +39,23 @@ export default function Grille({
   children,
   aside,
   mosaique = false,
+  defaut = "confort",
+  densite: densiteImposee,
+  onDensite,
+  selecteur = true,
 }: {
   variante: Variante;
   /** Sous quel nom retenir le choix. Une clé par type de liste. */
   memoire: string;
-  children: React.ReactNode;
+  /**
+   * Le contenu, ou une FONCTION de la densité choisie.
+   *
+   * La forme fonction sert au seul cas où la densité ne change pas que
+   * la taille des cases mais ce qu'on met dedans : en `liste`,
+   * l'annuaire rend des lignes et non des cartes, et il doit donc
+   * savoir ce qui a été choisi.
+   */
+  children: React.ReactNode | ((densite: Densite) => React.ReactNode);
   /** Ce qu'on affiche à gauche du sélecteur, un compteur par exemple. */
   aside?: React.ReactNode;
   /**
@@ -93,40 +80,60 @@ export default function Grille({
    * reste de gauche à droite, et les trous se comblent.
    */
   mosaique?: boolean;
+  /** La densité au premier affichage, avant lecture de la préférence. */
+  defaut?: Densite;
+  /** Densité imposée par le parent. Absente = la grille gère la sienne. */
+  densite?: Densite;
+  onDensite?: (d: Densite) => void;
+  /** Poser le rail de boutons ici. Faux quand le parent l'affiche ailleurs. */
+  selecteur?: boolean;
 }) {
   /*
-   * Le premier rendu est volontairement identique côté serveur et côté
-   * navigateur — « confort » pour tout le monde. La préférence n'est
-   * lue qu'ensuite : le serveur n'a aucun moyen de la connaître, et
-   * l'appliquer trop tôt ferait diverger les deux rendus.
+   * L'état interne existe toujours : un hook ne peut pas être appelé
+   * sous condition. Quand le parent impose une densité, il est
+   * simplement ignoré.
    */
-  const [densite, setDensite] = useState<Densite>("confort");
+  const interne = useDensite(memoire, variante, defaut);
+  const densite = densiteImposee ?? interne.densite;
+  const choisir = onDensite ?? interne.choisir;
 
-  useEffect(() => {
-    try {
-      const garde = localStorage.getItem(`grille:${memoire}`);
-      if (garde === "serre" || garde === "confort") setDensite(garde);
-    } catch {
-      // navigation privée, stockage refusé : on reste sur le défaut
-    }
-  }, [memoire]);
-
-  function choisir(valeur: Densite) {
-    setDensite(valeur);
-    try {
-      localStorage.setItem(`grille:${memoire}`, valeur);
-    } catch {
-      // sans mémoire, le choix vaut au moins pour cette page
-    }
-  }
+  const rendu = typeof children === "function" ? children(densite) : children;
 
   const conteneur = useRef<HTMLDivElement>(null);
-  const nombre = Children.count(children);
+  const nombre = Children.count(rendu);
+
+  /*
+   * LA MOSAÏQUE NE S'APPLIQUE PAS À UNE LISTE, et ce n'est pas un
+   * oubli : elle sert à rattraper des cartes de hauteurs différentes
+   * dans une grille. Des lignes empilées font déjà toutes la même
+   * hauteur, et leur imposer une trame de huit pixels leur donnerait un
+   * `grid-row-end` dans un conteneur qui n'est pas une grille.
+   */
+  const enMosaique = mosaique && densite !== "liste";
 
   useEffect(() => {
-    if (!mosaique) return;
     const boite = conteneur.current;
     if (!boite) return;
+
+    /*
+     * ON DÉFAIT CE QU'ON AVAIT POSÉ, et c'est indispensable depuis qu'il
+     * existe un mode liste.
+     *
+     * La trame et le `row-gap: 0` sont écrits en style EN LIGNE sur le
+     * conteneur, qui est le même élément d'une densité à l'autre. En
+     * passant en liste sans nettoyer, ce `row-gap: 0` restait et écrasait
+     * l'espacement de la pile : les lignes se retrouvaient collées les
+     * unes aux autres, sans que rien dans les classes ne l'explique.
+     */
+    if (!enMosaique) {
+      boite.classList.remove("mosaique");
+      boite.style.removeProperty("grid-auto-rows");
+      boite.style.removeProperty("row-gap");
+      for (const enfant of Array.from(boite.children) as HTMLElement[]) {
+        enfant.style.removeProperty("grid-row-end");
+      }
+      return;
+    }
 
     /*
      * LA MOSAÏQUE ET LA MISE DE CÔTÉ DES CARTES HORS ÉCRAN SONT
@@ -198,60 +205,31 @@ export default function Grille({
      * cartes. Ce qui nous intéresse ici, c'est uniquement le NOMBRE de
      * cartes, et lui ne bouge que quand la liste change vraiment.
      */
-  }, [mosaique, nombre, densite]);
-
-  const onglet =
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition";
+  }, [enMosaique, nombre, densite]);
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">{aside}</div>
-
-        <div
-          role="group"
-          aria-label="Densité d'affichage"
-          className="flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-white/8 p-1"
-        >
-          <button
-            type="button"
-            onClick={() => choisir("confort")}
-            aria-pressed={densite === "confort"}
-            title="Grandes vignettes"
-            className={
-              densite === "confort"
-                ? `${onglet} bg-white text-[var(--color-ink)]`
-                : `${onglet} text-white/70 hover:text-white`
-            }
-          >
-            <IconConfort />
-            <span className="hidden sm:inline">Confort</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => choisir("serre")}
-            aria-pressed={densite === "serre"}
-            title="Voir plus d'éléments à la fois"
-            className={
-              densite === "serre"
-                ? `${onglet} bg-white text-[var(--color-ink)]`
-                : `${onglet} text-white/70 hover:text-white`
-            }
-          >
-            <IconSerre />
-            <span className="hidden sm:inline">Grille</span>
-          </button>
+      {(aside || selecteur) && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">{aside}</div>
+          {selecteur && (
+            <SelecteurDensite
+              densite={densite}
+              choisir={choisir}
+              offertes={interne.offertes}
+            />
+          )}
         </div>
-      </div>
+      )}
 
       <div
         ref={conteneur}
         /* La classe `mosaique` est posée par l'effet et non ici : elle
            dépend de la largeur de l'écran, que le serveur ne connaît
            pas. L'écrire dans le rendu ferait diverger les deux. */
-        className={`${CLASSES[variante][densite]} ${densite === "serre" ? "grille-serre" : ""}`}
+        className={`${CLASSES[variante][densite] ?? ""} ${densite === "serre" ? "grille-serre" : ""}`}
       >
-        {children}
+        {rendu}
       </div>
     </>
   );

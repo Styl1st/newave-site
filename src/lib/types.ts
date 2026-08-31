@@ -44,6 +44,39 @@ export type Brand = {
   acces?: string | null;
 };
 
+/**
+ * Ce que renvoie la recherche de l'annuaire.
+ *
+ * DÉCLARÉ ICI ET NON DANS `queries.ts`, alors que c'est cette
+ * fonction-là qui le produit. `queries.ts` ouvre le client Supabase du
+ * serveur, qui lit les cookies de la requête : l'importer depuis un
+ * composant client fait tomber la page. Le type, lui, n'existe qu'à la
+ * compilation — mais un `import type` mal écrit devient un vrai import,
+ * et l'erreur est pénible à retrouver. Le poser dans le fichier des
+ * types, que tout le monde importe déjà, retire la question.
+ */
+export type MarqueTrouvee = {
+  slug: string;
+  name: string;
+  ville: string;
+  categorie: string | null;
+  visuel: string | null;
+};
+
+export type PieceTrouvee = {
+  id: string;
+  adresse: string;
+  name: string;
+  image: string | null;
+};
+
+export type Recherche = {
+  marques: MarqueTrouvee[];
+  pieces: PieceTrouvee[];
+  /** Combien de pièces au total, quand on n'en montre que quatre. */
+  totalPieces: number;
+};
+
 /** Une piece d'une marque. Le paiement se fait chez la marque, via shop_url. */
 export type Size = { label: string; available: boolean };
 

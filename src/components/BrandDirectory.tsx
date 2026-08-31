@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BrandGrid from "./BrandGrid";
 import { IconChevron, IconFiltre } from "./Icons";
-import type { Brand, PriceTier } from "@/lib/types";
+import { SelecteurDensite, useDensite } from "./densite";
+import { vignette } from "@/lib/vignette";
+import type { Brand, PriceTier, Recherche } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { estUnArtiste } from "@/lib/boutiques";
 import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
+
+/** En deçà, on ne cherche pas, on parcourt. Voir `rechercher`. */
+const MINIMUM = 2;
+
+/** Le temps qu'on laisse aux doigts avant d'aller interroger la base. */
+const REPOS = 180;
 
 export default function BrandDirectory({
   brands,
@@ -21,6 +31,23 @@ export default function BrandDirectory({
   /** Les moyennes d'avis, par identifiant de marque. */
   notes?: Record<string, { moyenne: number; avis: number }>;
 }) {
+  /*
+   * LA DENSITÉ EST TENUE ICI ET NON DANS LA GRILLE, parce que son rail
+   * de boutons est posé dans la ligne de filtres collante, à droite des
+   * pastilles. La grille la reçoit et n'affiche plus le sien.
+   *
+   * L'annuaire ouvre en LISTE. C'est le mode qui répond à ce que fait
+   * vraiment quelqu'un sur cette page — chercher parmi cent trente-six
+   * marques — et le seul qui montre les pièces sans ouvrir une fiche.
+   * Les deux grilles restent à un clic pour qui préfère flâner, et le
+   * choix est retenu d'une visite à l'autre.
+   */
+  const { densite, choisir: choisirDensite, offertes } = useDensite(
+    "annuaire",
+    "marques",
+    "liste"
+  );
+
   const [query, setQuery] = useState("");
   /*
    * PLUSIEURS CATÉGORIES À LA FOIS, ET ELLES SE CUMULENT.
@@ -36,8 +63,7 @@ export default function BrandDirectory({
    *
    * Le ET a un défaut connu, mener vite à une liste vide, et c'est
    * exactement ce que le comptage plus bas empêche : une puce ne
-   * s'affiche que si elle laisse au moins une marque debout. On ne peut
-   * donc pas construire une combinaison qui ne donne rien.
+   * s'affiche que si elle laisse au moins une marque debout.
    */
   const [choisies, setChoisies] = useState<string[]>([]);
 
@@ -51,33 +77,17 @@ export default function BrandDirectory({
    *
    * Une seule valeur à la fois, contrairement aux catégories : personne
    * ne cherche « féminin ET masculin », c'est déjà ce que veut dire ne
-   * rien cocher. Une liste à cocher aurait proposé une combinaison qui
-   * n'apporte rien.
-   *
-   * Et il ne se cumule pas non plus AVEC lui-même : « Mixte » est une
-   * réponse, pas une absence de réponse. Une marque mixte ne ressort
-   * donc pas sous « Femme », sans quoi le filtre ne réduirait presque
-   * rien et n'aurait aucun intérêt.
+   * rien cocher.
    */
   const [audience, setAudience] = useState<Audience | null>(null);
   const [ouvert, setOuvert] = useState(false);
   /*
    * Marque ou artiste : la distinction la plus utile de l'annuaire.
-   *
    * Une marque a une boutique, des tailles, des séries. Un artiste fait
-   * lui-même, souvent à l'unité, parfois sans rien vendre en ligne. On
-   * ne cherche pas la même chose selon les jours, et noyer les seconds
-   * parmi les premiers revenait à les rendre introuvables.
-   *
-   * L'appartenance ne se coche plus forcément : vendre sur Vinted ou
-   * Depop suffit à ranger quelqu'un ici, parce que c'est déjà la
-   * réponse à la question. Voir `estUnArtiste`.
+   * lui-même, souvent à l'unité, parfois sans rien vendre en ligne.
    */
   const [genre, setGenre] = useState<"tout" | "marques" | "artistes">("tout");
 
-  // Le compteur sur le bouton : sans lui, un filtre actif derrière un
-  // panneau replié devient invisible, et la liste paraît incomplète
-  // sans qu'on comprenne pourquoi.
   const actifs = choisies.length + (tier ? 1 : 0) + (audience ? 1 : 0);
 
   function reinitialiser() {
@@ -86,21 +96,136 @@ export default function BrandDirectory({
     setAudience(null);
   }
 
+  /* ------------------------------------------------------------------
+     La recherche
+     ------------------------------------------------------------------ */
+
+  const router = useRouter();
+  const champ = useRef<HTMLInputElement>(null);
+  const bloc = useRef<HTMLDivElement>(null);
+  const [suggestions, setSuggestions] = useState<Recherche | null>(null);
+  const [panneau, setPanneau] = useState(false);
+  const [surligne, setSurligne] = useState(0);
+
+  /*
+   * ⌘K, ET C'EST LE GESTE QUI CHANGE LE PLUS CETTE PAGE.
+   *
+   * Un annuaire de cent trente-six entrées se parcourt mal et se
+   * cherche bien. Le raccourci met le curseur dans le champ depuis
+   * n'importe où dans la page, sans avoir à remonter : c'est ce qui
+   * fait passer la recherche du statut d'outil qu'on va chercher à
+   * celui de réflexe.
+   *
+   * Ctrl aussi bien que ⌘ : le site n'a aucune raison de supposer un
+   * Mac, et Ctrl+K n'est réservé nulle part dans un navigateur.
+   */
+  useEffect(() => {
+    const auClavier = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        champ.current?.focus();
+        champ.current?.select();
+        setPanneau(true);
+      }
+    };
+    window.addEventListener("keydown", auClavier);
+    return () => window.removeEventListener("keydown", auClavier);
+  }, []);
+
+  /*
+   * Fermer en cliquant à côté, et pas au `blur` du champ.
+   *
+   * Le `blur` part AVANT le clic sur une suggestion : le panneau se
+   * démontait sous le doigt, et le lien qu'on visait n'existait plus au
+   * moment où le clic arrivait. On ne cliquait donc jamais sur une
+   * suggestion, on cliquait toujours dans le vide.
+   */
+  useEffect(() => {
+    if (!panneau) return;
+    const dehors = (e: MouseEvent) => {
+      if (!bloc.current?.contains(e.target as Node)) setPanneau(false);
+    };
+    document.addEventListener("mousedown", dehors);
+    return () => document.removeEventListener("mousedown", dehors);
+  }, [panneau]);
+
+  /*
+   * On interroge la base pour les PIÈCES, pas pour les marques.
+   *
+   * Les marques sont déjà toutes dans le navigateur : les filtrer sur
+   * place est instantané, et c'est ce que fait `parRecherche` plus bas
+   * pour la liste elle-même. Les mille deux cents pièces, elles, ne
+   * descendent pas avec la page — d'où cet appel, retardé du temps
+   * d'une frappe et annulé dès que la suivante arrive.
+   */
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < MINIMUM) {
+      setSuggestions(null);
+      return;
+    }
+
+    const halte = new AbortController();
+    const minuteur = setTimeout(() => {
+      fetch(`/api/recherche?q=${encodeURIComponent(q)}`, { signal: halte.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((json: Recherche) => {
+          setSuggestions(json);
+          setSurligne(0);
+        })
+        .catch(() => {
+          /* Frappe suivante, ou réseau : le panneau garde ce qu'il a. */
+        });
+    }, REPOS);
+
+    return () => {
+      clearTimeout(minuteur);
+      halte.abort();
+    };
+  }, [query]);
+
+  const proposees = suggestions?.marques ?? [];
+
+  function toucheDansLeChamp(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setPanneau(false);
+      champ.current?.blur();
+      return;
+    }
+    if (!panneau || proposees.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSurligne((i) => (i + 1) % proposees.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSurligne((i) => (i - 1 + proposees.length) % proposees.length);
+    } else if (e.key === "Enter") {
+      // Entrée ouvre la marque surlignée, pas la première : sans ça, la
+      // flèche du bas ne servirait à rien.
+      e.preventDefault();
+      const cible = proposees[surligne];
+      if (cible) router.push(`/marques/${cible.slug}`);
+    }
+  }
+
+  const ouvrable =
+    panneau &&
+    query.trim().length >= MINIMUM &&
+    Boolean(suggestions) &&
+    (proposees.length > 0 || (suggestions?.pieces.length ?? 0) > 0);
+
+  /* ------------------------------------------------------------------
+     Les filtres
+     ------------------------------------------------------------------ */
+
   /*
    * UN FILTRE QUI NE MÈNE NULLE PART NE DOIT PAS S'AFFICHER.
    *
-   * On listait toutes les catégories de l'annuaire, tout le temps. En
-   * cliquant sur « Artistes » puis sur une catégorie que seules des
-   * marques portent, on tombait sur une grille vide — et rien
-   * n'indiquait que c'était la combinaison, et non le site, qui était
-   * en cause. Les mêmes trois clics, répétés, finissent par donner
-   * l'impression que l'annuaire est à moitié vide.
-   *
-   * D'où ce découpage en trois temps. La recherche d'abord, l'onglet
-   * ensuite, et seulement à partir de ce qu'il en reste on établit les
-   * filtres proposés, chacun avec son compte. Un filtre affiché ramène
-   * donc toujours au moins une marque, et le chiffre dit combien avant
-   * même de cliquer.
+   * La recherche d'abord, l'onglet ensuite, et seulement à partir de ce
+   * qu'il en reste on établit les filtres proposés, chacun avec son
+   * compte. Un filtre affiché ramène donc toujours au moins une marque,
+   * et le chiffre dit combien avant même de cliquer.
    */
   const parRecherche = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -113,8 +238,6 @@ export default function BrandDirectory({
     );
   }, [brands, query]);
 
-  // Le compte des onglets s'établit AVANT l'onglet lui-même, sinon
-  // « Artistes » afficherait le nombre de marques et inversement.
   const parGenre = useMemo(() => {
     let marques = 0;
     let artistes = 0;
@@ -132,27 +255,18 @@ export default function BrandDirectory({
   }, [parRecherche, genre]);
 
   /*
-   * Chaque famille de filtres se compte SANS elle-même.
-   *
-   * Les catégories tiennent compte de la gamme choisie, la gamme tient
-   * compte de la catégorie, mais aucune ne se filtre par soi : sinon
-   * choisir « Streetwear » ferait disparaître toutes les autres
-   * catégories, et l'on ne pourrait plus changer d'avis sans repasser
-   * par « Tout effacer ».
+   * Chaque famille de filtres se compte SANS elle-même : sinon choisir
+   * « Streetwear » ferait disparaître toutes les autres catégories, et
+   * l'on ne pourrait plus changer d'avis sans tout effacer.
    */
   const categories = useMemo(() => {
     const compte = new Map<string, number>();
     for (const b of base) {
       if (tier && b.price_tier !== tier) continue;
       if (audience && uneAudience(b.audience) !== audience) continue;
-      // On compte SUR LA SÉLECTION EN COURS : le nombre affiché à côté
-      // d'une puce est donc « ce qu'il restera si je l'ajoute », et non
-      // un total abstrait qui promettrait plus qu'il ne tient.
       if (!choisies.every((c) => b.categories.includes(c))) continue;
       for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
     }
-    // Les mieux représentées d'abord : c'est ce qui donne le plus de
-    // chances de tomber sur quelque chose au premier clic.
     return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [base, tier, audience, choisies]);
 
@@ -163,8 +277,6 @@ export default function BrandDirectory({
       if (audience && uneAudience(b.audience) !== audience) continue;
       if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
     }
-    // L'ordre reste accessible → premium : un classement par nombre
-    // mettrait les prix dans le désordre, ce qui se lit très mal.
     return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
   }, [base, choisies, audience]);
 
@@ -176,20 +288,12 @@ export default function BrandDirectory({
       const a = uneAudience(b.audience);
       compte.set(a, (compte.get(a) ?? 0) + 1);
     }
-    // L'ordre de la constante, pas celui des effectifs : « Mixte,
-    // Femme, Homme » doit rester au même endroit d'une recherche à
-    // l'autre, sinon on clique à côté en revenant.
     return AUDIENCES.filter((a) => compte.has(a)).map((a) => [a, compte.get(a) ?? 0] as const);
   }, [base, tier, choisies]);
 
-  /*
-   * Un filtre qui n'a plus d'objet s'efface tout seul.
-   *
-   * Changer d'onglet avec « Bijoux » coché laissait un filtre actif sur
-   * une liste vide, et le compteur du bouton continuait d'annoncer un
-   * filtre qu'on ne voyait plus. Pas de boucle possible : ces listes se
-   * calculent sans le filtre qu'elles vérifient.
-   */
+  /* Un filtre qui n'a plus d'objet s'efface tout seul. Pas de boucle
+     possible : ces listes se calculent sans le filtre qu'elles
+     vérifient. */
   useEffect(() => {
     const disponibles = new Set(categories.map(([c]) => c));
     setChoisies((liste) =>
@@ -216,60 +320,41 @@ export default function BrandDirectory({
   );
 
   const chip =
-    "rounded-full px-3.5 py-1.5 text-[11.5px] font-bold uppercase tracking-[0.07em] transition";
-  const chipOff = "bg-white/12 text-white/80 hover:bg-white/20 hover:text-white";
-  const chipOn = "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)]";
+    "shrink-0 rounded-full px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.07em] transition";
+  const chipOff = "bg-white/12 text-white/84 hover:bg-white/20 hover:text-white";
+  const chipOn = "bg-white font-extrabold text-[var(--color-ink)]";
 
   return (
     <>
-      <div className="glass rise rise-1 mb-8 p-4 sm:p-5">
-        <div className="mb-3 flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
-          {(
-            [
-              ["tout", "Tout"],
-              ["marques", "Marques"],
-              ["artistes", "Artistes"],
-            ] as const
-          ).map(([id, libelle]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setGenre(id)}
-              aria-pressed={genre === id}
-              // Un onglet vide reste visible mais devient inerte :
-              // le faire disparaître déplacerait les deux autres sous
-              // le doigt au moment où l'on tape.
-              disabled={parGenre[id] === 0}
-              className={`flex-1 rounded-full px-3 py-2 text-[12.5px] font-bold transition disabled:cursor-default disabled:opacity-40 ${
-                genre === id
-                  ? "bg-white text-[var(--color-ink)]"
-                  : "text-white/72 hover:bg-white/12 hover:text-white"
-              }`}
-            >
-              {libelle}
-              <span
-                className={`ml-1.5 text-[11px] font-black tabular-nums ${
-                  genre === id ? "text-[var(--color-ink)]/55" : "text-white/45"
-                }`}
-              >
-                {parGenre[id]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* La recherche reste toujours là : c'est le geste le plus
-            fréquent. Les filtres, eux, se déplient — affichés en
-            permanence, ils occupaient la moitié d'un écran de
-            téléphone avant qu'on ait vu la première marque. */}
+      {/* ---------------- le bloc de recherche ---------------- */}
+      <div ref={bloc} className="glass rise rise-1 relative z-20 mb-4 p-3.5 sm:p-4">
         <div className="flex gap-2">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Chercher une marque, un style…"
-            className="champ min-w-0 flex-1"
-          />
+          <div className="relative min-w-0 flex-1">
+            <input
+              ref={champ}
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPanneau(true);
+              }}
+              onFocus={() => setPanneau(true)}
+              onKeyDown={toucheDansLeChamp}
+              placeholder="Chercher une marque, un style…"
+              aria-label="Chercher une marque, une pièce"
+              autoComplete="off"
+              className="champ w-full pr-16"
+            />
+            {/* Le raccourci s'efface dès qu'on tape : il rappelle un
+                geste, il n'a plus rien à dire une fois le curseur
+                dedans. */}
+            {!query && (
+              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10.5px] font-extrabold tracking-[0.06em] text-white/40">
+                ⌘ K
+              </span>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => setOuvert((v) => !v)}
@@ -292,46 +377,152 @@ export default function BrandDirectory({
           </button>
         </div>
 
-        {actifs > 0 && !ouvert && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {/* Cliquables pour se retirer : quand le panneau est
-                replié, c'est le seul moyen d'en enlever une sans tout
-                effacer. */}
-            {choisies.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => basculer(c)}
-                aria-label={`Retirer le filtre ${c}`}
-                className={`${chip} ${chipOn}`}
-              >
-                {c}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            ))}
-            {tier && <span className={`${chip} ${chipOn}`}>{PRICE_TIER_LABEL[tier]}</span>}
-            <button
-              type="button"
-              onClick={reinitialiser}
-              className="text-[12px] font-bold text-white/70 underline underline-offset-2 hover:text-white"
-            >
-              Tout effacer
-            </button>
+        {/* Les suggestions, dans le bloc et non en surimpression : une
+            couche flottante par-dessus une page déjà en verre se lit
+            très mal, et se ferme au moindre défilement. */}
+        {ouvrable && suggestions && (
+          <div className="mt-3 border-t border-white/16 pt-3">
+            {proposees.length > 0 && (
+              <>
+                <p className="eyebrow m-0 mb-2 text-white/45">
+                  Marques · {proposees.length} résultat{proposees.length > 1 ? "s" : ""}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {proposees.map((m, i) => (
+                    <Link
+                      key={m.slug}
+                      href={`/marques/${m.slug}`}
+                      onMouseEnter={() => setSurligne(i)}
+                      className={`flex items-center gap-3 rounded-[12px] px-2 py-2 transition ${
+                        i === surligne ? "bg-white/14" : "hover:bg-white/8"
+                      }`}
+                    >
+                      <span className="grid h-[34px] w-[34px] shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white/10">
+                        {m.visuel ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={vignette(m.visuel, 160, { logo: true })}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-contain p-1"
+                          />
+                        ) : (
+                          <span className="text-[11px] font-black text-white/60">
+                            {initiales(m.name)}
+                          </span>
+                        )}
+                      </span>
+
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-extrabold text-white">
+                        <Surligne texte={m.name} motif={query.trim()} />
+                      </span>
+
+                      <span className="hidden shrink-0 text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/50 sm:block">
+                        {[m.categorie, m.ville].filter(Boolean).join(" · ")}
+                      </span>
+
+                      {i === surligne && (
+                        <span className="hidden shrink-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/45 lg:block">
+                          Entrée ↵
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {suggestions.pieces.length > 0 && (
+              <>
+                <p className={`eyebrow m-0 mb-2 text-white/45 ${proposees.length > 0 ? "mt-4" : ""}`}>
+                  Pièces · {suggestions.totalPieces} résultat
+                  {suggestions.totalPieces > 1 ? "s" : ""}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.pieces.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={p.adresse}
+                      className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] bg-white/10 transition hover:scale-105"
+                      title={p.name}
+                    >
+                      {p.image && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={vignette(p.image, 160)}
+                          alt={p.name}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </Link>
+                  ))}
+                  {suggestions.totalPieces > suggestions.pieces.length && (
+                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[10px] bg-white/12 text-[12px] font-extrabold text-white/80">
+                      +{suggestions.totalPieces - suggestions.pieces.length}
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
+        {/* Le panneau des filtres fins. Ce qui est dans la ligne
+            collante répond à « quel genre de marque » ; ici on répond à
+            « pour qui » et « à quel prix », qu'on ne règle qu'une fois. */}
         {ouvert && (
           <div id="filtres" className="mt-4 border-t border-white/15 pt-4">
-            {/* LE VESTIAIRE PASSE AVANT LE STYLE.
-                C'est la première question d'un visiteur en arrivant :
-                est-ce que ça s'adresse à moi. On cherche un style DANS
-                un vestiaire, jamais l'inverse, donc ce choix vient en
-                premier dans le panneau.
+            {/*
+             * LES CATÉGORIES SONT ICI ET NON DANS LA LIGNE COLLANTE.
+             *
+             * Elles y étaient, avec leur compteur, et c'était le
+             * gabarit. Sauf que le gabarit en montrait quatre : l'annuaire
+             * en compte plus de quinze. La pilule débordait, il fallait la
+             * faire défiler à l'horizontale pour atteindre la dernière, et
+             * une barre de défilement en travers d'une barre de filtres,
+             * c'est laid et ça se manque au doigt.
+             *
+             * Le panneau leur donne la place de tenir sur trois lignes,
+             * toutes visibles d'un coup. Celles qu'on a choisies remontent
+             * dans la ligne collante : c'est là qu'il faut les voir, et
+             * c'est là qu'on veut pouvoir les retirer.
+             */}
+            {categories.length > 0 && (
+              <>
+                <p className="eyebrow m-0 mb-2">
+                  Catégorie
+                  {choisies.length > 0 && (
+                    <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
+                      elles se cumulent
+                    </span>
+                  )}
+                </p>
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setChoisies([])}
+                    className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
+                  >
+                    Toutes
+                  </button>
+                  {categories.map(([c, n]) => {
+                    const active = choisies.includes(c);
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => basculer(c)}
+                        aria-pressed={active}
+                        className={`${chip} ${active ? chipOn : chipOff}`}
+                      >
+                        {c}
+                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
-                Et il ne s'affiche que si l'annuaire contient vraiment
-                plusieurs vestiaires : une seule puce ne serait pas un
-                filtre, juste une étiquette sur laquelle cliquer pour
-                rien. */}
             {vestiaires.length > 1 && (
               <>
                 <p className="eyebrow m-0 mb-2">Vestiaire</p>
@@ -356,50 +547,9 @@ export default function BrandDirectory({
               </>
             )}
 
-            {/* Une famille sans aucune option ne s'affiche pas du
-                tout : un intertitre suivi d'un seul bouton « Toutes »
-                ne renseigne sur rien. */}
-            {categories.length > 0 && (
-              <>
-                <p className="eyebrow m-0 mb-2">
-                  Catégorie
-                  {choisies.length > 0 && (
-                    <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
-                      elles se cumulent
-                    </span>
-                  )}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setChoisies([])}
-                    className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
-                  >
-                    Toutes
-                  </button>
-                  {categories.map(([c, n]) => {
-                    const active = choisies.includes(c);
-                    return (
-                      <button
-                        key={c}
-                        onClick={() => basculer(c)}
-                        aria-pressed={active}
-                        className={`${chip} ${active ? chipOn : chipOff}`}
-                      >
-                        {c}
-                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
             {gammes.length > 1 && (
               <>
-                <p
-                  className={`eyebrow m-0 mb-2 ${categories.length > 0 ? "mt-4" : ""}`}
-                >
-                  Gamme de prix
-                </p>
+                <p className="eyebrow m-0 mb-2">Gamme de prix</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setTier(null)}
@@ -434,6 +584,76 @@ export default function BrandDirectory({
         )}
       </div>
 
+      {/* ---------------- la ligne de filtres, collante ----------------
+
+          ELLE RESTE SOUS LA MAIN PENDANT QU'ON DESCEND, et c'est tout
+          l'intérêt : sur cent trente-six marques, l'envie d'affiner
+          arrive au milieu de la liste, pas en haut. Il fallait remonter
+          jusqu'aux filtres, donc perdre l'endroit où l'on en était.
+
+          Elle se cale sous la barre de navigation, qui est elle-même
+          collante : les deux hauteurs sont accordées à la main faute de
+          pouvoir les mesurer en CSS. */}
+      <div className="sticky top-[70px] z-30 mb-3 sm:top-[86px]">
+        <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.44)] p-2.5 backdrop-blur-[20px] sm:flex-nowrap sm:rounded-full">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            {(
+              [
+                ["tout", "Tout"],
+                ["marques", "Marques"],
+                ["artistes", "Artistes"],
+              ] as const
+            ).map(([id, libelle]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setGenre(id)}
+                aria-pressed={genre === id}
+                // Un onglet vide reste visible mais devient inerte : le
+                // faire disparaître déplacerait les deux autres sous le
+                // doigt au moment où l'on tape.
+                disabled={parGenre[id] === 0}
+                className={`${chip} disabled:cursor-default disabled:opacity-40 ${
+                  genre === id ? chipOn : chipOff
+                }`}
+              >
+                {libelle}
+                <span className="ml-1.5 opacity-55 tabular-nums">{parGenre[id]}</span>
+              </button>
+            ))}
+
+            {/*
+             * SEULES LES CATÉGORIES CHOISIES REMONTENT ICI, et elles se
+             * retirent d'un clic.
+             *
+             * C'est le seul endroit où il faut les voir : un filtre actif
+             * caché derrière un panneau replié rend la liste incomplète
+             * sans qu'on comprenne pourquoi. Le reste du choix se fait
+             * dans le panneau, où il y a la place.
+             */}
+            {choisies.length > 0 && (
+              <>
+                <span aria-hidden className="mx-0.5 h-[18px] w-px shrink-0 bg-white/20" />
+                {choisies.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => basculer(c)}
+                    aria-label={`Retirer le filtre ${c}`}
+                    className={`${chip} ${chipOn}`}
+                  >
+                    {c}
+                    <span className="ml-1.5 opacity-40">×</span>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+
+          <SelecteurDensite densite={densite} choisir={choisirDensite} offertes={offertes} />
+        </div>
+      </div>
+
       {results.length === 0 ? (
         <div className="glass p-8 text-center">
           <p className="m-0 text-[15px] text-white/90">
@@ -450,12 +670,15 @@ export default function BrandDirectory({
           favoris={favoris}
           notes={notes}
           memoire="annuaire"
+          densite={densite}
+          onDensite={choisirDensite}
+          selecteur={false}
           aside={
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
               {/* Le mot suit l'onglet : afficher « 12 marques » alors
-                  qu'on a demandé les artistes se remarque tout de
-                  suite, et donne l'impression que le filtre n'a pas
-                  été pris en compte. */}
+                  qu'on a demandé les artistes se remarque tout de suite,
+                  et donne l'impression que le filtre n'a pas été pris en
+                  compte. */}
               {results.length}{" "}
               {genre === "artistes"
                 ? `artiste${results.length > 1 ? "s" : ""}`
@@ -464,6 +687,38 @@ export default function BrandDirectory({
           }
         />
       )}
+    </>
+  );
+}
+
+/** Deux lettres, quand une marque n'a pas de visuel lisible. */
+function initiales(nom: string): string {
+  const mots = nom.trim().split(/\s+/).slice(0, 2);
+  return mots.map((m) => m.charAt(0).toUpperCase()).join("");
+}
+
+/**
+ * Le préfixe tapé, mis en évidence dans le nom.
+ *
+ * ON N'ÉCRIT PAS DE HTML À LA MAIN ICI. La tentation est de fabriquer
+ * une chaîne avec des balises et de l'injecter : c'est exactement
+ * l'endroit où l'on ouvre une faille, puisque le texte surligné vient
+ * de ce que quelqu'un a tapé. On découpe donc, et React se charge
+ * d'échapper chaque morceau.
+ */
+function Surligne({ texte, motif }: { texte: string; motif: string }) {
+  if (!motif) return <>{texte}</>;
+
+  const i = texte.toLowerCase().indexOf(motif.toLowerCase());
+  if (i < 0) return <>{texte}</>;
+
+  return (
+    <>
+      {texte.slice(0, i)}
+      <mark className="rounded-[3px] bg-[rgba(var(--accent-1),0.45)] px-0.5 text-white">
+        {texte.slice(i, i + motif.length)}
+      </mark>
+      {texte.slice(i + motif.length)}
     </>
   );
 }

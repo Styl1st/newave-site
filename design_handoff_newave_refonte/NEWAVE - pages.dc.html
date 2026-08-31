@@ -29,6 +29,600 @@
 </helmet>
 
 <section style="padding:56px 48px 40px;max-width:none">
+  <div style="max-width:920px;margin:0 0 44px">
+    <p style="margin:0;font:900 11px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,236,255,.55)">Tour 9 · Les outils de travail</p>
+    <h1 style="margin:14px 0 0;font:800 40px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Éditer une marque, piloter le site</h1>
+    <p style="margin:18px 0 0;max-width:790px;font:500 16px/1.65 Archivo;color:rgba(242,236,255,.78);text-wrap:pretty">Deux écrans, deux problèmes différents. <a href="#9a">9a</a> <strong style="font-weight:800;color:#fff">La fiche marque</strong> — aujourd'hui un formulaire d'un seul tenant, quatre sections empilées, un bouton tout en bas : on ne sait jamais ce qu'il manque pour publier, ni à quoi ressemble le résultat. J'ajoute un aperçu vivant, la check-list de <code style="font:600 14px/1 ui-monospace,Menlo,monospace;color:#fff">publication.ts</code> rendue visible et cliquable, et l'enregistrement qui te suit. <a href="#9b">9b</a> <strong style="font-weight:800;color:#fff">Le tableau de bord</strong> — aujourd'hui quatre compteurs, un mur de statistiques, et les actions tout en bas. Je remets le travail à faire en premier. <a href="#9c">9c</a> <strong style="font-weight:800;color:#fff">La liste des marques</strong> — la sélection groupée, rendue lisible.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:64px;align-items:flex-start">
+
+    <!-- ============ 9a — Fiche marque ============ -->
+    <div id="9a" style="width:1180px;flex:0 0 auto">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+        <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">9a</span>
+        <h2 style="margin:0;font:800 20px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Éditer une marque</h2>
+        <span style="font:600 13px/1 Archivo;color:rgba(242,236,255,.5)">sommaire à gauche, aperçu + check-list à droite, barre d'enregistrement flottante</span>
+      </div>
+
+      <div data-scene style="position:relative;overflow:hidden;border-radius:26px;background:#2c1d70;box-shadow:0 40px 90px -30px rgba(20,6,50,.8)">
+        <div data-decor style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+          <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#2c1d70 0%,#43499f 24%,#7d4fae 46%,#9a459d 64%,#4c48a8 84%,#2a1c6c 100%)"></div>
+          <div style="position:absolute;inset:-26%;filter:blur(30px);background:radial-gradient(circle at 26% 22%,rgba(232,111,216,.5) 0%,transparent 44%),radial-gradient(circle at 78% 66%,rgba(90,114,224,.55) 0%,transparent 44%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 82%)"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(44,16,100,.5) 0%,rgba(44,16,100,.12) 26%,rgba(44,16,100,.16) 72%,rgba(44,16,100,.6) 100%)"></div>
+        </div>
+
+        <div style="position:relative;z-index:10;padding:14px 24px 40px">
+          <!-- barre d'administration -->
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:12px 18px">
+            <nav style="display:flex;flex-wrap:wrap;align-items:center;gap:2px">
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Tableau de bord</a>
+              <a href="#9a" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="m21 16-5-5L5 20"></path></svg>Posts</a>
+              <a href="#9c" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.24)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"></circle></svg>Marques</a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h5l2 3h4l2-3h5"></path><path d="M5 5h14l2 7v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"></path></svg>Candidatures<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">4</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4"></path><path d="M4 4h11l-1.6 3.5L15 11H4"></path></svg>Signalements<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">2</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Comptes</a>
+            </nav>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font:700 11px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.58)">Léa Bernard</span>
+              <span style="padding:8px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 11.5px/1 Archivo">Déconnexion</span>
+            </div>
+          </div>
+
+          <!-- en-tête de fiche, collant -->
+          <div style="position:relative;margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;border-radius:20px;background-color:rgba(8,2,30,.44);backdrop-filter:blur(20px) saturate(1.3);border:1px solid rgba(255,255,255,.22);box-shadow:0 12px 34px -14px rgba(20,6,50,.8);padding:14px 18px">
+            <div style="display:flex;align-items:center;gap:14px;min-width:0">
+              <span style="flex:0 0 auto;width:46px;height:46px;border-radius:13px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px);display:grid;place-items:center;font:600 7.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <a href="#9c" style="font:700 11px/1 Archivo;color:rgba(255,255,255,.6)">Marques</a>
+                  <span style="font:700 11px/1 Archivo;color:rgba(255,255,255,.35)">/</span>
+                  <span style="font:700 11px/1 Archivo;color:rgba(255,255,255,.6)">Atelier Sable</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+                  <h2 style="margin:0;font:800 24px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Atelier Sable</h2>
+                  <span style="border-radius:999px;background:rgba(255,255,255,.15);padding:5px 11px 6px;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8)">Brouillon</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:7px;margin-right:4px;font:700 12px/1 Archivo;color:rgba(255,255,255,.62)"><span style="width:7px;height:7px;border-radius:999px;background:#f0c05a;box-shadow:0 0 0 3px rgba(240,192,90,.22)"></span>3 modifications non enregistrées</span>
+              <span style="padding:9px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 12px/1 Archivo">Voir la page</span>
+              <span style="padding:9px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 12px/1 Archivo">Pièces <span style="color:#f0c05a">0</span></span>
+              <span style="padding:9px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 12px/1 Archivo">Statistiques</span>
+              <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.75)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="5" r="1.4" fill="currentColor"></circle><circle cx="12" cy="12" r="1.4" fill="currentColor"></circle><circle cx="12" cy="19" r="1.4" fill="currentColor"></circle></svg></span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:208px minmax(0,1fr) 320px;gap:20px;align-items:start;margin-top:18px">
+            <!-- sommaire -->
+            <aside style="border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:16px">
+              <p style="margin:0 0 12px;padding:0 8px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">La fiche</p>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;background:#fff;color:#170a33;font:800 13px/1 Archivo">L'identité <span style="display:grid;place-items:center;width:17px;height:17px;border-radius:999px;background:#1d7a4f;color:#fff"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></span>
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.84);font:700 13px/1 Archivo">La démarche <span style="display:grid;place-items:center;width:17px;height:17px;border-radius:999px;background:#1d7a4f;color:#fff"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></span>
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.84);font:700 13px/1 Archivo">Le classement <span style="display:grid;place-items:center;width:17px;height:17px;border-radius:999px;background:rgba(240,192,90,.9);color:#3a2200;font:900 10px/1 Archivo">2</span></span>
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.84);font:700 13px/1 Archivo">Liens &amp; publication <span style="display:grid;place-items:center;width:17px;height:17px;border-radius:999px;background:rgba(240,192,90,.9);color:#3a2200;font:900 10px/1 Archivo">1</span></span>
+                <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.84);font:700 13px/1 Archivo">Les gérants <span style="font:800 11px/1 Archivo;color:rgba(255,255,255,.45)">1</span></span>
+              </div>
+              <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15)">
+                <p style="margin:0;font:500 12px/1.6 Archivo;color:rgba(255,255,255,.6)">Tout est modifiable dans n'importe quel ordre. Le sommaire dit juste où il reste quelque chose à faire.</p>
+              </div>
+            </aside>
+
+            <!-- formulaire -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:24px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+                  <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.01em;color:#fff">L'identité</h3>
+                  <span style="font:600 12px/1 Archivo;color:rgba(255,255,255,.5)">Ce que le visiteur voit en premier</span>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:20px;margin-top:20px">
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Nom de la marque <span style="color:#f0a5b6">·</span></label>
+                    <span style="display:block;margin-top:8px;width:100%;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)">Atelier Sable</span>
+                  </div>
+
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Phrase d'accroche</label>
+                    <p style="margin:5px 0 0;font:500 12px/1.4 Archivo;color:rgba(255,255,255,.58)">Une ligne, affichée sur la carte de l'annuaire.</p>
+                    <span style="display:block;margin-top:8px;width:100%;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));background-color:rgba(44,16,100,.34);border:1px solid rgba(232,111,216,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 3px rgba(232,111,216,.3)">Céramique et bijoux, à l'unité<span style="display:inline-block;width:1.5px;height:16px;margin-left:1px;background:#fff;vertical-align:-3px"></span></span>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px">
+                      <span style="font:600 11.5px/1 Archivo;color:rgba(255,255,255,.5)">Vu à droite, dans l'aperçu</span>
+                      <span style="font:700 11.5px/1 Archivo;color:rgba(255,255,255,.5)">29 / 70</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Le visuel de la marque</label>
+                    <p style="margin:5px 0 0;font:500 12px/1.4 Archivo;color:rgba(255,255,255,.58)">Une image ou une vidéo courte. C'est la bannière de sa page.</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+                      <div style="border-radius:15px;overflow:hidden;border:1px solid rgba(255,255,255,.24)">
+                        <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,#efe6ff 0 9px,#e2d5f9 9px 18px);display:grid;place-items:center">
+                          <span style="font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#7b6aa8">couverture 16:9</span>
+                          <span style="position:absolute;right:9px;top:9px;display:grid;place-items:center;width:26px;height:26px;border-radius:999px;background:rgba(14,5,38,.7);color:#fff"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+                        </div>
+                        <p style="margin:0;padding:9px 12px;background:rgba(8,2,30,.4);font:700 11px/1 Archivo;color:rgba(255,255,255,.8)">Remplacer</p>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:120px;border-radius:15px;border:1px dashed rgba(255,255,255,.35);background:rgba(255,255,255,.05);text-align:center;padding:16px">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
+                        <span style="font:800 12px/1.4 Archivo;color:#fff">Glisse une vidéo ici</span>
+                        <span style="font:500 11px/1.4 Archivo;color:rgba(255,255,255,.55)">MP4, 10 s max. Elle remplace l'image.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Logo</label>
+                    <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+                      <span style="flex:0 0 auto;width:72px;height:72px;border-radius:16px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px);display:grid;place-items:center;font:600 8px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7b6aa8">logo</span>
+                      <div style="display:flex;gap:8px">
+                        <span style="padding:10px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 12px/1 Archivo">Remplacer</span>
+                        <span style="padding:10px 16px;border-radius:999px;color:rgba(255,255,255,.6);font:700 12px/1 Archivo">Retirer</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:24px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px">
+                  <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.01em;color:#fff">Le classement</h3>
+                  <span style="font:600 12px/1 Archivo;color:rgba(255,255,255,.5)">Ce qui la fait apparaître dans les filtres</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px">
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Pays</label>
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)">France <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+                  </div>
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Ville</label>
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)">Marseille <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+                  </div>
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Année</label>
+                    <span style="display:block;margin-top:8px;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:rgba(255,255,255,.45);background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)">2023</span>
+                  </div>
+                </div>
+
+                <div style="margin-top:20px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                    <label style="font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Catégories</label>
+                    <span style="font:700 11.5px/1 Archivo;color:rgba(255,255,255,.5)">2 choisies</span>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:#fff;color:#170a33;font:800 12px/1 Archivo"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Bijoux</span>
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:#fff;color:#170a33;font:800 12px/1 Archivo"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Céramique</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Streetwear</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Denim</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Maille</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Minimalisme</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Vintage</span>
+                    <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);font:700 12px/1 Archivo">Accessoires</span>
+                  </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px">
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Gamme de prix</label>
+                    <div style="display:flex;gap:3px;margin-top:8px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);padding:3px">
+                      <span style="flex:1;text-align:center;padding:7px 4px;border-radius:999px;font:700 11px/1 Archivo;color:rgba(255,255,255,.72)">€</span>
+                      <span style="flex:1;text-align:center;padding:7px 4px;border-radius:999px;background:#fff;color:#170a33;font:800 11px/1 Archivo">€€</span>
+                      <span style="flex:1;text-align:center;padding:7px 4px;border-radius:999px;font:700 11px/1 Archivo;color:rgba(255,255,255,.72)">€€€</span>
+                    </div>
+                    <p style="margin:6px 0 0;font:500 11px/1.4 Archivo;color:rgba(255,255,255,.5)">Intermédiaire</p>
+                  </div>
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">À qui ça s'adresse</label>
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)">Mixte <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+                  </div>
+                  <div>
+                    <label style="display:block;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Comment on achète</label>
+                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;border-radius:13px;padding:12px 16px;font:600 14px/1.4 Archivo;color:#fff;background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)">Boutique en ligne <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+                  </div>
+                </div>
+                <p style="margin:12px 0 0;font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.55)">Ce champ commande la check-list, à droite. « Boutique en ligne » exige un catalogue ; « sur commande », « bientôt » et « profil Instagram » ne l'exigent pas — leur catalogue vide est l'état annoncé.</p>
+              </section>
+            </div>
+
+            <!-- aperçu + check-list -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 34px -14px rgba(20,6,50,.85)">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;background:rgba(8,2,30,.52);backdrop-filter:blur(16px)">
+                  <span style="font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.75)">Aperçu</span>
+                  <div style="display:flex;gap:3px;border-radius:999px;background:rgba(255,255,255,.1);padding:3px">
+                    <span style="padding:5px 11px;border-radius:999px;background:#fff;color:#170a33;font:800 10px/1 Archivo">Carte</span>
+                    <span style="padding:5px 11px;border-radius:999px;color:rgba(255,255,255,.7);font:700 10px/1 Archivo">Page</span>
+                  </div>
+                </div>
+                <div style="padding:16px;background:linear-gradient(168deg,rgba(78,91,192,.32),rgba(158,99,214,.28))">
+                  <div style="border-radius:18px;overflow:hidden;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.3),inset 0 1px 0 #fff">
+                    <div style="position:relative;aspect-ratio:16/10;background:repeating-linear-gradient(135deg,#efe6ff 0 8px,#e2d5f9 8px 16px);display:grid;place-items:center">
+                      <span style="font:600 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#7b6aa8">couverture</span>
+                    </div>
+                    <div style="padding:16px;background-image:linear-gradient(180deg,rgba(124,92,200,.19) 0%,rgba(124,92,200,.09) 45%,rgba(124,92,200,.03) 100%)">
+                      <h4 style="margin:0;font:800 15px/1.2 Archivo;letter-spacing:-.01em;color:#170a33">Atelier Sable</h4>
+                      <p style="margin:4px 0 0;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Marseille · France</p>
+                      <p style="margin:8px 0 0;font:500 12.5px/1.5 Archivo;color:#4a3d6e">Céramique et bijoux, à l'unité</p>
+                    </div>
+                  </div>
+                  <p style="margin:12px 0 0;font:500 11.5px/1.5 Archivo;color:rgba(255,255,255,.75)">C'est ce qu'on verra dans l'annuaire. Il se met à jour pendant que tu tapes.</p>
+                </div>
+              </div>
+
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:20px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                  <h3 style="margin:0;font:800 15.5px/1.2 Archivo;letter-spacing:-.01em;color:#fff">Prêt à publier</h3>
+                  <span style="font:800 11.5px/1 Archivo;color:rgba(255,255,255,.6)">2 / 3</span>
+                </div>
+                <span style="display:block;margin-top:10px;height:5px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden"><span style="display:block;width:66%;height:100%;border-radius:999px;background-image:linear-gradient(90deg,rgba(232,111,216,.9),rgba(90,114,224,.9))"></span></span>
+
+                <div style="display:flex;flex-direction:column;gap:4px;margin-top:16px">
+                  <span style="display:flex;align-items:flex-start;gap:10px;padding:7px 0"><span style="flex:0 0 auto;margin-top:1px;display:grid;place-items:center;width:18px;height:18px;border-radius:999px;background:rgba(29,122,79,.9);color:#fff"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="min-width:0"><span style="display:block;font:700 13px/1.35 Archivo;color:rgba(255,255,255,.7)">Un visuel</span><span style="display:block;margin-top:2px;font:500 11.5px/1.45 Archivo;color:rgba(255,255,255,.45)">Couverture ou logo — la couverture est là.</span></span></span>
+                  <span style="display:flex;align-items:flex-start;gap:10px;padding:7px 0"><span style="flex:0 0 auto;margin-top:1px;display:grid;place-items:center;width:18px;height:18px;border-radius:999px;background:rgba(29,122,79,.9);color:#fff"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="min-width:0"><span style="display:block;font:700 13px/1.35 Archivo;color:rgba(255,255,255,.7)">Du texte</span><span style="display:block;margin-top:2px;font:500 11.5px/1.45 Archivo;color:rgba(255,255,255,.45)">Accroche ou description — l'accroche vient d'être remplie.</span></span></span>
+                  <a href="#9a" style="display:flex;align-items:flex-start;gap:10px;padding:11px;margin:2px -11px;border-radius:12px;background:rgba(240,192,90,.16);box-shadow:inset 0 0 0 1px rgba(240,192,90,.4)">
+                    <span style="flex:0 0 auto;margin-top:1px;width:18px;height:18px;border-radius:999px;border:1.5px solid rgba(240,192,90,.9)"></span>
+                    <span style="min-width:0">
+                      <span style="display:block;font:800 13px/1.35 Archivo;color:#fff">Au moins une pièce</span>
+                      <span style="display:block;margin-top:4px;font:500 11.5px/1.5 Archivo;color:rgba(255,255,255,.72)">Lance l'import du catalogue, ou ajoute une pièce à la main.</span>
+                      <span style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.14);font:800 11px/1 Archivo;color:#fff">Importer depuis la boutique</span>
+                    </span>
+                  </a>
+                </div>
+
+                <p style="margin:16px 0 0;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.09);font:500 12px/1.6 Archivo;color:rgba(255,255,255,.72)">Cette condition tombe si tu passes <strong style="font-weight:800;color:#fff">Comment on achète</strong> sur « sur commande », « bientôt » ou « profil Instagram » : un catalogue vide devient alors l'état annoncé, pas un raté d'import.</p>
+
+                <p style="margin:14px 0 0;font:500 12px/1.6 Archivo;color:rgba(255,255,255,.55)">Trois conditions, pas une de plus — la boutique et les catégories n'en font pas partie. C'est la définition unique du site : une fiche écartée par la publication groupée te dira ici exactement pourquoi, avec le même texte.</p>
+              </section>
+
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:20px">
+                <h3 style="margin:0;font:800 15.5px/1.2 Archivo;letter-spacing:-.01em;color:#fff">Les gérants</h3>
+                <p style="margin:7px 0 0;font:500 12px/1.55 Archivo;color:rgba(255,255,255,.6)">Qui peut modifier cette fiche et son catalogue.</p>
+                <div style="display:flex;align-items:center;gap:11px;margin-top:14px;padding:10px;border-radius:14px;background:rgba(255,255,255,.09)">
+                  <span style="flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background-image:linear-gradient(140deg,rgba(232,111,216,.45),rgba(90,114,224,.4));font:900 12px/1 Archivo;color:#fff">C</span>
+                  <span style="min-width:0;flex:1"><span style="display:block;font:800 12.5px/1.2 Archivo;color:#fff">Claire Meunier</span><span style="display:block;margin-top:3px;font:500 11px/1.2 Archivo;color:rgba(255,255,255,.55)">claire@ateliersable.fr</span></span>
+                  <span style="font:700 11px/1 Archivo;color:rgba(255,255,255,.55)">Retirer</span>
+                </div>
+                <span style="display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:9px 15px;border-radius:999px;border:1px dashed rgba(255,255,255,.35);font:800 11.5px/1 Archivo;color:rgba(255,255,255,.8)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Ajouter un gérant</span>
+              </section>
+            </div>
+          </div>
+
+          <!-- barre d'enregistrement flottante -->
+          <div style="position:relative;margin:22px auto 0;width:fit-content;display:flex;align-items:center;gap:16px;padding:12px 14px 12px 22px;border-radius:999px;background-color:rgba(8,2,30,.72);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.26);box-shadow:0 18px 44px -14px rgba(12,3,36,.9)">
+            <span style="display:inline-flex;align-items:center;gap:9px;font:700 13px/1 Archivo;color:#fff"><span style="width:8px;height:8px;border-radius:999px;background:#f0c05a;box-shadow:0 0 0 3px rgba(240,192,90,.22)"></span>3 modifications non enregistrées</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
+            <span style="font:700 12.5px/1 Archivo;color:rgba(255,255,255,.65)">Annuler</span>
+            <span style="padding:11px 22px;border-radius:999px;background:#fff;color:#170a33;font:900 13px/1 Archivo;box-shadow:0 4px 16px rgba(35,12,85,.4)">Enregistrer</span>
+            <span style="padding:11px 20px;border-radius:999px;background-image:linear-gradient(118deg,rgba(232,111,216,.7),rgba(90,114,224,.7));box-shadow:inset 0 1px 0 rgba(255,255,255,.3);color:#fff;font:900 13px/1 Archivo;opacity:.45">Enregistrer et publier</span>
+          </div>
+          <p style="margin:10px 0 0;text-align:center;font:500 12px/1.5 Archivo;color:rgba(255,255,255,.5)">« Enregistrer et publier » reste éteint tant que la check-list n'est pas complète — l'infobulle dit ce qui manque.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 9b — Tableau de bord ============ -->
+    <div id="9b" style="width:1180px;flex:0 0 auto">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+        <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">9b</span>
+        <h2 style="margin:0;font:800 20px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Tableau de bord</h2>
+        <span style="font:600 13px/1 Archivo;color:rgba(242,236,255,.5)">le travail à faire d'abord, les chiffres ensuite</span>
+      </div>
+
+      <div data-scene style="position:relative;overflow:hidden;border-radius:26px;background:#2c1d70;box-shadow:0 40px 90px -30px rgba(20,6,50,.8)">
+        <div data-decor style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+          <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#2c1d70 0%,#43499f 24%,#7d4fae 46%,#9a459d 64%,#4c48a8 84%,#2a1c6c 100%)"></div>
+          <div style="position:absolute;inset:-26%;filter:blur(30px);background:radial-gradient(circle at 74% 20%,rgba(90,114,224,.5) 0%,transparent 42%),radial-gradient(circle at 22% 74%,rgba(232,111,216,.44) 0%,transparent 44%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 82%)"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(44,16,100,.5) 0%,rgba(44,16,100,.12) 26%,rgba(44,16,100,.16) 72%,rgba(44,16,100,.6) 100%)"></div>
+        </div>
+
+        <div style="position:relative;z-index:10;padding:14px 24px 40px">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:12px 18px">
+            <nav style="display:flex;flex-wrap:wrap;align-items:center;gap:2px">
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.24)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Tableau de bord</a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="m21 16-5-5L5 20"></path></svg>Posts</a>
+              <a href="#9c" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"></circle></svg>Marques</a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h5l2 3h4l2-3h5"></path><path d="M5 5h14l2 7v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"></path></svg>Candidatures<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">4</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4"></path><path d="M4 4h11l-1.6 3.5L15 11H4"></path></svg>Signalements<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">2</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Comptes</a>
+            </nav>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font:700 11px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.58)">Léa Bernard</span>
+              <span style="padding:8px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 11.5px/1 Archivo">Déconnexion</span>
+            </div>
+          </div>
+
+          <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;margin:34px 0 22px">
+            <div>
+              <p style="margin:0;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Administration</p>
+              <h2 style="margin:8px 0 0;font:800 33px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Ce qui t'attend</h2>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:7px;padding:12px 20px;border-radius:20px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.26),inset 0 1px 0 #fff;font:800 13px/1 Archivo"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Nouvelle marque</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;padding:12px 20px;border-radius:20px;border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.08);color:#fff;font:800 13px/1 Archivo"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Nouveau post</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;padding:12px 20px;border-radius:20px;border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.08);color:#fff;font:800 13px/1 Archivo">Mettre à jour les catalogues</span>
+            </div>
+          </header>
+
+          <!-- la file de travail -->
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+            <a href="#9b" data-tilt style="display:flex;align-items:center;gap:16px;padding:20px;border-radius:20px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.26),inset 0 1px 0 #fff">
+              <span style="flex:0 0 auto;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#c2273f;color:#fff;font:900 22px/1 Archivo">4</span>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Candidatures à traiter</span>
+                <span style="display:block;margin-top:5px;font:500 12.5px/1.5 Archivo;color:#4a3d6e">La plus ancienne attend depuis 6 jours. Deux ont déjà une boutique en ligne.</span>
+              </span>
+              <span style="flex:0 0 auto;font:900 19px/1 Archivo;color:#3a2470">→</span>
+            </a>
+
+            <a href="#9b" data-tilt style="display:flex;align-items:center;gap:16px;padding:20px;border-radius:20px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.26),inset 0 1px 0 #fff">
+              <span style="flex:0 0 auto;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#c2273f;color:#fff;font:900 22px/1 Archivo">2</span>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Signalements ouverts</span>
+                <span style="display:block;margin-top:5px;font:500 12.5px/1.5 Archivo;color:#4a3d6e">Un avis signalé sur Basalte, une boutique déclarée fermée.</span>
+              </span>
+              <span style="flex:0 0 auto;font:900 19px/1 Archivo;color:#3a2470">→</span>
+            </a>
+
+            <a href="#9c" data-tilt style="display:flex;align-items:center;gap:16px;padding:20px;border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3)">
+              <span style="flex:0 0 auto;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(29,122,79,.9);color:#fff;font:900 22px/1 Archivo">11</span>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Brouillons publiables</span>
+                <span style="display:block;margin-top:5px;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.75)">Fiches complètes qui n'attendent qu'un clic. Elles sont déjà cochées à l'arrivée.</span>
+              </span>
+              <span style="flex:0 0 auto;font:900 19px/1 Archivo;color:#fff">→</span>
+            </a>
+
+            <a href="#9c" data-tilt style="display:flex;align-items:center;gap:16px;padding:20px;border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3)">
+              <span style="flex:0 0 auto;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:rgba(240,192,90,.9);color:#3a2200;font:900 22px/1 Archivo">17</span>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Fiches incomplètes</span>
+                <span style="display:block;margin-top:5px;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.75)">9 sans visuel, 6 sans catalogue, 2 sans texte. Bloquées à la publication.</span>
+              </span>
+              <span style="flex:0 0 auto;font:900 19px/1 Archivo;color:#fff">→</span>
+            </a>
+          </div>
+
+          <!-- l'état du site, en une ligne -->
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;margin-top:14px;border-radius:20px;background-color:rgba(8,2,30,.44);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);padding:16px 6px">
+            <span style="flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 12px"><span style="font:800 26px/1 Archivo;letter-spacing:-.03em;color:#fff">136</span><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">marques</span><span style="font:600 11px/1 Archivo;color:rgba(255,255,255,.45)">28 en brouillon</span></span>
+            <span style="width:1px;height:38px;background:rgba(255,255,255,.14)"></span>
+            <span style="flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 12px"><span style="font:800 26px/1 Archivo;letter-spacing:-.03em;color:#fff">1 284</span><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">pièces</span><span style="font:600 11px/1 Archivo;color:rgba(255,255,255,.45)">+46 cette semaine</span></span>
+            <span style="width:1px;height:38px;background:rgba(255,255,255,.14)"></span>
+            <span style="flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 12px"><span style="font:800 26px/1 Archivo;letter-spacing:-.03em;color:#fff">78</span><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">posts</span><span style="font:600 11px/1 Archivo;color:rgba(255,255,255,.45)">tous publiés</span></span>
+            <span style="width:1px;height:38px;background:rgba(255,255,255,.14)"></span>
+            <span style="flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 12px"><span style="font:800 26px/1 Archivo;letter-spacing:-.03em;color:#fff">2 941</span><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">comptes</span><span style="font:600 11px/1 Archivo;color:rgba(255,255,255,.45)">3 administrateurs</span></span>
+            <span style="width:1px;height:38px;background:rgba(255,255,255,.14)"></span>
+            <span style="flex:1;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 12px"><span style="font:800 26px/1 Archivo;letter-spacing:-.03em;color:#fff">21</span><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">gérants</span><span style="font:600 11px/1 Archivo;color:rgba(255,255,255,.45)">sur 19 marques</span></span>
+          </div>
+
+          <!-- fréquentation -->
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;margin-top:28px;align-items:start">
+            <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:22px">
+              <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px">
+                <h3 style="margin:0;font:800 18px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Fréquentation</h3>
+                <div style="display:flex;gap:3px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);padding:3px">
+                  <span style="padding:6px 13px;border-radius:999px;color:rgba(255,255,255,.72);font:700 11px/1 Archivo">7 j</span>
+                  <span style="padding:6px 13px;border-radius:999px;background:#fff;color:#170a33;font:800 11px/1 Archivo">30 j</span>
+                  <span style="padding:6px 13px;border-radius:999px;color:rgba(255,255,255,.72);font:700 11px/1 Archivo">90 j</span>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-wrap:wrap;gap:26px;margin-top:18px">
+                <span style="display:flex;flex-direction:column;gap:5px"><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">Pages vues</span><span style="font:800 30px/1 Archivo;letter-spacing:-.03em;color:#fff">18 402</span><span style="display:inline-flex;align-items:center;gap:5px;font:800 12px/1 Archivo;color:#7de2ab"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></svg>+12 %</span></span>
+                <span style="display:flex;flex-direction:column;gap:5px"><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">Clics vers les marques</span><span style="font:800 30px/1 Archivo;letter-spacing:-.03em;color:#fff">2 118</span><span style="display:inline-flex;align-items:center;gap:5px;font:800 12px/1 Archivo;color:#7de2ab"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></svg>+8 %</span></span>
+                <span style="display:flex;flex-direction:column;gap:5px"><span style="font:700 10px/1 Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)">Nouveaux comptes</span><span style="font:800 30px/1 Archivo;letter-spacing:-.03em;color:#fff">214</span><span style="display:inline-flex;align-items:center;gap:5px;font:800 12px/1 Archivo;color:#f0a5b6"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>−4 %</span></span>
+              </div>
+
+              <div style="display:flex;align-items:flex-end;gap:2px;height:132px;margin-top:22px">
+                <span style="flex:1;height:34%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:41%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:29%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:48%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:56%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:44%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:38%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:52%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:61%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:49%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:43%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:58%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:71%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:64%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:55%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:67%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:78%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:72%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:63%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:81%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:88%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:76%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:69%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:84%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:92%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:79%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:86%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:97%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.4))"></span>
+                <span style="flex:1;height:88%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+                <span style="flex:1;height:74%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.35))"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font:700 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4)">
+                <span>1 août</span><span>Aujourd'hui</span>
+              </div>
+              <p style="margin:16px 0 0;font:500 12px/1.6 Archivo;color:rgba(255,255,255,.5)">Ces chiffres comptent des pages vues, pas des personnes : aucun cookie ni identifiant n'est posé. Tes propres pages d'administration ne sont pas comptées.</p>
+            </section>
+
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:20px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <p style="margin:0;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7)">Ce que tu leur apportes</p>
+                </div>
+                <div style="display:flex;gap:3px;margin-top:12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);padding:3px">
+                  <span style="flex:1;text-align:center;padding:6px 4px;border-radius:999px;background:#fff;color:#170a33;font:800 10.5px/1 Archivo">Clics</span>
+                  <span style="flex:1;text-align:center;padding:6px 4px;border-radius:999px;color:rgba(255,255,255,.72);font:700 10.5px/1 Archivo">Favoris</span>
+                  <span style="flex:1;text-align:center;padding:6px 4px;border-radius:999px;color:rgba(255,255,255,.72);font:700 10.5px/1 Archivo">Vues</span>
+                </div>
+                <ol style="margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px">
+                  <li><span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 12.5px/1.2 Archivo;color:rgba(255,255,255,.9)">Engineered By Aryes</span><span style="font:800 12.5px/1 Archivo;color:#fff">412</span></span><span style="display:block;margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:rgba(255,255,255,.75)"></span></span></li>
+                  <li><span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 12.5px/1.2 Archivo;color:rgba(255,255,255,.9)">Pollen Fabrics</span><span style="font:800 12.5px/1 Archivo;color:#fff">287</span></span><span style="display:block;margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><span style="display:block;width:70%;height:100%;border-radius:999px;background:rgba(255,255,255,.75)"></span></span></li>
+                  <li><span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 12.5px/1.2 Archivo;color:rgba(255,255,255,.9)">Basalte</span><span style="font:800 12.5px/1 Archivo;color:#fff">198</span></span><span style="display:block;margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><span style="display:block;width:48%;height:100%;border-radius:999px;background:rgba(255,255,255,.75)"></span></span></li>
+                  <li><span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 12.5px/1.2 Archivo;color:rgba(255,255,255,.9)">Ourse</span><span style="font:800 12.5px/1 Archivo;color:#fff">156</span></span><span style="display:block;margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><span style="display:block;width:38%;height:100%;border-radius:999px;background:rgba(255,255,255,.75)"></span></span></li>
+                  <li><span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 12.5px/1.2 Archivo;color:rgba(255,255,255,.9)">Maison Kaolin</span><span style="font:800 12.5px/1 Archivo;color:#fff">131</span></span><span style="display:block;margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><span style="display:block;width:32%;height:100%;border-radius:999px;background:rgba(255,255,255,.75)"></span></span></li>
+                </ol>
+              </section>
+
+              <section style="border-radius:20px;background-color:rgba(8,2,30,.22);background-image:linear-gradient(150deg,rgba(44,16,100,.48),rgba(44,16,100,.28));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.3);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:20px">
+                <p style="margin:0;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7)">Dernières actions</p>
+                <div style="display:flex;flex-direction:column;gap:13px;margin-top:14px">
+                  <p style="margin:0;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.82)"><strong style="font-weight:800;color:#fff">Toi</strong> as publié 6 marques · il y a 2 h</p>
+                  <p style="margin:0;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.82)"><strong style="font-weight:800;color:#fff">Claire Meunier</strong> a importé 14 pièces sur Atelier Sable · hier</p>
+                  <p style="margin:0;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.82)"><strong style="font-weight:800;color:#fff">Sam Ortiz</strong> a rejoint comme gérant de Basalte · 2 j</p>
+                  <p style="margin:0;font:500 12.5px/1.5 Archivo;color:rgba(255,255,255,.82)"><strong style="font-weight:800;color:#fff">Toi</strong> as refusé une candidature · 3 j</p>
+                </div>
+                <p style="margin:14px 0 0;font:500 11.5px/1.5 Archivo;color:rgba(255,255,255,.45)">Proposition — il n'y a pas de journal d'activité aujourd'hui.</p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 9c — Liste des marques ============ -->
+    <div id="9c" style="width:1180px;flex:0 0 auto">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+        <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">9c</span>
+        <h2 style="margin:0;font:800 20px/1.2 Archivo;letter-spacing:-.02em;color:#fff">La liste des marques</h2>
+        <span style="font:600 13px/1 Archivo;color:rgba(242,236,255,.5)">filtres visibles, complétude en colonne, barre d'action flottante</span>
+      </div>
+
+      <div data-scene style="position:relative;overflow:hidden;border-radius:26px;background:#2c1d70;box-shadow:0 40px 90px -30px rgba(20,6,50,.8)">
+        <div data-decor style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+          <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#2c1d70 0%,#43499f 24%,#7d4fae 46%,#9a459d 64%,#4c48a8 84%,#2a1c6c 100%)"></div>
+          <div style="position:absolute;inset:-26%;filter:blur(30px);background:radial-gradient(circle at 30% 24%,rgba(232,111,216,.46) 0%,transparent 44%),radial-gradient(circle at 76% 70%,rgba(90,114,224,.5) 0%,transparent 44%);mask-image:radial-gradient(ellipse 62% 62% at 50% 50%,#000 30%,rgba(0,0,0,.55) 58%,transparent 82%)"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(44,16,100,.5) 0%,rgba(44,16,100,.12) 26%,rgba(44,16,100,.16) 72%,rgba(44,16,100,.6) 100%)"></div>
+        </div>
+
+        <div style="position:relative;z-index:10;padding:14px 24px 40px">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:12px 18px">
+            <nav style="display:flex;flex-wrap:wrap;align-items:center;gap:2px">
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Tableau de bord</a>
+              <a href="#9c" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="m21 16-5-5L5 20"></path></svg>Posts</a>
+              <a href="#9c" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.24)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"></circle></svg>Marques</a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h5l2 3h4l2-3h5"></path><path d="M5 5h14l2 7v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z"></path></svg>Candidatures<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">4</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4"></path><path d="M4 4h11l-1.6 3.5L15 11H4"></path></svg>Signalements<span style="display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c2273f;font:900 9.5px/1 Archivo;color:#fff">2</span></a>
+              <a href="#9b" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:999px;font:700 12.5px/1 Archivo;color:rgba(255,255,255,.82)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Comptes</a>
+            </nav>
+            <span style="padding:8px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:700 11.5px/1 Archivo">Déconnexion</span>
+          </div>
+
+          <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin:32px 0 18px">
+            <div>
+              <p style="margin:0;font:900 10px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)">Annuaire</p>
+              <h2 style="margin:8px 0 0;font:800 29px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Marques</h2>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:7px;padding:12px 20px;border-radius:20px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.26),inset 0 1px 0 #fff;font:800 13px/1 Archivo"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Nouvelle marque</span>
+          </header>
+
+          <!-- filtres : vues enregistrées + recherche -->
+          <div style="border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:16px 18px">
+            <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+              <span style="flex:0 0 auto;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-right:2px">Vues</span>
+              <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11.5px/1 Archivo">Toutes 136</span>
+              <span style="padding:8px 14px;border-radius:999px;background:#fff;color:#170a33;font:800 11.5px/1 Archivo">Publiables 11</span>
+              <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11.5px/1 Archivo">Incomplètes 17</span>
+              <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11.5px/1 Archivo">Sans catalogue 22</span>
+              <span style="padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.84);font:700 11.5px/1 Archivo">À la une 5</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px dashed rgba(255,255,255,.32);color:rgba(255,255,255,.7);font:700 11.5px/1 Archivo"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Enregistrer cette vue</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+              <span style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;border-radius:13px;padding:11px 16px;font:600 13.5px/1.4 Archivo;color:rgba(255,255,255,.5);background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));background-color:rgba(44,16,100,.34);border:1px solid rgba(255,255,255,.22)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4.5-4.5"></path></svg>Nom, pseudo, ville, site</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:13px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:800 12.5px/1 Archivo">Pays<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:13px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:800 12.5px/1 Archivo">Catégorie<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:13px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:800 12.5px/1 Archivo">Gamme<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:13px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:800 12.5px/1 Archivo">Trier : nom<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+            </div>
+          </div>
+
+          <!-- en-têtes de tableau -->
+          <div style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:16px 16px 8px;font:900 9.5px/1 Archivo;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5)">
+            <span style="display:grid;place-items:center"><span style="width:17px;height:17px;border-radius:5px;border:1.5px solid rgba(255,255,255,.45)"></span></span>
+            <span></span><span>Marque</span><span>Publiable ?</span><span>Catalogue</span><span>État</span><span></span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div data-tilt style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:12px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff;outline:3px solid #fff;outline-offset:0">
+              <span style="display:grid;place-items:center;width:19px;height:19px;border-radius:5px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span style="width:52px;height:52px;border-radius:13px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px)"></span>
+              <span style="min-width:0"><span style="display:block;font:800 15px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Bruit Blanc</span><span style="display:block;margin-top:4px;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Nantes · France · @bruitblanc</span></span>
+              <span style="display:flex;align-items:center;gap:9px"><span style="flex:1;height:6px;border-radius:999px;background:rgba(23,10,51,.1);overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:#1d7a4f"></span></span><span style="font:800 11.5px/1 Archivo;color:#1d7a4f;white-space:nowrap">Prête</span></span>
+              <span style="font:700 12.5px/1.3 Archivo;color:#4a3d6e">23 pièces</span>
+              <span style="justify-self:start;border-radius:999px;background:rgba(23,10,51,.07);padding:5px 11px;font:900 10px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#8a7bab">Brouillon</span>
+              <span style="justify-self:end;font:900 17px/1 Archivo;color:#3a2470">→</span>
+            </div>
+
+            <div data-tilt style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:12px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff;outline:3px solid #fff;outline-offset:0">
+              <span style="display:grid;place-items:center;width:19px;height:19px;border-radius:5px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span style="width:52px;height:52px;border-radius:13px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="min-width:0"><span style="display:block;font:800 15px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Studio Polaire</span><span style="display:block;margin-top:4px;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Copenhague · Danemark · gérée</span></span>
+              <span style="display:flex;align-items:center;gap:9px"><span style="flex:1;height:6px;border-radius:999px;background:rgba(23,10,51,.1);overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:#1d7a4f"></span></span><span style="font:800 11.5px/1 Archivo;color:#1d7a4f;white-space:nowrap">Prête</span></span>
+              <span style="font:700 12.5px/1.3 Archivo;color:#4a3d6e">41 pièces</span>
+              <span style="justify-self:start;border-radius:999px;background:rgba(23,10,51,.07);padding:5px 11px;font:900 10px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#8a7bab">Brouillon</span>
+              <span style="justify-self:end;font:900 17px/1 Archivo;color:#3a2470">→</span>
+            </div>
+
+            <div data-tilt style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:12px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff;outline:3px solid #fff;outline-offset:0">
+              <span style="display:grid;place-items:center;width:19px;height:19px;border-radius:5px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span style="width:52px;height:52px;border-radius:13px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e2d5f9 7px 14px)"></span>
+              <span style="min-width:0"><span style="display:block;font:800 15px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Atelier Sable</span><span style="display:block;margin-top:4px;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Marseille · France · gérée</span></span>
+              <span style="display:flex;align-items:center;gap:9px"><span style="flex:1;height:6px;border-radius:999px;background:rgba(23,10,51,.1);overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:#1d7a4f"></span></span><span style="font:800 11.5px/1 Archivo;color:#1d7a4f;white-space:nowrap">Prête</span></span>
+              <span style="font:700 12.5px/1.3 Archivo;color:#8a7bab">Sur commande</span>
+              <span style="justify-self:start;border-radius:999px;background:rgba(23,10,51,.07);padding:5px 11px;font:900 10px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#8a7bab">Brouillon</span>
+              <span style="justify-self:end;font:900 17px/1 Archivo;color:#3a2470">→</span>
+            </div>
+
+            <div data-tilt style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:12px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+              <span style="display:grid;place-items:center;width:19px;height:19px;border-radius:5px;border:1.5px solid rgba(23,10,51,.3)"></span>
+              <span style="width:52px;height:52px;border-radius:13px;background:rgba(23,10,51,.07);display:grid;place-items:center;font:600 7px/1.3 ui-monospace,Menlo,monospace;text-align:center;color:#8b7cb0">sans<br>visuel</span>
+              <span style="min-width:0"><span style="display:block;font:800 15px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Calcaire</span><span style="display:block;margin-top:4px;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">France · @calcaire.studio</span></span>
+              <span style="display:flex;align-items:center;gap:9px"><span style="flex:1;height:6px;border-radius:999px;background:rgba(23,10,51,.1);overflow:hidden"><span style="display:block;width:33%;height:100%;border-radius:999px;background:#c2273f"></span></span><span style="font:800 11.5px/1 Archivo;color:#c2273f;white-space:nowrap">Sans visuel</span></span>
+              <span style="font:700 12.5px/1.3 Archivo;color:#8a7bab">Aucune pièce</span>
+              <span style="justify-self:start;border-radius:999px;background:rgba(23,10,51,.07);padding:5px 11px;font:900 10px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#8a7bab">Brouillon</span>
+              <span style="justify-self:end;font:900 17px/1 Archivo;color:#3a2470">→</span>
+            </div>
+
+            <div data-tilt style="display:grid;grid-template-columns:34px 52px minmax(0,1fr) 190px 130px 100px 34px;gap:14px;align-items:center;padding:12px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
+              <span style="display:grid;place-items:center;width:19px;height:19px;border-radius:5px;border:1.5px solid rgba(23,10,51,.3)"></span>
+              <span style="width:52px;height:52px;border-radius:13px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#e0d2fa 7px 14px)"></span>
+              <span style="min-width:0"><span style="display:flex;align-items:center;gap:8px"><span style="font:800 15px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">Engineered By Aryes</span><span style="font:900 9px/1 Archivo;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:linear-gradient(120deg,#7b52e8,#c05fd8);padding:4px 9px 5px;border-radius:999px">À la une</span></span><span style="display:block;margin-top:4px;font:600 11px/1.3 Archivo;letter-spacing:.05em;text-transform:uppercase;color:#6a5a92">Paris · France · gérée</span></span>
+              <span style="display:flex;align-items:center;gap:9px"><span style="flex:1;height:6px;border-radius:999px;background:rgba(23,10,51,.1);overflow:hidden"><span style="display:block;width:100%;height:100%;border-radius:999px;background:#1d7a4f"></span></span><span style="font:800 11.5px/1 Archivo;color:#1d7a4f;white-space:nowrap">Complète</span></span>
+              <span style="font:700 12.5px/1.3 Archivo;color:#4a3d6e">14 pièces</span>
+              <span style="justify-self:start;border-radius:999px;background:rgba(23,10,51,.07);padding:5px 11px;font:900 10px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#2f7a4f">Publié</span>
+              <span style="justify-self:end;font:900 17px/1 Archivo;color:#3a2470">→</span>
+            </div>
+          </div>
+
+          <!-- barre d'action flottante -->
+          <div style="position:relative;margin:22px auto 0;width:fit-content;display:flex;align-items:center;gap:14px;padding:12px 14px 12px 22px;border-radius:999px;background-color:rgba(8,2,30,.72);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.26);box-shadow:0 18px 44px -14px rgba(12,3,36,.9)">
+            <span style="font:800 12.5px/1 Archivo;letter-spacing:.08em;text-transform:uppercase;color:#fff">3 sélectionnées</span>
+            <span style="font:600 12px/1 Archivo;color:rgba(255,255,255,.55)">sur 11 affichées</span>
+            <span style="font:700 12px/1 Archivo;color:rgba(255,255,255,.75);border-bottom:1px solid rgba(255,255,255,.35);padding-bottom:2px">Tout cocher</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
+            <span style="padding:10px 20px;border-radius:999px;background:#fff;color:#170a33;font:900 12px/1 Archivo;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 14px rgba(35,12,85,.4)">Publier</span>
+            <span style="padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);color:#fff;font:800 12px/1 Archivo;letter-spacing:.06em;text-transform:uppercase">Retirer</span>
+            <span style="padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.7);font:800 12px/1 Archivo;letter-spacing:.06em;text-transform:uppercase">Supprimer</span>
+          </div>
+          <p style="margin:10px 0 0;text-align:center;font:500 12px/1.5 Archivo;color:rgba(255,255,255,.5)">La barre suit le défilement en bas d'écran : on coche la dernière ligne sans remonter. Elle ne parle que des lignes affichées.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:16px 48px 40px;max-width:none">
   <div style="max-width:900px;margin:0 0 44px">
     <p style="margin:0;font:900 11px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,236,255,.55)">Tour 8 · Compte &amp; réglages</p>
     <h1 style="margin:14px 0 0;font:800 40px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Des réglages, pas un long scroll</h1>
@@ -86,7 +680,7 @@
             <aside style="border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:16px">
               <p style="margin:0 0 12px;padding:0 8px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">Réglages</p>
               <div style="display:flex;flex-direction:column;gap:2px">
-                <span style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;background:#fff;color:#170a33;font:800 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"></path></svg>Profil</span>
+                <span style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;background:#fff;color:#170a33;font:800 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Profil</span>
                 <a href="#8b" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"></path></svg>Apparence</a>
                 <span style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Sécurité</span>
                 <span style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16Z"></path><path d="M10 21h4"></path></svg>Notifications <span style="margin-left:auto;font:800 9px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45)">à venir</span></span>
@@ -268,7 +862,7 @@
             <aside style="border-radius:20px;background-color:rgba(8,2,30,.24);background-image:linear-gradient(150deg,rgba(44,16,100,.5),rgba(44,16,100,.3));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.26),inset 0 1px 0 rgba(255,255,255,.3);padding:16px">
               <p style="margin:0 0 12px;padding:0 8px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">Réglages</p>
               <div style="display:flex;flex-direction:column;gap:2px">
-                <a href="#8a" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"></path></svg>Profil</a>
+                <a href="#8a" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Profil</a>
                 <span style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;background:#fff;color:#170a33;font:800 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"></path></svg>Apparence</span>
                 <a href="#8a" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Sécurité</a>
                 <a href="#8a" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;color:rgba(255,255,255,.84);font:700 13.5px/1 Archivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16Z"></path><path d="M10 21h4"></path></svg>Notifications</a>
@@ -299,7 +893,7 @@
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
                     <span style="display:block;overflow:hidden;border-radius:14px;border:1px solid #fff;box-shadow:0 0 0 3px rgba(255,255,255,.34)">
                       <span style="display:block;height:52px;background:linear-gradient(140deg,#33217f,#4e5bc0,#9e63d6,#c255c4,#5a54c8,#31217c)"></span>
-                      <span style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.12);padding:9px;font:800 11.5px/1 Archivo;color:#fff"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>NEWAVE</span>
+                      <span style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.12);padding:9px;font:800 11.5px/1 Archivo;color:#fff"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>NEWAVE</span>
                     </span>
                     <span style="display:block;overflow:hidden;border-radius:14px;border:1px solid rgba(255,255,255,.25)">
                       <span style="display:block;height:52px;background:linear-gradient(140deg,#0d1030,#182a5c,#1f4b7a,#2d6f8f,#1a3560,#0b0e2a)"></span>
@@ -318,7 +912,7 @@
                       <span style="display:block;text-align:center;background:rgba(255,255,255,.08);padding:9px;font:700 11.5px/1 Archivo;color:#fff">Graphite</span>
                     </span>
                     <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:100%;min-height:88px;border-radius:14px;border:1px dashed rgba(255,255,255,.35);color:rgba(255,255,255,.72);text-align:center">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
                       <span style="font:800 11px/1.3 Archivo">Enregistrer<br>ces couleurs</span>
                     </span>
                   </div>
@@ -387,7 +981,7 @@
 
                   <p style="margin:16px 0 0;font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.58)">L'<strong style="font-weight:800;color:rgba(255,255,255,.8)">ampleur</strong> dit de combien le décor se déplace, la <strong style="font-weight:800;color:rgba(255,255,255,.8)">vitesse</strong> à quel rythme. Une ampleur à zéro fige tout.</p>
 
-                  <span style="display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:9px 15px;border-radius:999px;border:1px dashed rgba(255,255,255,.35);font:800 11.5px/1 Archivo;color:rgba(255,255,255,.8)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Enregistrer ce réglage</span>
+                  <span style="display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:9px 15px;border-radius:999px;border:1px dashed rgba(255,255,255,.35);font:800 11.5px/1 Archivo;color:rgba(255,255,255,.8)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Enregistrer ce réglage</span>
                 </section>
 
                 <div style="border-radius:20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);padding:18px">
@@ -693,7 +1287,7 @@
                 <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+11</span>
               </span>
               <span style="font:600 11.5px/1.3 Archivo;color:#8a7bab">Ajoutée il y a 3 j</span>
-              <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;justify-self:end"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;justify-self:end"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
               <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
             </div>
 
@@ -727,7 +1321,7 @@
                 <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+2</span>
               </span>
               <span style="font:600 11.5px/1.3 Archivo;color:#8a7bab">Ajoutée il y a 2 sem.</span>
-              <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;justify-self:end"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;justify-self:end"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
               <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
             </div>
           </div>
@@ -1536,7 +2130,7 @@
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+8</span>
             </div>
-            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
             <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
           </div>
 
@@ -1552,7 +2146,7 @@
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+2</span>
             </div>
-            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
             <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:#170a33;color:#fff"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
           </div>
 
@@ -1587,7 +2181,7 @@
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+31</span>
             </div>
-            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
             <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
           </div>
           <div data-tilt="" style="display:flex;align-items:center;gap:18px;padding:14px 16px;border-radius:18px;color:#170a33;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 8px 22px rgba(52,18,110,.24),inset 0 1px 0 #fff">
@@ -1602,7 +2196,7 @@
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#efe6ff 0 7px,#e0d2fa 7px 14px)"></span>
               <span style="flex:1;aspect-ratio:1;border-radius:10px;background:repeating-linear-gradient(135deg,#eee6ff 0 7px,#ded0f8 7px 14px);display:grid;place-items:center;font:800 11px/1 Archivo;color:#6a5a92">+5</span>
             </div>
-            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>Aperçu</span>
+            <span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#170a33;color:#fff;font:900 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>Aperçu</span>
             <span style="flex:0 0 auto;display:grid;place-items:center;width:36px;height:36px;border-radius:999px;background:rgba(20,8,50,.1);color:#170a33"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z"></path></svg></span>
           </div>
         </div>

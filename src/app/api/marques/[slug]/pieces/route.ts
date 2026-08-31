@@ -34,12 +34,28 @@ export async function GET(
    * d'une fois par visiteur.
    */
   if (new URL(request.url).searchParams.get("images") === "1") {
+    const images = products
+      .map((p) => p.images?.[0] ?? p.image_url)
+      .filter((u): u is string => Boolean(u));
+
     return NextResponse.json(
       {
-        images: products
-          .map((p) => p.images?.[0] ?? p.image_url)
-          .filter((u): u is string => Boolean(u))
-          .slice(0, 8),
+        images: images.slice(0, 8),
+        /*
+         * LE TOTAL, PARCE QU'ON N'ENVOIE QU'UN ÉCHANTILLON.
+         *
+         * La ligne de marque de l'annuaire pose quatre vignettes et
+         * écrit « +8 » sur la dernière. Sans ce nombre, elle ne pouvait
+         * l'écrire qu'à partir des huit adresses reçues : une marque à
+         * quarante pièces annonçait « +4 », c'est-à-dire moins que la
+         * vérité, précisément là où le chiffre sert à donner envie
+         * d'ouvrir.
+         *
+         * On compte les pièces MONTRABLES et non toutes les pièces :
+         * c'est ce que le visiteur verra en cliquant, et promettre des
+         * pièces sans photo serait promettre des cases vides.
+         */
+        total: images.length,
       },
       {
         headers: {

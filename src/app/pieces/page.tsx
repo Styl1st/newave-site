@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import PieceDirectory from "@/components/PieceDirectory";
+import { enChiffres } from "@/components/chiffres";
 import { getVitrine } from "@/lib/queries";
 import { repartirParMarque } from "@/lib/melange";
 import { aUneIllustration } from "@/lib/medias";
@@ -35,16 +36,37 @@ export default async function PiecesPage() {
    */
   const pieces = repartirParMarque((await getVitrine()).filter(aUneIllustration));
 
+  /*
+   * LES DEUX CHIFFRES DE L'EN-TÊTE SONT COMPTÉS, JAMAIS ÉCRITS.
+   *
+   * Le gabarit affiche « 1 284 pièces · 136 marques » : ce sont des
+   * ordres de grandeur de maquette. Un chiffre figé dans le code
+   * devient faux le jour où une marque publie, et personne ne s'en
+   * aperçoit — c'est le genre d'erreur qui décrédibilise le reste de la
+   * page, puisqu'elle est invérifiable à l'œil.
+   */
+  const marques = new Set(pieces.map((p) => p.brand?.slug).filter(Boolean)).size;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
-      <header className="rise mb-10">
-        <p className="eyebrow m-0">La vitrine</p>
-        <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
-          Les pièces
-        </h1>
-        <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
-          Toutes marques confondues, dans un ordre qui change à chaque visite. Filtre par
-          rayon et par prix, et clique pour arriver chez la marque.
+      {/* L'identité à gauche, le compte à droite, alignés par le bas.
+          Le compte passe sous le texte quand la largeur ne suffit
+          plus — c'est la ligne qu'on sacrifie en premier. */}
+      <header className="rise mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <div className="min-w-0">
+          <p className="eyebrow m-0">La vitrine</p>
+          <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
+            Les pièces
+          </h1>
+          <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
+            Toutes marques confondues, dans un ordre qui change à chaque visite. Filtre par
+            rayon et par prix, et clique pour arriver chez la marque.
+          </p>
+        </div>
+
+        <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/55">
+          {enChiffres(pieces.length)} pièce{pieces.length > 1 ? "s" : ""} ·{" "}
+          {enChiffres(marques)} marque{marques > 1 ? "s" : ""}
         </p>
       </header>
 

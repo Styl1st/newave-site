@@ -134,6 +134,21 @@ export function EmailForm({ actuel }: { actuel: string }) {
         />
       </div>
 
+      {/* La règle des deux boîtes se dit AVANT l'envoi, pas seulement
+          après. Quelqu'un qui ne la découvre qu'une fois les messages
+          partis a déjà eu le temps de croire que le changement était
+          pris, et de refermer la page. Elle s'efface quand le message
+          d'envoi la reprend : la répéter juste au-dessus donnerait
+          l'impression que l'un des deux blocs parle d'autre chose. */}
+      {!note?.ok && (
+        <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white/85">
+          Le changement se confirme dans les{" "}
+          <strong className="font-bold text-white">deux</strong> boîtes, l&apos;ancienne et
+          la nouvelle. Tant que les deux liens ne sont pas ouverts, ton adresse actuelle
+          reste la bonne.
+        </p>
+      )}
+
       {note && (
         <p
           className={
@@ -230,14 +245,10 @@ export function LienReinitialisation({ email }: { email: string }) {
         type="button"
         onClick={envoyer}
         disabled={pending || attente > 0}
-        className="card-light px-7 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
+        className="card-light w-full px-7 py-3.5 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="relative z-3 text-[14px] font-extrabold">
-          {pending
-            ? "Envoi…"
-            : attente > 0
-              ? `Renvoyer dans ${attente} s`
-              : "Réinitialiser mon mot de passe"}
+          {pending ? "Envoi…" : "Réinitialiser mon mot de passe"}
         </span>
       </button>
 
@@ -245,11 +256,21 @@ export function LienReinitialisation({ email }: { email: string }) {
         <p
           className={
             note.ok
-              ? "m-0 mt-4 text-[13px] font-bold text-white/85"
+              ? "m-0 mt-4 text-[13px] font-bold leading-relaxed text-white/85"
               : "m-0 mt-4 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] text-white"
           }
         >
           {note.text}
+        </p>
+      )}
+
+      {/* Le décompte sort du bouton. Dedans, il remplaçait le seul
+          endroit qui disait ce que ce bouton fait : on voyait « Renvoyer
+          dans 47 s » sans plus savoir renvoyer quoi, et l'attente
+          paraissait être une panne. */}
+      {attente > 0 && (
+        <p className="m-0 mt-2 text-[12px] font-semibold text-white/50">
+          Renvoyer dans {attente} s
         </p>
       )}
     </div>

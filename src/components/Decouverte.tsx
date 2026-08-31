@@ -29,6 +29,12 @@ import VisuelAdaptatif from "./VisuelAdaptatif";
  * ailleurs sur la page ; ici personne n'est favorisé, c'est le seul
  * endroit du site où une marque arrivée hier a exactement les mêmes
  * chances d'être vue qu'une autre.
+ *
+ * SA PLACE A CHANGÉ AVEC LA REFONTE DE L'ACCUEIL. Elle était au milieu
+ * d'une pile de blocs ; elle est maintenant la charnière entre le
+ * manifeste et le corps à deux colonnes. C'est la première chose qu'on
+ * voit en passant le pli, et il faut que ce soit des marques : une
+ * phrase, aussi juste soit-elle, ne prouve rien.
  */
 
 const COMBIEN = 14;
@@ -292,10 +298,16 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
   return (
     <section className="py-6">
       <div className="glass overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-4 pb-3 sm:px-6 sm:pt-5">
-          <p className="m-0 text-[clamp(15px,3.6vw,19px)] font-extrabold tracking-[-0.01em] text-white">
-            Découvre de nouvelles marques !
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 p-4 pb-3 sm:px-6 sm:pt-5">
+          {/* Œil-de-bœuf puis titre : la même tête de section que partout
+              ailleurs depuis la refonte. Une bande posée au milieu de la
+              page a besoin de dire ce qu'elle est avant de bouger. */}
+          <div className="min-w-0">
+            <p className="eyebrow m-0">Au fil de l&apos;annuaire</p>
+            <p className="m-0 mt-1.5 text-[clamp(15px,3.6vw,19px)] font-extrabold tracking-[-0.02em] text-white">
+              Découvre de nouvelles marques !
+            </p>
+          </div>
 
           <div className="flex items-center gap-2">
             {/* Deux flèches, sur ordinateur seulement : au doigt on fait

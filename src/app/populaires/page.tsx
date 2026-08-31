@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import BrandCard from "@/components/BrandCard";
+import ClassementMarques from "@/components/ClassementMarques";
 import Grille from "@/components/Grille";
 import ProductCard from "@/components/ProductCard";
 import Rang from "@/components/Rang";
 import SelecteurClassement from "@/components/SelecteurClassement";
+import { enChiffres } from "@/components/chiffres";
 import { enEtoiles } from "@/components/Etoiles";
 import { getMostLiked, getMyLikes } from "@/lib/likes";
-import { getMostFavorited } from "@/lib/favorites";
+import { getMostFavorited, getMyFavorites } from "@/lib/favorites";
 import { avisMinimum, getMieuxNoteesMarques, getMieuxNoteesPieces } from "@/lib/avis";
 
 export const metadata: Metadata = {
@@ -59,6 +61,16 @@ export default async function PopulairesPage({ searchParams }: Props) {
   ];
   const myLikes = await getMyLikes(idsAimes);
 
+  /*
+   * Le cœur du classement des marques était décoratif : il affichait un
+   * total sans jamais proposer d'y ajouter le sien. Une seule requête
+   * pour toute la page — jamais une par ligne, c'est déjà la règle de
+   * `getMyFavorites` — et le geste redevient possible là où il est le
+   * plus tentant, c'est-à-dire en lisant ce que suivent les autres.
+   */
+  const mesFavoris =
+    marques.length > 0 ? await getMyFavorites(marques.map((m) => m.brand.id)) : new Set<string>();
+
   const explication =
     onglet === "notes-pieces" || onglet === "notes-marques" ? (
       <>
@@ -70,7 +82,11 @@ export default async function PopulairesPage({ searchParams }: Props) {
     ) : onglet === "marques" ? (
       <>
         Les maisons que la communauté suit. Un favori ne s&apos;efface pas avec le temps :
-        suivre une marque n&apos;est pas un geste d&apos;humeur.
+        suivre une marque n&apos;est pas un geste d&apos;humeur.{" "}
+        <strong className="font-extrabold text-white">
+          Rien n&apos;est acheté ici : c&apos;est le nombre de cœurs, et rien d&apos;autre,
+          qui fait l&apos;ordre.
+        </strong>
       </>
     ) : onglet === "toujours" ? (
       <>
@@ -88,6 +104,31 @@ export default async function PopulairesPage({ searchParams }: Props) {
       </>
     );
 
+  /*
+   * LE COMPTEUR NE COMPTE QUE CE QUI EST À L'ÉCRAN.
+   *
+   * Il serait facile d'écrire « 3 412 cœurs · 136 marques » en allant
+   * chercher les totaux du site. Mais le chiffre serait posé au-dessus
+   * d'une liste qui en montre quarante, et l'on comparerait sans le
+   * savoir deux ensembles différents. Ce qu'on affiche ici est la somme
+   * exacte de ce qui est classé en dessous, ni plus ni moins.
+   */
+  const compteurs =
+    onglet === "marques"
+      ? marques.length > 0
+        ? `${enChiffres(marques.reduce((somme, m) => somme + m.favoris, 0))} cœurs · ${marques.length} marques classées`
+        : null
+      : onglet === "semaine" || onglet === "toujours"
+        ? classement.length > 0
+          ? `${enChiffres(classement.reduce((somme, c) => somme + c.likes, 0))} coups de cœur · ${classement.length} pièces classées`
+          : null
+        : onglet === "notes-pieces"
+          ? piecesNotees.length > 0
+            ? `${piecesNotees.length} pièces notées · ${seuil} avis minimum`
+            : null
+          : marquesNotees.length > 0
+            ? `${marquesNotees.length} marques notées · ${seuil} avis minimum`
+            : null;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -99,10 +140,28 @@ export default async function PopulairesPage({ searchParams }: Props) {
         <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
           {explication}
         </p>
+        {compteurs && (
+          <p className="m-0 mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
+            {compteurs}
+          </p>
+        )}
       </header>
 
-      <SelecteurClassement onglets={ONGLETS} actif={onglet} base="/populaires" defaut="semaine" />
-
+      {/*
+       * « Recompté à chaque visite » et non « mis à jour ce matin » :
+       * cette page est en `force-dynamic`, le classement est donc établi
+       * au moment où elle s'ouvre. Annoncer une heure de calcul qui
+       * n'existe pas serait faux, et sur un classement public un chiffre
+       * faux coûte plus cher qu'un chiffre absent.
+       */}
+      <SelecteurClassement
+        onglets={ONGLETS}
+        actif={onglet}
+        base="/populaires"
+        defaut="semaine"
+        prefixe="Classement"
+        aside="Recompté à chaque visite"
+      />
 
       {onglet === "notes-pieces" ? (
         piecesNotees.length === 0 ? (
@@ -144,27 +203,14 @@ export default async function PopulairesPage({ searchParams }: Props) {
         marques.length === 0 ? (
           <Vide>Aucune marque n&apos;a encore été mise en favori.</Vide>
         ) : (
+          /*
+           * Le seul onglet qui ne passe pas par `Grille` : ce classement
+           * ne se règle pas en densité, il se lit en podium puis en
+           * lignes. Les quatre autres classent des cartes, et une carte
+           * se regarde en grille.
+           */
           <div className="rise rise-1">
-            <Grille
-              variante="marques"
-              memoire="classement-marques"
-              aside={
-                <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                  {marques.length} marque{marques.length > 1 ? "s" : ""} suivie
-                  {marques.length > 1 ? "s" : ""}
-                </p>
-              }
-            >
-              {marques.map(({ brand, favoris }, i) => (
-                <div key={brand.id} data-reveal className="relative h-full">
-                  <Rang place={i + 1} />
-                  <span className="absolute right-3 top-3 z-20 rounded-full bg-[rgba(20,8,50,0.78)] px-2.5 py-1 text-[11px] font-black text-white backdrop-blur-sm">
-                    {favoris} ♥
-                  </span>
-                  <BrandCard brand={brand} />
-                </div>
-              ))}
-            </Grille>
+            <ClassementMarques classement={marques} favoris={[...mesFavoris]} />
           </div>
         )
       ) : classement.length === 0 ? (

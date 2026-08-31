@@ -1,44 +1,155 @@
 import Link from "next/link";
-import BrandCard from "@/components/BrandCard";
+import ColonneAccueil from "@/components/ColonneAccueil";
 import Decouverte from "@/components/Decouverte";
-import Grille from "@/components/Grille";
+import MarqueDeLaSemaine from "@/components/MarqueDeLaSemaine";
+import PiecesAuHasard from "@/components/PiecesAuHasard";
+import PostCard from "@/components/PostCard";
+import RechercheAccueil from "@/components/RechercheAccueil";
+import { enChiffres } from "@/components/chiffres";
 import { IconChevron } from "@/components/Icons";
-import PostMosaic from "@/components/PostMosaic";
-import { getBrands, getPosts } from "@/lib/queries";
+import { getBrands, getPosts, getVitrine } from "@/lib/queries";
+import { getMyFavorites } from "@/lib/favorites";
+import { aUneIllustration } from "@/lib/medias";
+import { repartirParMarque } from "@/lib/melange";
+
+/**
+ * L'accueil : dire ce qu'est le site en trois secondes, puis ouvrir
+ * trois portes — chercher, suivre la marque mise en avant, découvrir au
+ * hasard.
+ *
+ * DEUX TEMPS, ET ILS N'ONT PAS LA MÊME FONCTION. Le manifeste occupe le
+ * premier écran à lui seul : logo, phrase, champ de recherche, deux
+ * boutons. Le corps qui suit est une page de magazine à deux colonnes,
+ * où l'on entre volontairement, d'un coup de pouce.
+ *
+ * AUCUN COMPTEUR N'EST ÉCRIT EN DUR. Le gabarit en portait quatre
+ * (136 marques, 1 284 pièces, 78 posts, 3 412 cœurs) : ce sont des
+ * ordres de grandeur de maquette. Ceux qu'on peut compter honnêtement
+ * ici — les marques, les posts — sont comptés ; le catalogue de pièces
+ * ne descend pas jusqu'à cette page, donc son total n'est écrit nulle
+ * part plutôt qu'approché.
+ */
+
+/** Le pas de rotation de la mise en avant, en millisecondes. */
+const SEMAINE = 7 * 24 * 60 * 60 * 1000;
 
 export default async function HomePage() {
-  const [brands, posts] = await Promise.all([getBrands(), getPosts(3)]);
-  const featuredBrands = brands.filter((b) => b.featured).slice(0, 3);
+  /*
+   * `getPosts()` sans limite, et c'est délibéré.
+   *
+   * Le lien du bas dit « les N posts » : ce chiffre doit être le vrai,
+   * or il n'existe pas d'autre façon de l'obtenir depuis cette page.
+   * C'est exactement la requête que sert déjà `/posts`, sur un volume
+   * qui se compte en dizaines. Le jour où il se comptera en milliers,
+   * c'est un `count` qu'il faudra, pas trois posts de plus.
+   *
+   * `getVitrine(2)` plutôt que `getVitrine()` : deux pièces par marque
+   * suffisent très largement pour en tirer trois au sort, et l'accueil
+   * n'a aucune raison de descendre le millier de lignes que réclame la
+   * page des pièces.
+   */
+  const [brands, posts, vitrine] = await Promise.all([
+    getBrands(),
+    getPosts(),
+    getVitrine(2),
+  ]);
+
+  /*
+   * LA MARQUE DE LA SEMAINE TOURNE TOUTE SEULE, ET ELLE TOURNE LE MÊME
+   * JOUR POUR TOUT LE MONDE.
+   *
+   * Le rang se déduit du nombre de semaines écoulées depuis le premier
+   * janvier 1970 — qui tombait un jeudi, d'où les quatre jours retirés
+   * pour que le changement ait lieu le lundi. Deux conséquences qui
+   * valent la ligne de calcul : la sélection ne bouge pas d'un rendu à
+   * l'autre pendant sept jours, et personne n'a rien à administrer.
+   *
+   * À défaut de marques mises en avant, l'annuaire fait tourner les
+   * siennes : une page d'accueil sans marque en tête n'aurait plus de
+   * sujet.
+   */
+  const alaUne = brands.filter((b) => b.featured);
+  const roue = alaUne.length > 0 ? alaUne : brands;
+  const indice =
+    roue.length > 0 ? Math.floor((Date.now() - 4 * 86400000) / SEMAINE) % roue.length : 0;
+  const vedette = roue[indice];
+  const suite = Array.from(
+    { length: Math.min(3, Math.max(roue.length - 1, 0)) },
+    (_, i) => roue[(indice + 1 + i) % roue.length]
+  );
+
+  /* Le cœur de la marque en avant, en une requête pour une seule
+     marque : les autres cartes de la page n'en portent pas. */
+  const favoris = await getMyFavorites(vedette ? [vedette.id] : []);
+
+  /*
+   * La réserve du tirage au sort, constituée ICI et non dans le
+   * navigateur : le tirage doit être le même des deux côtés, sans quoi
+   * les trois pièces changent sous les yeux au premier rendu. Voir
+   * `PiecesAuHasard`.
+   *
+   * `repartirParMarque` alterne les marques : sans lui, celle qui a le
+   * plus gros catalogue trusterait les trois cases.
+   */
+  const reserve = repartirParMarque(vitrine.filter(aUneIllustration)).slice(0, 18);
+  const derniers = posts.slice(0, 3);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)]">
-      {/* ---------- manifeste ----------
-          Il occupe le premier écran à lui seul. Ce qui vient ensuite
-          se mérite d'un coup de pouce : c'est la différence entre une
-          page d'accueil et une liste. */}
-      <section className="premier-ecran relative flex flex-col items-center justify-center py-10 text-center">
+      {/* ---------- A · le manifeste ----------
+          Il occupe le premier écran à lui seul. Ce qui vient ensuite se
+          mérite d'un coup de pouce : c'est la différence entre une page
+          d'accueil et une liste. */}
+      <section className="premier-ecran relative flex flex-col items-center justify-center py-10 text-center sm:py-14">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/logo-white.webp"
           alt="NEWAVE SPHERE"
           className="rise w-[min(70%,320px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)]"
         />
+
         <p className="tagline rise rise-1 mt-6 text-[clamp(11px,2.9vw,13px)] leading-[1.9]">
           Média de marques
           <br />&<br />
           d&apos;artistes indépendants
         </p>
 
-        <p className="rise rise-2 mt-8 max-w-2xl text-[clamp(15px,4vw,18px)] leading-relaxed text-white/92">
+        <p className="rise rise-2 mt-7 max-w-[620px] text-[clamp(15px,4vw,18px)] leading-[1.6] text-white/92">
           On met en lumière celles et ceux qui créent en dehors des circuits classiques :
           marques naissantes, pièces uniques, démarches qui prennent le temps de bien faire.
           Un point de ralliement pour ceux qui cherchent autre chose.
         </p>
 
-        <div className="rise rise-3 mt-9 flex flex-wrap items-center justify-center gap-3">
+        {/* Le champ mène à une fiche ou à l'annuaire, jamais à une
+            deuxième recherche maison. Voir `RechercheAccueil`. */}
+        <div className="rise rise-3 mt-8 w-full max-w-[640px]">
+          <RechercheAccueil />
+        </div>
+
+        {/*
+         * CE QUI TIENT LIEU DES QUATRE PUCES DU GABARIT.
+         *
+         * Il proposait des raccourcis de catégorie — « Streetwear 34 »,
+         * « Denim 22 » — qui supposent une adresse d'annuaire filtrée.
+         * Aucune route du site n'en accepte aujourd'hui : ces puces
+         * auraient toutes abouti au même annuaire non filtré, c'est-à-dire
+         * à une promesse tenue nulle part. On garde donc la ligne, et on
+         * y met ce qui est vrai : ce qu'il y a à voir, et le geste pour
+         * le chercher.
+         */}
+        <p className="rise rise-3 mt-3.5 text-[11.5px] font-semibold tracking-[0.02em] text-white/55">
+          {brands.length > 0 && <>{enChiffres(brands.length)} marques</>}
+          {brands.length > 0 && posts.length > 0 && " · "}
+          {posts.length > 0 && <>{enChiffres(posts.length)} posts</>}
+          <span className="hidden sm:inline"> · ⌘K pour chercher d&apos;où que tu sois</span>
+        </p>
+
+        <div className="rise rise-4 mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link href="/marques" className="card-light px-6 py-3.5">
             <span className="relative z-3 text-[14px] font-extrabold tracking-[-0.01em]">
-              Explorer les marques
+              {brands.length > 0
+                ? `Explorer les ${enChiffres(brands.length)} marques`
+                : "Explorer l'annuaire"}
             </span>
           </Link>
           <Link
@@ -51,7 +162,7 @@ export default async function HomePage() {
 
         <a
           href="#la-suite"
-          aria-label="Descendre vers l'annuaire"
+          aria-label="Descendre vers la marque de la semaine"
           className="mt-10 inline-flex flex-col items-center gap-1 text-white/70 transition hover:text-white sm:mt-14"
         >
           <span className="text-[10px] font-black uppercase tracking-[0.18em]">La suite</span>
@@ -59,60 +170,109 @@ export default async function HomePage() {
         </a>
       </section>
 
-      {/* ---------- marques a la une ---------- */}
-      <section id="la-suite" className="scroll-mt-6 py-6">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow m-0">L&apos;annuaire</p>
-            <h2 className="m-0 mt-2 text-[clamp(19px,4.1vw,26px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
-              Marques à la une
-            </h2>
-          </div>
-          <Link href="/marques" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
-            Tout voir
+      {/* ---------- la transition ----------
+          Le ruban de découverte tenait le milieu de l'ancienne page. Il
+          garde sa place ici, entre le manifeste et le corps : c'est la
+          première preuve par l'image qu'il y a des marques derrière la
+          phrase, et c'est la troisième porte annoncée plus haut —
+          découvrir sans rien chercher. Sur téléphone, une bande qui se
+          fait glisser du doigt vaut mieux qu'une grille de plus. */}
+      <div id="la-suite" className="scroll-mt-24">
+        <Decouverte brands={brands} />
+      </div>
+
+      {/* ---------- B · le corps, à deux colonnes ----------
+          Sous 1024 pixels la colonne de droite passe SOUS le contenu
+          principal : c'est une colonne d'appoint, elle ne doit jamais
+          rétrécir la lecture pour tenir à côté. */}
+      <div className="grid grid-cols-1 items-start gap-7 pb-6 lg:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="flex min-w-0 flex-col gap-11 sm:gap-14">
+          {vedette && (
+            <section>
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="eyebrow m-0">L&apos;annuaire</p>
+                  <h2 className="m-0 mt-2 text-[clamp(19px,4.4vw,26px)] font-extrabold leading-[1.15] tracking-[-0.03em] text-white">
+                    La marque de la semaine
+                  </h2>
+                </div>
+                <Link
+                  href="/marques"
+                  className="shrink-0 text-[13px] font-bold text-white/80 underline decoration-white/40 underline-offset-4 transition hover:text-white hover:decoration-white"
+                >
+                  Toutes les marques
+                </Link>
+              </div>
+
+              <MarqueDeLaSemaine
+                brand={vedette}
+                favori={{ initial: favoris.has(vedette.id) }}
+              />
+            </section>
+          )}
+
+          <PiecesAuHasard pieces={reserve} />
+
+          {derniers.length > 0 && (
+            <section>
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="eyebrow m-0">Les publications</p>
+                  <h2 className="m-0 mt-2 text-[clamp(19px,4.4vw,26px)] font-extrabold leading-[1.15] tracking-[-0.03em] text-white">
+                    Nos derniers posts
+                  </h2>
+                </div>
+                <Link
+                  href="/posts"
+                  className="shrink-0 text-[13px] font-bold text-white/80 underline decoration-white/40 underline-offset-4 transition hover:text-white hover:decoration-white"
+                >
+                  Les {enChiffres(posts.length)} posts
+                </Link>
+              </div>
+
+              {/* Une seule colonne au téléphone : c'est la règle du
+                  cahier des charges pour les posts, et c'est la même
+                  que celle de la mosaïque de `/posts`. */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                {derniers.map((p) => (
+                  <PostCard key={p.id} post={p} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ---------- le bandeau de sortie ----------
+              La dernière chose de la colonne, et la seule qui ne montre
+              rien : arrivé là, on n'a plus besoin d'être séduit, on a
+              besoin d'une porte. */}
+          <Link href="/marques" className="card-light block px-6 py-6 sm:px-8">
+            <span className="relative z-3 flex items-center justify-between gap-5">
+              <span className="min-w-0">
+                <span className="block text-[clamp(16px,3.6vw,20px)] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-ink)]">
+                  {brands.length > 0
+                    ? `Explorer les ${enChiffres(brands.length)} marques de l'annuaire`
+                    : "Explorer l'annuaire"}
+                </span>
+                <span className="mt-1.5 block text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#6a5a92]">
+                  Recherche, index A→Z, mode liste
+                </span>
+              </span>
+              <span aria-hidden className="shrink-0 text-[20px] font-black text-[#3a2470]">
+                →
+              </span>
+            </span>
           </Link>
         </div>
 
-        <Grille variante="marques" memoire="accueil">
-          {featuredBrands.map((b) => (
-            <BrandCard key={b.id} brand={b} />
-          ))}
-        </Grille>
-      </section>
-
-      {/* ---------- découverte au hasard ---------- */}
-      <Decouverte brands={brands} />
-
-      {/* ---------- posts ---------- */}
-      <section className="py-6">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow m-0">Les publications</p>
-            <h2 className="m-0 mt-2 text-[clamp(19px,4.1vw,26px)] font-extrabold leading-tight tracking-[-0.02em] text-white">
-              Derniers posts
-            </h2>
-          </div>
-          <Link href="/posts" className="shrink-0 text-[13px] font-bold text-white/80 underline underline-offset-4 transition hover:text-white">
-            Tout voir
-          </Link>
-        </div>
-
-        <PostMosaic posts={posts} />
-      </section>
-
-      {/* ---------- appel aux marques ---------- */}
-      <section className="glass mt-9 sm:mt-12 mb-6 p-8 text-center sm:p-12">
-        <h2 className="m-0 text-[clamp(17px,3.8vw,23px)] font-extrabold leading-tight text-white">
-          Tu crées une marque ?
-        </h2>
-        <p className="mx-auto m-0 mt-3 max-w-xl text-[15px] leading-relaxed text-white/84">
-          On lit chaque dossier. Si ton travail a du sens, on lui donne une place,
-          gratuitement, sans commission à l&apos;entrée.
-        </p>
-        <Link href="/candidature" className="card-light mt-7 inline-block px-7 py-3.5">
-          <span className="relative z-3 text-[14px] font-extrabold">Proposer ma marque</span>
-        </Link>
-      </section>
+        {/* La colonne reçoit les posts SUIVANTS, pas les mêmes que la
+            colonne principale : un rail qui répète ce qu'on vient de
+            lire n'ajoute rien et allonge la page pour rien. */}
+        <ColonneAccueil
+          marques={suite}
+          slugs={brands.map((b) => b.slug)}
+          posts={posts.slice(3, 6)}
+        />
+      </div>
     </div>
   );
 }

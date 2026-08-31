@@ -9,6 +9,54 @@ import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
 /**
+ * Les rapports de cadre que la vitrine fait alterner.
+ *
+ * Écrits en toutes lettres et non composés à la volée : Tailwind lit le
+ * fichier tel quel, une classe fabriquée par calcul ne produirait
+ * aucune règle.
+ */
+export type RatioPiece = "3/4" | "1/1" | "4/5";
+
+const RATIOS: Record<RatioPiece, string> = {
+  "3/4": "aspect-[3/4]",
+  "1/1": "aspect-square",
+  "4/5": "aspect-[4/5]",
+};
+
+/**
+ * La remise et l'état, posés sur la photo.
+ *
+ * Sortis du corps de la carte le jour où il a fallu en dessiner deux :
+ * une remise qui changerait de coin d'un écran à l'autre se relit à
+ * chaque fois, alors que ces trois étiquettes sont exactement ce qu'on
+ * reconnaît sans lire.
+ */
+function EtatsSurLaPhoto({ product, off }: { product: Product; off: number | null }) {
+  return (
+    <>
+      {off !== null && (
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-[#c2273f] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+          −{off}%
+        </span>
+      )}
+      {/* Retirée l'emporte sur épuisée : une pièce qui n'est plus sur
+          la boutique ne reviendra pas en stock. */}
+      {product.retired_at ? (
+        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.9)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+          Retirée
+        </span>
+      ) : (
+        !product.available && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+            Épuisé
+          </span>
+        )
+      )}
+    </>
+  );
+}
+
+/**
  * Renvoie vers la fiche interne de la pièce quand elle existe, sinon
  * directement vers la boutique — plutôt que de fabriquer un lien mort.
  */
@@ -55,6 +103,8 @@ export default function ProductCard({
   canManage = false,
   likes,
   note,
+  nue = false,
+  ratio = "4/5",
 }: {
   product: Product;
   /** Slug de la marque, pour construire le lien vers la fiche. */
@@ -73,6 +123,25 @@ export default function ProductCard({
    * aurait transformé la photo en tableau de bord.
    */
   note?: { moyenne: number; avis: number };
+  /**
+   * LA PIÈCE SANS SA CARTE. Réservé à la vitrine (`/pieces`).
+   *
+   * C'est le parti pris de cet écran-là, et c'est ce qui le distingue
+   * de tous les autres : la photo est posée à même le fond violet, en
+   * rayon 4 et avec son ombre portée, et le texte vit dessous, sur le
+   * fond, sans conteneur. Une page qui ne montre QUE des pièces n'a pas
+   * besoin qu'on lui répète cent fois où commence et où finit chacune —
+   * les cent cadres blancs prenaient alors plus de place à l'œil que
+   * les photos qu'ils encadraient.
+   *
+   * C'est une VARIANTE et non le nouveau dessin par défaut : partout
+   * ailleurs — l'accueil, les classements — une pièce voisine avec
+   * autre chose qu'une pièce, et la carte est justement ce qui dit
+   * « ceci est un objet, séparé de celui d'à côté ».
+   */
+  nue?: boolean;
+  /** Le cadre de la photo. N'a d'effet qu'en variante nue. */
+  ratio?: RatioPiece;
 }) {
   const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
@@ -109,6 +178,116 @@ export default function ProductCard({
   // Sans fiche interne, on sort par le compteur de clics.
   const href = internal ? `/marques/${slug}/${product.slug}` : `/api/go/piece/${product.id}`;
 
+  if (nue) {
+    return (
+      /*
+       * `carte-eco` reste, et pour la même raison qu'ailleurs : la
+       * vitrine empile les tuiles par centaines, et le navigateur doit
+       * pouvoir mettre de côté celles qui sont sorties de l'écran.
+       * Voir globals.css.
+       */
+      <div className="carte-eco group">
+        {/*
+          PAS DE CLASSE `visuel` ICI, ET C'EST DÉLIBÉRÉ. Elle impose un
+          rapport 4/5 hors couche CSS, c'est-à-dire plus fort que
+          n'importe quelle classe écrite dans un composant : les trois
+          cadres de la vitrine s'y écraseraient tous les trois. Le fond
+          d'attente est donc redonné ici, en clair sur le violet plutôt
+          qu'en dégradé de carte.
+        */}
+        <div
+          className={`relative w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)] ${RATIOS[ratio]}`}
+        >
+          {cover ? (
+            <VignetteDefilante
+              images={visuels}
+              alt={product.name}
+              className={product.retired_at ? "opacity-70 grayscale-[.35]" : ""}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
+                Visuel à venir
+              </span>
+            </div>
+          )}
+
+          <EtatsSurLaPhoto product={product} off={off} />
+
+          {likes && (
+            <div className="absolute bottom-2.5 right-2.5 z-3">
+              <LikeButton
+                productId={product.id}
+                initialLiked={likes.liked}
+                initialCount={likes.count}
+                taille="pastille"
+              />
+            </div>
+          )}
+
+          {canManage && brandSlug && (
+            <Link
+              href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
+              aria-label={`Modifier ${product.name}`}
+              title="Modifier cette pièce"
+              className="absolute right-2.5 top-2.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.95)] active:scale-95"
+            >
+              <IconPencil className="h-4 w-4" />
+            </Link>
+          )}
+
+          <ProductLink
+            href={href}
+            external={!internal}
+            className="absolute inset-0 z-1"
+            aria-label={product.name}
+          >
+            <span className="sr-only">{product.name}</span>
+          </ProductLink>
+        </div>
+
+        {/* Le texte à même le fond. Rien ne l'encadre, donc rien ne le
+            rembourre : c'est l'alignement sur le bord gauche de la photo
+            qui dit à quelle tuile il appartient. */}
+        <div className="mt-2.5">
+          {showBrand && product.brand && (
+            <Link
+              href={`/marques/${product.brand.slug}`}
+              className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60 transition hover:text-white"
+            >
+              {product.brand.name}
+            </Link>
+          )}
+
+          <ProductLink href={href} external={!internal}>
+            <h3 className="m-0 mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-white">
+              {product.name}
+            </h3>
+          </ProductLink>
+
+          {note && note.avis > 0 && (
+            <span className="mt-1.5 flex items-center gap-1.5">
+              <Etoiles note={note.moyenne} taille="petite" />
+              <span className="text-[11px] font-bold text-white/60">({note.avis})</span>
+            </span>
+          )}
+
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-[13px] font-extrabold text-white">
+              {prix.principal ?? "Prix sur la boutique"}
+            </span>
+            {prix.origine && (
+              <span className="text-[12px] font-semibold text-white/55">{prix.origine}</span>
+            )}
+            {was && off !== null && (
+              <span className="text-[12px] font-semibold text-white/50 line-through">{was}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Hauteur pleine et colonne : sans ça, un nom sur deux lignes
   // décalait le prix et le cœur d'une carte à l'autre.
   return (
@@ -143,24 +322,7 @@ export default function ProductCard({
               </div>
             )}
 
-            {off !== null && (
-              <span className="absolute left-2.5 top-2.5 rounded-full bg-[#c2273f] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                −{off}%
-              </span>
-            )}
-            {/* Retirée l'emporte sur épuisée : une pièce qui n'est plus
-                sur la boutique ne reviendra pas en stock. */}
-            {product.retired_at ? (
-              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.9)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                Retirée
-              </span>
-            ) : (
-              !product.available && (
-                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[rgba(23,10,51,0.85)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                  Épuisé
-                </span>
-              )
-            )}
+            <EtatsSurLaPhoto product={product} off={off} />
           {/*
             LE CŒUR SUR LA PHOTO.
             Il était en bas de la carte, à côté du prix, et il fallait

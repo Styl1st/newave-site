@@ -42,12 +42,74 @@ function top(m: Map<string, number>, n: number): Ligne[] {
 }
 
 /**
+ * POSTGREST NE REND JAMAIS PLUS DE MILLE LIGNES, ET IL NE LE DIT PAS.
+ *
+ * C'est le réglage `max-rows` de Supabase, à mille par défaut. Une
+ * requête qui dépasse ce seuil ne renvoie ni erreur ni avertissement :
+ * elle renvoie mille lignes, et le reste n'existe pas. Un compteur écrit
+ * `rows.length` affiche donc « 1000 » — puis « 1000 » le lendemain, et
+ * tous les jours suivants. C'est exactement ce qu'on a vu sur les pages
+ * vues, et ça se lit comme un compteur en panne alors que c'est la
+ * lecture qui est plafonnée.
+ *
+ * Pire que le total figé : les mille lignes rendues ne sont pas les plus
+ * récentes. Sans `order`, PostgREST sert l'ordre physique de la table,
+ * donc les plus ANCIENNES. Le graphique des trente jours perdait ses
+ * derniers jours et les affichait à zéro.
+ *
+ * DEUX REMÈDES, ET ILS NE SE REMPLACENT PAS.
+ *
+ * Pour un TOTAL, on ne rapatrie rien : `count: "exact"` fait compter
+ * Postgres et ne rend aucune ligne. C'est juste, c'est instantané, et
+ * aucun plafond ne s'y applique.
+ *
+ * Pour un DÉCOUPAGE — par jour, par page, par source — il faut les
+ * lignes. On les demande alors par tranches, dans un ordre stable : sans
+ * `order`, deux tranches successives peuvent se recouvrir ou sauter des
+ * lignes, puisque rien ne garantit que la base les rende deux fois dans
+ * le même ordre.
+ */
+const TRANCHE = 1000;
+
+/**
+ * Au-delà, on arrête de rapatrier.
+ *
+ * Vingt tranches, c'est vingt allers-retours à la base pour peindre un
+ * graphique : à ce stade, ce n'est plus un plafond qu'il faut relever,
+ * c'est le calcul qu'il faut descendre dans Postgres (un `group by`
+ * dans une fonction SQL). Les TOTAUX, eux, resteront exacts quoi qu'il
+ * arrive puisqu'ils ne passent pas par ici.
+ */
+const PLAFOND = 20 * TRANCHE;
+
+export async function parTranches<T>(
+  requete: (de: number, a: number) => PromiseLike<{ data: T[] | null }>
+): Promise<T[]> {
+  const tout: T[] = [];
+
+  for (let de = 0; de < PLAFOND; de += TRANCHE) {
+    const { data } = await requete(de, de + TRANCHE - 1);
+    if (!data?.length) break;
+    tout.push(...data);
+    // Une tranche incomplète, c'est la dernière.
+    if (data.length < TRANCHE) break;
+  }
+
+  return tout;
+}
+
+/**
  * Statistiques du tableau de bord.
  *
- * Tout est calculé en mémoire à partir de 30 jours de lignes : à
- * l'échelle d'un média qui démarre, c'est instantané et ça évite
- * d'installer des vues SQL qu'il faudrait maintenir. À revoir le jour
- * où tu comptes tes visites en dizaines de milliers.
+ * Les TOTAUX sont comptés par Postgres. Les DÉCOUPAGES — par jour, par
+ * page, par source — se calculent en mémoire à partir des lignes des
+ * trente derniers jours, rapatriées par tranches : à l'échelle d'un
+ * média qui démarre, c'est instantané et ça évite d'installer des vues
+ * SQL qu'il faudrait maintenir.
+ *
+ * Le jour où tu passeras vingt mille vues par mois, ce sont les
+ * découpages qu'il faudra descendre dans Postgres (`group by` dans une
+ * fonction SQL). Les totaux, eux, n'auront pas à changer.
  */
 export async function getStats(): Promise<Stats | null> {
   const supabase = await createClient();
@@ -58,20 +120,53 @@ export async function getStats(): Promise<Stats | null> {
   depuis.setHours(0, 0, 0, 0);
   const depuisISO = depuis.toISOString();
 
-  const [vuesRes, clicsRes, favorisRes, comptesRes, marquesRes] = await Promise.all([
-    supabase.from("page_views").select("path, source, created_at").gte("created_at", depuisISO),
-    supabase.from("outbound_clicks").select("brand_id, created_at").gte("created_at", depuisISO),
-    supabase.from("favorites").select("brand_id"),
-    supabase.from("profiles").select("id").gte("created_at", depuisISO),
-    supabase.from("brands").select("id, name"),
-  ]);
+  type LigneVue = { path: string; source: string | null; created_at: string };
+  type LigneClic = { brand_id: string | null; created_at: string };
 
-  const vues = (vuesRes.data ?? []) as { path: string; source: string | null; created_at: string }[];
-  const clics = (clicsRes.data ?? []) as { brand_id: string | null; created_at: string }[];
-  const favoris = (favorisRes.data ?? []) as { brand_id: string }[];
-  const marques = new Map(
-    ((marquesRes.data ?? []) as { id: string; name: string }[]).map((b) => [b.id, b.name])
-  );
+  const [vuesTotal, clicsTotal, comptesTotal, vues, clics, favoris, marquesLues] =
+    await Promise.all([
+      /* Les totaux sont comptés par Postgres : aucun plafond, et rien ne
+         descend sur le réseau. Voir `parTranches`. */
+      supabase
+        .from("page_views")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", depuisISO),
+      supabase
+        .from("outbound_clicks")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", depuisISO),
+      supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", depuisISO),
+
+      /* Les lignes, pour les découpages. Ordonnées, sinon deux tranches
+         successives peuvent se recouvrir. */
+      parTranches<LigneVue>((de, a) =>
+        supabase
+          .from("page_views")
+          .select("path, source, created_at")
+          .gte("created_at", depuisISO)
+          .order("created_at", { ascending: true })
+          .range(de, a)
+      ),
+      parTranches<LigneClic>((de, a) =>
+        supabase
+          .from("outbound_clicks")
+          .select("brand_id, created_at")
+          .gte("created_at", depuisISO)
+          .order("created_at", { ascending: true })
+          .range(de, a)
+      ),
+      parTranches<{ brand_id: string }>((de, a) =>
+        supabase.from("favorites").select("brand_id").order("brand_id").range(de, a)
+      ),
+      parTranches<{ id: string; name: string }>((de, a) =>
+        supabase.from("brands").select("id, name").order("id").range(de, a)
+      ),
+    ]);
+
+  const marques = new Map(marquesLues.map((b) => [b.id, b.name]));
 
   // Une entrée par jour, même à zéro : sans ça le graphique mentirait
   // en resserrant les jours creux.
@@ -93,12 +188,15 @@ export async function getStats(): Promise<Stats | null> {
   return {
     jours,
     vues7: sept,
-    vues30: vues.length,
+    // Le compte de Postgres, pas la longueur de ce qu'on a rapatrié :
+    // c'est toute la différence entre un chiffre juste et un « 1000 »
+    // qui ne bouge plus.
+    vues30: vuesTotal.count ?? vues.length,
     vuesVeille: jours[jours.length - 2]?.vues ?? 0,
     evolution: septPrecedents > 0 ? Math.round(((sept - septPrecedents) / septPrecedents) * 100) : null,
     pages: top(compter(vues, (v) => v.path), 6),
     sources: top(compter(vues, (v) => v.source), 5),
-    clics30: clics.length,
+    clics30: clicsTotal.count ?? clics.length,
     clicsParMarque: top(
       compter(clics, (c) => (c.brand_id ? (marques.get(c.brand_id) ?? null) : null)),
       5
@@ -107,6 +205,6 @@ export async function getStats(): Promise<Stats | null> {
       compter(favoris, (f) => marques.get(f.brand_id) ?? null),
       5
     ),
-    comptes30: (comptesRes.data ?? []).length,
+    comptes30: comptesTotal.count ?? 0,
   };
 }
