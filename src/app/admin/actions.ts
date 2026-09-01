@@ -320,7 +320,68 @@ export async function saveBrand(formData: FormData): Promise<Result> {
   revalidatePath("/admin/marques");
   revalidatePath("/marques");
   revalidatePath("/");
-  redirect(avecMessage("/admin/marques", id ? "Marque mise à jour." : "Marque ajoutée."));
+
+  /*
+   * UNE FICHE QUI VIENT DE NAÎTRE RENVOIE CHEZ ELLE, pas dans la liste.
+   *
+   * C'est la dernière marche du parcours de création : la marque
+   * existe, et tout ce qu'il reste à faire est sur sa page — la publier,
+   * lui rattacher son gérant, relire son catalogue. Repartir vers
+   * l'annuaire obligeait à l'y retrouver pour y revenir aussitôt.
+   */
+  const destination = !id && brandId ? `/admin/marques/${brandId}` : "/admin/marques";
+  redirect(avecMessage(destination, id ? "Marque mise à jour." : "Marque ajoutée."));
+}
+
+/**
+ * Les leviers qui n'appartiennent qu'à l'administration.
+ *
+ * La présentation d'une fiche — accroche, démarche, visuels, origine,
+ * catégories, boutique — se retouche désormais dans le panneau que la
+ * marque utilise chez elle, et par la même action serveur. Restent ces
+ * quelques réglages, qu'un gérant ne doit jamais toucher : le nom sous
+ * lequel la marque est référencée, l'adresse de sa page, la mise à la
+ * une, et la façon dont on achète chez elle.
+ *
+ * ELLE NE PUBLIE RIEN, VOLONTAIREMENT. Mettre en ligne reste le travail
+ * du bouton en haut de page, qui passe par `obstacleAPublication` : une
+ * deuxième porte vers `status` finirait tôt ou tard par être la porte
+ * la plus permissive, et c'est par celle-là que sortiraient les fiches
+ * bancales.
+ */
+export async function saveBrandReglages(formData: FormData): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const id = toText(formData.get("id"));
+  if (!id) return { ok: false, error: "Marque introuvable." };
+
+  const name = toText(formData.get("name"));
+  if (!name) return { ok: false, error: "Le nom est obligatoire." };
+
+  const { error } = await supabase
+    .from("brands")
+    .update({
+      name,
+      slug: toText(formData.get("slug")) || slugify(name),
+      featured: formData.get("featured") === "on",
+      audience: uneAudience(toText(formData.get("audience"))),
+      acces: unAcces(toText(formData.get("acces"))),
+    })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/marques");
+  revalidatePath(`/admin/marques/${id}`);
+  // L'annuaire entier, et pas la seule page de la marque : quand
+  // l'adresse change, c'est l'ANCIENNE qui traîne dans les listes, et
+  // on ne peut pas relire une page dont on vient de perdre le nom.
+  revalidatePath("/marques");
+  revalidatePath("/");
+
+  redirect(avecMessage(`/admin/marques/${id}`, "Réglages enregistrés."));
 }
 
 export async function deleteBrand(formData: FormData): Promise<void> {

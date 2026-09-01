@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Portal from "./Portal";
+import BrandPrefill from "./admin/BrandPrefill";
 import ImageUploader from "./admin/ImageUploader";
 import VisuelCouverture from "./admin/VisuelCouverture";
 import SubmitBar from "./admin/SubmitBar";
@@ -24,18 +25,89 @@ import type { Brand } from "@/lib/types";
  * Le panneau est rendu dans un portail, hors de la page : posé dedans,
  * il aurait hérité de son plan d'empilement et serait passé sous la
  * barre du haut.
+ *
+ * L'ADMINISTRATION SE SERT DU MÊME PANNEAU. Elle avait son formulaire à
+ * elle, qui demandait les mêmes choses avec d'autres mots : deux
+ * définitions d'une même fiche, dont une seule était corrigée quand on
+ * s'apercevait qu'il manquait un champ. Seule la VOIX change ici —
+ * « ta démarche » ou « sa démarche » —, jamais les champs, jamais leurs
+ * noms, jamais l'action qui enregistre.
+ *
+ * ET SURTOUT PAS LES DROITS. Cette voix ne donne rien à personne : elle
+ * ne fait que choisir des mots. Qui a le droit d'écrire sur quelle
+ * marque se décide dans `saveBrandPresentation`, qui relit le rôle en
+ * base à chaque envoi. Un visiteur qui rendrait ce panneau visible dans
+ * son navigateur n'obtiendrait qu'un formulaire dont l'envoi est refusé.
  */
+
+/** Qui parle : la marque chez elle, ou l'administration. */
+type Voix = "gerant" | "administration";
+
+const MOTS: Record<
+  Voix,
+  {
+    bouton: string;
+    surtitre: string;
+    accrocheLabel: string;
+    accrocheAide: string;
+    accrochePlaceholder: string;
+    demarcheLabel: string;
+    demarcheAide: string;
+    categoriesLabel: string;
+    categoriesAide: string;
+    boutiqueAide: string;
+    envoyer: string;
+  }
+> = {
+  gerant: {
+    bouton: "Modifier ma page",
+    surtitre: "Ta page",
+    accrocheLabel: "Ta phrase, en une ligne",
+    accrocheAide: "Pas un slogan : ce que tu fais, dit simplement.",
+    accrochePlaceholder: "Ce que tu fais, en une ligne",
+    demarcheLabel: "Ta démarche",
+    demarcheAide:
+      "Matières, ateliers, quantités, ce que tu refuses de faire. Trois paragraphes honnêtes valent mieux qu'une page de communication.",
+    categoriesLabel: "Tes catégories",
+    categoriesAide:
+      "Coche ce qui te correspond vraiment. En cocher dix pour être partout dessert plus qu'autre chose.",
+    boutiqueAide: "Une seule adresse : celle où l'on peut acheter tes pièces.",
+    envoyer: "Enregistrer ma page",
+  },
+  administration: {
+    bouton: "Modifier la fiche",
+    surtitre: "La fiche",
+    accrocheLabel: "La phrase, en une ligne",
+    accrocheAide: "Pas un slogan : ce que fait la marque, dit simplement.",
+    accrochePlaceholder: "Ce qu'elle fait, en une ligne",
+    demarcheLabel: "Sa démarche",
+    demarcheAide:
+      "Matières, ateliers, quantités, ce qu'elle refuse de faire. Trois paragraphes honnêtes valent mieux qu'une page de communication.",
+    categoriesLabel: "Ses catégories",
+    categoriesAide:
+      "Coche ce qui lui correspond vraiment. En cocher dix pour la mettre partout la dessert plus qu'autre chose.",
+    boutiqueAide: "Une seule adresse : celle où l'on peut acheter ses pièces.",
+    envoyer: "Enregistrer la fiche",
+  },
+};
+
 export default function PanneauEdition({
   brand,
   className = "",
+  voix = "gerant",
 }: {
   brand: Brand;
   /** Ajouté au bouton d'ouverture, pour que la barre du gérant puisse
       lui donner sa largeur sur téléphone. */
   className?: string;
+  /** Les mots, et rien d'autre. Voir le commentaire du fichier. */
+  voix?: Voix;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const router = useRouter();
+
+  const mots = MOTS[voix];
+  const administration = voix === "administration";
 
   // Le fond de la page ne défile plus derrière le panneau : sinon on
   // croit faire glisser le formulaire et c'est la page qui bouge.
@@ -62,7 +134,7 @@ export default function PanneauEdition({
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
         </svg>
-        Modifier ma page
+        {mots.bouton}
       </button>
 
       {ouvert && (
@@ -87,7 +159,7 @@ export default function PanneauEdition({
             <div
               role="dialog"
               aria-modal
-              aria-label="Modifier ma page"
+              aria-label={mots.bouton}
               className="panneau-edition relative flex h-[92svh] w-full flex-col overflow-y-auto rounded-t-[26px] shadow-[0_-18px_50px_rgba(12,4,32,0.5)] backdrop-blur-2xl sm:h-full sm:max-w-xl sm:rounded-none sm:border-l sm:border-white/20 sm:shadow-[-18px_0_50px_rgba(12,4,32,0.55)]"
             >
               {/* La poignée : elle ne fait rien, et c'est très bien.
@@ -100,7 +172,7 @@ export default function PanneauEdition({
 
               <div className="panneau-entete sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/15 px-5 py-4 backdrop-blur-xl">
                 <div>
-                  <p className="eyebrow m-0">Ta page</p>
+                  <p className="eyebrow m-0">{mots.surtitre}</p>
                   <h2 className="m-0 mt-1 text-[17px] font-extrabold text-white">
                     {brand.name}
                   </h2>
@@ -127,18 +199,29 @@ export default function PanneauEdition({
               >
                 <input type="hidden" name="slug" value={brand.slug} />
 
+                {/* RELIRE LA BOUTIQUE, réservé à l'administration.
+                    Le bloc est posé DANS le formulaire, et pas sur la
+                    page qui l'ouvre : il remplit les champs en écrivant
+                    dedans, et ceux-ci n'existent que panneau ouvert.
+                    Ailleurs, il aurait annoncé avoir tout repris sans
+                    que rien n'ait bougé.
+                    Une marque ne le voit pas : chez elle, ce qu'elle a
+                    écrit sur sa propre démarche vaut mieux que ce qu'un
+                    robot lit sur sa page d'accueil. */}
+                {administration && <BrandPrefill modeCreation={false} />}
+
                 <Text
                   name="tagline"
-                  label="Ta phrase, en une ligne"
-                  hint="Pas un slogan : ce que tu fais, dit simplement."
+                  label={mots.accrocheLabel}
+                  hint={mots.accrocheAide}
                   defaultValue={brand.tagline}
-                  placeholder="Ce que tu fais, en une ligne"
+                  placeholder={mots.accrochePlaceholder}
                 />
 
                 <Area
                   name="description"
-                  label="Ta démarche"
-                  hint="Matières, ateliers, quantités, ce que tu refuses de faire. Trois paragraphes honnêtes valent mieux qu'une page de communication."
+                  label={mots.demarcheLabel}
+                  hint={mots.demarcheAide}
                   rows={9}
                   defaultValue={brand.description}
                 />
@@ -171,8 +254,8 @@ export default function PanneauEdition({
 
                 <CheckGroup
                   name="categories"
-                  label="Tes catégories"
-                  hint="Coche ce qui te correspond vraiment. En cocher dix pour être partout dessert plus qu'autre chose."
+                  label={mots.categoriesLabel}
+                  hint={mots.categoriesAide}
                   options={withExisting(BRAND_CATEGORIES, brand.categories)}
                   selected={brand.categories}
                 />
@@ -186,7 +269,7 @@ export default function PanneauEdition({
                 <Text
                   name="shop_url"
                   label="Boutique ou site officiel"
-                  hint="Une seule adresse : celle où l'on peut acheter tes pièces."
+                  hint={mots.boutiqueAide}
                   type="url"
                   defaultValue={brand.shop_url ?? brand.website_url ?? ""}
                   placeholder="https://"
@@ -200,7 +283,7 @@ export default function PanneauEdition({
                   placeholder="tamarque"
                 />
 
-                <SubmitBar label="Enregistrer ma page" />
+                <SubmitBar label={mots.envoyer} />
               </form>
             </div>
           </div>

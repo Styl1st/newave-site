@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import BrandCard from "./BrandCard";
 import BrandPreview from "./BrandPreview";
 import LigneMarque from "./LigneMarque";
@@ -89,6 +89,7 @@ export default function BrandGrid({
   const suivies = new Set(favoris ?? []);
   const [open, setOpen] = useState<string | null>(null);
   const [combien, setCombien] = useState(LOT);
+  const [lettreActive, setLettreActive] = useState<string | null>(null);
 
   /*
    * Filtrer repart du début.
@@ -100,6 +101,17 @@ export default function BrandGrid({
    * déclencher la remise à zéro.
    */
   useEffect(() => setCombien(LOT), [brands]);
+
+  /*
+   * Et la lettre choisie retombe aussi.
+   *
+   * Sans ça, quelqu'un qui filtre sur « W » puis coche « Denim » garde
+   * un filtre de lettre invisible par-dessus le nouveau : la liste
+   * paraît vide alors que trente marques correspondent. Deux filtres
+   * dont un seul se voit, c'est toujours celui qu'on ne voit pas qu'on
+   * accuse le site d'avoir cassé.
+   */
+  useEffect(() => setLettreActive(null), [brands]);
 
   /*
    * EN MODE LISTE, L'ORDRE EST ALPHABÉTIQUE, ET C'EST LA CONDITION DE
@@ -128,45 +140,49 @@ export default function BrandGrid({
     [alphabetique]
   );
 
-  const [lettreActive, setLettreActive] = useState<string | null>(null);
-  const cible = useRef<string | null>(null);
-
   /*
-   * Sauter à une lettre peut demander d'en CHARGER d'abord.
+   * UNE LETTRE FILTRE, ELLE NE FAIT PLUS DÉFILER — ET C'EST UNE
+   * CORRECTION DE BOGUE, PAS UN CHANGEMENT D'AVIS.
    *
-   * La liste se déroule par lots de vingt-quatre. Cliquer sur « S »
-   * quand on n'a chargé que les vingt-quatre premières marques ne
-   * mènerait nulle part : l'ancre n'existe pas encore dans la page. On
-   * étend donc jusqu'au lot qui contient cette lettre, puis on va la
-   * chercher au rendu suivant — d'où le passage par une ref plutôt
-   * qu'un défilement immédiat.
+   * Elle sautait à la lettre, ce qui obligeait à CHARGER tout ce qui la
+   * précède : cliquer sur « W » dépliait cent quarante-quatre marques
+   * d'un coup pour atteindre les cinq du bout. Sur un téléphone, chacune
+   * garde en mémoire vive son logo et ses quatre vignettes décodés —
+   * plusieurs mégaoctets par ligne — et l'onglet dépassait ce qu'iOS
+   * accorde à une page. Safari la vidait et la rechargeait. De
+   * l'extérieur : on clique sur « W », la page se relance, et l'on ne
+   * voit jamais les W.
+   *
+   * C'est exactement le rechargement en boucle que la pagination par
+   * lots de vingt-quatre existait pour empêcher (voir `LOT`) — et que le
+   * saut contournait sans le savoir.
+   *
+   * Filtrer coûte au contraire moins que de ne rien faire : on affiche
+   * les cinq marques en W et RIEN d'autre. C'est aussi ce que quelqu'un
+   * veut dire en touchant « W » sur un annuaire de cent trente-six
+   * entrées — « montre-moi les W », pas « fais défiler jusqu'aux W ».
+   *
+   * Retoucher la même lettre efface le filtre.
    */
   function allerA(lettre: string) {
-    const i = alphabetique.findIndex((b) => lettreDe(b.name) === lettre);
-    if (i < 0) return;
-
-    setLettreActive(lettre);
-    cible.current = lettre;
-    if (i >= combien) setCombien(Math.ceil((i + 1) / LOT) * LOT);
+    setLettreActive((actuelle) => (actuelle === lettre ? null : lettre));
   }
 
-  useEffect(() => {
-    const lettre = cible.current;
-    if (!lettre) return;
-    cible.current = null;
-
-    const ancre = document.getElementById(`lettre-${lettre}`);
-    if (!ancre) return;
-
-    // `block: "start"` avec une marge : la ligne de filtres est
-    // collante, et sans elle le titre de groupe se range dessous.
-    const y = ancre.getBoundingClientRect().top + window.scrollY - 96;
-    window.scrollTo({ top: y, behavior: "smooth" });
-  }, [combien, lettreActive]);
+  const parLettre = useMemo(
+    () =>
+      lettreActive ? alphabetique.filter((b) => lettreDe(b.name) === lettreActive) : null,
+    [alphabetique, lettreActive]
+  );
 
   const visiblesMelangees = brands.slice(0, combien);
-  const visiblesAlpha = alphabetique.slice(0, combien);
-  const reste = brands.length - combien;
+  /*
+   * Une lettre tient toujours dans un lot : la plus fournie d'un
+   * annuaire en compte une vingtaine. On ne la pagine donc pas — la
+   * dérouler d'un coup ne coûte rien et évite un « voir plus » qui ne
+   * servirait jamais.
+   */
+  const visiblesAlpha = parLettre ?? alphabetique.slice(0, combien);
+  const reste = parLettre ? 0 : brands.length - combien;
 
   const boutonApercu = (b: Brand) => (
     <button
@@ -219,12 +235,9 @@ export default function BrandGrid({
               <IndexAlphabet
                 pleines={lettresPleines}
                 active={lettreActive}
-                combien={
-                  lettreActive
-                    ? alphabetique.filter((b) => lettreDe(b.name) === lettreActive).length
-                    : 0
-                }
+                combien={parLettre?.length ?? 0}
                 onChoisir={allerA}
+                onTout={() => setLettreActive(null)}
               />
 
               {visiblesAlpha.map((b, i) => {
@@ -257,11 +270,16 @@ export default function BrandGrid({
                         {lettre}
                       </h2>
                     )}
-                    <LigneMarque
-                      brand={b}
-                      favori={favoris ? { initial: suivies.has(b.id) } : undefined}
-                      onApercu={() => setOpen(b.slug)}
-                    />
+                    {/* `ligne-eco` met de côté ce qui est hors écran sur
+                        téléphone : le navigateur cesse de peindre les
+                        lignes qu'on ne regarde pas. Voir globals.css. */}
+                    <div className="ligne-eco">
+                      <LigneMarque
+                        brand={b}
+                        favori={favoris ? { initial: suivies.has(b.id) } : undefined}
+                        onApercu={() => setOpen(b.slug)}
+                      />
+                    </div>
                   </Fragment>
                 );
               })}
@@ -331,16 +349,21 @@ function IndexAlphabet({
   active,
   combien,
   onChoisir,
+  onTout,
 }: {
   pleines: Set<string>;
   active: string | null;
   /** Combien de marques sous la lettre active. */
   combien: number;
   onChoisir: (lettre: string) => void;
+  onTout: () => void;
 }) {
   return (
     <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-      <span className="eyebrow m-0 mr-1 text-white/45">Aller à</span>
+      {/* « Lettre » et non « Aller à » : le mot promettait un défilement,
+          et l'on filtre. Un libellé qui décrit autre chose que ce qui se
+          passe est un bogue à lui seul. */}
+      <span className="eyebrow m-0 mr-1 text-white/45">Lettre</span>
 
       <div className="flex flex-wrap gap-0.5">
         {LETTRES.map((l) => {
@@ -351,7 +374,9 @@ function IndexAlphabet({
               type="button"
               onClick={() => onChoisir(l)}
               disabled={!dispo}
-              aria-label={`Aller aux marques en ${l}`}
+              aria-label={
+                active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
+              }
               aria-current={active === l ? "true" : undefined}
               className={`grid h-[26px] min-w-[26px] place-items-center rounded-[8px] px-1 text-[12px] transition ${
                 active === l
@@ -368,8 +393,17 @@ function IndexAlphabet({
       </div>
 
       {active && combien > 0 && (
-        <span className="text-[11.5px] font-semibold text-white/55">
+        <span className="flex items-center gap-2 text-[11.5px] font-semibold text-white/55">
           {active} — {combien} marque{combien > 1 ? "s" : ""}
+          {/* Une sortie visible : sans elle, il faut deviner qu'on
+              retouche la même lettre pour tout revoir. */}
+          <button
+            type="button"
+            onClick={onTout}
+            className="font-bold text-white/75 underline underline-offset-2 hover:text-white"
+          >
+            Tout afficher
+          </button>
         </span>
       )}
     </div>

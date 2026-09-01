@@ -264,9 +264,27 @@ export default function VisuelCouverture({
       />
 
       {/* Les deux valeurs partent séparément : le site a besoin de
-          l'image fixe pour les vignettes, et de la vidéo pour la fiche. */}
-      <input type="hidden" name="cover_url" value={urlImage} />
-      <input type="hidden" name="cover_video_url" value={urlVideo} />
+          l'image fixe pour les vignettes, et de la vidéo pour la fiche.
+
+          ELLES ÉCOUTENT, ET CE N'EST PAS DÉCORATIF. Personne ne tape
+          dans un champ caché, mais la lecture d'une boutique y écrit
+          (voir `BrandPrefill`), et un champ contrôlé sans `onChange`
+          retrouve son ancienne valeur au premier rendu suivant : la
+          couverture reprise du site repartait alors vide, sans un mot.
+          En s'alignant sur ce qu'on leur donne, l'aperçu et la ligne
+          d'état disent enfin la vérité. */}
+      <input
+        type="hidden"
+        name="cover_url"
+        value={urlImage}
+        onChange={(e) => setUrlImage(e.target.value)}
+      />
+      <input
+        type="hidden"
+        name="cover_video_url"
+        value={urlVideo}
+        onChange={(e) => setUrlVideo(e.target.value)}
+      />
 
       {/* L'état, écrit noir sur blanc. Un aperçu peut ne pas s'afficher
           — une image dont le site interdit la reprise, par exemple — et

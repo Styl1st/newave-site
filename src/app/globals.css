@@ -2490,6 +2490,19 @@ html[data-reglage="1"] .ruban {
     content-visibility: auto;
     contain-intrinsic-size: auto 360px;
   }
+
+  /* Le même remède pour une LIGNE de l'annuaire, et la réserve est celle
+     d'une ligne — pas d'une carte.
+
+     Poser ici les trois cent soixante pixels d'une carte ferait sauter
+     la barre de défilement à chaque groupe : le navigateur réserverait
+     quatre fois la hauteur réelle, puis la corrigerait en découvrant la
+     ligne. Cent quarante pixels, c'est une ligne repliée sur téléphone —
+     logo, nom, et la bande de vignettes passée dessous. */
+  .ligne-eco {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 140px;
+  }
 }
 
 /* ---------- le curseur ----------

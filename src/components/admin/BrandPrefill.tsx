@@ -12,8 +12,27 @@ import { FIELD } from "./fields";
  * champs. Ça évite de faire remonter un état à travers toutes les
  * étapes, et ça laisse chaque valeur modifiable ensuite — c'est un
  * point de départ, pas un verdict.
+ *
+ * COROLLAIRE : ce bloc doit vivre DANS la page qui porte le formulaire
+ * qu'il remplit, et pendant que celui-ci existe. Le parcours de
+ * création le montre à son deuxième écran alors que la fiche est déjà
+ * montée, mais cachée ; le panneau d'édition le pose à l'intérieur de
+ * lui-même. Sorti de là, il annoncerait avoir tout repris sans que
+ * rien n'ait bougé.
  */
-export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }) {
+export default function BrandPrefill({
+  modeCreation,
+  onLu,
+}: {
+  modeCreation: boolean;
+  /**
+   * Prévient qu'une lecture a réussi.
+   *
+   * Sert au parcours de création à n'afficher « Vérifier les
+   * informations » qu'une fois qu'il y a quelque chose à vérifier.
+   */
+  onLu?: () => void;
+}) {
   const [url, setUrl] = useState("");
   const [pending, lancer] = useTransition();
   const [note, setNote] = useState<{ ok: boolean; texte: string } | null>(null);
@@ -131,6 +150,8 @@ export default function BrandPrefill({ modeCreation }: { modeCreation: boolean }
           ? `${phrases.join(" ")} Rien n'est enregistré avant la fin.`
           : "Rien d'exploitable sur ce site. Remplis les champs à la main.",
       });
+
+      onLu?.();
     });
   }
 

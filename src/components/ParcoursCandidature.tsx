@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   analyserLeSite,
@@ -8,6 +8,17 @@ import {
   type Reseau,
   type Trouvaille,
 } from "@/app/candidature/actions";
+import {
+  CHAMP,
+  CadreRelecture,
+  CadreSource,
+  EcranChoix,
+  LABEL,
+  PRINCIPAL,
+  SECONDAIRE,
+  useEtapes,
+  type Choix,
+} from "@/components/parcours/Parcours";
 import { BRAND_CATEGORIES } from "@/lib/taxonomy";
 
 /**
@@ -18,17 +29,23 @@ import { BRAND_CATEGORIES } from "@/lib/taxonomy";
  *   3. Tu relis ce qu'on a trouvé, tu corriges.
  *   4. C'est parti.
  *
+ * La forme des écrans vient de `parcours/Parcours` : l'administration
+ * emprunte le même chemin pour ajouter une marque, et il n'était pas
+ * question d'en tenir deux copies qui se répondraient de moins en moins
+ * bien au fil des mois.
+ *
+ * CE QUI RESTE ICI EST CE QUI N'APPARTIENT QU'AU CANDIDAT : ce qu'on
+ * lui demande de relire, et surtout la porte de sortie. Ce parcours-ci
+ * se termine par une CANDIDATURE — un dossier en attente d'examen, qui
+ * n'écrit rien dans l'annuaire. Celui de l'administration se termine
+ * par une marque. Voir `admin/ParcoursNouvelleMarque`.
+ *
  * Tout tient dans un seul composant, et c'est voulu : une candidature
  * à moitié remplie ne survit pas à un changement de page, et rien
  * n'est plus décourageant que de tout retaper parce qu'on a cliqué sur
  * « précédent ».
- *
- * Le premier écran ne demandait rien avant, il demandait tout : le
- * choix, le nom, le contact, l'email, l'Instagram, le site et un
- * paragraphe. Une page pareille se referme avant d'être lue.
  */
 
-type Etape = "choix" | "source" | "relecture" | "envoye";
 type Relation = "proprietaire" | "decouvreur";
 
 /** Le temps laissé pour lire la confirmation avant de rendre la main. */
@@ -45,13 +62,20 @@ const RESEAUX_CONNUS = [
   { cle: "vinted", nom: "Vinted" },
 ] as const;
 
-// La matière des champs vit dans `globals.css`. Voir `.champ`.
-const CHAMP = "champ";
-const LABEL = "eyebrow mb-2 block";
-const PRINCIPAL =
-  "rounded-full bg-white px-7 py-3.5 text-[14px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-55";
-const SECONDAIRE =
-  "rounded-full border border-white/40 bg-white/8 px-5 py-3 text-[13.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/18 active:scale-[.97] disabled:opacity-55";
+const QUI: readonly Choix<Relation>[] = [
+  {
+    valeur: "proprietaire",
+    titre: "Je suis à la tête de cette marque",
+    texte:
+      "Tu la fondes ou tu la diriges. Une fois ta page validée, tu la gères toi-même : tes pièces, ta présentation, tes statistiques.",
+  },
+  {
+    valeur: "decouvreur",
+    titre: "Je la recommande",
+    texte:
+      "Tu n'en fais pas partie, mais son travail te paraît juste. On la contactera nous-mêmes de ta part.",
+  },
+];
 
 /** L'état du formulaire de relecture, quelle qu'en soit l'origine. */
 type Fiche = {
@@ -85,7 +109,7 @@ const FICHE_VIDE: Fiche = {
 export default function ParcoursCandidature() {
   const router = useRouter();
 
-  const [etape, setEtape] = useState<Etape>("choix");
+  const { etape, aller, haut } = useEtapes();
   const [relation, setRelation] = useState<Relation>("proprietaire");
   const [fiche, setFiche] = useState<Fiche>(FICHE_VIDE);
   const [reseaux, setReseaux] = useState<Reseau[]>([]);
@@ -99,13 +123,6 @@ export default function ParcoursCandidature() {
   const [envoi, lancerEnvoi] = useTransition();
 
   const proprietaire = relation === "proprietaire";
-
-  // On remonte en haut à chaque écran : sans ça, on change de page et
-  // l'on reste au milieu, devant un contenu qui n'a plus de sens.
-  const haut = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    haut.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [etape]);
 
   function modifier<K extends keyof Fiche>(champ: K, valeur: Fiche[K]) {
     setFiche((f) => ({ ...f, [champ]: valeur }));
@@ -186,7 +203,7 @@ export default function ParcoursCandidature() {
         setErreur(res.error);
         return;
       }
-      setEtape("envoye");
+      aller("fin");
     });
   }
 
@@ -194,9 +211,10 @@ export default function ParcoursCandidature() {
     <div ref={haut} className="scroll-mt-28">
       {etape === "choix" && (
         <EcranChoix
+          choix={QUI}
           onChoisir={(r) => {
             setRelation(r);
-            setEtape("source");
+            aller("source");
           }}
         />
       )}
@@ -209,13 +227,13 @@ export default function ParcoursCandidature() {
           analyse={analyse}
           verdict={verdict}
           onAnalyser={analyser}
-          onContinuer={() => setEtape("relecture")}
+          onContinuer={() => aller("relecture")}
           onManuel={() => {
             setLu(null);
             setVerdict(null);
-            setEtape("relecture");
+            aller("relecture");
           }}
-          onRetour={() => setEtape("choix")}
+          onRetour={() => aller("choix")}
         />
       )}
 
@@ -230,56 +248,13 @@ export default function ParcoursCandidature() {
           erreur={erreur}
           envoi={envoi}
           onEnvoyer={envoyer}
-          onRetour={() => setEtape("source")}
+          onRetour={() => aller("source")}
         />
       )}
 
-      {etape === "envoye" && (
+      {etape === "fin" && (
         <EcranEnvoye proprietaire={proprietaire} onFin={() => router.push("/")} />
       )}
-    </div>
-  );
-}
-
-/* ==================== 1. le choix ==================== */
-
-function EcranChoix({ onChoisir }: { onChoisir: (r: Relation) => void }) {
-  const choix = [
-    {
-      valeur: "proprietaire" as const,
-      titre: "Je suis à la tête de cette marque",
-      texte:
-        "Tu la fondes ou tu la diriges. Une fois ta page validée, tu la gères toi-même : tes pièces, ta présentation, tes statistiques.",
-    },
-    {
-      valeur: "decouvreur" as const,
-      titre: "Je la recommande",
-      texte:
-        "Tu n'en fais pas partie, mais son travail te paraît juste. On la contactera nous-mêmes de ta part.",
-    },
-  ];
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {choix.map((c) => (
-        <button
-          key={c.valeur}
-          type="button"
-          onClick={() => onChoisir(c.valeur)}
-          data-reveal
-          className="card-light group flex flex-col items-start gap-3 p-6 text-left sm:p-7"
-        >
-          <span className="relative z-3 flex flex-col gap-2.5">
-            <span className="text-[17px] font-extrabold leading-snug tracking-[-0.01em]">
-              {c.titre}
-            </span>
-            <span className="text-[13.5px] leading-relaxed text-[#4a3a78]">{c.texte}</span>
-            <span className="mt-1 inline-flex items-center gap-2 text-[13px] font-black text-[#3a2470]">
-              Continuer <span className="transition group-hover:translate-x-1">→</span>
-            </span>
-          </span>
-        </button>
-      ))}
     </div>
   );
 }
@@ -308,11 +283,15 @@ function EcranSource({
   onRetour: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-5">
-      <button type="button" onClick={onRetour} className="self-start text-[13px] font-bold text-white/65 underline underline-offset-2 transition hover:text-white">
-        ← Changer de choix
-      </button>
-
+    <CadreSource
+      onRetour={onRetour}
+      onManuel={onManuel}
+      sansSite={{
+        titre: "Pas de site ? Ce n'est pas un problème.",
+        texte:
+          "Beaucoup de créateurs vendent d'abord en message privé, sur Instagram ou sur Vinted, et montent leur boutique plus tard. Tu peux proposer tes pièces dès maintenant, et renseigner ton site le jour où il existera.",
+      }}
+    >
       <section className="glass p-4 sm:p-7">
         <h2 className="m-0 text-[17px] font-extrabold text-white">
           {proprietaire ? "Tu as un site ?" : "Cette marque a un site ?"}
@@ -392,22 +371,7 @@ function EcranSource({
           </div>
         )}
       </section>
-
-      {/* Le message qui compte le plus de cette page. */}
-      <section className="glass p-4 sm:px-7 sm:py-6">
-        <h2 className="m-0 text-[15.5px] font-extrabold text-white">
-          Pas de site ? Ce n&apos;est pas un problème.
-        </h2>
-        <p className="m-0 mt-2 max-w-2xl text-[13.5px] leading-relaxed text-white/72">
-          Beaucoup de créateurs vendent d&apos;abord en message privé, sur Instagram ou
-          sur Vinted, et montent leur boutique plus tard. Tu peux proposer tes pièces dès
-          maintenant, et renseigner ton site le jour où il existera.
-        </p>
-        <button type="button" onClick={onManuel} className={`${SECONDAIRE} mt-4`}>
-          Remplir à la main
-        </button>
-      </section>
-    </div>
+    </CadreSource>
   );
 }
 
@@ -444,249 +408,256 @@ function EcranRelecture({
   }
 
   return (
-    <form onSubmit={onEnvoyer} className="flex flex-col gap-5">
-      <button type="button" onClick={onRetour} className="self-start text-[13px] font-bold text-white/65 underline underline-offset-2 transition hover:text-white">
-        ← Revenir
-      </button>
+    <CadreRelecture
+      onRetour={onRetour}
+      avis={
+        venuDuSite ? (
+          <>
+            Voici ce qu&apos;on a lu sur le site. <strong className="font-extrabold">Rien n&apos;est
+            définitif</strong> : corrige ce qui est faux, complète ce qui manque.
+          </>
+        ) : undefined
+      }
+    >
+      <form onSubmit={onEnvoyer} className="flex flex-col gap-5">
+        {/* ---- la marque ---- */}
+        <section className="glass flex flex-col gap-5 p-4 sm:p-7">
+          <h2 className="m-0 text-[15.5px] font-extrabold text-white">La marque</h2>
 
-      {venuDuSite && (
-        <p className="glass m-0 px-5 py-3.5 text-[13.5px] leading-relaxed text-white">
-          Voici ce qu&apos;on a lu sur le site. <strong className="font-extrabold">Rien n&apos;est
-          définitif</strong> : corrige ce qui est faux, complète ce qui manque.
-        </p>
-      )}
-
-      {/* ---- la marque ---- */}
-      <section className="glass flex flex-col gap-5 p-4 sm:p-7">
-        <h2 className="m-0 text-[15.5px] font-extrabold text-white">La marque</h2>
-
-        {visuel && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={visuel}
-            alt=""
-            className="h-36 w-full rounded-[var(--radius)] border border-white/25 object-cover"
-          />
-        )}
-
-        <div>
-          <label className={LABEL} htmlFor="marque">Nom de la marque *</label>
-          <input
-            id="marque"
-            className={CHAMP}
-            value={fiche.marque}
-            onChange={(e) => modifier("marque", e.target.value)}
-            required
-            maxLength={120}
-            placeholder="Le nom de ta marque"
-          />
-        </div>
-
-        <div>
-          <label className={LABEL} htmlFor="description">
-            {proprietaire ? "Ta démarche" : "Ce que fait cette marque"}
-          </label>
-          <textarea
-            id="description"
-            className={`${CHAMP} min-h-[120px] resize-y`}
-            value={fiche.description}
-            onChange={(e) => modifier("description", e.target.value)}
-            placeholder="Matières, ateliers, quantités, ce que tu refuses de faire. Trois paragraphes honnêtes valent mieux qu'une page de communication."
-          />
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-3">
-          <div>
-            <label className={LABEL} htmlFor="site">Site ou boutique</label>
-            <input
-              id="site"
-              className={CHAMP}
-              value={fiche.site}
-              onChange={(e) => modifier("site", e.target.value)}
-              placeholder="https://"
+          {visuel && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={visuel}
+              alt=""
+              className="h-36 w-full rounded-[var(--radius)] border border-white/25 object-cover"
             />
-          </div>
+          )}
+
           <div>
-            <label className={LABEL} htmlFor="pays">Pays</label>
+            <label className={LABEL} htmlFor="marque">Nom de la marque *</label>
             <input
-              id="pays"
+              id="marque"
               className={CHAMP}
-              value={fiche.pays}
-              onChange={(e) => modifier("pays", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={LABEL} htmlFor="ville">Ville</label>
-            <input
-              id="ville"
-              className={CHAMP}
-              value={fiche.ville}
-              onChange={(e) => modifier("ville", e.target.value)}
-              placeholder="Paris"
-            />
-          </div>
-        </div>
-
-        <fieldset className="m-0 border-0 p-0">
-          <legend className={`${LABEL} p-0`}>Catégories</legend>
-          <div className="flex flex-wrap gap-1.5">
-            {BRAND_CATEGORIES.map((c) => {
-              const actif = fiche.categories.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() =>
-                    modifier(
-                      "categories",
-                      actif ? fiche.categories.filter((x) => x !== c) : [...fiche.categories, c]
-                    )
-                  }
-                  aria-pressed={actif}
-                  className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition ${
-                    actif
-                      ? "bg-white text-[var(--color-ink)]"
-                      : "border border-white/25 text-white/75 hover:border-white/50 hover:text-white"
-                  }`}
-                >
-                  {c}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-      </section>
-
-      {/* ---- les réseaux ---- */}
-      <section className="glass flex flex-col gap-4 p-4 sm:p-7">
-        <div>
-          <h2 className="m-0 text-[15.5px] font-extrabold text-white">Où vous trouver</h2>
-          <p className="m-0 mt-1.5 text-[13px] leading-relaxed text-white/65">
-            Ajoute autant de réseaux que tu veux. C&apos;est souvent par là qu&apos;on
-            découvre une marque avant d&apos;acheter.
-          </p>
-        </div>
-
-        {reseaux.map((r, i) => (
-          <div key={i} className="flex flex-col gap-2 sm:flex-row">
-            <select
-              value={r.reseau}
-              aria-label="Réseau"
-              onChange={(e) =>
-                setReseaux(reseaux.map((x, j) => (j === i ? { ...x, reseau: e.target.value } : x)))
-              }
-              className={`${CHAMP} sm:w-48`}
-            >
-              {RESEAUX_CONNUS.map((o) => (
-                <option key={o.cle} value={o.cle}>
-                  {o.nom}
-                </option>
-              ))}
-            </select>
-            <input
-              className={CHAMP}
-              value={r.identifiant}
-              aria-label="Identifiant"
-              onChange={(e) =>
-                setReseaux(
-                  reseaux.map((x, j) => (j === i ? { ...x, identifiant: e.target.value } : x))
-                )
-              }
-              placeholder="tamarque, sans l'arobase"
-            />
-            <button
-              type="button"
-              onClick={() => setReseaux(reseaux.filter((_, j) => j !== i))}
-              aria-label="Retirer ce réseau"
-              className="shrink-0 rounded-full border border-white/25 px-4 py-3 text-[13px] font-bold text-white/70 transition hover:border-white/50 hover:text-white"
-            >
-              Retirer
-            </button>
-          </div>
-        ))}
-
-        <button type="button" onClick={ajouterReseau} className={`${SECONDAIRE} self-start`}>
-          + Ajouter un réseau
-        </button>
-      </section>
-
-      {/* ---- le contact ---- */}
-      <section className="glass flex flex-col gap-5 p-4 sm:p-7">
-        <div>
-          <h2 className="m-0 text-[15.5px] font-extrabold text-white">Pour te répondre</h2>
-          <p className="m-0 mt-1.5 text-[13px] leading-relaxed text-white/65">
-            {proprietaire
-              ? "On lit chaque dossier à la main, et on vérifie que la marque est bien la tienne avant de t'en donner les clés. C'est à cette adresse qu'on écrira."
-              : "On te dira ce qu'il advient de ta recommandation, et on contactera la marque de ta part."}
-          </p>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label className={LABEL} htmlFor="contact">Ton nom *</label>
-            <input
-              id="contact"
-              className={CHAMP}
-              value={fiche.contact}
-              onChange={(e) => modifier("contact", e.target.value)}
+              value={fiche.marque}
+              onChange={(e) => modifier("marque", e.target.value)}
               required
               maxLength={120}
-              placeholder="Prénom Nom"
+              placeholder="Le nom de ta marque"
             />
           </div>
+
           <div>
-            <label className={LABEL} htmlFor="email">Ton email *</label>
-            <input
-              id="email"
-              type="email"
-              className={CHAMP}
-              value={fiche.email}
-              onChange={(e) => modifier("email", e.target.value)}
-              required
-              placeholder="toi@tamarque.fr"
+            <label className={LABEL} htmlFor="description">
+              {proprietaire ? "Ta démarche" : "Ce que fait cette marque"}
+            </label>
+            <textarea
+              id="description"
+              className={`${CHAMP} min-h-[120px] resize-y`}
+              value={fiche.description}
+              onChange={(e) => modifier("description", e.target.value)}
+              placeholder="Matières, ateliers, quantités, ce que tu refuses de faire. Trois paragraphes honnêtes valent mieux qu'une page de communication."
             />
           </div>
-        </div>
 
-        <div>
-          <label className={LABEL} htmlFor="pitch">
-            {proprietaire ? "Un mot pour nous" : "Pourquoi cette marque"}
-          </label>
-          <textarea
-            id="pitch"
-            className={`${CHAMP} min-h-[110px] resize-y`}
-            value={fiche.pitch}
-            onChange={(e) => modifier("pitch", e.target.value)}
-            placeholder={
-              proprietaire
-                ? "Ce qui te tient à cœur, ce que tu prépares. On lit tout."
-                : "Ce qui t'a marqué chez elle."
-            }
-          />
-        </div>
-      </section>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div>
+              <label className={LABEL} htmlFor="site">Site ou boutique</label>
+              <input
+                id="site"
+                className={CHAMP}
+                value={fiche.site}
+                onChange={(e) => modifier("site", e.target.value)}
+                placeholder="https://"
+              />
+            </div>
+            <div>
+              <label className={LABEL} htmlFor="pays">Pays</label>
+              <input
+                id="pays"
+                className={CHAMP}
+                value={fiche.pays}
+                onChange={(e) => modifier("pays", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={LABEL} htmlFor="ville">Ville</label>
+              <input
+                id="ville"
+                className={CHAMP}
+                value={fiche.ville}
+                onChange={(e) => modifier("ville", e.target.value)}
+                placeholder="Paris"
+              />
+            </div>
+          </div>
 
-      {erreur && (
-        <p className="m-0 rounded-[var(--radius)] border border-[#ff9db0] bg-[rgba(194,39,63,0.28)] px-5 py-3.5 text-[13.5px] leading-relaxed text-white">
-          {erreur}
+          <fieldset className="m-0 border-0 p-0">
+            <legend className={`${LABEL} p-0`}>Catégories</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {BRAND_CATEGORIES.map((c) => {
+                const actif = fiche.categories.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() =>
+                      modifier(
+                        "categories",
+                        actif ? fiche.categories.filter((x) => x !== c) : [...fiche.categories, c]
+                      )
+                    }
+                    aria-pressed={actif}
+                    className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition ${
+                      actif
+                        ? "bg-white text-[var(--color-ink)]"
+                        : "border border-white/25 text-white/75 hover:border-white/50 hover:text-white"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        </section>
+
+        {/* ---- les réseaux ---- */}
+        <section className="glass flex flex-col gap-4 p-4 sm:p-7">
+          <div>
+            <h2 className="m-0 text-[15.5px] font-extrabold text-white">Où vous trouver</h2>
+            <p className="m-0 mt-1.5 text-[13px] leading-relaxed text-white/65">
+              Ajoute autant de réseaux que tu veux. C&apos;est souvent par là qu&apos;on
+              découvre une marque avant d&apos;acheter.
+            </p>
+          </div>
+
+          {reseaux.map((r, i) => (
+            <div key={i} className="flex flex-col gap-2 sm:flex-row">
+              <select
+                value={r.reseau}
+                aria-label="Réseau"
+                onChange={(e) =>
+                  setReseaux(reseaux.map((x, j) => (j === i ? { ...x, reseau: e.target.value } : x)))
+                }
+                className={`${CHAMP} sm:w-48`}
+              >
+                {RESEAUX_CONNUS.map((o) => (
+                  <option key={o.cle} value={o.cle}>
+                    {o.nom}
+                  </option>
+                ))}
+              </select>
+              <input
+                className={CHAMP}
+                value={r.identifiant}
+                aria-label="Identifiant"
+                onChange={(e) =>
+                  setReseaux(
+                    reseaux.map((x, j) => (j === i ? { ...x, identifiant: e.target.value } : x))
+                  )
+                }
+                placeholder="tamarque, sans l'arobase"
+              />
+              <button
+                type="button"
+                onClick={() => setReseaux(reseaux.filter((_, j) => j !== i))}
+                aria-label="Retirer ce réseau"
+                className="shrink-0 rounded-full border border-white/25 px-4 py-3 text-[13px] font-bold text-white/70 transition hover:border-white/50 hover:text-white"
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+
+          <button type="button" onClick={ajouterReseau} className={`${SECONDAIRE} self-start`}>
+            + Ajouter un réseau
+          </button>
+        </section>
+
+        {/* ---- le contact ---- */}
+        <section className="glass flex flex-col gap-5 p-4 sm:p-7">
+          <div>
+            <h2 className="m-0 text-[15.5px] font-extrabold text-white">Pour te répondre</h2>
+            <p className="m-0 mt-1.5 text-[13px] leading-relaxed text-white/65">
+              {proprietaire
+                ? "On lit chaque dossier à la main, et on vérifie que la marque est bien la tienne avant de t'en donner les clés. C'est à cette adresse qu'on écrira."
+                : "On te dira ce qu'il advient de ta recommandation, et on contactera la marque de ta part."}
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label className={LABEL} htmlFor="contact">Ton nom *</label>
+              <input
+                id="contact"
+                className={CHAMP}
+                value={fiche.contact}
+                onChange={(e) => modifier("contact", e.target.value)}
+                required
+                maxLength={120}
+                placeholder="Prénom Nom"
+              />
+            </div>
+            <div>
+              <label className={LABEL} htmlFor="email">Ton email *</label>
+              <input
+                id="email"
+                type="email"
+                className={CHAMP}
+                value={fiche.email}
+                onChange={(e) => modifier("email", e.target.value)}
+                required
+                placeholder="toi@tamarque.fr"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={LABEL} htmlFor="pitch">
+              {proprietaire ? "Un mot pour nous" : "Pourquoi cette marque"}
+            </label>
+            <textarea
+              id="pitch"
+              className={`${CHAMP} min-h-[110px] resize-y`}
+              value={fiche.pitch}
+              onChange={(e) => modifier("pitch", e.target.value)}
+              placeholder={
+                proprietaire
+                  ? "Ce qui te tient à cœur, ce que tu prépares. On lit tout."
+                  : "Ce qui t'a marqué chez elle."
+              }
+            />
+          </div>
+        </section>
+
+        {erreur && (
+          <p className="m-0 rounded-[var(--radius)] border border-[#ff9db0] bg-[rgba(194,39,63,0.28)] px-5 py-3.5 text-[13.5px] leading-relaxed text-white">
+            {erreur}
+          </p>
+        )}
+
+        <button type="submit" disabled={envoi} className={`${PRINCIPAL} self-start`}>
+          {envoi ? "Envoi…" : "Publier ma candidature"}
+        </button>
+
+        <p className="m-0 text-[12.5px] leading-relaxed text-white/62">
+          Tes informations servent uniquement à étudier ta candidature. Elles ne sont ni
+          revendues ni transmises. Tu peux demander leur suppression à tout moment à
+          contact@newavesphere.fr.
         </p>
-      )}
-
-      <button type="submit" disabled={envoi} className={`${PRINCIPAL} self-start`}>
-        {envoi ? "Envoi…" : "Publier ma candidature"}
-      </button>
-
-      <p className="m-0 text-[12.5px] leading-relaxed text-white/62">
-        Tes informations servent uniquement à étudier ta candidature. Elles ne sont ni
-        revendues ni transmises. Tu peux demander leur suppression à tout moment à
-        contact@newavesphere.fr.
-      </p>
-    </form>
+      </form>
+    </CadreRelecture>
   );
 }
 
 /* ==================== 4. c'est parti ==================== */
 
+/**
+ * La porte de sortie du candidat, et elle n'appartient qu'à lui : ce
+ * parcours se termine par un DOSSIER EN ATTENTE, pas par une marque en
+ * ligne. C'est la seule chose qu'on ne partage pas avec le parcours de
+ * l'administration, et c'est justement toute la différence.
+ */
 function EcranEnvoye({
   proprietaire,
   onFin,
