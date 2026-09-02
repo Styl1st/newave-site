@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import PanneauEdition from "./PanneauEdition";
 import type { Brand } from "@/lib/types";
 
 /**
@@ -89,10 +88,29 @@ export default function BarreGerant({ brand }: { brand: Brand }) {
       <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-white/20 sm:block" />
 
       <div className="flex items-stretch gap-2 sm:contents">
-        <PanneauEdition
-          brand={brand}
-          className="flex-1 border border-white/20 bg-white/8 backdrop-blur-sm sm:flex-none sm:border-0 sm:bg-transparent sm:backdrop-blur-none"
-        />
+        {/*
+         * « MODIFIER MA PAGE » MÈNE À L'ÉDITEUR, il n'ouvre plus un
+         * panneau.
+         *
+         * Le panneau montrait la moitié de la fiche — l'accroche, la
+         * démarche, les visuels — et rien de ce qui décide de sa mise en
+         * ligne : on remplissait consciencieusement, on refermait, et
+         * l'on n'apprenait qu'il manquait une pièce au catalogue que le
+         * jour où quelqu'un s'étonnait de ne pas voir la marque dans
+         * l'annuaire. L'éditeur, lui, montre en même temps la carte
+         * qu'on est en train de fabriquer et ce qui la retient.
+         *
+         * C'est exactement l'écran que l'administration ouvre en
+         * cliquant cette marque dans sa liste. Une seule adresse, un
+         * seul enregistrement : ce qu'on corrige d'un côté, l'autre le
+         * retrouve.
+         */}
+        <Link
+          href={`/espace-marque/${brand.slug}/modifier`}
+          className={`${base} flex-1 border border-white/20 bg-white/8 text-center text-white/75 backdrop-blur-sm hover:bg-white/14 hover:text-white sm:flex-none sm:border-0 sm:bg-transparent sm:backdrop-blur-none`}
+        >
+          Modifier ma page
+        </Link>
 
         <Link
           href={`/espace-marque/${brand.slug}/pieces/ajouter`}

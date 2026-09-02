@@ -595,6 +595,203 @@ coche en bas, et rien dans la ligne ne dit si la fiche est publiable.
 
 ---
 
+---
+
+### 11. La barre de navigation publique — badge `10a`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Remplace :** la mise en page de `Header.tsx` ·
+**Classe existante :** `.barre` (à conserver telle quelle)
+
+**Ce qui change.** Trois ajouts, aucune refonte : le **liseré chromé animé** vient border
+la pilule (technique décrite dans « Composants partagés ») ; deux **icônes rondes de 36px**
+apparaissent à droite des onglets — recherche (ouvre le ⌘K) et favoris — ce qui les rend
+atteignables de partout ; et « Connexion » cède la place à une **pastille d'avatar 36px**
+en `linear-gradient(140deg, rgba(232,111,216,.5), rgba(90,114,224,.44))` avec l'initiale
+en 900/13px.
+
+Les onglets passent de `700 12.5px / padding:8px 13px` à `700 13px / padding:9px 14px`, et
+l'inactif s'éclaircit de `rgba(255,255,255,.82)` à `.7` pour que l'onglet actif ressorte
+davantage. Le reste — fond composé, dégradé d'accents sur l'onglet actif, CTA blanc — est
+identique au code actuel.
+
+⚠️ Ne pas toucher `MobileMenu.tsx` : sur téléphone, la barre garde son tiroir.
+
+---
+
+### 12. La barre du gérant — badge `10d`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Remplace :** `BarreGerant.tsx`
+
+**Purpose.** Aujourd'hui : trois onglets et deux boutons dans une pilule translucide. Rien
+ne dit de **quelle marque** il s'agit (problème réel dès qu'on en gère deux), rien ne dit
+qu'elle est en **brouillon**, et rien ne dit **ce qu'il manque** pour la publier — cette
+information n'existe qu'au moment d'échouer.
+
+**Structure : une carte à deux étages**, `border-radius:22px`,
+`background-color:rgba(6,2,26,.72)`, `backdrop-filter:blur(26px) saturate(1.4)`,
+`border:1px solid rgba(255,255,255,.18)`,
+`box-shadow:0 18px 44px -16px rgba(12,3,36,.9), inset 0 1px 0 rgba(255,255,255,.16)`.
+Beaucoup plus opaque que la barre publique : c'est un outil, pas du décor.
+
+**Filet d'appartenance** — tout en haut, `height:3px`,
+`linear-gradient(90deg, rgba(232,111,216,.9), rgba(180,122,234,.85), rgba(90,114,224,.9))`.
+C'est le seul signe qui dit « cette zone n'appartient qu'à toi ».
+
+**Premier étage** (`padding:14px 18px`, `display:flex; flex-wrap:wrap; gap:16px`) :
+- **logo 42×42px** `border-radius:12px` + `inset 0 0 0 1.5px rgba(255,255,255,.5)` ;
+- œil-de-bœuf « TON ESPACE » (900/9px, `.2em`) + **nom** 800/15px `-.02em` + **badge
+  d'état** : brouillon = `rgba(240,192,90,.18)` / `inset 0 0 0 1px rgba(240,192,90,.5)` /
+  texte `#f5d38f` / point 5px `#f0c05a` ; en ligne = `rgba(125,226,171,.16)` /
+  `inset 0 0 0 1px rgba(125,226,171,.45)` / texte `#a6ecc6` / point `#7de2ab` ;
+- séparateur 1×34px ;
+- **onglets** — `padding:10px 14px; border-radius:13px; gap:8px`, icône 16px + libellé,
+  `white-space:nowrap`, actif en `background:#fff; color:#170a33; font:800 13px`. « Mes
+  pièces » porte son compteur. La nav est en `flex:0 1 auto` (elle ne porte pas seule le
+  rétrécissement) et chaque `<svg>` en `flex:0 0 auto` ;
+- **actions** — « Modifier ma fiche » en outline `rgba(255,255,255,.1)`, « Ajouter des
+  pièces » en blanc `box-shadow:0 4px 16px -4px rgba(232,111,216,.6)`.
+
+**Second étage, selon l'état** — même hauteur, même place, contenu différent :
+
+*Brouillon* — bandeau `rgba(240,192,90,.12)` : pastille ronde 22px `rgba(240,192,90,.9)`
+portant **le nombre de conditions manquantes**, la phrase (« Il te reste une chose avant de
+pouvoir publier »), les **trois conditions de `publication.ts`** en pastilles — remplie =
+coche `#7de2ab`, manquante = cercle vide `2px solid rgba(240,192,90,.9)` sur
+`rgba(240,192,90,.2)` — puis le geste qui lève l'obstacle (« Importer depuis ma
+boutique ») et « Publier ma marque » en dégradé d'accents, **à `opacity:.4` et désactivé**
+tant que la check-list n'est pas complète.
+
+*En ligne* — bandeau `rgba(255,255,255,.06)`, `gap:22px` : vues sur 7 jours, favoris
+gagnés (delta en `#7de2ab`), clics partis vers la boutique, puis « Le détail » aligné à
+droite. Ce sont les trois chiffres de `StatsPanel` qui intéressent un créateur.
+
+⚠️ La check-list vient de `obstacleAPublication()`, jamais d'un test local. Les messages
+affichés sont **ceux que la fonction renvoie**.
+
+---
+
+### 13. Modifier sa page — badge `11b`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Remplace :** `PanneauEdition.tsx`
+
+**Purpose.** Le panneau actuel empile douze champs dans un seul défilement, avec un bouton
+tout en bas et aucun moyen de voir le résultat. Le commentaire du fichier dit vouloir « voir
+sa page, exactement comme les visiteurs la voient, et ouvrir ce panneau pour la retoucher » —
+`11b` va au bout de cette intention : **il n'y a plus de panneau du tout.**
+
+**Le principe.** Un mode **retouche**, activé depuis la barre du gérant. Le bouton
+« Modifier ma page » devient un état visible (`linear-gradient(118deg, rgba(232,111,216,.6),
+rgba(90,114,224,.58))`, « Retouche en cours ») accompagné de la consigne « Clique sur un
+texte ou un visuel de ta page pour le changer », et d'un bouton « Quitter la retouche ».
+
+**Chaque bloc de la page devient son propre petit éditeur.**
+
+| Élément de page | Champ | Comportement en retouche |
+|---|---|---|
+| Couverture | `cover_url` / `cover_video_url` | `box-shadow:0 0 0 2px rgba(232,111,216,.55)` en permanence + badge « MODIFIABLE » ; au survol, voile `rgba(12,4,32,.42)` et deux boutons centrés : « Changer l'image » (blanc) et « Mettre une vidéo » (outline sur fond opaque) |
+| Logo | `logo_url` | pastille crayon 30px blanche en bas à droite du logo 88px |
+| Accroche | `tagline` | clic → devient un champ **à sa place et à sa taille** : bloc `rgba(12,4,32,.5)`, `box-shadow:0 0 0 2px rgba(232,111,216,.75)`, étiquette flottante « TA PHRASE » en `rgba(232,111,216,.95)`, texte en 500/18px (la taille d'affichage réelle), pied avec « Échap pour annuler · Entrée pour valider », compteur « 29 / 70 » et bouton « Valider » |
+| Démarche | `description` | au survol : `box-shadow:0 0 0 1.5px rgba(255,255,255,.28)`, étiquette « TA DÉMARCHE », bouton « Modifier » en haut à droite. En édition, même traitement que l'accroche, en 15px/1.75 |
+| Ville, catégories, gamme | `city`, `categories`, `price_tier` | les pastilles de métadonnées déjà affichées sous le nom deviennent cliquables (petit crayon 11px dedans) ; une pastille **pointillée** « + Année de création » pour le champ vide |
+| Pièces | — | section « Mes pièces 0 » avec bloc pointillé : « C'est la dernière chose qui te manque pour publier » + « Importer depuis ma boutique » / « Ajouter à la main » |
+
+**Rail de droite (300px)** — pour ce qui n'a pas d'équivalent visible dans la page :
+- **« Prêt à publier »** — « 2 sur 3 », barre de progression, les trois conditions, et la
+  note « Ta boutique, tes catégories et ton pays ne bloquent pas la publication » ;
+- **« Aussi sur cette page »** — la liste des champs restants (Couverture, Logo, Boutique,
+  Instagram, Année de création) avec coche verte ou mention « VIDE », chacun ouvrant son
+  éditeur.
+
+**Barre d'enregistrement flottante** — `position:fixed`, centrée en bas, pilule
+`rgba(6,2,26,.82)` + `blur(24px)`, **visible seulement s'il y a des modifications** :
+pastille ambre + « 2 modifications non enregistrées » / « Tout annuler » / « Enregistrer ».
+
+**À porter côté implémentation.**
+- Un **brouillon local** (un `useState` par champ, ou un seul objet) : rien ne part au
+  serveur avant « Enregistrer », et « Tout annuler » restaure les valeurs d'origine.
+- L'envoi reste **`saveBrandPresentation`**, inchangé, avec le même `FormData` — donc les
+  mêmes droits relus en base. Le mode retouche ne donne rien à personne.
+- Les libellés et textes d'aide restent **ceux de `MOTS`** dans `PanneauEdition.tsx`, y
+  compris la voix `administration` : le même mode retouche sert à l'admin sur la fiche
+  d'une marque, seuls les mots changent.
+- Avertissement avant de quitter la page s'il reste des modifications.
+- Sur téléphone, l'édition en place n'est pas praticable pour tous les champs : **garder le
+  panneau** `11a`-style (feuille qui monte) en dessous de `sm`, et réserver la retouche en
+  place au desktop. Les deux écrivent dans le même brouillon.
+
+---
+
+### 14. Coups de cœur, remasterisée — badge `12a`
+
+**Fichier :** `NEWAVE - pages.dc.html` · **Route :** `/populaires` ·
+**Remplace l'écran `7a` décrit plus haut** (`7a` reste la référence pour la suite du
+classement en tableau)
+
+**Purpose.** Le problème n'est pas la ligne de rayons, c'est qu'un rayon à « 0 » se présente
+exactement comme un rayon à « 400 » : on clique, et on tombe sur du vide. Sur un site qui
+vient d'ouvrir, c'est le cas de presque tous. La page doit donc **se comporter autrement
+selon ce qu'il y a en base** — pas être refaite à chaque palier.
+
+**Les quatre règles, à implémenter comme des seuils.**
+
+| Règle | Condition | Sinon |
+|---|---|---|
+| Sélecteur de période (Cette semaine / Ce mois / Depuis toujours) | total ≥ **100 cœurs** | pas de sélecteur du tout |
+| Podium à trois places | total ≥ **100 cœurs** | une **liste simple** « Les premières mises de côté », sans rang ni médaille |
+| Un rayon dans la ligne principale | ≥ **1 cœur** | il passe dans la zone « Encore aucun cœur » |
+| Grille de résultats | le filtre rend ≥ 1 marque | jamais une grille vide — voir ci-dessous |
+
+**La ligne de rayons.** Rangée **par nombre de cœurs décroissant**, la mieux garnie
+d'abord — c'est ce qui la rend instinctive : on lit l'ordre avant de lire les mots. Chaque
+pastille est un petit bloc `min-width:112px`, `padding:10px 16px 9px`,
+`border-radius:15px`, contenant le nom (700/12px `.06em` majuscules), le compte
+(900/13px) **et une jauge** `height:3px` `border-radius:999px` sur
+`rgba(255,255,255,.16)`, remplie en
+`linear-gradient(90deg, rgba(232,111,216,.95), rgba(180,122,234,.9))` à la proportion du
+rayon le plus garni. « Tout » est actif par défaut : fond blanc, jauge `#170a33` à 100 %.
+
+**Les rayons vides**, sous un filet, dans une zone préfixée « ENCORE AUCUN CŒUR » : pastille
+`border:1px dashed rgba(255,255,255,.3)`, **sans compteur de cœurs** mais avec un libellé
+honnête — « Streetwear · 7 marques à découvrir ». ⚠️ Elles restent **cliquables**, et mènent
+à **`/marques?cat=streetwear`**, pas à une page de classement vide. La note le dit :
+« Cliquer y mène à l'annuaire filtré, pas à une page vide. »
+
+**Sous cent cœurs, la liste plutôt que le podium.** Lignes `.card-light`
+`grid-template-columns:60px minmax(0,1fr) 210px 120px 40px; gap:16px` : logo 60px ·
+identité · aperçu 4 vignettes · « 8 cœurs » (800/14px avec cœur plein) · bouton favori.
+**Pas de numéro de rang**, pas de pastille de médaille : à cette échelle, trois voix d'écart
+changeraient tout et un podium mentirait. Titre de section « Les premières mises de côté »,
+avec la note « Le podium s'ouvrira à 100 cœurs ».
+
+**Le bloc qui répond au vide — « Le premier cœur est à prendre ».** `.glass`,
+`padding:22px`. Œil-de-bœuf « PERSONNE N'A ENCORE VOTÉ POUR ELLES », titre 800/21px,
+phrase « Sept marques de l'annuaire n'aucun cœur. Ce ne sont pas les moins bonnes — juste
+les moins vues. », bouton « Une autre série » (icône shuffle). Puis **4 cartes**
+`.card-light` `border-radius:16px` en `repeat(4,1fr); gap:12px` : visuel `aspect-ratio:4/3`
+avec un **bouton cœur 32px** `rgba(23,10,51,.9)` posé en bas à droite (le geste est là,
+sur la carte), nom 800/14px, méta 600/10.5px majuscules. Les marques sont tirées au sort
+parmi celles à zéro cœur.
+
+**Rail de droite (320px), trois blocs :**
+- **« Le classement complet »** — « 34 sur 100 cœurs » + barre de progression + l'explication
+  du seuil, en toutes lettres : « En dessous de cent cœurs, un podium ne veut rien dire :
+  trois voix d'écart suffiraient à tout changer. » ;
+- **« Vient d'être mis de côté »** — 3 lignes, vignette 36px + nom + ancienneté, avec la
+  note de confidentialité **« On ne dit jamais qui a mis quoi de côté. »** ;
+- **« Ta liste à toi »** — carte `.card-light` vers `/favoris`.
+
+**Ce qu'il faut côté données.**
+1. `getMostFavorited()` existe déjà — ajouter le **compte par catégorie** (un agrégat, pas
+   un comptage client) et le **total général**, qui pilotent les seuils.
+2. La liste des marques publiées **à zéro cœur**, tirée au sort, pour le bloc du bas.
+3. Les **derniers favoris ajoutés**, marque et horodatage seuls — ⚠️ jamais l'utilisateur,
+   la règle de `favorites.ts` ne change pas.
+4. Le delta hebdomadaire n'est nécessaire **qu'au-dessus du seuil** : inutile de le
+   construire tant que le sélecteur de période n'apparaît pas.
+
+Les seuils (100 cœurs) sont un point de départ à mettre dans une constante, pas en dur dans
+le JSX — ils vont bouger.
+
 ## Ce qui reste à ne pas casser dans l'administration
 
 - `src/lib/publication.ts` est **la** définition. Ne pas la dupliquer, ne pas l'assouplir
@@ -849,7 +1046,7 @@ dessin stable d'un appareil à l'autre).
 | Fichier | Contenu |
 |---|---|
 | `Annuaire NEWAVE.dc.html` | Écran `2a` — l'annuaire à l'échelle. Contient aussi `1a`, la recréation fidèle de l'annuaire **actuel** (utile comme point de comparaison) et les explorations `1b`/`1c`/`1d`, écartées. |
-| `NEWAVE - pages.dc.html` | Écrans `3b` accueil · `5a` pièces · `6b` posts · `7a` classement · `7b` favoris · `8a`/`8b` compte · `9a` éditer une marque · `9b` tableau de bord · `9c` liste des marques. |
+| `NEWAVE - pages.dc.html` | Écrans `3b` accueil · `5a` pièces · `6b` posts · `7a` classement (voir `12a` qui le remplace) · `7b` favoris · `8a`/`8b` compte · `9a` éditer une marque · `9b` tableau de bord · `9c` liste des marques · `10a` barre publique · `10d` barre du gérant · `11b` modifier sa page · `12a` coups de cœur remasterisée. Les tours antérieurs conservent les pistes écartées ; les intitulés indiquent lesquelles ont été retenues. |
 | `assets/` | Les 5 fichiers de marque, pour que les HTML s'ouvrent hors ligne. |
 | `support.js` | Runtime des fichiers de design. **Aucun intérêt pour l'implémentation** — ne pas le porter. |
 
@@ -867,6 +1064,8 @@ et les intitulés indiquent lesquelles ont été retenues.
 4. **`6b` les posts** — indépendant, peu de logique.
 5. **`7a`/`7b`** — dépendent de l'aperçu de pièces (étape 1) et du delta hebdomadaire.
 6. **`9a` la fiche marque** — c'est l'écran le plus utilisé au quotidien, et le seul qui demande une vraie nouveauté fonctionnelle (la check-list live). `9b` et `9c` en découlent : ils réutilisent `obstacleAPublication()` côté client.
-7. **`8a`/`8b` le compte** — réorganisation de composants existants, aucune donnée
+7. **`10a` et `10d` les deux barres** — elles encadrent tous les écrans, autant les poser tôt.
+8. **`11b` la retouche en place** — dépend de `10d` (c'est de là qu'on entre en retouche).
+9. **`8a`/`8b` le compte** — réorganisation de composants existants, aucune donnée
    nouvelle ; c'est le moins risqué, et il peut passer en premier si tu préfères
    commencer petit.

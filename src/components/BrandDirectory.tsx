@@ -133,6 +133,28 @@ export default function BrandDirectory({
   }, []);
 
   /*
+   * LA LOUPE DE LA BARRE ARRIVE ICI AVEC `?recherche=1`.
+   *
+   * On ne pense à chercher une marque qu'en étant ailleurs sur le site.
+   * Le raccourci de la barre emmène donc à l'annuaire, et il serait
+   * absurde d'y déposer quelqu'un devant un champ qu'il faut encore
+   * aller cliquer.
+   *
+   * On lit l'adresse directement plutôt que par `useSearchParams` : ce
+   * hook fait basculer la page en rendu client tant qu'il n'est pas
+   * enveloppé dans un `Suspense`, et il serait dommage de payer ça pour
+   * un curseur.
+   *
+   * Sur téléphone, on ne donne PAS le focus : le clavier surgirait et
+   * recouvrirait la moitié de la liste qu'on vient d'ouvrir.
+   */
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("recherche")) return;
+    if (window.matchMedia("(max-width: 639px)").matches) return;
+    champ.current?.focus();
+  }, []);
+
+  /*
    * Fermer en cliquant à côté, et pas au `blur` du champ.
    *
    * Le `blur` part AVANT le clic sur une suggestion : le panneau se

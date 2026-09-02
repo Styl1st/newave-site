@@ -8,6 +8,9 @@ import { normalizeShopUrl } from "@/lib/catalogue";
 import { lireLaBoutique } from "@/lib/lecture";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { enEuros, lireLesTaux } from "@/lib/devises";
+import { doitAvoirDesPieces, unAcces } from "@/lib/acces";
+import { uneAudience } from "@/lib/audience";
+import { obstacleAPublication } from "@/lib/publication";
 
 /**
  * Ecritures de l'espace marque.
@@ -95,6 +98,178 @@ export async function saveBrandPresentation(formData: FormData): Promise<Result>
   revalidatePath(`/marques/${slug}`);
   revalidatePath("/marques");
   return { ok: true };
+}
+
+/**
+ * L'enregistrement de l'éditeur de fiche — le seul, pour les deux publics.
+ *
+ * POURQUOI UNE ACTION ET NON DEUX. Il y en avait deux :
+ * `saveBrandPresentation` pour ce qu'une marque décide chez elle, et
+ * `saveBrandReglages` pour ce que seule l'administration décide. Tant
+ * que c'étaient deux écrans, c'était juste. Depuis qu'il n'y a plus
+ * qu'un éditeur, deux actions voudraient dire deux formulaires
+ * imbriqués — ce que le navigateur refuse — ou deux boutons
+ * d'enregistrement qui n'enregistrent chacun que la moitié de ce qu'on
+ * vient de corriger.
+ *
+ * LE PARTAGE NE SE FAIT PAS SUR CE QU'ON REÇOIT, MAIS SUR QUI ENVOIE.
+ * Un champ caché reste envoyable à la main : masquer « Mettre à la une »
+ * dans le navigateur n'empêche personne de poster `featured=on`. Le rôle
+ * est donc relu en base à chaque envoi — c'est ce que fait
+ * `requireManagedBrand`, qui rend `isAdmin` d'après la table `profiles`
+ * et non d'après le formulaire —, et les champs réservés sont
+ * simplement ABSENTS de l'écriture quand ce n'est pas un administrateur.
+ * Pas rejetés avec un message : ignorés, comme s'ils n'avaient jamais
+ * été envoyés.
+ *
+ * Par-dessus, les règles RLS de la base refusent de toute façon à un
+ * gérant de publier sa fiche ou de se mettre à la une. Les deux, pas
+ * l'une ou l'autre.
+ */
+export async function enregistrerLaFiche(
+  formData: FormData
+): Promise<Result & { slug?: string; message?: string }> {
+  /*
+   * `slug` DÉSIGNE la marque, il ne la renomme pas.
+   *
+   * C'est la convention de tout ce fichier, et celle qu'attend
+   * `requireManagedBrand`. L'adresse de la page, elle, s'envoie sous
+   * `nouveau_slug` : deux sens pour un même nom, et c'est l'identité de
+   * la marque qu'on cherche à écrire qui changerait en cours de route.
+   */
+  const slug = text(formData, "slug");
+  const { brand, isAdmin } = await requireManagedBrand(slug);
+
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const year = text(formData, "founded_year");
+  const covers = list(formData, "cover_url");
+  const logos = list(formData, "logo_url");
+
+  /* ---- ce qu'une marque décide pour elle-même ---- */
+  const presentation = {
+    tagline: text(formData, "tagline"),
+    description: text(formData, "description"),
+    /*
+     * Pas de « France » par défaut, contrairement à
+     * `saveBrandPresentation`.
+     *
+     * Le champ propose explicitement « À deviner » (voir `ChampsLieu`),
+     * et écrire France à la place de ce choix affiche une erreur en
+     * toutes lettres sur la carte d'une marque danoise. Une erreur
+     * affirmée ne se corrige jamais : personne ne relit un champ qui a
+     * l'air rempli. C'est la décision déjà prise dans `saveBrand`, dont
+     * le commentaire l'explique en long.
+     */
+    country: text(formData, "country"),
+    city: nullable(formData, "city"),
+    founded_year: year ? Number(year) : null,
+    categories: list(formData, "categories"),
+    price_tier: text(formData, "price_tier") || "intermediaire",
+    shop_url: nullable(formData, "shop_url"),
+    instagram: nullable(formData, "instagram"),
+    logo_url: logos[0] ?? null,
+    cover_url: covers[0] ?? null,
+    cover_video_url: nullable(formData, "cover_video_url"),
+  };
+
+  /*
+   * `website_url` N'EST PAS DANS CETTE ÉCRITURE, ET C'EST VOLONTAIRE.
+   *
+   * L'éditeur ne demande qu'une adresse, `shop_url`. L'envoyer à null
+   * parce que le formulaire ne la porte pas effacerait à chaque
+   * enregistrement l'adresse qu'un import a pu déduire — celle dont
+   * dépend `doitAvoirDesPieces` pour savoir si un catalogue est exigé.
+   * On ne touche pas à ce qu'on ne demande pas.
+   */
+
+  /* ---- ce qu'une marque ne décide pas pour elle-même ---- */
+  const nom = text(formData, "name") || brand.name;
+  const reglages = isAdmin
+    ? {
+        name: nom,
+        slug: text(formData, "nouveau_slug") || slugify(nom),
+        featured: formData.get("featured") === "on",
+        audience: uneAudience(text(formData, "audience")),
+        acces: unAcces(text(formData, "acces")),
+      }
+    : null;
+
+  const { error } = await supabase
+    .from("brands")
+    .update({ ...presentation, ...(reglages ?? {}) })
+    .eq("id", brand.id);
+
+  if (error) return { ok: false, error: error.message };
+
+  // Ce qui a réellement été écrit, et non ce que le formulaire a
+  // proposé : chez un créateur, ce sont les valeurs restées en base.
+  const adresse = reglages?.slug ?? brand.slug;
+  const nomEcrit = reglages?.name ?? brand.name;
+  const accesEcrit = reglages?.acces ?? brand.acces;
+
+  /*
+   * PUBLIER EST UN GESTE À PART, ET IL PASSE PAR LA RÈGLE COMMUNE.
+   *
+   * Le bouton « Enregistrer et publier » se désactive tout seul tant
+   * que la check-list n'est pas complète, mais un bouton désactivé
+   * n'est pas une sécurité : on revérifie ici, avec la même fonction,
+   * sur les valeurs qui viennent d'être écrites et sur le nombre réel
+   * de pièces en base. Une deuxième porte vers `status` finirait sinon
+   * par être la porte la plus permissive, et c'est par celle-là que
+   * sortiraient les fiches bancales.
+   */
+  let message: string | undefined;
+  if (isAdmin && text(formData, "publier") === "1" && brand.status !== "published") {
+    const { count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("brand_id", brand.id);
+
+    const obstacle = obstacleAPublication({
+      ...presentation,
+      pieces: count ?? 0,
+      exigeDesPieces: doitAvoirDesPieces({
+        shop_url: presentation.shop_url,
+        website_url: brand.website_url,
+        acces: accesEcrit,
+      }),
+    });
+
+    if (obstacle) {
+      // La fiche est enregistrée : c'est la mise en ligne qui attend.
+      // Le dire dans cet ordre évite de croire qu'on a tout perdu.
+      return { ok: true, slug: adresse, message: `Fiche enregistrée. ${obstacle}` };
+    }
+
+    const { error: erreurPublication } = await supabase
+      .from("brands")
+      .update({
+        status: "published",
+        // On garde la date de première publication quand il y en a une :
+        // elle ordonne l'annuaire, et la remettre à zéro remonterait
+        // artificiellement une vieille marque simplement republiée.
+        published_at: brand.published_at ?? new Date().toISOString(),
+      })
+      .eq("id", brand.id);
+
+    if (erreurPublication) return { ok: false, error: erreurPublication.message };
+    message = `${nomEcrit} est en ligne.`;
+  }
+
+  revalidatePath(`/espace-marque/${adresse}/modifier`);
+  revalidatePath(`/espace-marque/${adresse}`);
+  revalidatePath(`/marques/${adresse}`);
+  // L'annuaire entier, et pas la seule page de la marque : quand
+  // l'adresse change, c'est l'ANCIENNE qui traîne dans les listes, et
+  // on ne peut pas relire une page dont on vient de perdre le nom.
+  revalidatePath(`/marques/${brand.slug}`);
+  revalidatePath("/marques");
+  revalidatePath("/admin/marques");
+  revalidatePath("/");
+
+  return { ok: true, slug: adresse, message };
 }
 
 /* ---------------- pieces ---------------- */

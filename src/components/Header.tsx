@@ -1,6 +1,7 @@
 import Link from "next/link";
 import LienNav from "./LienNav";
 import MobileMenu from "./MobileMenu";
+import { IconCoeur, IconLoupe } from "./Icons";
 import { getProfile } from "@/lib/auth";
 import { getMesMarques } from "@/lib/brand-space";
 
@@ -98,6 +99,46 @@ export default async function Header() {
           ))}
 
           {profile?.role === "admin" && <LienNav href="/admin">Admin</LienNav>}
+
+          {/*
+           * DEUX RACCOURCIS RONDS, ET C'EST LEUR PLACE QUI COMPTE.
+           *
+           * La recherche vit dans l'annuaire, où elle répond à ⌘K. Mais
+           * on ne pense à chercher une marque qu'en étant ailleurs — sur
+           * un post, sur une fiche, au milieu des pièces — et il fallait
+           * alors revenir à l'annuaire, puis trouver le champ. Deux
+           * gestes pour un réflexe.
+           *
+           * La loupe emmène donc à l'annuaire AVEC le curseur déjà dans
+           * le champ (`?recherche=1`, lu par `BrandDirectory`). Ce n'est
+           * pas une seconde recherche : c'est la même, atteinte de
+           * partout.
+           *
+           * Le cœur ne s'affiche qu'à qui a un compte : une liste privée
+           * proposée à quelqu'un qui n'en a pas ne mène qu'à un mur de
+           * connexion.
+           */}
+          <span aria-hidden className="mx-1 h-5 w-px bg-white/18" />
+
+          <Link
+            href="/marques?recherche=1"
+            aria-label="Chercher une marque"
+            title="Chercher une marque"
+            className="puce-barre grid h-9 w-9 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+          >
+            <IconLoupe className="h-[17px] w-[17px]" />
+          </Link>
+
+          {profile && (
+            <Link
+              href="/favoris"
+              aria-label="Mes favoris"
+              title="Mes favoris"
+              className="puce-barre ml-1 grid h-9 w-9 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+            >
+              <IconCoeur className="h-[17px] w-[17px]" />
+            </Link>
+          )}
 
           {/* Pour qui a déjà une marque, c'est le lien le plus utile de
               la barre. On le donne donc en clair, à côté de l'appel à

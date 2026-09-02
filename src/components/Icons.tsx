@@ -82,3 +82,14 @@ export const IconFiltre = (p: Props) => (
 export const IconChevron = (p: Props) => (
   <Svg {...p}><path d="m6 9 6 6 6-6" /></Svg>
 );
+export const IconLoupe = (p: Props) => (
+  <Svg {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></Svg>
+);
+/* Le cœur en trait, celui d'un raccourci. Le cœur PLEIN, lui, dit
+   « déjà mis de côté » et vit dans `FavoriteButton` : deux sens
+   différents ne doivent pas partager le même dessin. */
+export const IconCoeur = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
+  </Svg>
+);

@@ -501,7 +501,13 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                       )}
                     </div>
 
-                    <Link href={`/admin/marques/${b.id}`} className="min-w-0 flex-1">
+                    {/* DROIT SUR L'ÉDITEUR, et non sur `/admin/marques/[id]`
+                        qui ne fait plus qu'y renvoyer, par politesse pour
+                        les liens déjà partagés. Il n'existe qu'un écran
+                        pour modifier une fiche, et c'est le même que
+                        celui qu'ouvre la marque chez elle : par l'adresse
+                        de la page, donc, et non par l'identifiant. */}
+                    <Link href={`/espace-marque/${b.slug}/modifier`} className="min-w-0 flex-1">
                       <span className="block truncate text-[14.5px] font-extrabold text-[var(--color-ink)]">
                         {b.name}
                       </span>
@@ -513,7 +519,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                     <StatusPill status={b.status} />
 
                     <Link
-                      href={`/admin/marques/${b.id}`}
+                      href={`/espace-marque/${b.slug}/modifier`}
                       aria-label={`Ouvrir ${b.name}`}
                       className="text-[18px] font-black text-[#3a2470]"
                     >

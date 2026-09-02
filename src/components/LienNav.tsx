@@ -39,7 +39,10 @@ export default function LienNav({
     <Link
       href={href}
       aria-current={actif ? "page" : undefined}
-      className={`relative rounded-full px-3.5 py-2 text-[13px] font-bold transition ${
+      /* 9 px et non 8 : la barre a gagné deux pastilles rondes de
+         trente-six, et des onglets plus bas qu'elles se lisaient comme
+         une deuxième rangée. */
+      className={`relative rounded-full px-3.5 py-[9px] text-[13px] font-bold transition ${
         actif
           ? "nav-actif text-white"
           : "text-white/70 hover:bg-white/10 hover:text-white"
