@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import FavoriteButton from "./FavoriteButton";
 import { IconEye } from "./Icons";
 import { enChiffres } from "./chiffres";
+import Notee from "./coeurs/Notee";
 import { vignette } from "@/lib/vignette";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 import type { Brand } from "@/lib/types";
@@ -36,6 +37,15 @@ import type { Brand } from "@/lib/types";
  * action, cœur — plus, pour le classement, deux colonnes de chiffres.
  * D'où `rang` et `coeurs`, tous deux facultatifs : une ligne
  * d'annuaire ne les passe pas et ne change pas d'un pixel.
+ *
+ * ⚠️ `coeurs` ET `note` OCCUPENT LA MÊME PLACE, ET JAMAIS EN MÊME TEMPS.
+ * Le classement des marques les mieux notées avait besoin de la même
+ * ligne, avec une autre mesure : une colonne de plus l'aurait rendue
+ * plus longue sur l'onglet des notes que sur celui des cœurs — deux
+ * gabarits pour une seule page. Surtout, un cœur et une note affichés
+ * côte à côte inviteraient à les additionner, alors que le favori dit
+ * qu'on suit et que l'avis dit que c'est bon. Une seule mesure par
+ * ligne : c'est la règle d'`ONGLETS`, appliquée jusque dans la balise.
  */
 
 /** Quatre : ça tient dans la ligne, et ça suffit à dire le style. */
@@ -69,6 +79,7 @@ export default function LigneMarque({
   onApercu,
   rang,
   coeurs,
+  note,
 }: {
   brand: Brand;
   /** Présent = on affiche le cœur, avec son état de départ. */
@@ -79,6 +90,14 @@ export default function LigneMarque({
   rang?: number;
   /** Cœurs reçus, à droite. Absent = la ligne ne classe rien. */
   coeurs?: number;
+  /**
+   * La note moyenne et son nombre d'avis, À LA PLACE DES CŒURS.
+   *
+   * Jamais avec eux : voir l'avertissement en tête de fichier. Le type
+   * est écrit ici plutôt qu'importé d'`@/lib/avis`, qui est un module
+   * « use server » — le même arbitrage que `ProductCard`.
+   */
+  note?: { moyenne: number; avis: number };
 }) {
   const ancre = useRef<HTMLDivElement>(null);
   const [pieces, setPieces] = useState<string[]>([]);
@@ -170,7 +189,7 @@ export default function LigneMarque({
    * volée : Tailwind lit le fichier tel quel, un préfixe calculé ne
    * produirait aucune règle.
    */
-  const serree = rang !== undefined || coeurs !== undefined;
+  const serree = rang !== undefined || coeurs !== undefined || note !== undefined;
 
   const rangee = serree
     ? "card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:gap-4 sm:p-4 lg:flex-nowrap"
@@ -329,6 +348,10 @@ export default function LigneMarque({
             {enChiffres(coeurs)}
           </span>
         )}
+
+        {/* La même note que sur une ligne de pièce, au même endroit et
+            avec le même dessin. Voir `coeurs/Notee`. */}
+        {note && <Notee note={note} />}
 
         {vide || !onApercu ? (
           /*

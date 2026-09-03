@@ -112,3 +112,35 @@ export function withExisting(
   const extra = Array.from(new Set(existing ?? [])).filter((v) => !reference.includes(v));
   return [...reference, ...extra];
 }
+
+/**
+ * Le nom d'une catégorie, tel qu'il s'écrit dans une adresse.
+ *
+ * « Old money » donne `old-money`, « Rétro » donne `retro`.
+ *
+ * POURQUOI CETTE FONCTION VIT ICI, ET NULLE PART AILLEURS. C'est une
+ * CONVENTION PARTAGÉE, pas un détail d'affichage : la page des coups de
+ * cœur fabrique `/marques?cat=streetwear` pour ses rayons vides,
+ * l'accueil fabrique le même lien pour ses raccourcis, et l'annuaire
+ * relit ce paramètre pour retrouver la catégorie. Trois endroits, dont
+ * deux qui écrivent et un seul qui lit.
+ *
+ * Elle a d'abord été recopiée dans les trois. Trois copies identiques
+ * d'une règle de correspondance, c'est une copie qu'on ajustera un jour
+ * — pour une esperluette, pour une apostrophe — et deux qu'on oubliera :
+ * le lien continuerait de se fabriquer, l'annuaire continuerait de le
+ * lire, et il ne trouverait simplement plus rien. Une panne silencieuse,
+ * sur le chemin exact que `12a` a été écrit pour supprimer.
+ *
+ * Ce fichier n'est pas un module client : le composant serveur qui
+ * fabrique le lien et le composant client qui le relit peuvent tous les
+ * deux l'importer.
+ */
+export function enSlugDeCategorie(valeur: string): string {
+  return valeur
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BrandDirectory from "@/components/BrandDirectory";
+import BrandDirectory, { type AmorceAnnuaire } from "@/components/BrandDirectory";
 import RaccourciAdmin from "@/components/RaccourciAdmin";
 import { getBrands } from "@/lib/queries";
 import { ordonnerLAnnuaire } from "@/lib/melange";
@@ -15,7 +15,31 @@ export const metadata: Metadata = {
 /** Les favoris dependent de la session : la page ne peut pas etre figee. */
 export const dynamic = "force-dynamic";
 
-export default async function BrandsPage() {
+/**
+ * L'ANNUAIRE SE LAISSE ADRESSER, et c'est ce qui rend possibles tous
+ * les liens des autres pages vers une catégorie précise.
+ *
+ * `?cat=streetwear` ouvre l'annuaire avec le filtre déjà posé,
+ * `?q=denim` avec le champ déjà rempli. Un rayon vide, une puce de
+ * l'accueil ou une recherche commencée ailleurs aboutissent donc à la
+ * bonne liste plutôt qu'à l'annuaire entier, où il faudrait tout
+ * refaire à la main.
+ *
+ * `?recherche=1` reste lu dans `BrandDirectory` : il ne pose pas de
+ * filtre, il pose un curseur, et cela ne se décide qu'une fois l'écran
+ * mesuré.
+ *
+ * C'est ICI qu'on lit l'adresse, et pas dans le composant : un filtre
+ * doit être posé avant le premier rendu, sinon la grille complète
+ * s'affiche puis se réduit sous les yeux. La page est déjà
+ * `force-dynamic` pour les favoris, lire son adresse ne lui coûte donc
+ * rien de plus.
+ */
+type Props = { searchParams: Promise<AmorceAnnuaire> };
+
+export default async function BrandsPage({ searchParams }: Props) {
+  const { cat, q } = await searchParams;
+
   /*
    * L'ordre est retiré à chaque visite.
    *
@@ -60,7 +84,15 @@ export default async function BrandsPage() {
         </div>
       </header>
 
-      <BrandDirectory brands={brands} favoris={Array.from(favoris)} notes={notes} />
+      {/* Les deux paramètres nommés un par un plutôt que l'objet
+          entier : la liste de ce que l'annuaire accepte se lit ici,
+          sans avoir à ouvrir le composant. */}
+      <BrandDirectory
+        brands={brands}
+        favoris={Array.from(favoris)}
+        notes={notes}
+        amorce={{ cat, q }}
+      />
     </div>
   );
 }

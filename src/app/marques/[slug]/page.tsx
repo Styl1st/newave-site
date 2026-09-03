@@ -23,6 +23,55 @@ import Link from "next/link";
 import BackLink from "@/components/BackLink";
 import BandeauMarque from "@/components/BandeauMarque";
 import BarreGerant from "@/components/BarreGerant";
+import auBesoin from "next/dynamic";
+import {
+  ACCROCHE,
+  ACCROCHE_IDEALE,
+  ACCROCHE_TEXTE,
+  DEMARCHE,
+  DEMARCHE_TEXTE,
+  PASTILLE,
+  SCENE,
+} from "@/components/retouche/apparence";
+
+/*
+ * LES CINQ BLOCS DE LA RETOUCHE, DERRIÈRE UNE FRONTIÈRE PARESSEUSE.
+ *
+ * Ce que ça fait vraiment, vérifié sur le paquet construit et pas
+ * supposé : `next/dynamic` pose ici une frontière `React.lazy`, mais
+ * dans l'App Router les composants client atteignables depuis un
+ * composant serveur sont RASSEMBLÉS DANS LE PAQUET DE LA ROUTE. Le code
+ * de `retouche/` est donc bel et bien dans
+ * `chunks/app/marques/[slug]/page-*.js`, et un visiteur le télécharge
+ * comme le reste de la page.
+ *
+ * Ne réécris pas ce paragraphe en « pas une ligne ne part chez le
+ * visiteur » : c'est ce qui était écrit ici, et c'était faux. Pour que
+ * ça devienne vrai il faudrait déplacer l'appel à `next/dynamic` dans un
+ * composant CLIENT et le charger après le montage — ce qui coûterait au
+ * gérant une page rendue côté serveur, puisque la scène enveloppe tout
+ * le contenu. Le jour où ce dossier pèsera assez pour le mériter, c'est
+ * ce chemin-là qu'il faudra prendre, et le mesurer avant.
+ *
+ * CE QUI RESTE VRAI, ET QUI COMPTE : rien de tout cela ne S'EXÉCUTE ni
+ * ne S'AFFICHE pour un visiteur. `insight` ne répond qu'au gérant ou à
+ * l'administration, après relecture de la base — voir plus bas.
+ *
+ * Le nom de l'import n'est pas une coquetterie : `dynamic` est déjà pris
+ * un peu plus bas par le réglage de rendu de Next, et deux `dynamic`
+ * dans un même fichier ne compilent pas.
+ *
+ * Pas de `ssr: false` : dans un composant serveur Next l'interdit, et de
+ * toute façon le gérant doit recevoir sa page rendue, pas un trou qui se
+ * remplit après coup.
+ */
+const SceneRetouche = auBesoin(() => import("@/components/retouche/SceneRetouche"));
+const TexteEnPlace = auBesoin(() => import("@/components/retouche/TexteEnPlace"));
+const MetasEnRetouche = auBesoin(() => import("@/components/retouche/MetasEnRetouche"));
+const PiecesEnRetouche = auBesoin(() => import("@/components/retouche/PiecesEnRetouche"));
+const CouvertureEnRetouche = auBesoin(
+  () => import("@/components/retouche/CouvertureEnRetouche")
+);
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -114,8 +163,98 @@ export default async function BrandPage({ params }: Props) {
     ["Instagram", brand.instagram ? `@${brand.instagram}` : null],
   ];
 
-  return (
-    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-7 sm:py-11">
+  /*
+   * Le bandeau, sorti du JSX pour n'y entrer qu'une fois.
+   *
+   * En retouche il est enveloppé, ailleurs il est posé tel quel : le
+   * garder à sa place aurait voulu dire l'écrire deux fois, et deux
+   * copies d'un bloc de quatre-vingts lignes, c'est une copie qu'on
+   * corrige et une qu'on oublie.
+   */
+  const couverture = brand.cover_url ? (
+    /*
+     * L'illustration mène à la boutique.
+     *
+     * C'est le premier élément qu'on regarde, et le seul sur lequel on
+     * tapait sans que rien n'arrive. Or l'intention de quelqu'un qui
+     * touche la photo d'une marque est claire : il veut voir chez elle.
+     * Autant le lui donner là plutôt que de le faire descendre jusqu'au
+     * bouton.
+     *
+     * Le clic passe par /api/go, comme tous les liens sortants :
+     * l'adresse de destination est lue en base et jamais dans l'URL, et
+     * le départ est compté comme les autres.
+     */
+    /*
+     * LE BANDEAU N'EST PLUS UN LIEN GÉANT.
+     *
+     * Toute la surface renvoyait vers la boutique. Ça marchait tant
+     * qu'il n'y avait qu'une image ; avec un carrousel, un bouton ne
+     * peut pas vivre dans un lien — le navigateur refuse cette
+     * imbrication — et surtout un balayage au doigt se terminerait par
+     * une navigation involontaire vers la boutique.
+     *
+     * Le bouton « Voir la boutique », qui existait déjà comme étiquette,
+     * devient donc un vrai lien dans son coin. On perd le clic n'importe
+     * où, on gagne un bandeau qu'on peut manipuler.
+     */
+    <div className="card-light rise rise-1 relative mt-8 overflow-hidden">
+      <div className="relative z-3">
+        {brand.cover_video_url ? (
+          /*
+           * L'illustration animée, quand la marque en a une. Elle
+           * marche, on n'y touche pas : ni carrousel ni logo posé
+           * dessus, la marque a déjà dit ce qu'elle voulait montrer.
+           *
+           * Muette, en boucle, sans commande : c'est un décor, pas une
+           * vidéo qu'on regarde. `playsInline` est indispensable — sans
+           * lui, iPhone passe en plein écran dès le lancement et vole la
+           * page.
+           *
+           * Elle ne sert QUE sur cette page. Dans la grille de
+           * l'annuaire, quarante vidéos en lecture simultanée
+           * remettraient à terre les téléphones qu'on vient tout juste
+           * de sauver.
+           */
+          <video
+            src={brand.cover_video_url}
+            poster={vignette(brand.cover_url, 1200)}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+            className="block aspect-16/9 w-full object-cover"
+          />
+        ) : (
+          /* Les pièces défilent, le logo se pose dans un coin.
+             Voir `BandeauMarque`. */
+          <BandeauMarque
+            slug={brand.slug}
+            nom={brand.name}
+            logo={brand.logo_url}
+            couverture={brand.cover_url}
+          />
+        )}
+
+        <a
+          href={`/api/go/marque/${brand.id}`}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="absolute bottom-3 right-3 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.72)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] backdrop-blur-sm transition hover:bg-[rgba(14,5,38,0.95)]"
+        >
+          Voir la boutique
+          <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 17 17 7M9 7h8v8" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  ) : null;
+
+  const contenu = (
+    <>
       {enApercu && (
         <div className="glass mb-6 p-4 sm:px-5">
           <p className="m-0 text-[13.5px] leading-relaxed text-white/88">
@@ -138,7 +277,20 @@ export default async function BrandPage({ params }: Props) {
       */}
       {insight && (
         <div className="mt-4">
-          <BarreGerant brand={brand} />
+          {/* `tous` et non `products` : la check-list de publication
+              compte les pièces DU CATALOGUE, alors que `products` a déjà
+              écarté celles qui n'ont pas de photo pour ne pas trouer la
+              grille. Deux comptes différents, deux usages différents —
+              et c'est le premier que `obstacleAPublication` regarde. */}
+          <BarreGerant
+            brand={brand}
+            pieces={tous.length}
+            /* Un admin voit la même barre sur n'importe quelle marque,
+               mais elle ne lui dit pas « ton espace » : `gerant` répond
+               à « est-ce SA marque ? », que le rôle ne suffit pas à
+               trancher — un admin peut très bien en gérer une. */
+            voix={insight.gerant ? "gerant" : "administration"}
+          />
         </div>
       )}
 
@@ -152,132 +304,91 @@ export default async function BrandPage({ params }: Props) {
               chose à savoir avant de faire défiler toute la fiche. */}
           {ferme && <span className="badge">{ferme.etiquette}</span>}
         </div>
-        <p className="m-0 mt-3 max-w-2xl text-[clamp(15px,4vw,19px)] leading-relaxed text-white/88">
-          {brand.tagline}
-        </p>
+        {/*
+          L'ACCROCHE SE CLIQUE, POUR QUI TIENT LA MARQUE.
+
+          Deux rendus pour un seul texte, et c'est voulu : le visiteur
+          reçoit un paragraphe et rien d'autre — pas une ligne de code
+          d'édition ne descend chez lui —, le gérant reçoit le même
+          paragraphe, dans la même classe, qui s'ouvre au clic une fois
+          la retouche allumée. La classe est partagée (`apparence.ts`)
+          pour que les deux ne puissent pas diverger.
+        */}
+        {insight ? (
+          <TexteEnPlace
+            champ="tagline"
+            classe={ACCROCHE}
+            classeSaisie={ACCROCHE_TEXTE}
+            classeCadre="mt-3 max-w-2xl"
+            ideal={ACCROCHE_IDEALE}
+          />
+        ) : (
+          <p className={ACCROCHE}>{brand.tagline}</p>
+        )}
         <div className="mt-5">
           <FavoriteButton brandId={brand.id} initial={favorited} />
         </div>
       </header>
 
-      {brand.cover_url && (
-        /*
-         * L'illustration mène à la boutique.
-         *
-         * C'est le premier élément qu'on regarde, et le seul sur lequel
-         * on tapait sans que rien n'arrive. Or l'intention de quelqu'un
-         * qui touche la photo d'une marque est claire : il veut voir
-         * chez elle. Autant le lui donner là plutôt que de le faire
-         * descendre jusqu'au bouton.
-         *
-         * Le clic passe par /api/go, comme tous les liens sortants :
-         * l'adresse de destination est lue en base et jamais dans
-         * l'URL, et le départ est compté comme les autres.
-         */
-        /*
-         * LE BANDEAU N'EST PLUS UN LIEN GÉANT.
-         *
-         * Toute la surface renvoyait vers la boutique. Ça marchait tant
-         * qu'il n'y avait qu'une image ; avec un carrousel, un bouton ne
-         * peut pas vivre dans un lien — le navigateur refuse cette
-         * imbrication — et surtout un balayage au doigt se terminerait
-         * par une navigation involontaire vers la boutique.
-         *
-         * Le bouton « Voir la boutique », qui existait déjà comme
-         * étiquette, devient donc un vrai lien dans son coin. On perd le
-         * clic n'importe où, on gagne un bandeau qu'on peut manipuler.
-         */
-        <div className="card-light rise rise-1 relative mt-8 overflow-hidden">
-          <div className="relative z-3">
-            {brand.cover_video_url ? (
-              /*
-               * L'illustration animée, quand la marque en a une. Elle
-               * marche, on n'y touche pas : ni carrousel ni logo posé
-               * dessus, la marque a déjà dit ce qu'elle voulait montrer.
-               *
-               * Muette, en boucle, sans commande : c'est un décor, pas
-               * une vidéo qu'on regarde. `playsInline` est
-               * indispensable — sans lui, iPhone passe en plein écran
-               * dès le lancement et vole la page.
-               *
-               * Elle ne sert QUE sur cette page. Dans la grille de
-               * l'annuaire, quarante vidéos en lecture simultanée
-               * remettraient à terre les téléphones qu'on vient tout
-               * juste de sauver.
-               */
-              <video
-                src={brand.cover_video_url}
-                poster={vignette(brand.cover_url, 1200)}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                aria-hidden="true"
-                className="block aspect-16/9 w-full object-cover"
-              />
-            ) : (
-              /* Les pièces défilent, le logo se pose dans un coin.
-                 Voir `BandeauMarque`. */
-              <BandeauMarque
-                slug={brand.slug}
-                nom={brand.name}
-                logo={brand.logo_url}
-                couverture={brand.cover_url}
-              />
-            )}
-
-            <a
-              href={`/api/go/marque/${brand.id}`}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="absolute bottom-3 right-3 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.72)] px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.24)] backdrop-blur-sm transition hover:bg-[rgba(14,5,38,0.95)]"
-            >
-              Voir la boutique
-              <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M7 17 17 7M9 7h8v8" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      )}
+      {/* En retouche, le bandeau cède la place à la couverture nue et à
+          ses deux boutons : on ne remplace pas une image qu'on ne voit
+          pas. Il revient dès qu'on quitte le mode. */}
+      {insight ? <CouvertureEnRetouche>{couverture}</CouvertureEnRetouche> : couverture}
 
       <div className="glass rise rise-1 mt-6 p-4 sm:p-7">
         {/* Une description peut manquer : une marque tout juste importée
             n'en a pas encore, et son site n'en donnait peut-être aucune.
             Mieux vaut passer directement aux faits que réserver une
             place blanche à un texte absent. */}
-        {brand.description.trim() && (
-          <p className="m-0 text-[15.5px] leading-[1.7] text-white/92">
-            <TexteRiche texte={brand.description} />
-          </p>
+        {insight ? (
+          <TexteEnPlace
+            champ="description"
+            classe={DEMARCHE}
+            classeSaisie={DEMARCHE_TEXTE}
+            lignes={9}
+            riche
+            masquerSiVide
+          />
+        ) : (
+          brand.description.trim() && (
+            <p className={DEMARCHE}>
+              <TexteRiche texte={brand.description} />
+            </p>
+          )
         )}
 
-        <dl
-          className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
-            brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
-          }`}
-        >
-          {facts.map(([label, value]) =>
-            value ? (
-              <div key={label}>
-                <dt className="eyebrow m-0">{label}</dt>
-                <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">{value}</dd>
-              </div>
-            ) : null
-          )}
-        </dl>
-
-        <div className="mt-7 flex flex-wrap gap-1.5">
-          {brand.categories.map((c) => (
-            <span
-              key={c}
-              className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/85"
+        {insight ? (
+          <MetasEnRetouche
+            classeGrille={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
+              brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
+            }`}
+          />
+        ) : (
+          <>
+            <dl
+              className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
+                brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
+              }`}
             >
-              {c}
-            </span>
-          ))}
-        </div>
+              {facts.map(([label, value]) =>
+                value ? (
+                  <div key={label}>
+                    <dt className="eyebrow m-0">{label}</dt>
+                    <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">{value}</dd>
+                  </div>
+                ) : null
+              )}
+            </dl>
+
+            <div className="mt-7 flex flex-wrap gap-1.5">
+              {brand.categories.map((c) => (
+                <span key={c} className={PASTILLE}>
+                  {c}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {insight && (
@@ -329,6 +440,12 @@ export default async function BrandPage({ params }: Props) {
           </p>
         </section>
       )}
+
+      {/* Le même vide, dit à l'autre personne. Le bloc au-dessus
+          explique au visiteur pourquoi il n'y a rien à regarder ; celui
+          d'en dessous n'apparaît qu'en retouche, et ne parle que du
+          geste suivant. */}
+      {insight && <PiecesEnRetouche />}
 
       {/* ---------- les pieces, juste apres la presentation ----------
           C'est ce que le visiteur est venu voir. La sortie vers la
@@ -437,13 +554,52 @@ export default async function BrandPage({ params }: Props) {
           <h2 className="m-0 mb-5 text-[clamp(17px,3.8vw,23px)] font-extrabold tracking-[-0.02em] text-white">
             Nos posts sur {brand.name}
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* La colonne unique est écrite au premier palier : sans elle,
+              la grille se fabrique une colonne `auto` taillée sur son
+              enfant le plus large, et un titre de post un peu long fait
+              déborder toute la page. */}
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => (
               <PostCard key={p.id} post={p} />
             ))}
           </div>
         </section>
       )}
-    </div>
+    </>
+  );
+
+  /*
+   * DEUX ENVELOPPES POUR UNE SEULE PAGE.
+   *
+   * `insight` ne répond qu'à qui gère la marque ou l'administre — elle
+   * relit la base pour le dire, elle ne croit pas une propriété sur
+   * parole. Un visiteur reçoit donc la colonne telle qu'elle a toujours
+   * été : ni brouillon monté, ni champ ouvrable, ni action
+   * d'enregistrement joignable.
+   *
+   * Le code de `retouche/`, lui, voyage quand même dans le paquet de la
+   * route — voir le commentaire des imports différés en tête de fichier,
+   * qui dit pourquoi et ce qu'il faudrait pour que ce ne soit plus le
+   * cas. La garde est ici, pas dans le bundle : ce qui protège la fiche
+   * n'est pas l'absence du code, c'est que l'enregistrement repasse par
+   * `requireManagedBrand` côté serveur à chaque envoi.
+   *
+   * Et la scène rend exactement la même colonne tant que la retouche
+   * n'est pas allumée : la classe est partagée (`apparence.ts`), donc
+   * entrer dans sa page en gérant ne la fait pas bouger d'un pixel.
+   */
+  return insight ? (
+    <SceneRetouche
+      brand={brand}
+      /* `tous` et non `products` : la check-list compte les pièces DU
+         CATALOGUE, alors que `products` a déjà écarté celles qui n'ont
+         pas de photo. */
+      pieces={tous.length}
+      voix={insight.gerant ? "gerant" : "administration"}
+    >
+      {contenu}
+    </SceneRetouche>
+  ) : (
+    <div className={SCENE}>{contenu}</div>
   );
 }

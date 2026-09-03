@@ -8,11 +8,12 @@ import IllustrationMarque from "./IllustrationMarque";
 import LigneMarque, { CoeurPlein } from "./LigneMarque";
 import Teinte from "./Teinte";
 import { enChiffres } from "./chiffres";
-import type { Brand } from "@/lib/types";
+import PiedDeClassement from "./coeurs/PiedDeClassement";
+import type { Mesure, PlaceMarque } from "./coeurs/classement";
+import { SEUIL_PODIUM } from "./coeurs/seuils";
 
 /**
- * Le classement des marques les plus suivies : trois marches, puis la
- * suite en lignes.
+ * Le classement des marques : trois marches, puis la suite en lignes.
  *
  * POURQUOI DEUX FORMES POUR UNE SEULE LISTE. Un classement répond à
  * deux questions qui ne se lisent pas de la même façon. « Qui est en
@@ -25,41 +26,104 @@ import type { Brand } from "@/lib/types";
  * LA LIGNE EST CELLE DE L'ANNUAIRE, sans une classe de plus : c'est le
  * même objet — une marque, ce qu'elle fabrique, un cœur — et le
  * classement n'y ajoute que deux chiffres.
+ *
+ * IL SERT LES DEUX ONGLETS DE MARQUES. Les plus suivies comptent des
+ * cœurs, les mieux notées comptent des avis : c'est la même liste de
+ * lignes, avec une autre mesure à la même place. Deux composants pour ça
+ * auraient fini par diverger d'un pixel, et l'on serait revenu à une
+ * page qui change d'allure selon l'onglet — précisément ce qu'on répare.
+ * ⚠️ Les deux mesures ne se rencontrent jamais dans une même ligne : le
+ * favori dit qu'on suit, l'avis dit que c'est bon, et les additionner
+ * donnerait un chiffre qui ne voudrait plus rien dire.
+ *
+ * CE QU'IL NE CONTIENT PLUS : la ligne de rayons ni la colonne de
+ * droite. Toutes deux coiffent maintenant les cinq classements de la
+ * page, donc elles vivent au-dessus — voir `ClassementEnRayons` et
+ * `RailDesCoeurs`. Ce composant reçoit une liste DÉJÀ FILTRÉE et la
+ * rend, rien de plus.
  */
 
 /** Trois marches. Au-delà ce n'est plus un podium, c'est une liste. */
 const MARCHES = 3;
 
-/**
- * Combien de lignes d'un coup. Même lot que l'annuaire, et pour la
- * raison qu'explique `BrandGrid` : ce n'est pas du confort de lecture,
- * c'est ce qui empêche un téléphone de recharger la page en boucle.
+/*
+ * Le seuil de cent cœurs — celui qui décide du podium — vit dans
+ * `coeurs/seuils.ts`, comme le lot de pagination.
+ *
+ * Il y est parti le jour où la page a eu, elle aussi, besoin de le lire :
+ * le sélecteur de période et la barre de progression du rail obéissent au
+ * même nombre, et la page est un composant SERVEUR. Or ce qu'un composant
+ * serveur importe d'un fichier « use client » ne lui revient pas comme une
+ * valeur mais comme une référence que React résoudra dans le navigateur —
+ * parfait pour un composant, catastrophique pour un nombre, puisque la
+ * comparaison devient fausse sans le moindre message. Un module ordinaire
+ * se lit des deux côtés. Le raisonnement complet est écrit là-bas.
  */
-const LOT = 24;
-
-export type Place = { brand: Brand; favoris: number };
 
 export default function ClassementMarques({
   classement,
+  mesure,
   favoris,
+  total,
+  rayon,
+  combien,
+  onVoirPlus,
 }: {
-  classement: Place[];
-  /** Les marques déjà suivies par la personne connectée. */
+  /** Le classement DÉJÀ filtré par le rayon choisi. */
+  classement: PlaceMarque[];
+  /** Ce que compte l'onglet : des cœurs, ou des avis. */
+  mesure: Mesure;
+  /** Les marques déjà suivies par la personne connectée. Jamais qui d'autre. */
   favoris: string[];
+  /**
+   * Le nombre de cœurs sur TOUT l'annuaire, pas seulement sur ce qui
+   * est affiché. C'est lui qui décide s'il y a un podium.
+   */
+  total?: number;
+  /** Le nom du rayon choisi, pour le rappeler dans le titre de la liste. */
+  rayon?: string;
+  /** Combien de lignes on affiche. La pagination vit au-dessus. */
+  combien: number;
+  onVoirPlus: () => void;
 }) {
   const suivies = new Set(favoris);
   const [ouvert, setOuvert] = useState<string | null>(null);
-  const [combien, setCombien] = useState(LOT);
 
   /*
-   * Pas de podium sous trois marques : deux cartes en vitrine et rien
-   * derrière ne ressemblent pas à un classement, elles ressemblent à
-   * une page à moitié chargée.
+   * TROIS CONDITIONS POUR UN PODIUM, ET LA DERNIÈRE EST LA PLUS
+   * IMPORTANTE.
+   *
+   * La mesure, d'abord : un podium met en scène des cœurs. Sur l'onglet
+   * des marques les mieux notées, trois marches trieraient des moyennes
+   * — or une moyenne se compare mal en silhouette, et le seuil qui la
+   * rend honnête n'est pas celui-ci mais le nombre d'avis minimum.
+   *
+   * Trois marques ensuite : deux cartes en vitrine et rien derrière ne
+   * ressemblent pas à un classement, elles ressemblent à une page à
+   * moitié chargée.
+   *
+   * Cent cœurs enfin. Sur un site qui vient d'ouvrir, un podium met en
+   * scène trois marques à deux cœurs chacune — trois voix d'écart y
+   * suffiraient à tout renverser, et la page annonce pourtant un
+   * classement. Elle ment sans le vouloir, et elle ment au détriment des
+   * marques qu'elle relègue.
+   *
+   * En dessous, la même liste, sans marche ni médaille : « les premières
+   * mises de côté ». C'est vrai, et ça n'a rien de honteux.
+   *
+   * Le seuil est une constante parce qu'il bougera.
+   *
+   * LE SEUIL SE LIT SUR TOUT L'ANNUAIRE, LE COMPTE DE MARCHES SUR CE QUI
+   * EST AFFICHÉ. Un rayon choisi ne rend pas le podium plus honnête —
+   * trois voix d'écart restent trois voix d'écart — mais il peut très
+   * bien ne contenir que deux marques, et deux marches ne font pas un
+   * podium.
    */
-  const podium = classement.length >= MARCHES ? classement.slice(0, MARCHES) : [];
+  const assezDeCoeurs = mesure === "coeurs" && (total === undefined || total >= SEUIL_PODIUM);
+  const podium =
+    assezDeCoeurs && classement.length >= MARCHES ? classement.slice(0, MARCHES) : [];
   const suite = classement.slice(podium.length);
   const visibles = suite.slice(0, combien);
-  const reste = suite.length - visibles.length;
 
   return (
     <>
@@ -86,58 +150,78 @@ export default function ClassementMarques({
 
       {suite.length > 0 && (
         <div className={podium.length > 0 ? "mt-7" : ""}>
-          {podium.length > 0 && (
+          {podium.length > 0 ? (
             <p className="eyebrow m-0 mb-2.5 text-white/50">La suite du classement</p>
+          ) : (
+            /* Sans podium, la liste a besoin d'un titre qui dise ce
+               qu'elle est — et d'un mot sur ce qui manque, sinon on
+               croit à une page inachevée plutôt qu'à un site jeune. */
+            <div className="mb-2.5">
+              <p className="eyebrow m-0 text-white/50">
+                {mesure === "coeurs" ? "Les premières mises de côté" : "Le classement"}
+                {/* Le rayon dans le titre, parce que la pastille cliquée
+                    est loin au-dessus dès qu'on a descendu quelques
+                    lignes : sans ça, on lit une liste courte sans se
+                    souvenir qu'on l'a soi-même rétrécie. */}
+                {rayon && <span className="text-white/40"> · {rayon}</span>}
+              </p>
+              {mesure === "coeurs" && total !== undefined && total < SEUIL_PODIUM && (
+                <p className="m-0 mt-1 text-[12px] leading-relaxed text-white/50">
+                  Le podium s&apos;ouvrira à {SEUIL_PODIUM} cœurs. En dessous, trois voix
+                  d&apos;écart suffiraient à tout changer : un classement n&apos;y voudrait
+                  rien dire.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex flex-col gap-2.5">
             {visibles.map((entree, i) => (
-              <LigneMarque
-                key={entree.brand.id}
-                brand={entree.brand}
-                rang={podium.length + i + 1}
-                coeurs={entree.favoris}
-                favori={{ initial: suivies.has(entree.brand.id) }}
-                onApercu={() => setOuvert(entree.brand.slug)}
-              />
+              /*
+               * PAS DE NUMÉRO DE RANG QUAND IL N'Y A PAS DE PODIUM, ET
+               * C'EST LA MÊME RAISON QUI VAUT POUR LES DEUX.
+               *
+               * Sous cent cœurs, écrire « 7ᵉ » à côté d'une marque à deux
+               * cœurs range huit marques que trois voix d'écart
+               * suffiraient à réordonner. Le chiffre a l'air d'un fait
+               * alors qu'il est un hasard, et il colle une place à
+               * quelqu'un qui n'a rien demandé. Le compte de cœurs, lui,
+               * reste : il ne prétend rien classer, il dit ce qui s'est
+               * passé.
+               *
+               * Au-dessus du seuil, le rang revient de lui-même : le
+               * podium existe, donc l'ordre veut dire quelque chose.
+               *
+               * `ligne-eco` met de côté ce qui est hors écran sur
+               * téléphone — le navigateur cesse de décoder les visuels
+               * qu'on ne regarde pas, et c'est ce décodage qui faisait
+               * recharger la page. Voir globals.css.
+               */
+              <div key={entree.brand.id} className="ligne-eco">
+                <LigneMarque
+                  brand={entree.brand}
+                  rang={podium.length > 0 ? podium.length + i + 1 : undefined}
+                  coeurs={entree.coeurs}
+                  note={entree.note}
+                  favori={{ initial: suivies.has(entree.brand.id) }}
+                  onApercu={() => setOuvert(entree.brand.slug)}
+                />
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/*
-       * Le pied reprend la matière de la ligne de filtres, comme celui
-       * de l'annuaire : un bouton en carte claire au bas d'une pile de
-       * cartes claires se prend pour une entrée de plus.
-       *
-       * Le compte D'ABORD, parce que c'est lui qui décide de cliquer ou
-       * d'aller chercher autrement. Et le renvoi vers sa propre liste
-       * en dernier : on vient de lire ce que suivent les autres, c'est
-       * le moment où l'on pense à la sienne.
-       */}
-      <div className="mt-6 flex flex-col items-center gap-2.5 rounded-[26px] border border-white/20 bg-[rgba(8,2,30,0.44)] px-5 py-4 backdrop-blur-[20px] sm:flex-row sm:justify-center sm:gap-5 sm:rounded-full">
-        <p className="m-0 text-[11.5px] font-bold uppercase tracking-[0.14em] text-white/55">
-          {podium.length + visibles.length} sur {classement.length} affichée
-          {classement.length > 1 ? "s" : ""}
-        </p>
-
-        {reste > 0 && (
-          <button
-            type="button"
-            onClick={() => setCombien((n) => n + LOT)}
-            className="rounded-full bg-white px-5 py-2 text-[13px] font-extrabold text-[var(--color-ink)] transition active:scale-95"
-          >
-            Voir {Math.min(reste, LOT)} place{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
-          </button>
-        )}
-
-        <Link
-          href="/favoris"
-          className="text-[12.5px] font-bold text-white/75 underline underline-offset-4 transition hover:text-white"
-        >
-          Ma liste à moi →
-        </Link>
-      </div>
+      {/* Le pied est celui des cinq onglets, et il vit dans `coeurs/`
+          depuis que les pièces s'affichent elles aussi en lignes : deux
+          pieds jumeaux dans deux fichiers auraient fini par diverger. */}
+      {classement.length > 0 && (
+        <PiedDeClassement
+          affichees={podium.length + visibles.length}
+          total={classement.length}
+          onVoirPlus={onVoirPlus}
+        />
+      )}
 
       {ouvert && <BrandPreview slug={ouvert} onClose={() => setOuvert(null)} />}
     </>
@@ -153,6 +237,9 @@ export default function ClassementMarques({
  * reste au reste du site — `IllustrationMarque` pour le visuel et son
  * repli sur les pièces, `Teinte` et `.pied-carte` pour le bandeau qui
  * prend la couleur de l'image, `.card-light` pour la matière.
+ *
+ * Elle n'est construite que pour la mesure « cœurs » : c'est la seule
+ * qui ouvre un podium, et `coeurs` y est donc toujours renseigné.
  */
 function Marche({
   place,
@@ -160,10 +247,10 @@ function Marche({
   suivie,
 }: {
   place: number;
-  entree: Place;
+  entree: PlaceMarque;
   suivie: boolean;
 }) {
-  const { brand, favoris } = entree;
+  const { brand, coeurs = 0 } = entree;
   const premier = place === 1;
 
   /* Même arbitrage que `BrandCard` : le logo passe devant la
@@ -279,7 +366,7 @@ function Marche({
               regard. */}
           <span className="absolute bottom-2.5 right-2.5 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.75)] px-2.5 py-1 text-[12px] font-black text-white backdrop-blur-sm sm:text-[13px]">
             <CoeurPlein className="h-3 w-3" />
-            {enChiffres(favoris)}
+            {enChiffres(coeurs)}
           </span>
 
           <div className="pointer-events-auto absolute bottom-2.5 left-2.5 z-4">

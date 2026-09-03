@@ -22,7 +22,9 @@ export default async function BrandProducts({ params, searchParams }: Props) {
   return (
     <>
       <div className="mb-7">
-        <BarreGerant brand={brand} />
+        {/* Le catalogue est déjà chargé ici : la barre peut donc dire ce
+            qui manque avant publication sans une requête de plus. */}
+        <BarreGerant brand={brand} pieces={products.length} />
       </div>
 
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">

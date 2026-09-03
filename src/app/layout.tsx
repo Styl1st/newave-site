@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { Archivo } from "next/font/google";
+
 import Background from "@/components/Background";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -17,12 +17,7 @@ import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
 import "./globals.css";
 
-const archivo = Archivo({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-archivo",
-  display: "swap",
-});
+const archivo = { variable: "--font-archivo" };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://newavesphere.fr";
 

@@ -8,9 +8,11 @@ import RechercheAccueil from "@/components/RechercheAccueil";
 import { enChiffres } from "@/components/chiffres";
 import { IconChevron } from "@/components/Icons";
 import { getBrands, getPosts, getVitrine } from "@/lib/queries";
+import type { Brand } from "@/lib/types";
 import { getMyFavorites } from "@/lib/favorites";
 import { aUneIllustration } from "@/lib/medias";
 import { repartirParMarque } from "@/lib/melange";
+import { enSlugDeCategorie } from "@/lib/taxonomy";
 
 /**
  * L'accueil : dire ce qu'est le site en trois secondes, puis ouvrir
@@ -94,6 +96,21 @@ export default async function HomePage() {
   const reserve = repartirParMarque(vitrine.filter(aUneIllustration)).slice(0, 18);
   const derniers = posts.slice(0, 3);
 
+  /*
+   * LES QUATRE CATÉGORIES LES PLUS FOURNIES, ET RIEN DE PLUS.
+   *
+   * Quatre parce qu'au-delà la ligne se replie en deux rangées sur un
+   * téléphone et cesse d'être un raccourci pour devenir un menu. Les
+   * plus fournies parce qu'un raccourci vers un rayon de trois marques
+   * n'épargne à personne le détour par les filtres — celui-là se trouve
+   * très bien dans le panneau de l'annuaire.
+   *
+   * Comptées à chaque rendu plutôt qu'inscrites quelque part : le
+   * classement change tout seul quand l'annuaire s'étoffe, et personne
+   * n'a à se souvenir de le remettre à jour.
+   */
+  const raccourcis = parCategorie(brands).slice(0, 4);
+
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)]">
       {/* ---------- A · le manifeste ----------
@@ -126,23 +143,43 @@ export default async function HomePage() {
           <RechercheAccueil />
         </div>
 
-        {/*
-         * CE QUI TIENT LIEU DES QUATRE PUCES DU GABARIT.
-         *
-         * Il proposait des raccourcis de catégorie — « Streetwear 34 »,
-         * « Denim 22 » — qui supposent une adresse d'annuaire filtrée.
-         * Aucune route du site n'en accepte aujourd'hui : ces puces
-         * auraient toutes abouti au même annuaire non filtré, c'est-à-dire
-         * à une promesse tenue nulle part. On garde donc la ligne, et on
-         * y met ce qui est vrai : ce qu'il y a à voir, et le geste pour
-         * le chercher.
-         */}
+        {/* Ce qu'il y a à voir, et le geste pour le chercher. Aucun de
+            ces deux nombres n'est écrit en dur : voir l'en-tête. */}
         <p className="rise rise-3 mt-3.5 text-[11.5px] font-semibold tracking-[0.02em] text-white/55">
           {brands.length > 0 && <>{enChiffres(brands.length)} marques</>}
           {brands.length > 0 && posts.length > 0 && " · "}
           {posts.length > 0 && <>{enChiffres(posts.length)} posts</>}
           <span className="hidden sm:inline"> · ⌘K pour chercher d&apos;où que tu sois</span>
         </p>
+
+        {/*
+         * LES PUCES DE RACCOURCI DU GABARIT, ENFIN TENABLES.
+         *
+         * Il en demandait quatre — « Streetwear 34 », « Denim 22 » — et
+         * elles étaient restées de côté : aucune route n'acceptait
+         * d'adresse filtrée, ces puces auraient donc toutes abouti au
+         * même annuaire entier, c'est-à-dire à une promesse tenue nulle
+         * part. `/marques?cat=` existe maintenant, et chacune mène
+         * vraiment à son rayon.
+         *
+         * Elles ne remplacent pas le champ de recherche, elles le
+         * complètent : chercher suppose de savoir quoi chercher, et ces
+         * quatre mots-là sont justement pour qui n'en sait rien encore.
+         */}
+        {raccourcis.length > 0 && (
+          <div className="rise rise-3 mt-4 flex flex-wrap items-center justify-center gap-2">
+            {raccourcis.map(([nom, n]) => (
+              <Link
+                key={nom}
+                href={`/marques?cat=${enSlugDeCategorie(nom)}`}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 text-[12px] font-extrabold text-white/88 transition hover:border-white/55 hover:bg-white/20 hover:text-white active:scale-[.97]"
+              >
+                {nom}
+                <span className="opacity-55 tabular-nums">{enChiffres(n)}</span>
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className="rise rise-4 mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link href="/marques" className="card-light px-6 py-3.5">
@@ -276,3 +313,21 @@ export default async function HomePage() {
     </div>
   );
 }
+
+/**
+ * Les catégories de l'annuaire, de la plus fournie à la moins.
+ *
+ * On compte sur les fiches et non sur `taxonomy` : la liste de
+ * référence contient des catégories que personne ne porte encore, et
+ * une puce qui mène à un rayon vide est pire que pas de puce du tout.
+ * À égalité, l'ordre alphabétique — pour que la ligne ne se réorganise
+ * pas d'un rendu à l'autre sans raison visible.
+ */
+function parCategorie(brands: Brand[]): [string, number][] {
+  const compte = new Map<string, number>();
+  for (const b of brands) {
+    for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
+  }
+  return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+

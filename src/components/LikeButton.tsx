@@ -20,7 +20,22 @@ export default function LikeButton({
   productId: string;
   initialLiked: boolean;
   initialCount: number;
-  taille?: "normal" | "compact" | "pastille";
+  /**
+   * `claire` : la MÊME pastille ronde que le cœur au bout d'une ligne de
+   * marque — 36 px, sur une carte claire, et SANS compteur.
+   *
+   * Sans elle, la fin d'une ligne de pièce et la fin d'une ligne de
+   * marque n'avaient ni la même taille ni la même forme, alors que la
+   * page vient justement d'être unifiée pour que ses cinq onglets se
+   * ressemblent. Et surtout, le bouton `compact` écrit son compte dès
+   * qu'il dépasse zéro : posé à côté de « 43 coups de cœur », il
+   * affichait « 1 » au premier clic, ce qui se lit comme un compteur
+   * cassé plutôt que comme un accusé de réception.
+   *
+   * Ici le chiffre est à gauche, il vient du serveur, et il est le même
+   * pour tout le monde. Le bouton ne dit qu'une chose : c'est fait.
+   */
+  taille?: "normal" | "compact" | "pastille" | "claire";
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
@@ -48,6 +63,40 @@ export default function LikeButton({
         setCount(avant.count);
       }
     });
+  }
+
+  /*
+   * La forme ronde se décide avant tout le reste : elle ne partage ni
+   * les habits ni le gabarit des trois autres, puisqu'elle n'écrit
+   * aucun texte.
+   */
+  if (taille === "claire") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        aria-pressed={liked}
+        aria-label={liked ? "Retirer mon coup de cœur" : "Ajouter à mes coups de cœur"}
+        title={liked ? "Mon coup de cœur" : "Coup de cœur"}
+        className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 disabled:opacity-60 ${
+          liked
+            ? "bg-[#c2273f] text-white"
+            : "bg-[rgba(20,8,50,0.1)] text-[var(--color-ink)] hover:bg-[rgba(20,8,50,0.18)]"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-4 w-4"
+          fill={liked ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="2.2"
+        >
+          <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
+        </svg>
+      </button>
+    );
   }
 
   const compact = taille === "compact";

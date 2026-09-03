@@ -21,12 +21,11 @@ import type { Recherche } from "@/lib/types";
  * de l'annuaire. Aucune recherche n'est écrite ici : si un jour elle
  * change de comportement, les deux champs changent ensemble.
  *
- * CE QUE CE CHAMP NE FAIT PAS ENCORE : transmettre la saisie à
- * l'annuaire. `/marques` ne lit aucun paramètre d'adresse aujourd'hui,
- * et fabriquer un `?q=` que personne ne lit donnerait un champ vide à
- * l'arrivée — l'impression que la recherche a été perdue en chemin.
- * Le jour où l'annuaire lira ce paramètre, il n'y a qu'une ligne à
- * changer ici : celle de `versLAnnuaire`.
+ * LA SAISIE PART AVEC. `/marques` lit maintenant `?q=`, donc passer la
+ * main à l'annuaire ne fait plus perdre ce qu'on avait tapé : la liste
+ * arrive déjà réduite et son champ montre le même texte. C'est ce que
+ * ce fichier attendait pour tenir sa promesse — envoyer ailleurs sans
+ * faire recommencer.
  */
 
 /** En deçà, on ne cherche pas, on parcourt. Même seuil que l'annuaire. */
@@ -110,10 +109,18 @@ export default function RechercheAccueil() {
   const proposees = suggestions?.marques ?? [];
   const pieces = suggestions?.pieces ?? [];
 
-  /** La sortie de secours : l'annuaire, qui sait tout faire de plus. */
+  /**
+   * La sortie de secours : l'annuaire, qui sait tout faire de plus — et
+   * il emporte la saisie.
+   *
+   * Sous le seuil, on ne l'emporte pas : une lettre ne réduit rien, et
+   * un `?q=a` dans l'adresse ferait croire à un filtre là où il n'y a
+   * qu'une frappe en cours.
+   */
   function versLAnnuaire() {
     setPanneau(false);
-    router.push("/marques");
+    const q = query.trim();
+    router.push(q.length >= MINIMUM ? `/marques?q=${encodeURIComponent(q)}` : "/marques");
   }
 
   function toucheDansLeChamp(e: React.KeyboardEvent<HTMLInputElement>) {

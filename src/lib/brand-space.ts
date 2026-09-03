@@ -120,6 +120,16 @@ export async function getCatalogueInsight(brandId: string): Promise<{
   total: number;
   published: number;
   drafts: number;
+  /**
+   * Celui qui regarde GÈRE cette marque, ou l'administre seulement.
+   *
+   * Les deux voient la même barre et les mêmes chiffres — un admin a
+   * besoin d'agir sur n'importe quelle fiche. Mais ils ne s'adressent
+   * pas de la même façon : « ton espace » et « modifier ma fiche » sont
+   * faux devant une marque qu'on administre sans la tenir, et ce genre
+   * de petit mensonge se remarque tout de suite.
+   */
+  gerant: boolean;
 } | null> {
   const profile = await getProfile();
   if (!profile) return null;
@@ -127,15 +137,24 @@ export async function getCatalogueInsight(brandId: string): Promise<{
   const supabase = await createClient();
   if (!supabase) return null;
 
-  if (profile.role !== "admin") {
-    const { data: link } = await supabase
-      .from("brand_managers")
-      .select("brand_id")
-      .eq("brand_id", brandId)
-      .eq("user_id", profile.id)
-      .maybeSingle();
-    if (!link) return null;
-  }
+  /*
+   * On cherche le lien de gestion DANS TOUS LES CAS, admin compris.
+   *
+   * Il servait uniquement de laissez-passer, et l'on s'en dispensait
+   * donc pour un administrateur. Mais il répond aussi à une autre
+   * question — « est-ce SA marque ? » — et c'est elle qui décide des
+   * mots employés plus haut. Un admin peut très bien gérer une marque
+   * en propre : le rôle ne dit rien de l'appartenance.
+   */
+  const { data: link } = await supabase
+    .from("brand_managers")
+    .select("brand_id")
+    .eq("brand_id", brandId)
+    .eq("user_id", profile.id)
+    .maybeSingle();
+
+  const gerant = Boolean(link);
+  if (!gerant && profile.role !== "admin") return null;
 
   // Sans filtre de statut : c'est justement l'ecart entre les deux
   // chiffres qui explique une page vide.
@@ -146,5 +165,6 @@ export async function getCatalogueInsight(brandId: string): Promise<{
     total: rows.length,
     published: rows.filter((r) => r.status === "published").length,
     drafts: rows.filter((r) => r.status === "draft").length,
+    gerant,
   };
 }

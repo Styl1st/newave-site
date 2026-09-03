@@ -11,6 +11,7 @@ import type { Brand, PriceTier, Recherche } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { estUnArtiste } from "@/lib/boutiques";
 import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
+import { enSlugDeCategorie } from "@/lib/taxonomy";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
@@ -20,16 +21,117 @@ const MINIMUM = 2;
 /** Le temps qu'on laisse aux doigts avant d'aller interroger la base. */
 const REPOS = 180;
 
+/**
+ * Ce que l'adresse a demandé à l'annuaire.
+ *
+ * Répété (`?cat=denim&cat=maille`) ou énuméré (`?cat=denim,maille`) :
+ * Next remet le premier en tableau et le second en chaîne, d'où les
+ * deux formes. Voir `valeursDe`, qui les ramène à une seule.
+ */
+export type AmorceAnnuaire = {
+  cat?: string | string[];
+  q?: string | string[];
+};
+
+/* ------------------------------------------------------------------
+   L'AMORÇAGE PAR L'ADRESSE
+
+   `/marques?cat=streetwear&q=denim` doit arriver filtre posé et champ
+   rempli. Ces deux valeurs descendent du serveur en propriétés (voir
+   `app/marques/page.tsx`) au lieu d'être lues ici dans un effet : il
+   les faut au PREMIER rendu. Lues après coup, la grille complète
+   s'afficherait puis se réduirait sous les yeux — et `window` n'existe
+   pas au moment où le serveur fabrique ce premier rendu.
+
+   C'est aussi pourquoi `?recherche=1` reste lu à part, plus bas : lui
+   ne fait que poser un curseur, ce qui n'a de sens qu'une fois la page
+   montée et l'écran mesuré.
+   ------------------------------------------------------------------ */
+
+
+/** Les valeurs d'un paramètre, quelle que soit la façon dont on l'a écrit. */
+function valeursDe(param: string | string[] | undefined): string[] {
+  const brut = Array.isArray(param) ? param : [param ?? ""];
+  return brut
+    .flatMap((v) => v.split(","))
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Les catégories demandées par l'adresse, ramenées au vocabulaire exact
+ * des fiches.
+ *
+ * ON SE RÈGLE SUR LES FICHES, PAS SUR `taxonomy`. Une catégorie de la
+ * liste de référence que plus aucune marque ne porte poserait un filtre
+ * sans résultat ; à l'inverse une ancienne valeur restée sur une fiche
+ * doit rester atteignable par l'adresse comme elle l'est par le
+ * panneau. La seule liste qui dit la vérité est celle des marques
+ * qu'on a sous la main.
+ *
+ * UNE CATÉGORIE INCONNUE EST IGNORÉE EN SILENCE, et c'est tout l'objet
+ * de cette fonction. Un lien écrit de travers, un rayon renommé depuis
+ * qu'on l'a écrit, et le visiteur tomberait sur une grille vide sans
+ * rien avoir demandé — une page qui a l'air cassée alors qu'elle a cent
+ * trente-six marques à montrer. On préfère l'annuaire entier.
+ *
+ * La comparaison passe par le slug des DEUX côtés : `?cat=Streetwear`,
+ * `?cat=streetwear` et `?cat=sur mesure` trouvent donc leur rayon, au
+ * même titre que `sur-mesure`. Une adresse se tape à la main et se
+ * recopie de travers ; la casse, les accents et le tiret ne sont pas
+ * des raisons suffisantes pour renvoyer quelqu'un ailleurs.
+ */
+function categoriesDemandees(
+  brands: Brand[],
+  param: string | string[] | undefined
+): string[] {
+  const demandees = valeursDe(param).map(enSlugDeCategorie);
+  if (demandees.length === 0) return [];
+
+  const connues = new Map<string, string>();
+  for (const b of brands) {
+    for (const c of b.categories) connues.set(enSlugDeCategorie(c), c);
+  }
+
+  // Le `Set` n'est pas une coquetterie : `?cat=denim&cat=Denim` poserait
+  // deux fois le même filtre, donc deux puces de même clé côte à côte
+  // dans la ligne collante.
+  return [
+    ...new Set(
+      demandees.map((s) => connues.get(s)).filter((c): c is string => Boolean(c))
+    ),
+  ];
+}
+
+/**
+ * Combien de caractères une adresse peut déposer dans le champ.
+ *
+ * Le champ reflète ce que dit l'adresse, et une adresse se fabrique à
+ * la main : quelques milliers de caractères collés dedans ne cherchent
+ * rien et débordent la mise en page du bloc de recherche.
+ */
+const SAISIE_MAX = 80;
+
+function rechercheDemandee(param: string | string[] | undefined): string {
+  // Pas de découpage sur la virgule ici, contrairement aux catégories :
+  // « denim, brut » est une recherche parfaitement légitime.
+  const [premiere = ""] = Array.isArray(param) ? param : [param ?? ""];
+  return premiere.trim().slice(0, SAISIE_MAX);
+}
+
 export default function BrandDirectory({
   brands,
   favoris,
   notes,
+  amorce,
 }: {
   brands: Brand[];
   /** Les marques déjà suivies, pour allumer la bonne étoile. */
   favoris?: string[];
   /** Les moyennes d'avis, par identifiant de marque. */
   notes?: Record<string, { moyenne: number; avis: number }>;
+  /** Ce que l'adresse demande. Voir « l'amorçage par l'adresse ». */
+  amorce?: AmorceAnnuaire;
 }) {
   /*
    * LA DENSITÉ EST TENUE ICI ET NON DANS LA GRILLE, parce que son rail
@@ -48,7 +150,15 @@ export default function BrandDirectory({
     "liste"
   );
 
-  const [query, setQuery] = useState("");
+  /*
+   * `?q=` remplit le champ, MAIS NE PREND PAS LE CURSEUR.
+   *
+   * Donner le focus ouvrirait le panneau de suggestions par-dessus la
+   * liste qu'on vient justement de réduire : on cacherait la réponse
+   * avec la question. Le champ montre ce qui a été cherché, la liste
+   * montre ce que ça donne, et il n'y a rien à faire de plus.
+   */
+  const [query, setQuery] = useState(() => rechercheDemandee(amorce?.q));
   /*
    * PLUSIEURS CATÉGORIES À LA FOIS, ET ELLES SE CUMULENT.
    *
@@ -64,8 +174,22 @@ export default function BrandDirectory({
    * Le ET a un défaut connu, mener vite à une liste vide, et c'est
    * exactement ce que le comptage plus bas empêche : une puce ne
    * s'affiche que si elle laisse au moins une marque debout.
+   *
+   * L'ADRESSE PEUT EN POSER AU DÉPART (`?cat=streetwear`), et elles
+   * entrent dans cette liste comme si on venait de les cocher : elles
+   * remontent donc en puce dans la ligne collante, avec leur croix, et
+   * se retirent d'un clic. Un filtre venu de l'adresse ne doit pas être
+   * un filtre à part, sans quoi on installe exactement ce qu'on
+   * cherchait à éviter — une liste réduite pour une raison qu'on voit
+   * sans pouvoir l'annuler.
+   *
+   * On amorce UNE FOIS, au montage. Resynchroniser à chaque rendu
+   * ferait revenir le filtre que la personne vient de retirer, puisque
+   * l'adresse, elle, le mentionne toujours.
    */
-  const [choisies, setChoisies] = useState<string[]>([]);
+  const [choisies, setChoisies] = useState<string[]>(() =>
+    categoriesDemandees(brands, amorce?.cat)
+  );
 
   const basculer = (c: string) =>
     setChoisies((liste) =>
@@ -147,6 +271,12 @@ export default function BrandDirectory({
    *
    * Sur téléphone, on ne donne PAS le focus : le clavier surgirait et
    * recouvrirait la moitié de la liste qu'on vient d'ouvrir.
+   *
+   * `cat` et `q`, eux, ne passent pas par ici mais par des propriétés
+   * venues du serveur : il les faut au premier rendu, alors que ce
+   * curseur-là ne peut de toute façon être posé qu'une fois la page
+   * montée et l'écran mesuré. Voir « l'amorçage par l'adresse » en tête
+   * de fichier.
    */
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("recherche")) return;

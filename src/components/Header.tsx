@@ -118,13 +118,13 @@ export default async function Header() {
            * proposée à quelqu'un qui n'en a pas ne mène qu'à un mur de
            * connexion.
            */}
-          <span aria-hidden className="mx-1 h-5 w-px bg-white/18" />
+          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/18" />
 
           <Link
             href="/marques?recherche=1"
             aria-label="Chercher une marque"
             title="Chercher une marque"
-            className="puce-barre grid h-9 w-9 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+            className="puce-barre grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
           >
             <IconLoupe className="h-[17px] w-[17px]" />
           </Link>
@@ -134,7 +134,7 @@ export default async function Header() {
               href="/favoris"
               aria-label="Mes favoris"
               title="Mes favoris"
-              className="puce-barre ml-1 grid h-9 w-9 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+              className="puce-barre ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
             >
               <IconCoeur className="h-[17px] w-[17px]" />
             </Link>
@@ -146,17 +146,39 @@ export default async function Header() {
           {maMarque && (
             <Link
               href={maMarque}
-              className="puce-barre ml-1.5 rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
+              className="puce-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
             >
               {mesMarques.length === 1 ? "Ma marque" : "Mes marques"}
             </Link>
           )}
 
+          {/*
+           * L'APPEL À CANDIDATURE SE RACCOURCIT AVANT DE DÉBORDER.
+           *
+           * Sous 1280 pixels, la barre n'a pas la place du texte entier.
+           * À 1024 le pincement est même double : c'est là que « Coups de
+           * cœur » et « À propos » rejoignent la barre, et le CTA long au
+           * même palier poussait « Connexion » hors du cadre. Il tenait auparavant sur deux lignes,
+           * ce qui faisait gonfler la pilule blanche hors du rythme de la
+           * barre et écrasait la loupe en ovale ; en l'empêchant de se
+           * couper, c'est « Connexion » qui se faisait rogner au bord.
+           *
+           * On raccourcit donc le mot plutôt que de retirer le bouton.
+           * Le supprimer aurait fait disparaître l'entrée des marques
+           * exactement dans la fenêtre des tablettes, où le menu déroulant
+           * — qui le porte aussi — n'existe pas non plus.
+           *
+           * Deux `span` et non une chaîne calculée : en Tailwind v4 les
+           * classes s'écrivent en toutes lettres pour être trouvées à la
+           * compilation.
+           */}
           <Link
             href="/candidature"
-            className="cta-barre ml-1.5 rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
+            title="Proposer une marque"
+            className="cta-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
           >
-            Proposer une marque
+            <span className="xl:hidden">Proposer</span>
+            <span className="hidden xl:inline">Proposer une marque</span>
           </Link>
 
           {profile ? (
@@ -164,7 +186,7 @@ export default async function Header() {
               href="/compte"
               aria-label="Mon compte"
               title={profile.display_name ?? profile.email ?? "Mon compte"}
-              className="puce-barre ml-1.5 grid h-9 w-9 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
+              className="puce-barre ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
             >
               {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
             </Link>

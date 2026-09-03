@@ -42,7 +42,13 @@ export default function LienNav({
       /* 9 px et non 8 : la barre a gagné deux pastilles rondes de
          trente-six, et des onglets plus bas qu'elles se lisaient comme
          une deuxième rangée. */
-      className={`relative rounded-full px-3.5 py-[9px] text-[13px] font-bold transition ${
+      /* `whitespace-nowrap` et `shrink-0` : un lien de barre ne se coupe
+         jamais en deux lignes. « Coups de cœur » et « À propos » le
+         faisaient dès qu'ils apparaissaient à 1024 px — la barre passait
+         de 54 à 73 pixels de haut et la pastille de la page active
+         devenait un ovale. Un onglet de navigation tient sur une ligne ou
+         ne tient pas ; il ne se plie pas. */
+      className={`relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-[9px] text-[13px] font-bold transition ${
         actif
           ? "nav-actif text-white"
           : "text-white/70 hover:bg-white/10 hover:text-white"

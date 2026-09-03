@@ -79,7 +79,15 @@ export default async function BrandStatsPage({ params }: Props) {
   return (
     <>
       <div className="mb-7">
-        <BarreGerant brand={brand} />
+        <BarreGerant
+          brand={brand}
+          pieces={stats ? stats.piecesPubliees + stats.piecesBrouillon : undefined}
+          stats={
+            stats
+              ? { vues7: stats.vues7, favoris: stats.favoris, clics: stats.clics7 }
+              : undefined
+          }
+        />
       </div>
 
       <header className="mb-5 sm:mb-7">
