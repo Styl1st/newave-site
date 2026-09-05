@@ -269,7 +269,7 @@ export default function LigneMarque({
           </h3>
           {brand.featured && <span className="badge shrink-0">À la une</span>}
           {etiquetteAcces && (
-            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white">
+            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-[var(--sur-plein,#fff)]">
               {etiquetteAcces}
             </span>
           )}
@@ -296,7 +296,25 @@ export default function LigneMarque({
             {Array.from({ length: CASES }).map((_, i) => {
               const source = pieces[i];
               const reste = total - CASES;
-              const derniere = i === CASES - 1 && reste > 0;
+              const derniere = i === CASES - 1;
+              /*
+               * AU DOIGT, LA QUATRIÈME VIGNETTE EST LE BOUTON.
+               *
+               * Sur téléphone, la ligne s'est déjà repliée en deux
+               * étages : identité en haut, bande de vignettes en bas. Un
+               * bouton « Aperçu » de plus lui ajoutait un troisième
+               * rang, et la ligne passait la barre des deux cents
+               * pixels — on n'en voyait plus que trois par écran, ce qui
+               * annule tout l'intérêt du mode liste.
+               *
+               * La dernière case porte donc le geste au lieu d'une
+               * quatrième photo. Elle disait déjà « il y en a huit
+               * autres » ; elle dit maintenant « il y en a huit autres,
+               * touche ici pour les voir », ce qui est la même idée
+               * menée à son terme. Trois photos suffisent à dire le
+               * style.
+               */
+              const enBouton = derniere && Boolean(onApercu);
 
               return (
                 <div
@@ -310,18 +328,40 @@ export default function LigneMarque({
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover"
+                      className={`h-full w-full object-cover ${enBouton ? "hidden sm:block" : ""}`}
                     />
                   )}
-                  {derniere && source && (
+                  {derniere && reste > 0 && source && (
                     /*
                      * Le compte par-dessus la photo, pas à sa place. Une
                      * case « +8 » vide, c'est une photo de moins montrée
                      * pour un chiffre qui tient dans un coin.
                      */
-                    <span className="absolute inset-0 grid place-items-center bg-[rgba(23,10,51,0.62)] text-[11px] font-extrabold text-white">
+                    <span
+                      className={`absolute inset-0 grid place-items-center bg-[rgba(23,10,51,0.62)] text-[11px] font-extrabold text-white ${
+                        enBouton ? "hidden sm:grid" : ""
+                      }`}
+                    >
                       +{reste}
                     </span>
+                  )}
+                  {enBouton && (
+                    <button
+                      type="button"
+                      onClick={onApercu}
+                      aria-label={`Aperçu des pièces de ${brand.name}`}
+                      /* `--sur-plein` et non `text-white` : en mode
+                         clair, `text-white` bascule en encre (voir le
+                         pivot de globals.css) et l'on écrirait de
+                         l'encre sur une pastille restée sombre. Ce
+                         jeton existe pour ce cas précis. */
+                      className="pointer-events-auto absolute inset-0 grid place-items-center gap-0.5 bg-[var(--color-ink)] text-[var(--sur-plein,#fff)] transition active:scale-95 sm:hidden"
+                    >
+                      <IconEye className="h-4 w-4" />
+                      {reste > 0 && (
+                        <span className="text-[10.5px] font-extrabold leading-none">+{reste}</span>
+                      )}
+                    </button>
                   )}
                 </div>
               );
@@ -370,7 +410,10 @@ export default function LigneMarque({
             type="button"
             onClick={onApercu}
             aria-label={`Aperçu des pièces de ${brand.name}`}
-            className="pointer-events-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-white transition hover:opacity-90 active:scale-95 sm:px-3.5"
+            /* Au doigt, c'est la dernière vignette qui porte le geste :
+               deux boutons pour la même chose sur une ligne de quatre
+               cents pixels, c'est un de trop. */
+            className="pointer-events-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--sur-plein,#fff)] transition hover:opacity-90 active:scale-95 sm:inline-flex sm:px-3.5"
           >
             <IconEye className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Aperçu</span>
@@ -384,6 +427,10 @@ export default function LigneMarque({
               initial={favori.initial}
               etiquette={brand.name}
               taille="claire"
+              /* Quarante-quatre pixels au doigt, trente-six à la souris :
+                 c'est la cible minimale de la section mobile, et le cœur
+                 est le seul bouton qui reste sur la première ligne. */
+              className="h-11 w-11 sm:h-9 sm:w-9"
             />
           </div>
         )}

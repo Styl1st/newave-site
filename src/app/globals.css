@@ -1701,6 +1701,43 @@ option {
   background-image: linear-gradient(165deg, rgba(var(--voile), .90), rgba(var(--voile), .95));
 }
 
+/* La feuille qui REMPLACE la page, et non celle qui monte par-dessus.
+
+   La recherche au doigt prend l'écran entier : rien de ce qu'il y a
+   derrière ne doit se deviner, sans quoi on lit les suggestions
+   par-dessus la liste qu'elles servent à réduire.
+
+   Elle est donc franchement opaque, et ne compte pas sur
+   `backdrop-filter` : sous neuf cents pixels, il est retiré partout
+   pour la mémoire (voir la règle plus haut). Compter dessus reviendrait
+   soit à ne rien flouter, soit — en le réécrivant en style en ligne
+   pour passer outre — à rouvrir précisément le trou de mémoire que
+   cette règle bouche, et sur un élément plein écran. */
+.feuille-pleine {
+  background-color: rgb(var(--voile));
+  background-image: linear-gradient(165deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
+  animation: feuilleMonte .34s cubic-bezier(.2, .85, .3, 1) both;
+}
+
+/* Le rail d'index de l'annuaire, dressé au bord droit sur téléphone.
+
+   Même raison d'être opaque : le flou n'existe pas à cette largeur, et
+   des lettres posées sur un verre qui ne floute rien se lisent sur la
+   photo d'une pièce. En grand, le rail redevient la rangée de lettres
+   d'origine, sans matière. */
+.rail-index {
+  background-color: rgba(var(--voile), .88);
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 10px 30px rgba(var(--voile), .5);
+}
+@media (min-width: 640px) {
+  .rail-index {
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
 @keyframes feuilleMonte {
   from { transform: translateY(34px); opacity: 0; }
   to   { transform: none;             opacity: 1; }
@@ -1916,6 +1953,17 @@ html[data-clair="1"] .apercu-entete {
 html[data-clair="1"] .panneau-edition,
 html[data-clair="1"] .panneau-entete {
   background: rgba(255, 255, 255, .96);
+}
+html[data-clair="1"] .feuille-pleine {
+  background: #ffffff;
+}
+/* Le rail suit le fond de la page : ses lettres sont en `text-white`,
+   que le pivot retourne en encre. Sur une pilule restée sombre, elles
+   disparaîtraient. */
+html[data-clair="1"] .rail-index {
+  background-color: rgba(255, 255, 255, .92);
+  border-color: rgba(34, 16, 70, .12);
+  box-shadow: 0 10px 30px rgba(34, 16, 70, .16);
 }
 
 /* ---------- typographie ---------- */

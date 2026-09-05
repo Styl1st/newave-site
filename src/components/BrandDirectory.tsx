@@ -1,13 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BrandGrid from "./BrandGrid";
 import { IconChevron, IconFiltre } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
-import { vignette } from "@/lib/vignette";
-import type { Brand, PriceTier, Recherche } from "@/lib/types";
+import Suggestions from "./recherche/Suggestions";
+import FeuilleRecherche from "./recherche/FeuilleRecherche";
+import { useRecherche } from "./recherche/useRecherche";
+import { noterRecherche } from "./recherche/historique";
+import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { estUnArtiste } from "@/lib/boutiques";
 import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
@@ -15,11 +17,15 @@ import { enSlugDeCategorie } from "@/lib/taxonomy";
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
-/** En deçà, on ne cherche pas, on parcourt. Voir `rechercher`. */
-const MINIMUM = 2;
-
-/** Le temps qu'on laisse aux doigts avant d'aller interroger la base. */
-const REPOS = 180;
+/**
+ * En deçà de cette largeur, la recherche prend l'écran entier.
+ *
+ * C'est le palier `sm` de Tailwind, celui qui décide déjà de la forme de
+ * la ligne de marque : une recherche qui changerait de forme à une
+ * largeur et une liste à une autre donneraient deux ruptures là où le
+ * gabarit n'en prévoit qu'une.
+ */
+const AU_DOIGT = "(max-width: 639px)";
 
 /**
  * Ce que l'adresse a demandé à l'annuaire.
@@ -227,9 +233,16 @@ export default function BrandDirectory({
   const router = useRouter();
   const champ = useRef<HTMLInputElement>(null);
   const bloc = useRef<HTMLDivElement>(null);
-  const [suggestions, setSuggestions] = useState<Recherche | null>(null);
   const [panneau, setPanneau] = useState(false);
-  const [surligne, setSurligne] = useState(0);
+  /*
+   * Au doigt, la recherche prend l'écran : voir `FeuilleRecherche`. Le
+   * champ ci-dessous devient alors un bouton — il montre ce qui a été
+   * cherché, et le toucher ouvre la feuille.
+   */
+  const [feuille, setFeuille] = useState(false);
+  const fermerLaFeuille = useCallback(() => setFeuille(false), []);
+
+  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(query);
 
   /*
    * ⌘K, ET C'EST LE GESTE QUI CHANGE LE PLUS CETTE PAGE.
@@ -269,8 +282,12 @@ export default function BrandDirectory({
    * enveloppé dans un `Suspense`, et il serait dommage de payer ça pour
    * un curseur.
    *
-   * Sur téléphone, on ne donne PAS le focus : le clavier surgirait et
-   * recouvrirait la moitié de la liste qu'on vient d'ouvrir.
+   * Sur téléphone, on n'y pose pas un curseur mais LA FEUILLE. C'était
+   * jusqu'ici la seule façon de ne pas faire surgir un clavier par-dessus
+   * la liste qu'on venait d'ouvrir : la loupe de la barre emmenait donc
+   * quelqu'un devant un champ qu'il fallait encore aller toucher. La
+   * feuille lève la contrainte — elle prend l'écran, le clavier ne
+   * recouvre plus rien d'utile — et la loupe tient enfin sa promesse.
    *
    * `cat` et `q`, eux, ne passent pas par ici mais par des propriétés
    * venues du serveur : il les faut au premier rendu, alors que ce
@@ -280,8 +297,8 @@ export default function BrandDirectory({
    */
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("recherche")) return;
-    if (window.matchMedia("(max-width: 639px)").matches) return;
-    champ.current?.focus();
+    if (window.matchMedia(AU_DOIGT).matches) setFeuille(true);
+    else champ.current?.focus();
   }, []);
 
   /*
@@ -301,71 +318,37 @@ export default function BrandDirectory({
     return () => document.removeEventListener("mousedown", dehors);
   }, [panneau]);
 
-  /*
-   * On interroge la base pour les PIÈCES, pas pour les marques.
-   *
-   * Les marques sont déjà toutes dans le navigateur : les filtrer sur
-   * place est instantané, et c'est ce que fait `parRecherche` plus bas
-   * pour la liste elle-même. Les mille deux cents pièces, elles, ne
-   * descendent pas avec la page — d'où cet appel, retardé du temps
-   * d'une frappe et annulé dès que la suivante arrive.
-   */
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < MINIMUM) {
-      setSuggestions(null);
-      return;
-    }
-
-    const halte = new AbortController();
-    const minuteur = setTimeout(() => {
-      fetch(`/api/recherche?q=${encodeURIComponent(q)}`, { signal: halte.signal })
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then((json: Recherche) => {
-          setSuggestions(json);
-          setSurligne(0);
-        })
-        .catch(() => {
-          /* Frappe suivante, ou réseau : le panneau garde ce qu'il a. */
-        });
-    }, REPOS);
-
-    return () => {
-      clearTimeout(minuteur);
-      halte.abort();
-    };
-  }, [query]);
-
-  const proposees = suggestions?.marques ?? [];
-
   function toucheDansLeChamp(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       setPanneau(false);
       champ.current?.blur();
       return;
     }
-    if (!panneau || proposees.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSurligne((i) => (i + 1) % proposees.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSurligne((i) => (i - 1 + proposees.length) % proposees.length);
-    } else if (e.key === "Enter") {
-      // Entrée ouvre la marque surlignée, pas la première : sans ça, la
-      // flèche du bas ne servirait à rien.
-      e.preventDefault();
-      const cible = proposees[surligne];
-      if (cible) router.push(`/marques/${cible.slug}`);
-    }
+    if (!panneau) return;
+    auClavier(e, (slug, mot) => {
+      noterRecherche(mot);
+      router.push(`/marques/${slug}`);
+    });
   }
 
-  const ouvrable =
-    panneau &&
-    query.trim().length >= MINIMUM &&
-    Boolean(suggestions) &&
-    (proposees.length > 0 || (suggestions?.pieces.length ?? 0) > 0);
+  /*
+   * OUVRIR LA FEUILLE AVANT QUE LE CHAMP PRENNE LE CURSEUR.
+   *
+   * `preventDefault` sur le `pointerdown` empêche le focus, donc le
+   * clavier de monter derrière la page : sans lui, on verrait le clavier
+   * surgir sur l'annuaire, puis la feuille arriver par-dessus, et le
+   * clavier redescendre et remonter. Trois mouvements pour un geste.
+   *
+   * Le `focus` reste couvert à part, pour la tabulation : on peut
+   * atteindre le champ au clavier sans jamais poser un doigt dessus.
+   */
+  function ouvrirAuDoigt(e: React.PointerEvent | React.FocusEvent): boolean {
+    if (!window.matchMedia(AU_DOIGT).matches) return false;
+    if (e.type === "pointerdown") e.preventDefault();
+    else champ.current?.blur();
+    setFeuille(true);
+    return true;
+  }
 
   /* ------------------------------------------------------------------
      Les filtres
@@ -479,7 +462,16 @@ export default function BrandDirectory({
   return (
     <>
       {/* ---------------- le bloc de recherche ---------------- */}
-      <div ref={bloc} className="glass rise rise-1 relative z-20 mb-4 p-3.5 sm:p-4">
+      <div
+        ref={bloc}
+        /* En mode liste, le rail d'index est fixé au bord droit sur
+           téléphone : le bloc de recherche lui laisse sa gouttière
+           plutôt que de passer dessous. Voir `IndexAlphabet` dans
+           `BrandGrid`. */
+        className={`glass rise rise-1 relative z-20 mb-4 p-3.5 sm:p-4 ${
+          densite === "liste" ? "mr-[30px] sm:mr-0" : ""
+        }`}
+      >
         <div className="flex gap-2">
           <div className="relative min-w-0 flex-1">
             <input
@@ -490,7 +482,10 @@ export default function BrandDirectory({
                 setQuery(e.target.value);
                 setPanneau(true);
               }}
-              onFocus={() => setPanneau(true)}
+              onPointerDown={ouvrirAuDoigt}
+              onFocus={(e) => {
+                if (!ouvrirAuDoigt(e)) setPanneau(true);
+              }}
               onKeyDown={toucheDansLeChamp}
               placeholder="Chercher une marque, un style…"
               aria-label="Chercher une marque, une pièce"
@@ -499,9 +494,11 @@ export default function BrandDirectory({
             />
             {/* Le raccourci s'efface dès qu'on tape : il rappelle un
                 geste, il n'a plus rien à dire une fois le curseur
-                dedans. */}
+                dedans. Il ne s'affiche pas non plus au doigt, où il ne
+                se tape pas — c'est la loupe de la feuille qui le
+                remplace. */}
             {!query && (
-              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10.5px] font-extrabold tracking-[0.06em] text-white/40">
+              <span className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 text-[10.5px] font-extrabold tracking-[0.06em] text-white/40 sm:block">
                 ⌘ K
               </span>
             )}
@@ -531,92 +528,20 @@ export default function BrandDirectory({
 
         {/* Les suggestions, dans le bloc et non en surimpression : une
             couche flottante par-dessus une page déjà en verre se lit
-            très mal, et se ferme au moindre défilement. */}
-        {ouvrable && suggestions && (
+            très mal, et se ferme au moindre défilement.
+
+            Le rendu est celui de `Suggestions`, partagé avec la feuille
+            plein écran du téléphone : deux copies auraient fini par ne
+            plus répondre pareil au même mot. */}
+        {panneau && garni && suggestions && (
           <div className="mt-3 border-t border-white/16 pt-3">
-            {proposees.length > 0 && (
-              <>
-                <p className="eyebrow m-0 mb-2 text-white/45">
-                  Marques · {proposees.length} résultat{proposees.length > 1 ? "s" : ""}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {proposees.map((m, i) => (
-                    <Link
-                      key={m.slug}
-                      href={`/marques/${m.slug}`}
-                      onMouseEnter={() => setSurligne(i)}
-                      className={`flex items-center gap-3 rounded-[12px] px-2 py-2 transition ${
-                        i === surligne ? "bg-white/14" : "hover:bg-white/8"
-                      }`}
-                    >
-                      <span className="grid h-[34px] w-[34px] shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white/10">
-                        {m.visuel ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img
-                            src={vignette(m.visuel, 160, { logo: true })}
-                            alt=""
-                            loading="lazy"
-                            className="h-full w-full object-contain p-1"
-                          />
-                        ) : (
-                          <span className="text-[11px] font-black text-white/60">
-                            {initiales(m.name)}
-                          </span>
-                        )}
-                      </span>
-
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-extrabold text-white">
-                        <Surligne texte={m.name} motif={query.trim()} />
-                      </span>
-
-                      <span className="hidden shrink-0 text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/50 sm:block">
-                        {[m.categorie, m.ville].filter(Boolean).join(" · ")}
-                      </span>
-
-                      {i === surligne && (
-                        <span className="hidden shrink-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/45 lg:block">
-                          Entrée ↵
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {suggestions.pieces.length > 0 && (
-              <>
-                <p className={`eyebrow m-0 mb-2 text-white/45 ${proposees.length > 0 ? "mt-4" : ""}`}>
-                  Pièces · {suggestions.totalPieces} résultat
-                  {suggestions.totalPieces > 1 ? "s" : ""}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.pieces.map((p) => (
-                    <Link
-                      key={p.id}
-                      href={p.adresse}
-                      className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] bg-white/10 transition hover:scale-105"
-                      title={p.name}
-                    >
-                      {p.image && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={vignette(p.image, 160)}
-                          alt={p.name}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </Link>
-                  ))}
-                  {suggestions.totalPieces > suggestions.pieces.length && (
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[10px] bg-white/12 text-[12px] font-extrabold text-white/80">
-                      +{suggestions.totalPieces - suggestions.pieces.length}
-                    </span>
-                  )}
-                </div>
-              </>
-            )}
+            <Suggestions
+              suggestions={suggestions}
+              query={query}
+              surligne={surligne}
+              onSurligne={setSurligne}
+              onOuvrir={noterRecherche}
+            />
           </div>
         )}
 
@@ -746,7 +671,11 @@ export default function BrandDirectory({
           Elle se cale sous la barre de navigation, qui est elle-même
           collante : les deux hauteurs sont accordées à la main faute de
           pouvoir les mesurer en CSS. */}
-      <div className="sticky top-[70px] z-30 mb-3 sm:top-[86px]">
+      <div
+        className={`sticky top-[70px] z-30 mb-3 sm:top-[86px] ${
+          densite === "liste" ? "mr-[30px] sm:mr-0" : ""
+        }`}
+      >
         <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.44)] p-2.5 backdrop-blur-[20px] sm:flex-nowrap sm:rounded-full">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {(
@@ -839,38 +768,16 @@ export default function BrandDirectory({
           }
         />
       )}
-    </>
-  );
-}
 
-/** Deux lettres, quand une marque n'a pas de visuel lisible. */
-function initiales(nom: string): string {
-  const mots = nom.trim().split(/\s+/).slice(0, 2);
-  return mots.map((m) => m.charAt(0).toUpperCase()).join("");
-}
-
-/**
- * Le préfixe tapé, mis en évidence dans le nom.
- *
- * ON N'ÉCRIT PAS DE HTML À LA MAIN ICI. La tentation est de fabriquer
- * une chaîne avec des balises et de l'injecter : c'est exactement
- * l'endroit où l'on ouvre une faille, puisque le texte surligné vient
- * de ce que quelqu'un a tapé. On découpe donc, et React se charge
- * d'échapper chaque morceau.
- */
-function Surligne({ texte, motif }: { texte: string; motif: string }) {
-  if (!motif) return <>{texte}</>;
-
-  const i = texte.toLowerCase().indexOf(motif.toLowerCase());
-  if (i < 0) return <>{texte}</>;
-
-  return (
-    <>
-      {texte.slice(0, i)}
-      <mark className="rounded-[3px] bg-[rgba(var(--accent-1),0.45)] px-0.5 text-white">
-        {texte.slice(i, i + motif.length)}
-      </mark>
-      {texte.slice(i + motif.length)}
+      {/* La recherche au doigt. Elle n'existe que sous `sm` — c'est
+          `ouvrirAuDoigt` qui décide de l'ouvrir, et la feuille se
+          referme d'elle-même si la fenêtre s'élargit. */}
+      <FeuilleRecherche
+        ouverte={feuille}
+        query={query}
+        onQuery={setQuery}
+        onFermer={fermerLaFeuille}
+      />
     </>
   );
 }

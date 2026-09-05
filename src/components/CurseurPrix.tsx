@@ -37,6 +37,7 @@ export default function CurseurPrix({
   valeur,
   onChange,
   format,
+  bornesVisibles = true,
 }: {
   min: number;
   max: number;
@@ -47,6 +48,15 @@ export default function CurseurPrix({
   onChange: (v: [number, number]) => void;
   /** Comment écrire une borne. La vitrine y met des euros. */
   format: (v: number) => string;
+  /**
+   * Les deux prix, écrits au-dessus du rail.
+   *
+   * On peut les éteindre quand l'appelant les affiche lui-même ailleurs —
+   * la feuille de filtres du téléphone les remonte sur la ligne du titre,
+   * pour tenir sur une hauteur au lieu de deux. Le rail garde alors ses
+   * `aria-valuetext` : la valeur reste annoncée même sans être écrite.
+   */
+  bornesVisibles?: boolean;
 }) {
   const [bas, haut] = valeur;
   const etendue = max - min || 1;
@@ -81,10 +91,12 @@ export default function CurseurPrix({
     <div>
       {/* Les bornes au-dessus du rail : sans elles, on déplace une
           poignée sans savoir vers quoi. */}
-      <div className="mb-2.5 flex items-center justify-between text-[13px] font-extrabold tabular-nums text-white">
-        <span>{format(bas)}</span>
-        <span>{format(haut)}</span>
-      </div>
+      {bornesVisibles && (
+        <div className="mb-2.5 flex items-center justify-between text-[13px] font-extrabold tabular-nums text-white">
+          <span>{format(bas)}</span>
+          <span>{format(haut)}</span>
+        </div>
+      )}
 
       <div className="relative h-[22px]">
         <input

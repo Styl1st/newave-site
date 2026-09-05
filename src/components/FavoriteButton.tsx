@@ -34,6 +34,7 @@ export default function FavoriteButton({
   initial,
   taille = "normale",
   etiquette,
+  className = "h-9 w-9",
 }: {
   brandId: string;
   initial: boolean;
@@ -52,6 +53,22 @@ export default function FavoriteButton({
   taille?: "normale" | "compacte" | "claire";
   /** Nom de la marque, pour que le bouton reste compréhensible sans texte. */
   etiquette?: string;
+  /**
+   * De quoi retoucher la PASTILLE, et rien d'autre.
+   *
+   * Elle mesure trente-six pixels, ce qui va partout à la souris et
+   * reste sous la cible de quarante-quatre au doigt. Plutôt qu'une
+   * seconde taille nommée — qui n'aurait de sens que sur un écran étroit,
+   * alors que le composant ne mesure rien — l'appelant dit ce qu'il veut
+   * là où il connaît son gabarit. Sans effet sur la forme `normale`, qui
+   * est un bouton à libellé et non une pastille.
+   *
+   * ⚠️ La taille par défaut est ICI et non dans la classe de base : deux
+   * hauteurs écrites dans le même attribut ne se départagent pas par
+   * leur ordre d'écriture mais par celui de la feuille compilée, que
+   * personne ne contrôle. Une valeur, une seule.
+   */
+  className?: string;
 }) {
   const [favorited, setFavorited] = useState(initial);
   const [note, setNote] = useState<string | null>(null);
@@ -91,7 +108,7 @@ export default function FavoriteButton({
             : `Mettre ${etiquette ?? "cette marque"} en favori`
         }
         title={favorited ? "En favori" : "Mettre en favori"}
-        className={`grid h-9 w-9 place-items-center rounded-full text-[15px] transition active:scale-90 disabled:opacity-60 ${
+        className={`grid ${className} place-items-center rounded-full text-[15px] transition active:scale-90 disabled:opacity-60 ${
           surClair
             ? favorited
               ? "bg-[var(--color-ink)] text-white"

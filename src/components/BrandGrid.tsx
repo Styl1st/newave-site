@@ -87,6 +87,15 @@ export default function BrandGrid({
   notes?: Record<string, { moyenne: number; avis: number }>;
 }) {
   const suivies = new Set(favoris ?? []);
+  /*
+   * La densité effective, vue d'ici.
+   *
+   * `Grille` la donne à ses enfants par une fonction, mais le pied de
+   * pagination vit EN DEHORS d'elle : il lui faut donc la valeur à ce
+   * niveau pour savoir s'il doit réserver la gouttière du rail. Le seul
+   * appelant, `BrandDirectory`, impose toujours la sienne.
+   */
+  const enListe = (densiteImposee ?? defaut) === "liste";
   const [open, setOpen] = useState<string | null>(null);
   const [combien, setCombien] = useState(LOT);
   const [lettreActive, setLettreActive] = useState<string | null>(null);
@@ -261,9 +270,13 @@ export default function BrandGrid({
                    */
                   <Fragment key={b.id}>
                     {premiere && (
+                      /* `pr-[30px]` : la gouttière du rail d'index, qui
+                         est en position fixe au bord droit sur
+                         téléphone. Sans elle, la lettre passerait
+                         dessous. Voir `IndexAlphabet`. */
                       <h2
                         id={`lettre-${lettre}`}
-                        className={`m-0 mb-1 scroll-mt-24 text-[26px] font-extrabold leading-none tracking-[-0.03em] text-white/42 ${
+                        className={`m-0 mb-1 scroll-mt-24 pr-[30px] text-[26px] font-extrabold leading-none tracking-[-0.03em] text-white/42 sm:pr-0 ${
                           i === 0 ? "" : "mt-4"
                         }`}
                       >
@@ -273,7 +286,7 @@ export default function BrandGrid({
                     {/* `ligne-eco` met de côté ce qui est hors écran sur
                         téléphone : le navigateur cesse de peindre les
                         lignes qu'on ne regarde pas. Voir globals.css. */}
-                    <div className="ligne-eco">
+                    <div className="ligne-eco pr-[30px] sm:pr-0">
                       <LigneMarque
                         brand={b}
                         favori={favoris ? { initial: suivies.has(b.id) } : undefined}
@@ -313,7 +326,17 @@ export default function BrandGrid({
          * Le compte D'ABORD, le bouton ensuite : « 24 sur 136 » est ce
          * qui décide de cliquer ou d'aller chercher autrement.
          */
-        <div className="mt-6 flex flex-col items-center gap-2.5 rounded-[999px] border border-white/20 bg-[rgba(8,2,30,0.44)] px-5 py-4 backdrop-blur-[20px] sm:flex-row sm:justify-center sm:gap-5">
+        <div
+          className={`mt-6 flex flex-col items-center gap-2.5 rounded-[999px] border border-white/20 bg-[rgba(8,2,30,0.44)] px-5 py-4 backdrop-blur-[20px] sm:mr-0 sm:flex-row sm:justify-center sm:gap-5 ${
+            /* En mode liste, le rail d'index court le long du bord
+               droit : le pied lui laisse sa gouttière plutôt que de
+               passer dessous. Il reste dans le flux et non flottant —
+               une pilule fixée en bas recouvrirait en permanence la
+               dernière ligne de la liste, et croiserait la zone
+               sensible de `ProgressionLecture`. */
+            enListe ? "mr-[30px]" : ""
+          }`}
+        >
           <p className="m-0 text-[11.5px] font-bold uppercase tracking-[0.14em] text-white/55">
             {Math.min(combien, brands.length)} sur {brands.length} affichées
           </p>
@@ -336,13 +359,34 @@ export default function BrandGrid({
 }
 
 /**
- * La rangée de lettres.
+ * La rangée de lettres — et, au doigt, le rail du bord droit.
  *
  * UNE LETTRE VIDE RESTE VISIBLE MAIS S'ÉTEINT. La retirer ferait
  * glisser toutes les suivantes sous le doigt d'une recherche à l'autre :
  * on viserait « M » et l'on toucherait « N ». Une rangée qui garde
  * toujours la même forme se vise sans regarder, et l'extinction dit déjà
  * qu'il n'y a rien à y trouver.
+ *
+ * SUR TÉLÉPHONE, ELLE SE DRESSE AU BORD DROIT. Vingt-sept lettres en
+ * travers d'un écran de quatre cents pixels tiennent sur trois rangs,
+ * chacune large de onze : on ne les vise pas, on les manque. Debout au
+ * bord, c'est le répertoire du carnet d'adresses — le pouce y arrive
+ * sans traverser l'écran, et la liste continue de se lire à côté.
+ *
+ * ELLE EST FIXE ET NON POSÉE DANS LE FLUX, et c'est ce qui la rend
+ * utile : l'envie de sauter à une lettre arrive au milieu de la liste.
+ * Ancrée en haut de page, elle serait déjà sortie de l'écran au moment
+ * où l'on en a besoin.
+ *
+ * MÊME BALISE DANS LES DEUX FORMES. Rendre deux fois les vingt-sept
+ * lettres, l'une cachée en grand, l'autre en petit, doublerait la liste
+ * pour les lecteurs d'écran : ils annonceraient cinquante-quatre boutons
+ * dont la moitié invisibles. Ce sont donc les mêmes boutons, que les
+ * classes redressent.
+ *
+ * ⚠️ ELLE FILTRE, ELLE NE FAIT PAS DÉFILER — voir `allerA`. Le rail lui
+ * ressemble pourtant beaucoup, et c'est justement pour ça que le libellé
+ * dit « Lettre » et non « Aller à » : il ne promet pas un défilement.
  */
 function IndexAlphabet({
   pleines,
@@ -359,53 +403,66 @@ function IndexAlphabet({
   onTout: () => void;
 }) {
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-      {/* « Lettre » et non « Aller à » : le mot promettait un défilement,
-          et l'on filtre. Un libellé qui décrit autre chose que ce qui se
-          passe est un bogue à lui seul. */}
-      <span className="eyebrow m-0 mr-1 text-white/45">Lettre</span>
+    <>
+      {/* La ligne d'état reste dans le flux : au doigt, elle est ce qui
+          dit ce que le rail vient de faire. */}
+      <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 pr-[30px] sm:pr-0">
+        {/* « Lettre » et non « Aller à » : le mot promettait un défilement,
+            et l'on filtre. Un libellé qui décrit autre chose que ce qui se
+            passe est un bogue à lui seul. Il saute au doigt, où le rail se
+            passe d'intitulé. */}
+        <span className="eyebrow m-0 mr-1 hidden text-white/45 sm:block">Lettre</span>
 
-      <div className="flex flex-wrap gap-0.5">
-        {LETTRES.map((l) => {
-          const dispo = pleines.has(l);
-          return (
+        <nav
+          aria-label="Index alphabétique des marques"
+          /* Deux formes, une seule balise. En grand : une rangée qui
+             s'enroule, sans matière. Au doigt : une pilule de verre
+             dressée au bord droit, centrée sur la hauteur, qui défile
+             sur elle-même si l'écran est trop court pour ses
+             vingt-sept lettres. */
+          className="rail-index fixed right-[3px] top-1/2 z-30 flex max-h-[calc(100svh-150px)] -translate-y-1/2 flex-col items-center gap-px overflow-y-auto overscroll-contain rounded-full px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:static sm:max-h-none sm:translate-y-0 sm:flex-row sm:flex-wrap sm:gap-0.5 sm:overflow-visible sm:p-0"
+        >
+          {LETTRES.map((l) => {
+            const dispo = pleines.has(l);
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => onChoisir(l)}
+                disabled={!dispo}
+                aria-label={
+                  active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
+                }
+                aria-current={active === l ? "true" : undefined}
+                className={`grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[7px] px-1 text-[11px] transition sm:h-[26px] sm:min-w-[26px] sm:rounded-[8px] sm:text-[12px] ${
+                  active === l
+                    ? "bg-white font-black text-[var(--color-ink)]"
+                    : dispo
+                      ? "font-extrabold text-white hover:bg-white/15"
+                      : "cursor-default font-extrabold text-white/24"
+                }`}
+              >
+                {l}
+              </button>
+            );
+          })}
+        </nav>
+
+        {active && combien > 0 && (
+          <span className="flex items-center gap-2 text-[11.5px] font-semibold text-white/55">
+            {active} — {combien} marque{combien > 1 ? "s" : ""}
+            {/* Une sortie visible : sans elle, il faut deviner qu'on
+                retouche la même lettre pour tout revoir. */}
             <button
-              key={l}
               type="button"
-              onClick={() => onChoisir(l)}
-              disabled={!dispo}
-              aria-label={
-                active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
-              }
-              aria-current={active === l ? "true" : undefined}
-              className={`grid h-[26px] min-w-[26px] place-items-center rounded-[8px] px-1 text-[12px] transition ${
-                active === l
-                  ? "bg-white font-black text-[var(--color-ink)]"
-                  : dispo
-                    ? "font-extrabold text-white hover:bg-white/15"
-                    : "cursor-default font-extrabold text-white/24"
-              }`}
+              onClick={onTout}
+              className="font-bold text-white/75 underline underline-offset-2 hover:text-white"
             >
-              {l}
+              Tout afficher
             </button>
-          );
-        })}
+          </span>
+        )}
       </div>
-
-      {active && combien > 0 && (
-        <span className="flex items-center gap-2 text-[11.5px] font-semibold text-white/55">
-          {active} — {combien} marque{combien > 1 ? "s" : ""}
-          {/* Une sortie visible : sans elle, il faut deviner qu'on
-              retouche la même lettre pour tout revoir. */}
-          <button
-            type="button"
-            onClick={onTout}
-            className="font-bold text-white/75 underline underline-offset-2 hover:text-white"
-          >
-            Tout afficher
-          </button>
-        </span>
-      )}
-    </div>
+    </>
   );
 }

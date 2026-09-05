@@ -792,6 +792,130 @@ parmi celles à zéro cœur.
 Les seuils (100 cœurs) sont un point de départ à mettre dans une constante, pas en dur dans
 le JSX — ils vont bouger.
 
+### 15. L'interface mobile — badges `13a` → `13i`
+
+**Fichier :** `NEWAVE - mobile.dc.html` · dessiné à **402 × 874** ·
+**Concerne :** tous les écrans retenus, plus `Header.tsx` / `MobileMenu.tsx` et `PanneauEdition.tsx`
+
+⚠️ **Le châssis de téléphone est un artefact de présentation.** Le cadre, l'encoche, la
+barre d'état, l'indicateur d'accueil et le clavier viennent de `ios-frame.jsx`, présent
+uniquement pour que le fichier de design se lise. **Rien de tout ça ne se porte** : c'est
+du web mobile dans Safari/Chrome, pas une application.
+
+**Purpose.** Le desktop est dessiné à 1180px ; à 402px, aucune fonction ne disparaît, mais
+quatre gestes changent de forme parce que le clavier et la souris ne sont plus là. Ces
+quatre écrans-là sont les seuls à demander du code nouveau ; le reste est du reflow.
+
+| Ce qui change | Écran | Pourquoi |
+|---|---|---|
+| **⌘K devient une feuille de recherche plein écran** | `13c` | Le raccourci n'existe pas au doigt. On tape le champ, la page se remplace, le clavier monte. Mêmes suggestions groupées Marques puis Pièces, même surlignage `<mark>` du préfixe, `Annuler` à droite du champ. |
+| **La colonne de filtres devient une feuille montante** | `13e` | 222px de colonne ne tiennent pas. Même contenu, même ordre, plus un bouton de validation qui compte le résultat. |
+| **La ligne de marque se replie en deux étages** | `13b` | Une ligne à 5 colonnes ferait 250px de haut. La **4ᵉ vignette d'aperçu devient le bouton « Aperçu »** (fond `#170a33`, œil + « +8 ») : on garde l'idée sans la hauteur. Ligne finale : 172px. |
+| **La retouche en place devient une feuille par champ** | `13i` | Éditer à sa place à 402px n'est pas praticable. C'est le `11a`-style annoncé dans la section 13, un champ à la fois, écrivant dans **le même brouillon** que le desktop. |
+
+**Les invariants, valables sur les neuf écrans.**
+
+- **Padding de scène** `56px 16px 0` — le 56 réserve la barre d'état du châssis ; côté web,
+  c'est `env(safe-area-inset-top)` + 12px. Les feuilles réservent `34px` en bas
+  (`env(safe-area-inset-bottom)`).
+- **Cibles ≥ 44px** partout : les boutons ronds de la nav, les cœurs, les pastilles de
+  filtre (`padding:10px 14px`), les lignes de la feuille de filtres (`padding:13px 14px`).
+- **Barre de nav** — la pilule `.barre` conservée, `padding:5px 5px 5px 16px`, logo à
+  **22px**, puis 2 ou 3 boutons ronds de 44px : loupe (ouvre `13c`), cœur ou pastille
+  d'avatar, et le burger de `MobileMenu`. **Le tiroir de `MobileMenu.tsx` ne change pas.**
+- **Typographie resserrée** : h1 de page **30px** (au lieu de 38), h2 de section 20-22px,
+  titre de post à la une **26px** `-.035em`, corps 13.5-15px, œil-de-bœuf **9.5px** `.22em`,
+  méta 10-10.5px. Tout le reste (graisses, couleurs, opacités) est inchangé.
+- **Rayons** : 14px champ · 13px pastille de feuille · 18px ligne de marque · 20px carte ·
+  22px post à la une et carte du gérant · **26px 26px 0 0** feuille · 999px pilule.
+- **Lignes de filtres** — `overflow-x:auto`, barre masquée, et
+  `mask-image:linear-gradient(90deg,#000 82-88%,transparent 100%)` : c'est ce dégradé qui
+  dit qu'il y a une suite. Elles restent collantes, elles ne se replient jamais.
+- **Feuilles** (`13e`, `13i`) — `background-color:rgba(6,2,26,.86)` (.9 pour la retouche)
+  + `backdrop-filter:blur(26px) saturate(1.4)`, `border-top:1px solid rgba(255,255,255,.2)`,
+  `box-shadow:0 -18px 44px -8px rgba(12,3,36,.8)`, poignée `44×5px`
+  `rgba(255,255,255,.3)` centrée, et voile `rgba(12,4,32,.5-.62)` sur la page derrière.
+- **Pas d'inclinaison au curseur** : `[data-tilt]` n'est pas installé (aucun
+  `pointermove` tactile, cf. « Interactions »). Le décor de fond, lui, tourne comme sur
+  desktop — avec l'allègement `backdrop-filter` déjà présent dans `globals.css`.
+
+**Écran par écran.**
+
+- **`13a` Accueil** — manifeste conservé : logo **212px**, baseline 11px `.24em` sur 3
+  lignes, une phrase de corps (la longue est coupée), champ de recherche pleine largeur
+  **sans « ⌘ K »** (remplacé par une loupe à gauche), 4 puces de raccourci en défilement
+  horizontal, les 2 boutons **empilés en pleine largeur** (`gap:9px`), l'invite « LA SUITE ».
+  Puis « La marque de la semaine » : la carte garde son bandeau `16/9`, le logo passe à
+  **62px**, « VOIR LA BOUTIQUE » devient « BOUTIQUE », et le pied de carte ne garde que nom
+  + méta (la description saute).
+- **`13b` L'annuaire** — recherche + bouton entonnoir **48×48px** sur la même ligne, puis
+  la ligne de filtres à compteurs. **L'index A→Z passe en rail au bord droit**
+  (`position:absolute; right:3px; top:220px`, pilule `rgba(8,2,30,.42)` + `blur(14px)`,
+  lettres 22px, active en carré blanc 7px de rayon, **vides à `rgba(255,255,255,.24)` et
+  non cliquables**) : le pouce y arrive, comme un répertoire de téléphone. Tout ce qui vit
+  sous le rail réserve sa gouttière (26 à 38px à droite). Ligne de marque : logo 52px,
+  identité + badge « À LA UNE » + cœur 44px au premier étage, **4 vignettes** au second
+  dont la dernière est l'action. Pied de pagination en pilule flottante
+  (`left/right:16px; bottom:44px`).
+- **`13c` La recherche** — champ en état focus (`border:1px solid rgba(232,111,216,.9)`
+  + `box-shadow:0 0 0 3px rgba(232,111,216,.3)`), caret `1.5×16px` clignotant, « Annuler »
+  en 800/13px. Groupes « MARQUES · 2 RÉSULTATS » (ligne active sur `rgba(255,255,255,.14)`,
+  « ENTRÉE ↵ » conservé pour les claviers physiques) et « PIÈCES · 31 RÉSULTATS »
+  (4 vignettes dont « +27 »). Un bloc « TU CHERCHAIS » remplit le reste : c'est
+  l'historique local, pas une requête.
+- **`13d` Les pièces** — le parti pris tient : **pas de carte**, photo en `border-radius:4px`
+  posée sur le fond, texte dessous. Grille `repeat(2,minmax(0,1fr))`, `gap:18px 14px`,
+  **ratios alternés** (3/4, 1/1, 4/5) et `margin-top` de 14 à 22px sur une tuile sur deux —
+  c'est ce décalage qui fait respirer. Barre de tri collante en pilule (compteur à gauche,
+  2 tris soulignés à droite : « Au hasard » saute). Bouton flottant **« Filtres 3 »**
+  centré en bas (blanc, compteur en pastille `#170a33`).
+- **`13e` La feuille de filtres** — **Rayon** passe de liste verticale à **grille de 2
+  colonnes** (nom à gauche, compteur à droite, actif en blanc) ; **Prix** garde son double
+  curseur, poignées portées à **20px** ; **Disponibilité** en 3 pastilles cochables (carré
+  18px) ; **Marque** en select pleine largeur. Pied : bouton blanc pleine largeur
+  **« Voir les 214 pièces »** — le compte se recalcule à chaque changement, c'est lui qui
+  remplace le retour immédiat qu'on avait sur desktop.
+- **`13f` Les posts** — le post à la une passe de `21/9` à **`4/5`**, voile vertical
+  (`linear-gradient(0deg, rgba(20,7,48,.94) 0%, rgba(20,7,48,.5) 42%, transparent 74%)`)
+  au lieu du voile en biais, contenu ancré à 18px du bas, titre **26px** `-.035em`. Le fil
+  passe de `280px + texte` à **une colonne** : vignette `16/9` en haut, texte dessous,
+  badges « +3 » / « Vidéo » inchangés, « VOIR LA MARQUE → » retiré (la carte entière est
+  le lien).
+- **`13g` Coups de cœur** — les seuils de `12a` sont conservés tels quels. Les rayons
+  gardent leur **jauge** et leur ordre par population, en défilement horizontal
+  (`min-width:104px`). Sous 100 cœurs : **liste simple**, lignes à 5 colonnes
+  (logo 48px · identité · « 8 cœurs » · cœur 44px), pas de rang. La note du seuil se met
+  à droite du titre sur deux lignes (« PODIUM / À 100 CŒURS »). Les rayons vides restent
+  en pastilles pointillées cliquables vers `/marques?cat=…`.
+- **`13h` Mon espace marque** — la carte à deux étages de `10d` **s'empile** : filet
+  d'appartenance 3px, puis logo 42px + « TON ESPACE » + nom + badge d'état ; les onglets
+  passent en défilement horizontal ; les deux actions passent **en pleine largeur
+  empilées** (« Ajouter des pièces » en blanc d'abord — c'est le geste qui débloque la
+  publication). Second étage identique : pastille ambre du nombre manquant, les **trois**
+  conditions de `publication.ts` en pastilles (coche `#7de2ab` / cercle vide ambre), puis
+  « Importer ma boutique » et « Publier » à `opacity:.4` désactivé.
+- **`13i` Modifier ma page** — bandeau « Retouche en cours » en dégradé d'accents +
+  « Quitter », consigne « Touche un texte ou un visuel… ». La couverture porte son liseré
+  `0 0 0 2px rgba(232,111,216,.55)`, le badge « MODIFIABLE » et **ses deux boutons
+  visibles en permanence** (il n'y a pas de survol au doigt). Les métadonnées deviennent
+  des pastilles à crayon 11px, la pastille pointillée « + Année de création » reste. La
+  feuille d'édition : étiquette « TA PHRASE » en `rgba(232,111,216,.95)`, texte à sa
+  **taille d'affichage** (17px), compteur « 36 / 70 », **Annuler / Valider** (l'équivalent
+  d'Échap/Entrée, qui n'existent pas au doigt), et la barre d'enregistrement — pastille
+  ambre + « 2 modifications non enregistrées » + « Enregistrer » — intégrée au pied de la
+  feuille plutôt que flottante, pour ne pas empiler deux barres.
+
+**Ce qui n'est pas encore dessiné en mobile :** `7b` **Mes favoris** (le reflow est celui
+de `13b`, plus la date d'ajout) et `8a`/`8b` **Compte / Apparence** — ce dernier demande
+une vraie décision (les 6 teintes + 3 accents + 2 curseurs de `ThemePicker` au doigt, avec
+la règle « rien ne s'applique pendant le glissement » qui, elle, ne change pas).
+
+**Côté données : rien de nouveau.** Mêmes requêtes que le desktop. Seule précision :
+l'aperçu de pièces montre **3 vignettes + le total**, mais la requête reste la même (4
+premières pièces + compte) — ne pas créer une variante mobile côté serveur.
+
+---
+
 ## Ce qui reste à ne pas casser dans l'administration
 
 - `src/lib/publication.ts` est **la** définition. Ne pas la dupliquer, ne pas l'assouplir
@@ -906,7 +1030,10 @@ où `f` est l'intensité (1 par défaut). Points d'attention pour le portage :
   bordures et ombres (déjà la convention de `.champ`), `active:scale(.97)` sur les
   boutons (déjà la convention du site).
 
-**Responsive.** Les prototypes sont dessinés à **1180px de large**, desktop. À porter :
+**Responsive.** Les prototypes desktop sont dessinés à **1180px de large** ; le mobile est
+dessiné à **402px** dans `NEWAVE - mobile.dc.html` et détaillé écran par écran en
+« 15. L'interface mobile » — c'est cette section qui fait foi, les paliers ci-dessous en
+sont le résumé :
 - `< 1024px` — la colonne de filtres de `5a` et le rail de `8a/8b` passent en tiroir
   déclenché par le bouton « Filtres » / un sélecteur d'onglets horizontal ; la colonne de
   droite de `3b` passe sous la colonne principale ;
@@ -1047,6 +1174,8 @@ dessin stable d'un appareil à l'autre).
 |---|---|
 | `Annuaire NEWAVE.dc.html` | Écran `2a` — l'annuaire à l'échelle. Contient aussi `1a`, la recréation fidèle de l'annuaire **actuel** (utile comme point de comparaison) et les explorations `1b`/`1c`/`1d`, écartées. |
 | `NEWAVE - pages.dc.html` | Écrans `3b` accueil · `5a` pièces · `6b` posts · `7a` classement (voir `12a` qui le remplace) · `7b` favoris · `8a`/`8b` compte · `9a` éditer une marque · `9b` tableau de bord · `9c` liste des marques · `10a` barre publique · `10d` barre du gérant · `11b` modifier sa page · `12a` coups de cœur remasterisée. Les tours antérieurs conservent les pistes écartées ; les intitulés indiquent lesquelles ont été retenues. |
+| `NEWAVE - mobile.dc.html` | Écrans `13a` → `13i` — l'interface mobile à 402px (voir section 15). |
+| `ios-frame.jsx` | Châssis de téléphone du fichier mobile (cadre, barre d'état, clavier). **Artefact de présentation, à ne pas porter.** |
 | `assets/` | Les 5 fichiers de marque, pour que les HTML s'ouvrent hors ligne. |
 | `support.js` | Runtime des fichiers de design. **Aucun intérêt pour l'implémentation** — ne pas le porter. |
 
@@ -1069,3 +1198,7 @@ et les intitulés indiquent lesquelles ont été retenues.
 9. **`8a`/`8b` le compte** — réorganisation de composants existants, aucune donnée
    nouvelle ; c'est le moins risqué, et il peut passer en premier si tu préfères
    commencer petit.
+10. **Le mobile n'est pas une étape 10.** Chaque écran se porte avec sa version mobile
+    dans la même passe : les quatre nouveautés (feuille de recherche, feuille de filtres,
+    ligne à deux étages, feuille de retouche) appartiennent aux étapes 1, 2 et 8. Le seul
+    travail vraiment à part est le rail A→Z de `13b`.

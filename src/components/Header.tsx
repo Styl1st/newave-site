@@ -199,6 +199,33 @@ export default async function Header() {
 
         {/* ---------- mobile et tablette ---------- */}
         <div className="relative z-2 flex items-center gap-2 md:hidden">
+          {/*
+           * LA LOUPE EXISTE AUSSI AU DOIGT, DEPUIS QU'ELLE MÈNE QUELQUE
+           * PART.
+           *
+           * Elle était réservée à l'ordinateur, et pour une bonne raison :
+           * elle emmenait à l'annuaire avec le curseur dans le champ, ce
+           * qu'on ne faisait pas sur téléphone pour ne pas faire surgir un
+           * clavier par-dessus la liste. Le raccourci n'aurait donc rien
+           * fait de plus qu'un lien vers « Marques », déjà dans le menu.
+           *
+           * `?recherche=1` ouvre maintenant la feuille de recherche plein
+           * écran (voir `FeuilleRecherche`) : le geste tient enfin sa
+           * promesse, et c'est le seul endroit du site d'où l'on peut
+           * chercher une marque sans d'abord aller quelque part.
+           *
+           * Le bouton se voit à trente-six pixels comme ses voisins, mais
+           * s'attrape à quarante-quatre : c'est la cible minimale au
+           * doigt, et l'agrandir vraiment ferait grossir la pilule.
+           */}
+          <Link
+            href="/marques?recherche=1"
+            aria-label="Chercher une marque"
+            className="puce-barre relative grid h-9 w-9 place-items-center rounded-full text-white/85 transition before:absolute before:-inset-1 before:content-[''] active:scale-95"
+          >
+            <IconLoupe className="h-[17px] w-[17px]" />
+          </Link>
+
           {profile ? (
             <Link
               href="/compte"
