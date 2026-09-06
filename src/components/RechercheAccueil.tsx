@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { IconLoupe } from "./Icons";
 import { vignette } from "@/lib/vignette";
 import type { Recherche } from "@/lib/types";
 
@@ -176,8 +177,20 @@ export default function RechercheAccueil() {
            rien. Le gabarit demandait un champ un peu plus grand pour le
            manifeste ; ce serait à `globals.css` de le dire, pas à ce
            fichier de le contourner. */
-        className="champ"
+        /* `champ-loupe` seulement au doigt : c'est là que la loupe
+           remplace le raccourci. Voir globals.css. */
+        className="champ champ-loupe sm:[padding-left:16px]"
       />
+
+      {/* LA LOUPE PREND LA PLACE DU RACCOURCI, ET SEULEMENT AU DOIGT.
+
+          Le champ du manifeste est le premier de la page et n'a rien
+          au-dessus pour dire ce qu'il fait : sans le « ⌘ K », qui ne se
+          tape pas sur un téléphone, il ne restait qu'un rectangle vide et
+          son texte d'invite. La loupe le désigne d'un coup d'œil, avant
+          même qu'on lise. En grand, c'est le raccourci qui tient ce rôle,
+          et deux signes pour la même chose feraient un de trop. */}
+      <IconLoupe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45 sm:hidden" />
 
       {/* Le raccourci s'efface dès qu'on tape : il rappelle un geste, il
           n'a plus rien à dire une fois le curseur dedans. Et il ne

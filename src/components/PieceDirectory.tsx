@@ -925,7 +925,7 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
                 /* Le pied reprend la pilule de la ligne de filtres de
                    l'annuaire : c'est le même objet, à l'autre bout de la
                    page. */
-                <div className="mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.44)] p-3 backdrop-blur-[20px] sm:rounded-full sm:px-5">
+                <div className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
                   <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
                     {enChiffres(visibles.length)} sur {enChiffres(ordonnes.length)} affichées
                   </p>
@@ -967,7 +967,7 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
           <IconFiltre className="h-4 w-4" />
           Filtres
           {actifs > 0 && (
-            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--color-ink)] px-1 text-[10.5px] font-black text-[var(--sur-plein,#fff)]">
+            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--color-ink)] px-1 text-[10.5px] font-black text-white">
               {actifs}
             </span>
           )}
@@ -1135,12 +1135,9 @@ function LigneRayon({
         pastille ? "rounded-[13px] px-3.5" : "rounded-[11px] px-[11px]"
       } ${
         actif
-          /* `--sur-plein` et non `text-white` : en mode clair, ce dernier
-             bascule en encre, et la ligne active — dont le fond, lui,
-             reste sombre — deviendrait illisible. */
           ? pastille
             ? "bg-white text-[var(--color-ink)]"
-            : "bg-[var(--color-ink)] text-[var(--sur-plein,#fff)]"
+            : "bg-[var(--color-ink)] text-white"
           : pastille
             ? "bg-white/8 text-white/88 hover:bg-white/14"
             : "text-white/84 hover:bg-white/12 hover:text-white"

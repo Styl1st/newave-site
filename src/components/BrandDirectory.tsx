@@ -457,7 +457,7 @@ export default function BrandDirectory({
   const chip =
     "shrink-0 rounded-full px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.07em] transition";
   const chipOff = "bg-white/12 text-white/84 hover:bg-white/20 hover:text-white";
-  const chipOn = "bg-white font-extrabold text-[var(--color-ink)]";
+  const chipOn = "cta-barre bg-white font-extrabold text-[var(--color-ink)]";
 
   return (
     <>
@@ -676,8 +676,12 @@ export default function BrandDirectory({
           densite === "liste" ? "mr-[30px] sm:mr-0" : ""
         }`}
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.44)] p-2.5 backdrop-blur-[20px] sm:flex-nowrap sm:rounded-full">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+        {/* La pilule reste sur UNE ligne au doigt : c'est la rangée de
+            pastilles, à l'intérieur, qui défile. Sans ce `flex-nowrap`,
+            le rail de densité descendrait sous les pastilles et la barre
+            collante ferait deux étages. */}
+        <div className="barre flex flex-nowrap items-center gap-2 p-2.5">
+          <div className="rang-filtres min-w-0 flex-1 items-center gap-1.5">
             {(
               [
                 ["tout", "Tout"],

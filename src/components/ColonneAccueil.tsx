@@ -88,8 +88,7 @@ export default function ColonneAccueil({
       <section className="glass p-4">
         <p className="eyebrow m-0 mb-2">Au hasard</p>
         <p className="m-0 mb-3 text-[13px] leading-[1.55] text-white/78">
-          Une marque au hasard, sans filtre ni classement. C&apos;est la seule porte du
-          site où personne n&apos;est favorisé.
+          Une marque au hasard, sans filtre ni classement.
         </p>
         <TirerUneMarque slugs={slugs} />
       </section>
@@ -149,8 +148,7 @@ export default function ColonneAccueil({
             Tu crées une marque ?
           </h2>
           <p className="m-0 mt-2 text-[13px] leading-[1.6] text-[#4a3d6e]">
-            On lit chaque dossier. Si ton travail a du sens, on lui donne une place,
-            gratuitement, sans commission à l&apos;entrée.
+            On lit chaque dossier. C&apos;est gratuit, sans commission.
           </p>
           <Link
             href="/candidature"

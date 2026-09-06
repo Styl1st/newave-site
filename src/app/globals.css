@@ -934,6 +934,21 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 }
 .sans-ascenseur::-webkit-scrollbar { display: none; }
 
+/* Le dégradé qui dit « il y a une suite ».
+
+   `sans-ascenseur` cache la barre de défilement — c'est ce qu'on veut —
+   mais une rangée coupée net au bord de l'écran ressemble alors à une
+   rangée finie, et personne ne pense à la pousser. Le dégradé le dit
+   sans rien ajouter à lire. Au doigt seulement : en grand, la rangée
+   tient dans la largeur. Voir aussi `.rang-filtres`, qui fait les deux à
+   la fois pour les lignes de filtres. */
+@media (max-width: 639px) {
+  .bord-suite {
+    -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
+    mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
+  }
+}
+
 /* ---------- où l'on en est dans la page ----------
 
    Une ligne en bas de l'écran, et le sigle de la marque à sa pointe.
@@ -1504,6 +1519,26 @@ html[data-menu="1"] > body > footer {
   to   { background-position: 100% 50%; }
 }
 
+/* Une `.barre` qui s'enroule sur deux étages.
+   ------------------------------------------
+   Les pieds de pagination portent le même matériau que la ligne de
+   filtres, mais au doigt ils passent à deux ou trois lignes. À cette
+   hauteur, 999px ne fait plus une pilule : ça fait un galet, le texte
+   vient buter dans la courbe sur les deux bords, et c'est exactement
+   la forme qu'on a retirée de l'écran des pièces.
+
+   On leur rend donc un coin franc tant qu'ils sont empilés, et la
+   pilule dès que tout tient sur une ligne.
+
+   POURQUOI ICI ET PAS EN `rounded-[24px]` SUR L'ÉLÉMENT. `.barre`
+   n'est dans aucune couche : elle passe devant les utilitaires
+   Tailwind quoi qu'on écrive dans le `className`. Même piège que la
+   hauteur de `.champ`. */
+.barre-pied { border-radius: 24px; }
+@media (min-width: 640px) {
+  .barre-pied { border-radius: 999px; }
+}
+
 /* ---------- premier écran ----------
    Le manifeste occupe exactement la hauteur visible, ni plus ni moins.
    Sans ça, la section suivante dépassait de quelques centimètres en bas
@@ -1717,6 +1752,41 @@ option {
   background-color: rgb(var(--voile));
   background-image: linear-gradient(165deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
   animation: feuilleMonte .34s cubic-bezier(.2, .85, .3, 1) both;
+}
+
+/* Une ligne de filtres qui DÉFILE plutôt que de s'enrouler.
+
+   Enroulée, une rangée de sept thèmes prend trois rangs et cent vingt
+   pixels de haut : sur un écran de huit cents, c'est un septième de la
+   page pour des pastilles qu'on ne lit qu'une fois. Et comme la barre
+   est collante, elle emporte cette hauteur partout où l'on descend.
+
+   Le dégradé de bord est ce qui dit qu'il y a une suite — sans lui, une
+   rangée coupée net ressemble à une rangée finie, et personne ne pense à
+   la pousser. Il est posé en permanence plutôt que mesuré : quand les
+   pastilles ne remplissent pas la ligne, il s'estompe sur du vide et ne
+   se voit pas.
+
+   Au-delà de `sm`, la place existe : elle reprend sa forme enroulée,
+   où tout se lit d'un coup d'œil. */
+.rang-filtres {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
+}
+.rang-filtres::-webkit-scrollbar { display: none; }
+
+@media (min-width: 640px) {
+  .rang-filtres {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 
 /* Le rail d'index de l'annuaire, dressé au bord droit sur téléphone.
@@ -1997,6 +2067,65 @@ html[data-clair="1"] .progression-tete img {
    classe seule de Tailwind : elle l'emporte quel que soit l'ordre des
    utilitaires dans la feuille compilée. */
 html[data-clair="1"] .bg-white { color: var(--sur-plein); }
+
+/* ET LA RÉCIPROQUE, QUI MANQUAIT : LES PASTILLES QUI RESTENT SOMBRES.
+
+   Le pivot retourne `text-white` en encre parce que le blanc est neuf
+   fois sur dix un texte posé sur le fond de la page. Mais le site a
+   aussi des pastilles dont le fond est écrit EN DUR — le noir d'un badge
+   « Épuisé », l'encre d'un bouton « Aperçu », le rouge d'une promo. Ces
+   fonds-là ne pivotent pas, eux : ils sont la même couleur dans les deux
+   modes. Leur texte devenait donc de l'encre sur de l'encre, et
+   disparaissait purement et simplement en mode clair — mesuré à 1,09 de
+   contraste sur « Épuisé », « Aperçu », « Voir la boutique » et le cœur
+   des cartes de pièce.
+
+   On les reprend par leur fond plutôt qu'un par un dans vingt fichiers :
+   la règle vaut alors aussi pour l'administration, que personne ne
+   regarde en mode clair et où le même motif se répète. Le sélecteur lit
+   la classe en toutes lettres, comme le fait déjà l'allègement du
+   `backdrop-filter` plus haut.
+
+   ⚠️ LES CONTENEURS N'Y SONT PAS, et c'est délibéré. Une barre collante
+   en `rgba(8,2,30,.44)` porte des pastilles `bg-white` à l'intérieur :
+   celles-ci deviennent sombres en mode clair et reçoivent leur texte
+   clair de la règle du dessus. Lui imposer une couleur d'héritage
+   reviendrait à repeindre ses enfants. Seules les pastilles pleines,
+   celles qui portent leur propre texte, sont listées ici. */
+/* UNE SURFACE QUI RESTE SOMBRE DANS LES DEUX MODES.
+
+   La règle du dessous traite les pastilles : une par une, elles portent
+   leur propre texte et il suffit de le repeindre. Un BLOC entier, lui,
+   contient des dizaines de textes dont beaucoup ont leur propre opacité
+   — `text-white/85`, `text-white/55` — qu'une couleur héritée ne
+   rattraperait pas. La barre du gérant est ce cas-là : elle est
+   volontairement plus opaque que le décor, « c'est un outil, pas du
+   décor », et elle ne pivote donc pas avec la page.
+
+   On y remet les deux jetons du mode sombre plutôt que de repeindre :
+   `--color-white` redevient blanc, donc `text-white` et toutes ses
+   opacités retrouvent leur sens ; `--sur-plein` redevient l'encre, pour
+   que les pastilles `bg-white` du bloc — l'onglet actif, « Ajouter des
+   pièces » — restent blanches à texte sombre, comme en mode sombre. Le
+   sous-arbre entier se comporte donc comme si le mode clair n'existait
+   pas, ce qui est exactement ce qu'on veut d'une surface qui, elle, n'a
+   pas changé. */
+html[data-clair="1"] .hors-pivot {
+  --color-white: #ffffff;
+  --sur-plein: var(--color-ink);
+}
+
+html[data-clair="1"] :is(
+  [class*="bg-[var(--color-ink)]"],
+  [class*="bg-[rgba(23,10,51"],
+  [class*="bg-[rgba(20,8,50"],
+  [class*="bg-[rgba(14,5,38"],
+  [class*="bg-[#c2273f]"],
+  [class*="bg-[rgba(194,39,63"],
+  [class*="bg-black/"]
+) {
+  color: var(--sur-plein);
+}
 
 /* La barre de défilement intérieure, elle aussi, était claire sur
    sombre. */
@@ -2983,6 +3112,19 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 
+/* UN CHAMP QUI PORTE UNE ICÔNE, ET LA PLACE QU'IL FAUT LUI FAIRE.
+
+   `.champ` pose son rembourrage — `12px 16px` — hors de toute couche
+   Tailwind : une utilitaire `pl-10` écrite à côté de la classe ne
+   l'atteint pas, et le texte passe alors sous l'icône. La place se
+   réserve donc ici, comme le reste du dessin du champ.
+
+   Une loupe à gauche remplace le « ⌘ K » là où il ne se tape pas ; une
+   croix à droite efface la saisie là où le champ n'est plus modifiable
+   autrement (voir la feuille de recherche). */
+.champ-loupe { padding-left: 40px; }
+.champ-croix { padding-right: 40px; }
+
 .champ::placeholder {
   color: rgba(255, 255, 255, .46);
   font-weight: 500;
@@ -3169,6 +3311,40 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid rgba(255, 255, 255, .6);
   background: linear-gradient(160deg, #fff, rgb(var(--accent-1)));
   box-shadow: 0 3px 10px -3px rgba(var(--accent-1), .95);
+}
+
+/* UNE POIGNÉE QU'ON PEUT ATTRAPER AU DOIGT.
+
+   Dix-huit pixels vont très bien à la souris, qui vise au pixel près.
+   Au doigt, la rangée entière fait vingt-deux pixels de haut : on la
+   manque une fois sur deux, et sur l'écran d'apparence ce sont les deux
+   seuls réglages continus de tout le site. La poignée passe donc à
+   vingt-six et la rangée à quarante-quatre, la cible minimale.
+
+   ⚠️ LA CLASSE PLUTÔT QUE LA RÈGLE GÉNÉRALE, et ce n'est pas de la
+   prudence mal placée : le double curseur de prix de la vitrine calcule
+   en JavaScript où s'arrête sa plage remplie, à partir de la largeur de
+   la poignée écrite en dur dans `CurseurPrix`. L'élargir sous lui ferait
+   passer la couleur en travers des poignées. Il garde donc les siennes,
+   et c'est l'appelant qui demande la version au doigt quand il n'a rien
+   à recalculer. */
+@media (max-width: 639px) {
+  /* `input.` et pas la classe seule : `input[type="range"]` plus haut
+     compte un sélecteur d'attribut, qui pèse autant qu'une classe. À
+     poids égal la dernière règle l'emporte, et la nôtre est en dessous ;
+     avec la classe nue, elle perdait en silence. */
+  input.curseur-doigt {
+    height: 44px;
+  }
+  input.curseur-doigt::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+    margin-top: -10px;
+  }
+  input.curseur-doigt::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 input[type="range"]:active::-webkit-slider-thumb {

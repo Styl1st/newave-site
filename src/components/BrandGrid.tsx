@@ -327,7 +327,7 @@ export default function BrandGrid({
          * qui décide de cliquer ou d'aller chercher autrement.
          */
         <div
-          className={`mt-6 flex flex-col items-center gap-2.5 rounded-[999px] border border-white/20 bg-[rgba(8,2,30,0.44)] px-5 py-4 backdrop-blur-[20px] sm:mr-0 sm:flex-row sm:justify-center sm:gap-5 ${
+          className={`barre barre-pied mt-6 flex flex-col items-center gap-2.5 px-5 py-4 sm:mr-0 sm:flex-row sm:justify-center sm:gap-5 ${
             /* En mode liste, le rail d'index court le long du bord
                droit : le pied lui laisse sa gouttière plutôt que de
                passer dessous. Il reste dans le flux et non flottant —

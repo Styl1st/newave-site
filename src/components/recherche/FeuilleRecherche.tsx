@@ -155,7 +155,7 @@ export default function FeuilleRecherche({
               /* Le raccourci « ⌘ K » du champ d'ordinateur saute : il ne
                  se tape pas au doigt, et la loupe dit déjà à quoi sert
                  la ligne. */
-              className="champ w-full pl-10 pr-10"
+              className="champ champ-loupe champ-croix w-full"
             />
             {/*
              * Une croix pour effacer, qui n'est pas dans le gabarit.

@@ -167,9 +167,7 @@ export default function ClassementMarques({
               </p>
               {mesure === "coeurs" && total !== undefined && total < SEUIL_PODIUM && (
                 <p className="m-0 mt-1 text-[12px] leading-relaxed text-white/50">
-                  Le podium s&apos;ouvrira à {SEUIL_PODIUM} cœurs. En dessous, trois voix
-                  d&apos;écart suffiraient à tout changer : un classement n&apos;y voudrait
-                  rien dire.
+                  Le podium s&apos;ouvrira à {SEUIL_PODIUM} cœurs.
                 </p>
               )}
             </div>

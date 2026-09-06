@@ -168,7 +168,6 @@ export default function ThemePicker({
   if (!charge) return <div className="skeleton h-64 w-full" />;
 
   const toutes = [...PRESETS, ...prefs.ambiances];
-  const dejaEnregistre = toutes.some((a) => memeTheme(a.theme, prefs.theme));
 
   // `min-h-11` seulement au doigt : ces pastilles font trente-quatre
   // pixels de haut, et une cible tactile en fait quarante-quatre.
@@ -192,8 +191,7 @@ export default function ThemePicker({
         <p className="m-0 min-w-0 text-[12.5px] leading-relaxed text-white/80">
           {connecte ? (
             <>
-              Ces réglages sont liés à ton compte : tu les retrouveras sur ton téléphone
-              comme sur ton ordinateur.
+              Ces réglages te suivent sur tous tes appareils.
             </>
           ) : (
             <>
@@ -262,8 +260,7 @@ export default function ThemePicker({
               </div>
             </div>
             <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
-              La palette que tu choisis plus bas s&apos;applique dans les deux cas : en
-              clair, elle est simplement diluée. Ton ambiance reste reconnaissable.
+              En clair, la palette est simplement diluée.
             </p>
           </section>
 
@@ -364,12 +361,9 @@ export default function ThemePicker({
                 phrase apparaissait et disparaissait selon l'ambiance
                 choisie, et poussait toute la page vers le bas avant de la
                 laisser remonter. C'était le saut constaté en bêta. */}
-            <p className="m-0 mt-3 min-h-[3.2em] text-[12.5px] leading-relaxed text-white/55">
-              Les couleurs se composent <strong className="font-bold text-white/75">plus
-              bas</strong>, puis s&apos;enregistrent sous un nom : elles rejoignent alors
-              cette liste, à côté des nôtres.
-              {dejaEnregistre &&
-                " Celles-ci correspondent déjà à une ambiance existante, mais rien n'empêche de les garder sous un autre nom."}
+            <p className="m-0 mt-3 min-h-[2.4em] text-[12.5px] leading-relaxed text-white/55">
+              Compose tes couleurs <strong className="font-bold text-white/75">plus
+              bas</strong>, puis enregistre-les sous un nom.
             </p>
           </section>
 
@@ -377,8 +371,7 @@ export default function ThemePicker({
           <section className="glass p-4 sm:p-5">
             <p className="eyebrow m-0 mb-1">Composer</p>
             <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/60">
-              Six teintes qui se fondent de haut en bas, puis trois accents pour les nappes
-              qui dérivent par-dessus.
+              Six teintes de fond, trois accents.
             </p>
 
             <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
@@ -564,7 +557,7 @@ export default function ThemePicker({
                       vitesse: Number(e.target.value),
                     })
                   }
-                  className="w-full accent-white"
+                  className="curseur-doigt w-full accent-white"
                 />
               </label>
 
@@ -591,7 +584,7 @@ export default function ThemePicker({
                       amplitude: Number(e.target.value),
                     })
                   }
-                  className="w-full accent-white"
+                  className="curseur-doigt w-full accent-white"
                 />
               </label>
             </div>
@@ -600,10 +593,8 @@ export default function ThemePicker({
                 personnes ont réglé la vitesse au maximum sans rien voir
                 bouger, parce que l'ampleur était à zéro. */}
             <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/55">
-              L&apos;<strong className="font-bold text-white/75">ampleur</strong> dit de
-              combien le décor se déplace, la{" "}
-              <strong className="font-bold text-white/75">vitesse</strong> à quel rythme il le
-              fait. Une ampleur à zéro fige tout, quelle que soit la vitesse.
+              Une <strong className="font-bold text-white/75">ampleur</strong> à zéro fige
+              tout, quelle que soit la vitesse.
             </p>
 
             <div className="mt-3">
@@ -611,7 +602,7 @@ export default function ThemePicker({
                 <button
                   type="button"
                   onClick={() => setNomMouvement("")}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/75 transition hover:border-white/70 hover:text-white active:scale-[.97]"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-dashed border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/75 transition hover:border-white/70 hover:text-white active:scale-[.97] sm:min-h-0"
                 >
                   <IconPlus className="h-3.5 w-3.5" /> Enregistrer ce réglage
                 </button>
@@ -659,7 +650,7 @@ export default function ThemePicker({
           <button
             type="button"
             onClick={() => poser({ ...prefs, theme: THEME_DEFAUT, mouvement: MOUVEMENT_DEFAUT })}
-            className="w-full rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97]"
+            className="min-h-[44px] w-full rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97] sm:min-h-0"
           >
             Revenir aux réglages par défaut
           </button>

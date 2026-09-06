@@ -290,15 +290,11 @@ export default async function PopulairesPage({ searchParams }: Props) {
   const explication =
     onglet === "notes-pieces" || onglet === "notes-marques" ? (
       <>
-        Ici, ce ne sont pas des cœurs mais des <strong className="font-extrabold text-white">
-        notes</strong> : quelqu&apos;un a pris le temps de mettre cinq étoiles ou deux, et
-        souvent d&apos;expliquer pourquoi. Il faut au moins {seuil} avis pour apparaître,
-        sans quoi une seule opinion suffirait à occuper la première place.
+        Des <strong className="font-extrabold text-white">notes</strong>, pas des cœurs.
+        Il faut au moins {seuil} avis pour apparaître.
       </>
     ) : onglet === "marques" ? (
       <>
-        Les maisons que la communauté suit. Un favori ne s&apos;efface pas avec le temps :
-        suivre une marque n&apos;est pas un geste d&apos;humeur.{" "}
         <strong className="font-extrabold text-white">
           Rien n&apos;est acheté ici : c&apos;est le nombre de cœurs, et rien d&apos;autre,
           qui fait l&apos;ordre.

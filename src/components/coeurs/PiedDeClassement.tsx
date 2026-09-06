@@ -65,7 +65,7 @@ export default function PiedDeClassement({
 
       <Link
         href="/favoris"
-        className="text-[12.5px] font-bold text-white/75 underline underline-offset-4 transition hover:text-white"
+        className="inline-flex min-h-[44px] items-center text-[12.5px] font-bold text-white/75 underline underline-offset-4 transition hover:text-white sm:min-h-0"
       >
         Ma liste à moi →
       </Link>

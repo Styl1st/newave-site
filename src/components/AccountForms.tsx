@@ -144,8 +144,7 @@ export function EmailForm({ actuel }: { actuel: string }) {
         <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white/85">
           Le changement se confirme dans les{" "}
           <strong className="font-bold text-white">deux</strong> boîtes, l&apos;ancienne et
-          la nouvelle. Tant que les deux liens ne sont pas ouverts, ton adresse actuelle
-          reste la bonne.
+          la nouvelle.
         </p>
       )}
 

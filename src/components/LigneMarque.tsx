@@ -269,7 +269,7 @@ export default function LigneMarque({
           </h3>
           {brand.featured && <span className="badge shrink-0">À la une</span>}
           {etiquetteAcces && (
-            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-[var(--sur-plein,#fff)]">
+            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white">
               {etiquetteAcces}
             </span>
           )}
@@ -350,12 +350,7 @@ export default function LigneMarque({
                       type="button"
                       onClick={onApercu}
                       aria-label={`Aperçu des pièces de ${brand.name}`}
-                      /* `--sur-plein` et non `text-white` : en mode
-                         clair, `text-white` bascule en encre (voir le
-                         pivot de globals.css) et l'on écrirait de
-                         l'encre sur une pastille restée sombre. Ce
-                         jeton existe pour ce cas précis. */
-                      className="pointer-events-auto absolute inset-0 grid place-items-center gap-0.5 bg-[var(--color-ink)] text-[var(--sur-plein,#fff)] transition active:scale-95 sm:hidden"
+                      className="pointer-events-auto absolute inset-0 grid place-items-center gap-0.5 bg-[var(--color-ink)] text-white transition active:scale-95 sm:hidden"
                     >
                       <IconEye className="h-4 w-4" />
                       {reste > 0 && (
@@ -413,7 +408,7 @@ export default function LigneMarque({
             /* Au doigt, c'est la dernière vignette qui porte le geste :
                deux boutons pour la même chose sur une ligne de quatre
                cents pixels, c'est un de trop. */
-            className="pointer-events-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--sur-plein,#fff)] transition hover:opacity-90 active:scale-95 sm:inline-flex sm:px-3.5"
+            className="pointer-events-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-white transition hover:opacity-90 active:scale-95 sm:inline-flex sm:px-3.5"
           >
             <IconEye className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Aperçu</span>

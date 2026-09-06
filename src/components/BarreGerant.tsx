@@ -149,15 +149,20 @@ export default function BarreGerant({
 
   const visuel = brand.logo_url ?? brand.cover_url;
 
+  /* `min-h-[44px]` au doigt : les onglets et les actions tombaient à
+     quarante et quarante-deux pixels, sous la cible de la section
+     mobile. À la souris ils se resserrent, comme partout ailleurs. */
   const base =
-    "rounded-[13px] px-3.5 py-2.5 text-[13px] font-bold transition active:scale-[.97]";
+    "inline-flex min-h-[44px] items-center justify-center rounded-[13px] px-3.5 py-2.5 text-[13px] font-bold transition active:scale-[.97] lg:min-h-0";
   const repos = "text-white/75 hover:bg-white/14 hover:text-white";
   const ici = "bg-white font-extrabold text-[var(--color-ink)]";
 
   return (
     <div
       data-no-reveal
-      className="overflow-hidden rounded-[22px] border border-white/18 bg-[rgba(6,2,26,0.72)] shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-[26px]"
+      /* `hors-pivot` : la barre garde son fond sombre en mode clair, donc
+         son texte doit garder le blanc. Voir globals.css. */
+      className="hors-pivot overflow-hidden rounded-[22px] border border-white/18 bg-[rgba(6,2,26,0.72)] shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9),inset_0_1px_0_rgba(255,255,255,0.16)] backdrop-blur-[26px]"
     >
       {/* Le filet d'appartenance. */}
       <span
@@ -249,7 +254,17 @@ export default function BarreGerant({
           })}
         </div>
 
-        <div className="flex w-full items-stretch gap-2 lg:w-auto lg:flex-none">
+        {/* EMPILÉES ET PLEINE LARGEUR AU DOIGT, « AJOUTER DES PIÈCES »
+            EN PREMIER.
+
+            Côte à côte sur quatre cents pixels, les deux boutons se
+            partagent moins de cent quatre-vingts pixels chacun et leurs
+            libellés se serrent. Surtout, l'ordre compte : « Ajouter des
+            pièces » est le geste qui lève le dernier obstacle à la
+            publication — c'est ce que dit la check-list juste en dessous
+            —, donc il vient devant. En grand, la barre a la place et
+            garde l'ordre de lecture habituel. */}
+        <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row lg:w-auto lg:flex-none">
           {retouche ? (
             <button
               type="button"
@@ -286,7 +301,7 @@ export default function BarreGerant({
           )}
           <Link
             href={`/espace-marque/${brand.slug}/pieces/ajouter`}
-            className={`${base} flex-1 bg-white text-center text-[var(--color-ink)] shadow-[0_4px_16px_-4px_rgba(var(--accent-1),0.6)] hover:opacity-90 lg:flex-none`}
+            className={`${base} order-first flex-1 bg-white text-center text-[var(--color-ink)] shadow-[0_4px_16px_-4px_rgba(var(--accent-1),0.6)] hover:opacity-90 sm:order-none lg:flex-none`}
           >
             Ajouter des pièces
           </Link>
@@ -387,7 +402,10 @@ export default function BarreGerant({
           {manquantes[0]?.cle === "pieces" && (
             <Link
               href={`/espace-marque/${brand.slug}/import`}
-              className="text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
+              /* La cible du doigt : ce lien est le geste qui lève
+                 l'obstacle, il ne peut pas faire dix-sept pixels de
+                 haut. */
+              className="inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
             >
               {MOTS.importer}
             </Link>
@@ -395,7 +413,10 @@ export default function BarreGerant({
           {manquantes[0] && manquantes[0].cle !== "pieces" && (
             <Link
               href={`/espace-marque/${brand.slug}/modifier`}
-              className="text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
+              /* La cible du doigt : ce lien est le geste qui lève
+                 l'obstacle, il ne peut pas faire dix-sept pixels de
+                 haut. */
+              className="inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
             >
               {MOTS.completer}
             </Link>
@@ -406,7 +427,7 @@ export default function BarreGerant({
               type="button"
               disabled={!complet}
               title={complet ? undefined : (manquantes[0]?.obstacle ?? undefined)}
-              className="rounded-full px-4 py-2 text-[12px] font-black text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-[44px] items-center rounded-full px-4 py-2 text-[12px] font-black text-white transition disabled:cursor-not-allowed disabled:opacity-40 lg:min-h-0"
               style={{
                 background:
                   "linear-gradient(118deg, rgba(var(--accent-1),.7), rgba(var(--accent-2),.7))",
@@ -437,7 +458,7 @@ export default function BarreGerant({
 
           <Link
             href={`/espace-marque/${brand.slug}/stats`}
-            className="ml-auto text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
+            className="ml-auto inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
           >
             Le détail
           </Link>

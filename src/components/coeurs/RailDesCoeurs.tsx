@@ -270,8 +270,8 @@ function EnTete({ entete }: { entete: EnTeteDuRail }) {
       </p>
       <p className="m-0 mt-3 text-[12px] leading-relaxed text-white/60">
         {fenetre === "semaine"
-          ? "Seuls les sept derniers jours sont comptés ici. Les plus anciens ne disparaissent pas : ils vivent dans « tout temps »."
-          : "Le total depuis l'ouverture du site. Rien n'est jamais effacé, et rien ne s'achète pour y figurer."}
+          ? "Les sept derniers jours. Les plus anciens vivent dans « tout temps »."
+          : "Le total depuis l'ouverture du site."}
       </p>
     </section>
   );

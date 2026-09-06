@@ -425,16 +425,13 @@ export default async function BrandPage({ params }: Props) {
               ferme.corps
             ) : plateforme ? (
               <>
-                {brand.name} vend directement sur {plateforme.nom}, où les pièces se
-                voient une par une et partent souvent en un exemplaire. Le bouton
-                ci-dessous mène droit à son profil.
+                {brand.name} vend directement sur {plateforme.nom}, souvent en un
+                exemplaire.
               </>
             ) : (
               <>
-                Notre lecture automatique n&apos;a pas réussi à récupérer le catalogue de{" "}
-                {brand.name}. Certaines boutiques ne l&apos;exposent tout simplement pas.
-                Ça ne veut pas dire qu&apos;il n&apos;y a rien : tout se trouve sur leur
-                site, par le bouton juste en dessous.
+                Le catalogue de {brand.name} ne se lit pas d&apos;ici. Tout se trouve sur
+                son site.
               </>
             )}
           </p>
@@ -514,8 +511,7 @@ export default async function BrandPage({ params }: Props) {
       {!insight && (
         <section className="glass mt-10 flex flex-wrap items-center justify-between gap-4 p-5 sm:px-6">
           <p className="m-0 max-w-xl text-[13.5px] leading-relaxed text-white/72">
-            Tu es à la tête de {brand.name} ? Reprends la main sur cette page :
-            présentation, visuels, catalogue.
+            Tu es à la tête de {brand.name} ? Reprends la main sur cette page.
           </p>
           <Link
             href={`/marques/${brand.slug}/revendiquer`}

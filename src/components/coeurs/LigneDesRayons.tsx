@@ -102,7 +102,7 @@ export default function LigneDesRayons({
 
   return (
     <div className="mb-5">
-      <div className="sans-ascenseur flex items-stretch gap-2 overflow-x-auto pb-1">
+      <div className="sans-ascenseur bord-suite flex items-stretch gap-2 overflow-x-auto pb-1">
         <Pastille
           nom="Tout"
           compte={total}

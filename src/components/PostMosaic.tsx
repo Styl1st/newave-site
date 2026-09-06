@@ -296,7 +296,7 @@ function Fil({ posts }: { posts: Post[] }) {
   const chip =
     "shrink-0 rounded-full px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.07em] transition";
   const chipOff = "bg-white/12 text-white/84 hover:bg-white/20 hover:text-white";
-  const chipOn = "bg-white font-extrabold text-[var(--color-ink)]";
+  const chipOn = "cta-barre bg-white font-extrabold text-[var(--color-ink)]";
 
   const themesEnVue = tousLesThemes ? themes : themes.slice(0, THEMES_EN_VUE);
   const themesCaches = themes.length - themesEnVue.length;
@@ -468,7 +468,9 @@ function Fil({ posts }: { posts: Post[] }) {
           mesurer en CSS. Mêmes valeurs que l'annuaire. */}
       {themes.length > 0 && (
         <div className="sticky top-[70px] z-30 mb-3 sm:top-[86px]">
-          <div className="flex flex-wrap items-center gap-1.5 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.44)] p-2.5 backdrop-blur-[20px] sm:rounded-full">
+          {/* Elle défile au doigt et s'enroule en grand : voir
+              `.rang-filtres` dans globals.css. */}
+          <div className="rang-filtres barre items-center gap-1.5 p-2.5">
             <button
               type="button"
               onClick={() => setTheme(null)}

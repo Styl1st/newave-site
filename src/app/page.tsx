@@ -122,7 +122,11 @@ export default async function HomePage() {
         <img
           src="/brand/logo-white.webp"
           alt="NEWAVE SPHERE"
-          className="rise w-[min(70%,320px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)]"
+          /* 212 px au doigt, 320 en grand : à quatre cents pixels de
+             large, soixante-dix pour cent font un logo qui touche les
+             deux bords et pousse la baseline sous la ligne de flottaison.
+             C'est la valeur du gabarit mobile. */
+          className="rise w-[min(62%,212px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:w-[min(70%,320px)]"
         />
 
         <p className="tagline rise rise-1 mt-6 text-[clamp(11px,2.9vw,13px)] leading-[1.9]">
@@ -132,9 +136,8 @@ export default async function HomePage() {
         </p>
 
         <p className="rise rise-2 mt-7 max-w-[620px] text-[clamp(15px,4vw,18px)] leading-[1.6] text-white/92">
-          On met en lumière celles et ceux qui créent en dehors des circuits classiques :
-          marques naissantes, pièces uniques, démarches qui prennent le temps de bien faire.
-          Un point de ralliement pour ceux qui cherchent autre chose.
+          Celles et ceux qui créent en dehors des circuits classiques : marques
+          naissantes, pièces uniques, séries courtes.
         </p>
 
         {/* Le champ mène à une fiche ou à l'annuaire, jamais à une
@@ -167,7 +170,10 @@ export default async function HomePage() {
          * quatre mots-là sont justement pour qui n'en sait rien encore.
          */}
         {raccourcis.length > 0 && (
-          <div className="rise rise-3 mt-4 flex flex-wrap items-center justify-center gap-2">
+          /* Elles défilent au doigt plutôt que de passer à la ligne :
+             quatre puces enroulées font deux rangs, et repoussent d'autant
+             les deux boutons qui, eux, sont le geste de la page. */
+          <div className="rang-filtres rise rise-3 mt-4 items-center justify-center gap-2 sm:justify-center">
             {raccourcis.map(([nom, n]) => (
               <Link
                 key={nom}
@@ -181,8 +187,15 @@ export default async function HomePage() {
           </div>
         )}
 
-        <div className="rise rise-4 mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/marques" className="card-light px-6 py-3.5">
+        {/* EMPILÉS ET PLEINE LARGEUR AU DOIGT.
+
+            Côte à côte, les deux boutons se partagent quatre cents pixels
+            moins la gouttière : chacun tombe sous les cent soixante, le
+            libellé du premier — « Explorer les 136 marques » — passe sur
+            deux lignes, et les deux hauteurs ne s'accordent plus. Empilés,
+            ils gardent leur phrase entière et se visent sans regarder. */}
+        <div className="rise rise-4 mt-8 flex w-full max-w-[420px] flex-col items-stretch gap-[9px] sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3">
+          <Link href="/marques" className="card-light px-6 py-3.5 text-center">
             <span className="relative z-3 text-[14px] font-extrabold tracking-[-0.01em]">
               {brands.length > 0
                 ? `Explorer les ${enChiffres(brands.length)} marques`
@@ -191,7 +204,7 @@ export default async function HomePage() {
           </Link>
           <Link
             href="/posts"
-            className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-6 py-3.5 text-[14px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
+            className="rounded-[var(--radius)] border border-white/40 bg-white/8 px-6 py-3.5 text-center text-[14px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
           >
             Voir les posts
           </Link>

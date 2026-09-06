@@ -101,7 +101,7 @@ export default function MarqueDeLaSemaine({
                portée écrite à côté d'elle serait ignorée. Elle est
                portée par le parent. */
             <span className="absolute bottom-4 left-4 rounded-[18px] shadow-[0_8px_22px_rgba(52,18,110,0.28)]">
-              <span className="plaque-logo grid h-[74px] w-[74px] place-items-center overflow-hidden rounded-[18px] p-2">
+              <span className="plaque-logo grid h-[62px] w-[62px] place-items-center overflow-hidden rounded-[18px] p-2 sm:h-[74px] sm:w-[74px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={vignette(brand.logo_url, 220, { logo: true })}
@@ -123,7 +123,13 @@ export default function MarqueDeLaSemaine({
               rel="noopener noreferrer sponsored"
               className="pointer-events-auto absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-[rgba(14,5,38,0.72)] px-4 py-2.5 text-[10.5px] font-black uppercase tracking-[0.1em] text-white backdrop-blur-sm transition hover:bg-[rgba(14,5,38,0.92)] active:scale-95"
             >
-              Voir la boutique
+              {/* Le mot seul au doigt : sur un bandeau de quatre cents
+                  pixels, la phrase entière et le logo de soixante-deux se
+                  disputent la même ligne, et la pastille finit par passer
+                  par-dessus. Deux `span` plutôt qu'une chaîne calculée :
+                  Tailwind lit le fichier tel quel. */}
+              <span className="sm:hidden">Boutique</span>
+              <span className="hidden sm:inline">Voir la boutique</span>
               <IconExternal className="h-3.5 w-3.5" />
             </a>
           ) : (
@@ -147,8 +153,16 @@ export default function MarqueDeLaSemaine({
             </p>
           )}
 
+          {/* L'ACCROCHE SAUTE AU DOIGT.
+
+              La carte est haute : bandeau en seize-neuvièmes, nom, méta,
+              accroche, puis deux boutons. Sur un téléphone elle occupe un
+              écran et demi, et l'on n'atteint jamais ce qui vient après
+              — le hasard, les posts, l'annuaire. Le nom et la méta
+              suffisent à donner envie d'ouvrir la fiche, où l'accroche
+              est de toute façon écrite en plus grand. */}
           {brand.tagline && (
-            <p className="m-0 mt-3 max-w-[52ch] text-[14.5px] leading-[1.6] text-[#4a3d6e]">
+            <p className="m-0 mt-3 hidden max-w-[52ch] text-[14.5px] leading-[1.6] text-[#4a3d6e] sm:block">
               {brand.tagline}
             </p>
           )}

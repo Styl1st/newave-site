@@ -7,6 +7,7 @@ import {
 } from "@/components/AccountForms";
 import CompteEcran, { type Espace } from "@/components/CompteEcran";
 import ComptePropositions from "@/components/ComptePropositions";
+import SuppressionCompte from "@/components/SuppressionCompte";
 import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
 import { lireApparenceDuCompte } from "@/lib/apparence";
@@ -102,12 +103,7 @@ export default async function ComptePage() {
           pour l'adresse — et n'échouent pas ensemble. Une barre
           d'enregistrement commune laisserait croire le contraire. */}
       <section className="glass rise rise-2 p-4 sm:p-[26px]">
-        <h2 className="m-0 text-[17px] font-extrabold text-white">Ton identité</h2>
-        <p className="m-0 mt-2 mb-5 text-[13.5px] leading-relaxed text-white/70">
-          Ton nom affiché change tout de suite. Ton adresse email, elle, demande une
-          confirmation dans les deux boîtes, l&apos;ancienne et la nouvelle, pour que
-          personne ne puisse déplacer ton compte à ta place.
-        </p>
+        <h2 className="m-0 mb-5 text-[17px] font-extrabold text-white">Ton identité</h2>
         <DisplayNameForm current={profile.display_name ?? ""} />
         {profile.email && <EmailForm actuel={profile.email} />}
       </section>
@@ -120,15 +116,11 @@ export default async function ComptePage() {
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-[26px]">
           <div>
             <p className="m-0 text-[13.5px] leading-relaxed text-white/70">
-              On ne le change pas depuis cette page, et c&apos;est voulu : une session
-              restée ouverte sur un appareil posé quelque part suffirait, sinon, à te
-              faire prendre ton compte. On t&apos;envoie donc un lien, et il faut avoir
-              accès à ta boîte mail pour aller au bout.
+              On t&apos;envoie un lien : il faut accéder à ta boîte mail pour aller au
+              bout.
             </p>
             <p className="m-0 mt-2 text-[13px] leading-relaxed text-white/55">
-              C&apos;est aussi par là qu&apos;il faut passer si tu t&apos;es inscrit avec
-              Google : tu n&apos;as jamais eu de mot de passe, et ce lien t&apos;en donne
-              un.
+              Inscrit avec Google ? C&apos;est aussi par là qu&apos;on t&apos;en donne un.
             </p>
           </div>
           {profile.email && <LienReinitialisation email={profile.email} />}
@@ -136,6 +128,10 @@ export default async function ComptePage() {
       </section>
 
       <ComptePropositions />
+
+      {/* Elle a besoin de l'adresse : c'est ce qu'on fait recopier pour
+          confirmer. Voir `SuppressionCompte`. */}
+      {profile.email && <SuppressionCompte email={profile.email} />}
     </div>
   );
 
