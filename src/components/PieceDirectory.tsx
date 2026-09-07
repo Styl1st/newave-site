@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CurseurPrix from "./CurseurPrix";
-import Portal from "./Portal";
+import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
 import ProductCard, { type RatioPiece } from "./ProductCard";
 import { IconCheck, IconFiltre } from "./Icons";
@@ -152,75 +152,8 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
     if (!auDoigt) setOuvert(false);
   }, [auDoigt]);
 
-  /* ------------------------------------------------------------------
-     LA FEUILLE SE REFERME EN LA TIRANT VERS LE BAS.
-
-     Une poignée dessinée en haut d'une feuille est une promesse : tout le
-     monde essaie de la tirer. Sans ce geste, il ne se passait rien et il
-     fallait redescendre chercher le bouton du pied — soit exactement le
-     trajet que la feuille était censée éviter.
-
-     LE GESTE PART DE N'IMPORTE OÙ, PAS SEULEMENT DE LA POIGNÉE, à une
-     condition : que la liste soit en haut de son défilement. Sinon on ne
-     pourrait plus la faire défiler du tout, chaque glissement vers le bas
-     emportant la feuille entière. C'est la règle de toutes les feuilles
-     du téléphone, et celle qu'on essaie sans y penser.
-
-     `setPointerCapture` garde le doigt rattaché à la feuille même s'il
-     sort de ses bords en chemin : sans lui, le mouvement se coupe au
-     milieu et la feuille reste en travers de l'écran.
-     ------------------------------------------------------------------ */
-
-  const corps = useRef<HTMLDivElement>(null);
-  const depart = useRef<number | null>(null);
-  const [glisse, setGlisse] = useState(0);
-  const [tire, setTire] = useState(false);
-
-  /** Au-delà, on lâche et la feuille s'en va. En deçà, elle revient. */
-  const SEUIL = 110;
-
-  function prendre(e: React.PointerEvent<HTMLDivElement>) {
-    /* Un doigt posé sur un curseur de prix ou une case à cocher n'est pas
-       un doigt qui veut refermer la feuille. */
-    if ((e.target as HTMLElement).closest("input, select, button, label")) return;
-    if ((corps.current?.scrollTop ?? 0) > 0) return;
-    depart.current = e.clientY;
-  }
-
-  function deplacer(e: React.PointerEvent<HTMLDivElement>) {
-    if (depart.current === null) return;
-    const dy = e.clientY - depart.current;
-    /* On n'engage qu'au-delà de quelques pixels : sinon un simple appui
-       un peu tremblant ferait sauter la feuille. */
-    if (!tire && dy < 6) return;
-    if (!tire) {
-      setTire(true);
-      e.currentTarget.setPointerCapture(e.pointerId);
-    }
-    setGlisse(Math.max(0, dy));
-  }
-
-  function lacher() {
-    if (depart.current === null) return;
-    const assez = glisse > SEUIL;
-    depart.current = null;
-    setTire(false);
-    setGlisse(0);
-    if (assez) setOuvert(false);
-  }
-
-  /* La page dessous ne défile plus, et Échap referme. */
-  useEffect(() => {
-    if (!ouvert || !auDoigt) return;
-    const surTouche = (e: KeyboardEvent) => e.key === "Escape" && setOuvert(false);
-    document.addEventListener("keydown", surTouche);
-    const precedent = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", surTouche);
-      document.body.style.overflow = precedent;
-    };
-  }, [ouvert, auDoigt]);
+  /* Le glissement, la poignée, le voile et le verrou de défilement
+     vivent dans `FeuilleFiltres`, partagée avec l'annuaire. */
 
   /*
    * LES BORNES DU PRIX SE CALCULENT SUR LE CATALOGUE ENTIER, PAS SUR CE
@@ -974,96 +907,23 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
         </button>
       )}
 
-      {auDoigt && ouvert && (
-        /* Rendue dans un portail, hors de la page : posée dedans, elle
-           hériterait du plan d'empilement de la grille et passerait sous
-           la barre du haut. Même mécanique que `FeuilleRetouche`. */
-        <Portal>
-          <div className="fixed inset-0 z-[80] flex items-end">
-            {/* Le voile. Toucher à côté referme, comme partout ailleurs.
-                Il s'éclaircit à mesure qu'on tire la feuille vers le bas :
-                c'est ce qui fait sentir qu'on est en train de la refermer
-                et non de la déplacer. */}
-            <button
-              type="button"
-              aria-label="Fermer les filtres"
-              onClick={() => setOuvert(false)}
-              className="absolute inset-0 bg-[rgba(12,4,32,0.58)]"
-              style={{ opacity: 1 - Math.min(glisse / 420, 0.55) }}
-            />
-
-            {/*
-             * L'ENVELOPPE PORTE LE GLISSEMENT, ET LA FEUILLE SON DESSIN.
-             *
-             * `panneau-edition` anime son entrée par une `transform`, en
-             * `animation-fill-mode: both` : la dernière image du
-             * mouvement continue de s'appliquer une fois l'animation
-             * finie, et une `transform` posée en style en ligne sur le
-             * même élément serait purement et simplement ignorée. Le
-             * glissement vit donc un cran au-dessus.
-             */}
-            <div
-              className="relative w-full"
-              style={{
-                transform: glisse ? `translateY(${glisse}px)` : undefined,
-                transition: tire ? "none" : "transform .28s cubic-bezier(.2,.8,.3,1)",
-              }}
-            >
-            <div
-              role="dialog"
-              aria-modal
-              aria-label="Filtres"
-              id="filtres-pieces"
-              onPointerDown={prendre}
-              onPointerMove={deplacer}
-              onPointerUp={lacher}
-              onPointerCancel={lacher}
-              className="panneau-edition relative flex max-h-[86svh] w-full flex-col rounded-t-[26px] border-t border-white/20 shadow-[0_-18px_44px_-8px_rgba(12,3,36,0.8)]"
-              style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-            >
-              {/* La poignée. Elle disait « ceci se ferme en tirant vers le
-                  bas » sans que ce soit vrai : on l'essayait, il ne se
-                  passait rien, et il fallait redescendre chercher le
-                  bouton. Elle tient maintenant sa promesse — et le geste
-                  marche depuis toute la feuille, pas seulement depuis
-                  elle. */}
-              <span
-                aria-hidden
-                className="mx-auto mt-2.5 h-[5px] w-11 shrink-0 rounded-full bg-white/30"
-              />
-
-              <div
-                ref={corps}
-                className="min-h-0 flex-1 overflow-y-auto px-5 pb-4"
-              >
-                {contenuFiltres}
-              </div>
-
-              {/*
-               * LE PIED COMPTE, ET C'EST LUI QUI REMPLACE LE RETOUR
-               * IMMÉDIAT.
-               *
-               * Sur grand écran, la colonne est à côté de la grille :
-               * on coche, on voit. Ici la feuille recouvre ce qu'elle
-               * filtre, et l'on cocherait à l'aveugle. Le compte se
-               * recalcule à chaque changement — c'est la même valeur que
-               * la grille affichera en dessous, pas une estimation.
-               */}
-              <div className="shrink-0 border-t border-white/15 px-5 py-3.5">
-                <button
-                  type="button"
-                  onClick={() => setOuvert(false)}
-                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
-                >
-                  Voir {ordonnes.length > 1 ? "les" : "la"} {enChiffres(ordonnes.length)} pièce
-                  {ordonnes.length > 1 ? "s" : ""}
-                </button>
-              </div>
-            </div>
-            </div>
-          </div>
-        </Portal>
-      )}
+      <FeuilleFiltres
+        ouvert={auDoigt && ouvert}
+        onFermer={() => setOuvert(false)}
+        id="filtres-pieces"
+        pied={
+          <button
+            type="button"
+            onClick={() => setOuvert(false)}
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
+          >
+            Voir {ordonnes.length > 1 ? "les" : "la"} {enChiffres(ordonnes.length)} pièce
+            {ordonnes.length > 1 ? "s" : ""}
+          </button>
+        }
+      >
+        {contenuFiltres}
+      </FeuilleFiltres>
     </>
   );
 }

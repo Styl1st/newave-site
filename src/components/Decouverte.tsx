@@ -352,9 +352,18 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
           className="ruban flex gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:px-6 sm:pb-5"
         >
           {/* Deux moitiés STRICTEMENT identiques : c'est la condition
-              du retour invisible expliqué plus haut. */}
+              du retour invisible expliqué plus haut.
+
+              `inert` ET NON `aria-hidden` SUR LA COPIE. Les deux la
+              cachent aux lecteurs d'écran ; seul `inert` la retire aussi
+              du parcours au clavier. Avec `aria-hidden` seul, la
+              tabulation entrait quand même dans la copie : on refaisait
+              le tour des mêmes marques, cette fois sans que rien ne soit
+              annoncé, le focus se posant sur des liens muets. C'était la
+              seule violation sérieuse que l'audit relevait sur le
+              site. */}
           {[0, 1].map((copie) => (
-            <div key={copie} aria-hidden={copie === 1} className="flex shrink-0 gap-3">
+            <div key={copie} inert={copie === 1} className="flex shrink-0 gap-3">
               {tirage.map((b) => (
                 <Vignette key={`${copie}-${b.id}`} brand={b} />
               ))}

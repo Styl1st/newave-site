@@ -9,6 +9,7 @@ import Suggestions from "./recherche/Suggestions";
 import FeuilleRecherche from "./recherche/FeuilleRecherche";
 import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
+import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import type { Brand, PriceTier } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { estUnArtiste } from "@/lib/boutiques";
@@ -225,6 +226,43 @@ export default function BrandDirectory({
     setTier(null);
     setAudience(null);
   }
+
+  /*
+   * AU DOIGT, LE PANNEAU DEVIENT UNE FEUILLE QUI MONTE.
+   *
+   * Il se dépliait dans le bloc de recherche, donc AU-DESSUS de la
+   * liste : on ouvrait, on cochait, et les marques qu'on venait de
+   * réduire partaient un écran et demi plus bas. Il fallait refermer,
+   * puis redescendre, pour voir ce qu'on avait fait — et le geste qu'on
+   * essaie sans y penser, tirer vers le bas, ne faisait rien puisqu'il
+   * n'y avait pas de feuille à tirer.
+   *
+   * C'est la feuille de la vitrine, à l'identique et par le même
+   * composant : deux écrans du même site n'ont aucune raison de se
+   * refermer différemment.
+   *
+   * Au-dessus de 640px le panneau reste où il est. La largeur y suffit,
+   * et une feuille par-dessus une page qu'on voit en entier est une
+   * cérémonie pour rien.
+   *
+   * On MESURE la largeur au lieu de rendre le panneau deux fois : les
+   * deux porteraient les mêmes champs, et un lecteur d'écran les
+   * annoncerait en double.
+   */
+  const [auDoigt, setAuDoigt] = useState(false);
+  useEffect(() => {
+    const petit = window.matchMedia(AU_DOIGT);
+    const mesurer = () => setAuDoigt(petit.matches);
+    mesurer();
+    petit.addEventListener("change", mesurer);
+    return () => petit.removeEventListener("change", mesurer);
+  }, []);
+
+  /* En repassant au grand écran, le panneau redevient lisible dans le
+     bloc : laisser la feuille ouverte la ferait flotter en travers. */
+  useEffect(() => {
+    if (!auDoigt) setOuvert(false);
+  }, [auDoigt]);
 
   /* ------------------------------------------------------------------
      La recherche
@@ -459,6 +497,127 @@ export default function BrandDirectory({
   const chipOff = "bg-white/12 text-white/84 hover:bg-white/20 hover:text-white";
   const chipOn = "cta-barre bg-white font-extrabold text-[var(--color-ink)]";
 
+
+  /*
+   * LE CONTENU DU PANNEAU, ÉCRIT UNE FOIS.
+   *
+   * Il est monté soit dans le bloc de recherche sur grand écran, soit
+   * dans la feuille au doigt — jamais les deux : deux exemplaires
+   * doubleraient les champs pour les lecteurs d'écran, et les deux
+   * copies finiraient par ne plus répondre pareil au même clic.
+   */
+  const contenuFiltres = (
+    <>
+          {/*
+           * LES CATÉGORIES SONT ICI ET NON DANS LA LIGNE COLLANTE.
+           *
+           * Elles y étaient, avec leur compteur, et c'était le
+           * gabarit. Sauf que le gabarit en montrait quatre : l'annuaire
+           * en compte plus de quinze. La pilule débordait, il fallait la
+           * faire défiler à l'horizontale pour atteindre la dernière, et
+           * une barre de défilement en travers d'une barre de filtres,
+           * c'est laid et ça se manque au doigt.
+           *
+           * Le panneau leur donne la place de tenir sur trois lignes,
+           * toutes visibles d'un coup. Celles qu'on a choisies remontent
+           * dans la ligne collante : c'est là qu'il faut les voir, et
+           * c'est là qu'on veut pouvoir les retirer.
+           */}
+          {categories.length > 0 && (
+            <>
+              <p className="eyebrow m-0 mb-2">
+                Catégorie
+                {choisies.length > 0 && (
+                  <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
+                    elles se cumulent
+                  </span>
+                )}
+              </p>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setChoisies([])}
+                  className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
+                >
+                  Toutes
+                </button>
+                {categories.map(([c, n]) => {
+                  const active = choisies.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => basculer(c)}
+                      aria-pressed={active}
+                      className={`${chip} ${active ? chipOn : chipOff}`}
+                    >
+                      {c}
+                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {vestiaires.length > 1 && (
+            <>
+              <p className="eyebrow m-0 mb-2">Vestiaire</p>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setAudience(null)}
+                  className={`${chip} ${audience === null ? chipOn : chipOff}`}
+                >
+                  Tout
+                </button>
+                {vestiaires.map(([a, n]) => (
+                  <button
+                    key={a}
+                    onClick={() => setAudience(audience === a ? null : a)}
+                    className={`${chip} ${audience === a ? chipOn : chipOff}`}
+                  >
+                    {AUDIENCE_FILTRE[a]}
+                    <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {gammes.length > 1 && (
+            <>
+              <p className="eyebrow m-0 mb-2">Gamme de prix</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setTier(null)}
+                  className={`${chip} ${tier === null ? chipOn : chipOff}`}
+                >
+                  Tous les prix
+                </button>
+                {gammes.map(([t, n]) => (
+                  <button
+                    key={t}
+                    onClick={() => setTier(t)}
+                    className={`${chip} ${tier === t ? chipOn : chipOff}`}
+                  >
+                    {PRICE_TIER_LABEL[t]}
+                    <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {actifs > 0 && (
+            <button
+              type="button"
+              onClick={reinitialiser}
+              className="mt-4 text-[12.5px] font-bold text-white/75 underline underline-offset-2 hover:text-white"
+            >
+              Tout effacer
+            </button>
+          )}
+    </>
+  );
+
   return (
     <>
       {/* ---------------- le bloc de recherche ---------------- */}
@@ -504,6 +663,35 @@ export default function BrandDirectory({
             )}
           </div>
 
+          {/*
+           * IL ÉTAIT EN `bg-white/8` SUR UNE CARTE EN VERRE SOMBRE.
+           *
+           * Soit huit pour cent de blanc sur un fond déjà foncé, juste à
+           * côté d'un champ de saisie de la même valeur : à l'œil, un
+           * contour vide qu'on ne distingue pas de l'autre. Au doigt
+           * c'est pire, le libellé « Filtres » ne s'affichant pas — il ne
+           * restait qu'un entonnoir pâle dans un rectangle qu'on devine.
+           *
+           * POURQUOI PAS LES ACCENTS DU THÈME. `puce-barre`, la matière
+           * des pastilles rondes de la barre, était le réflexe. Elle
+           * ressort très bien en forêt, dont l'accent est un vert-jaune,
+           * et pas du tout en newave, dont les trois accents sont des
+           * violets voisins du fond. Un contraste qui dépend de
+           * l'ambiance choisie n'est pas un contraste.
+           *
+           * L'ENCRE, ELLE, EST LA MÊME PARTOUT. `--color-ink` ne suit pas
+           * la palette : c'est le violet très sombre du texte, plus
+           * foncé que n'importe quel fond d'ambiance, et en clair il
+           * tranche sur une carte devenue blanche. Le bouton se détache
+           * donc dans les deux modes et dans les six ambiances, par sa
+           * valeur et non par sa teinte. C'est déjà ce que fait la
+           * vignette « Aperçu » des lignes de marque, juste en dessous.
+           *
+           * Le contour blanc dit « à toucher » : sans lui, un aplat
+           * sombre sur fond sombre se lit comme un trou.
+           *
+           * L'état actif reste blanc plein — c'est lui qui doit gagner.
+           */}
           <button
             type="button"
             onClick={() => setOuvert((v) => !v)}
@@ -512,7 +700,7 @@ export default function BrandDirectory({
             className={`inline-flex shrink-0 items-center gap-2 rounded-[13px] px-4 py-3 text-[13px] font-extrabold transition active:scale-[.97] ${
               actifs > 0 || ouvert
                 ? "bg-white text-[var(--color-ink)]"
-                : "border border-white/40 bg-white/8 text-white hover:bg-white/18"
+                : "border border-white/30 bg-[var(--color-ink)] text-white hover:border-white/60"
             }`}
           >
             <IconFiltre />
@@ -547,116 +735,12 @@ export default function BrandDirectory({
 
         {/* Le panneau des filtres fins. Ce qui est dans la ligne
             collante répond à « quel genre de marque » ; ici on répond à
-            « pour qui » et « à quel prix », qu'on ne règle qu'une fois. */}
-        {ouvert && (
+            « pour qui » et « à quel prix », qu'on ne règle qu'une fois.
+
+            Au doigt il n'est pas là : il monte en feuille, plus bas. */}
+        {ouvert && !auDoigt && (
           <div id="filtres" className="mt-4 border-t border-white/15 pt-4">
-            {/*
-             * LES CATÉGORIES SONT ICI ET NON DANS LA LIGNE COLLANTE.
-             *
-             * Elles y étaient, avec leur compteur, et c'était le
-             * gabarit. Sauf que le gabarit en montrait quatre : l'annuaire
-             * en compte plus de quinze. La pilule débordait, il fallait la
-             * faire défiler à l'horizontale pour atteindre la dernière, et
-             * une barre de défilement en travers d'une barre de filtres,
-             * c'est laid et ça se manque au doigt.
-             *
-             * Le panneau leur donne la place de tenir sur trois lignes,
-             * toutes visibles d'un coup. Celles qu'on a choisies remontent
-             * dans la ligne collante : c'est là qu'il faut les voir, et
-             * c'est là qu'on veut pouvoir les retirer.
-             */}
-            {categories.length > 0 && (
-              <>
-                <p className="eyebrow m-0 mb-2">
-                  Catégorie
-                  {choisies.length > 0 && (
-                    <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
-                      elles se cumulent
-                    </span>
-                  )}
-                </p>
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setChoisies([])}
-                    className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
-                  >
-                    Toutes
-                  </button>
-                  {categories.map(([c, n]) => {
-                    const active = choisies.includes(c);
-                    return (
-                      <button
-                        key={c}
-                        onClick={() => basculer(c)}
-                        aria-pressed={active}
-                        className={`${chip} ${active ? chipOn : chipOff}`}
-                      >
-                        {c}
-                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {vestiaires.length > 1 && (
-              <>
-                <p className="eyebrow m-0 mb-2">Vestiaire</p>
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setAudience(null)}
-                    className={`${chip} ${audience === null ? chipOn : chipOff}`}
-                  >
-                    Tout
-                  </button>
-                  {vestiaires.map(([a, n]) => (
-                    <button
-                      key={a}
-                      onClick={() => setAudience(audience === a ? null : a)}
-                      className={`${chip} ${audience === a ? chipOn : chipOff}`}
-                    >
-                      {AUDIENCE_FILTRE[a]}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {gammes.length > 1 && (
-              <>
-                <p className="eyebrow m-0 mb-2">Gamme de prix</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setTier(null)}
-                    className={`${chip} ${tier === null ? chipOn : chipOff}`}
-                  >
-                    Tous les prix
-                  </button>
-                  {gammes.map(([t, n]) => (
-                    <button
-                      key={t}
-                      onClick={() => setTier(t)}
-                      className={`${chip} ${tier === t ? chipOn : chipOff}`}
-                    >
-                      {PRICE_TIER_LABEL[t]}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {actifs > 0 && (
-              <button
-                type="button"
-                onClick={reinitialiser}
-                className="mt-4 text-[12.5px] font-bold text-white/75 underline underline-offset-2 hover:text-white"
-              >
-                Tout effacer
-              </button>
-            )}
+            {contenuFiltres}
           </div>
         )}
       </div>
@@ -782,6 +866,34 @@ export default function BrandDirectory({
         onQuery={setQuery}
         onFermer={fermerLaFeuille}
       />
+
+      {/* Les filtres fins au doigt. Même composant, même geste et même
+          seuil que la vitrine : elle se referme en la tirant vers le
+          bas, en touchant à côté, ou par son pied.
+
+          Le pied compte les MARQUES, pas les pièces — c'est ce que la
+          page affiche derrière, et c'est ce qui remplace le retour
+          immédiat qu'on a sur grand écran, où le panneau ne recouvre
+          rien. */}
+      <FeuilleFiltres
+        ouvert={auDoigt && ouvert}
+        onFermer={() => setOuvert(false)}
+        id="filtres"
+        pied={
+          <button
+            type="button"
+            onClick={() => setOuvert(false)}
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
+          >
+            Voir {results.length > 1 ? "les" : "la"} {results.length}{" "}
+            {genre === "artistes"
+              ? `artiste${results.length > 1 ? "s" : ""}`
+              : `marque${results.length > 1 ? "s" : ""}`}
+          </button>
+        }
+      >
+        {contenuFiltres}
+      </FeuilleFiltres>
     </>
   );
 }

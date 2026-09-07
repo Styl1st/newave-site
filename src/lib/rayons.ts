@@ -55,7 +55,7 @@ const REGLES: Regle[] = [
      * l'on en vend de toute façon très peu ici.
      */
     motifs:
-      /casquette|\bcap\b|bonnet|beanie|\bbob\b|bucket|\bsac\b|\bbag\b|\btote\b|ceinture|\bbelt\b|[ée]charpe|scarf|\bgant|glove|chaussette|\bsock|lunette|porte-cl|portefeuille|wallet|bandana|cravate|\btie\b(?!-?\s?dye)|pochette|coque\b|sticker|\bpatch(?:es)?\b/i,
+      /casquette|\bcap\b|bonnet|beanie|\bbob\b|bucket|\bsac\b|\bbag\b|backpack|sac ?à ?dos|\btote\b|ceinture|\bbelt\b|[ée]charpe|scarf|\bgant|glove|gauntlet|mitaine|balaclava|cagoule|chaussette|\bsock|lunette|porte-cl|portefeuille|wallet|bandana|cravate|\btie\b(?!-?\s?dye)|pochette|coque\b|sticker|\bpatch(?:es)?\b/i,
   },
   {
     rayon: "Vestes",
@@ -82,7 +82,7 @@ const REGLES: Regle[] = [
      * rapportait.
      */
     motifs:
-      /pantalon|\bjeans?\b|\bshorts?\b(?!\s*(?:sleeve|manche))|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda|\bbottoms?\b|bas de survêtement/i,
+      /pantalon|\bjeans?\b|\bjorts?\b|\bshorts?\b(?!\s*(?:sleeve|manche))|jogging|jogger|cargo|chino|trouser|\bpants?\b|sweatpant|jupe|skirt|legging|bermuda|\bbottoms?\b|bas de survêtement/i,
   },
   {
     rayon: "Maille",
@@ -99,6 +99,37 @@ const REGLES: Regle[] = [
       /t-?shirt|teeshirt|\btee\b|\btop\b|chemise|\bshirt\b|jersey|maillot|d[ée]bardeur|singlet|tank|sweat|hoodie|crewneck|polo|blouse|\bbody\b|manches? longues|longsleeve|zip-?up|\bcrop\b|\btops\b|haut de survêtement/i,
   },
 ];
+
+/**
+ * LES MATIÈRES, QUI NE SE LISENT QU'EN DERNIER.
+ *
+ * Une marque de l'annuaire nomme ses six bas « 'Sardinia' Signature
+ * Denim », « SS26 'Antithesis' Dust Denim », « 'Avangelîst' Distressed
+ * Denim ». Aucun ne contient « jean », « pantalon » ni « pants » : les
+ * six ressortaient sans rayon, donc dans « Autres », introuvables par
+ * qui cherche un bas. Ce n'est pas propre à cette marque — c'est la
+ * façon dont le streetwear nomme un jean.
+ *
+ * MAIS « DENIM » EST UNE MATIÈRE, PAS UN VÊTEMENT, et c'est pour ça
+ * qu'elle ne peut pas rejoindre les motifs des « Bas ». Les règles se
+ * lisent dans l'ordre, et « Bas » passe avant « Hauts » : une
+ * « Denim Shirt » ou une « chemise en denim » serait devenue un
+ * pantalon. La même marque vend d'ailleurs une « Waxed Denim Jacket ».
+ *
+ * D'où ce second passage, après tous les autres : la matière ne décide
+ * que si AUCUN nom de vêtement n'a parlé. « Denim Jacket » est une
+ * veste, « Denim Shirt » un haut, et « Dust Denim » — où rien d'autre
+ * ne renseigne — un bas.
+ */
+const MATIERES: Regle[] = [{ rayon: "Bas", motifs: /\bdenims?\b/i }];
+
+/** Le premier rayon qu'une liste de règles reconnaît dans un texte. */
+function chercher(regles: Regle[], texte: string): string | null {
+  for (const regle of regles) {
+    if (regle.motifs.test(texte)) return regle.rayon;
+  }
+  return null;
+}
 
 /**
  * Le rayon d'une pièce, ou rien.
@@ -144,22 +175,29 @@ export function deduireLeRayon(
    */
   const declare = (type ?? "").trim();
   if (declare) {
-    for (const regle of REGLES) {
-      if (regle.motifs.test(declare)) return [regle.rayon];
-    }
+    const par = chercher(REGLES, declare);
+    if (par) return [par];
   }
 
-  for (const regle of REGLES) {
-    if (regle.motifs.test(nom)) return [regle.rayon];
-  }
+  const parNom = chercher(REGLES, nom);
+  if (parNom) return [parNom];
+
+  /*
+   * La matière du NOM avant la description, et c'est voulu.
+   *
+   * « Dust Denim » ne dit qu'une matière, mais il la dit dans le nom,
+   * là où chaque mot désigne la pièce. La description, elle, parle de
+   * doublure, de coutures et de ce avec quoi la porter : elle mérite de
+   * passer après une indication, même faible, prise sur le nom.
+   */
+  const parMatiere = chercher(MATIERES, nom);
+  if (parMatiere) return [parMatiere];
 
   const texte = description ?? "";
   if (!texte.trim()) return [];
 
-  for (const regle of REGLES) {
-    if (regle.motifs.test(texte)) return [regle.rayon];
-  }
-  return [];
+  const parTexte = chercher(REGLES, texte);
+  return parTexte ? [parTexte] : [];
 }
 
 /**

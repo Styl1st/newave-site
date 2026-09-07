@@ -466,25 +466,83 @@ function normaliserTailles(
   return Array.from(parLabel, ([label, available]) => ({ label, available }));
 }
 
-async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
-  const r = await lire(`${base}/products.json?limit=250`);
-  if (!r) return null;
+/**
+ * Le nombre d'articles qu'une page de `products.json` peut rendre.
+ *
+ * Ce n'est pas un choix : c'est le maximum imposé par Shopify. Demander
+ * davantage ne renvoie pas davantage, la valeur est simplement ramenée
+ * à 250 sans que rien ne le signale.
+ */
+const PAGE_SHOPIFY = 250;
 
-  let payload: { products?: ShopifyBrut[] };
-  try {
-    payload = await r.json();
-  } catch {
-    return null;
+/**
+ * Combien de pages Shopify on accepte de lire, au plus.
+ *
+ * Trois mille pièces pour une seule marque : on est très au-delà de ce
+ * qu'on voit ici, y compris chez les plus gros catalogues de l'annuaire.
+ * La borne n'est pas là pour couper un vrai catalogue mais pour qu'une
+ * boutique qui répondrait toujours la même page ne fasse pas tourner la
+ * boucle indéfiniment.
+ */
+const PAGES_SHOPIFY_MAX = 12;
+
+/**
+ * Le catalogue Shopify, EN ENTIER.
+ *
+ * ⚠️ CETTE FONCTION NE LISAIT QU'UNE PAGE, et c'est ce qui donnait des
+ * marques arrêtées à exactement 250 pièces. Le chiffre avait l'air d'un
+ * hasard ; c'était le plafond d'une page, atteint par toutes les
+ * boutiques un peu fournies et par elles seules. Rien ne le signalait :
+ * ni erreur, ni page à moitié vide — juste un catalogue tronqué qui
+ * ressemblait à un catalogue complet.
+ *
+ * On enchaîne donc les pages jusqu'à en recevoir une incomplète, qui est
+ * la seule marque de fin que Shopify donne sur cette adresse publique.
+ *
+ * UN ÉCHEC N'A PAS LE MÊME SENS SELON LA PAGE. Sur la première, il veut
+ * dire « ce n'est pas du Shopify » : on rend `null`, et l'appelant
+ * essaiera WooCommerce puis Big Cartel. Sur les suivantes, on SAIT que
+ * c'en est ; une page qui manque est un incident de réseau, et rendre
+ * `null` jetterait les deux cents pièces déjà lues pour un ennui
+ * passager. On garde donc ce qu'on a.
+ */
+async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
+  const brutes: ShopifyBrut[] = [];
+
+  for (let page = 1; page <= PAGES_SHOPIFY_MAX; page++) {
+    const r = await lire(`${base}/products.json?limit=${PAGE_SHOPIFY}&page=${page}`);
+    if (!r) {
+      if (page === 1) return null;
+      break;
+    }
+
+    let payload: { products?: ShopifyBrut[] };
+    try {
+      payload = await r.json();
+    } catch {
+      if (page === 1) return null;
+      break;
+    }
+    // Big Cartel répond aussi sur /products.json, mais sans enveloppe.
+    if (!Array.isArray(payload?.products)) {
+      if (page === 1) return null;
+      break;
+    }
+
+    brutes.push(...payload.products);
+
+    /* Une page incomplète est la dernière. Une page vide aussi — elle
+       arrive quand le catalogue fait un multiple exact de 250, cas où
+       la page suivante existe mais ne contient rien. */
+    if (payload.products.length < PAGE_SHOPIFY) break;
   }
-  // Big Cartel répond aussi sur /products.json, mais sans enveloppe.
-  if (!Array.isArray(payload?.products)) return null;
 
   // Une seule fois pour toute la boutique, et seulement maintenant
   // qu'on est sûr d'avoir affaire à du Shopify : inutile de payer une
   // requête pour une adresse qui n'aurait rien donné.
   const devise = await devineLaDevise(base);
 
-  return payload.products.map((p) => {
+  return brutes.map((p) => {
     const variants = p.variants ?? [];
     const prix = variants.map((v) => enCentimes(v.price)).filter((n): n is number => n !== null);
     const priceCents = prix.length ? Math.min(...prix) : null;
@@ -560,19 +618,61 @@ type WooBrut = {
   attributes?: { name?: string; terms?: { name: string }[] }[];
 };
 
-async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
-  // L'API Store de WooCommerce est publique par conception : c'est
-  // elle qui alimente le panier côté navigateur.
-  const r = await lire(`${base}/wp-json/wc/store/v1/products?per_page=100`);
-  if (!r) return null;
+/**
+ * Le maximum d'une page de l'API Store, imposé lui aussi.
+ *
+ * Cent, et non deux cent cinquante : chaque marchand a son plafond, et
+ * les confondre reviendrait à croire un catalogue terminé alors qu'il
+ * reste des pages. Voir `PAGE_SHOPIFY` — c'est exactement le même piège,
+ * à un chiffre près.
+ */
+const PAGE_WOO = 100;
+const PAGES_WOO_MAX = 30;
 
-  let brut: WooBrut[];
-  try {
-    brut = await r.json();
-  } catch {
-    return null;
+/**
+ * Le catalogue WooCommerce, en entier lui aussi.
+ *
+ * Même correction que pour Shopify, et pour la même raison : la
+ * fonction ne lisait qu'une page, donc toute boutique un peu fournie
+ * s'arrêtait pile à cent pièces. Le premier échec dit « ce n'est pas du
+ * Woo » et rend `null` ; les suivants sont des incidents, et on garde ce
+ * qu'on a déjà lu.
+ */
+async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
+  const brut: WooBrut[] = [];
+
+  for (let page = 1; page <= PAGES_WOO_MAX; page++) {
+    // L'API Store de WooCommerce est publique par conception : c'est
+    // elle qui alimente le panier côté navigateur.
+    const r = await lire(
+      `${base}/wp-json/wc/store/v1/products?per_page=${PAGE_WOO}&page=${page}`
+    );
+    if (!r) {
+      if (page === 1) return null;
+      break;
+    }
+
+    let lot: WooBrut[];
+    try {
+      lot = await r.json();
+    } catch {
+      if (page === 1) return null;
+      break;
+    }
+    if (!Array.isArray(lot)) {
+      if (page === 1) return null;
+      break;
+    }
+    /* Une boutique Woo sans le moindre article n'est pas une boutique
+       Woo qu'on sait lire : on laisse sa chance au lecteur suivant. */
+    if (lot.length === 0) {
+      if (page === 1) return null;
+      break;
+    }
+
+    brut.push(...lot);
+    if (lot.length < PAGE_WOO) break;
   }
-  if (!Array.isArray(brut) || brut.length === 0) return null;
 
   return brut.map((p) => {
     // WooCommerce renvoie des entiers dans la plus petite unité, avec

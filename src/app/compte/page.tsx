@@ -6,7 +6,6 @@ import {
   LienReinitialisation,
 } from "@/components/AccountForms";
 import CompteEcran, { type Espace } from "@/components/CompteEcran";
-import ComptePropositions from "@/components/ComptePropositions";
 import SuppressionCompte from "@/components/SuppressionCompte";
 import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
@@ -126,8 +125,6 @@ export default async function ComptePage() {
           {profile.email && <LienReinitialisation email={profile.email} />}
         </div>
       </section>
-
-      <ComptePropositions />
 
       {/* Elle a besoin de l'adresse : c'est ce qu'on fait recopier pour
           confirmer. Voir `SuppressionCompte`. */}
