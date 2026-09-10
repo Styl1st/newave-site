@@ -179,7 +179,7 @@ export default function VitrineMarque({
       // Machine trop lente : plusieurs fondus simultanés sur une grille
       // de cartes est exactement ce qu'elle ne sait pas faire. La
       // première image reste affichée. Voir `Menagement`.
-      racine.dataset.allege === "1" ||
+      Boolean(racine.dataset.allege) ||
       racine.dataset.fige === "1" ||
       (window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
         racine.dataset.animChoisi !== "1")

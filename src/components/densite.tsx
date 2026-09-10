@@ -56,7 +56,7 @@ const LIBELLES: Record<Densite, { titre: string; aide: string }> = {
 
 function IconConfort() {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" aria-hidden className="h-[15px] w-[15px]" fill="currentColor">
       <rect x="1" y="1" width="6" height="6" rx="1.4" />
       <rect x="9" y="1" width="6" height="6" rx="1.4" />
       <rect x="1" y="9" width="6" height="6" rx="1.4" />
@@ -67,7 +67,7 @@ function IconConfort() {
 
 function IconSerre() {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" aria-hidden className="h-[15px] w-[15px]" fill="currentColor">
       {[1, 6.3, 11.6].map((y) =>
         [1, 6.3, 11.6].map((x) => (
           <rect key={`${x}-${y}`} x={x} y={y} width="3.4" height="3.4" rx=".9" />
@@ -80,7 +80,7 @@ function IconSerre() {
 /* Trois barres pleine largeur : le dessin universel d'une liste. */
 function IconListe() {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5" fill="currentColor">
+    <svg viewBox="0 0 16 16" aria-hidden className="h-[15px] w-[15px]" fill="currentColor">
       {[1.4, 6.6, 11.8].map((y) => (
         <rect key={y} x="1" y={y} width="14" height="2.8" rx="1.2" />
       ))}
@@ -142,6 +142,24 @@ export function useDensite(memoire: string, variante: Variante, defaut: Densite 
   return { densite, choisir, offertes: densitesDe(variante) };
 }
 
+/**
+ * Le rail de densité, SANS FOND.
+ *
+ * Il était une pilule de verre posée sur une autre pilule de verre :
+ * deux fois la même matière, l'une dans l'autre, pour trois boutons qui
+ * ne demandaient qu'à être trois icônes. Ce qui reste dit la même chose
+ * avec moins — trois glyphes de quinze pixels, celui qui est actif en
+ * blanc plein, souligné d'un trait.
+ *
+ * LE SOULIGNEMENT PLUTÔT QU'UN APLAT. Un fond blanc derrière l'icône
+ * active refabriquerait le caisson qu'on vient d'enlever, et pèserait
+ * plus lourd que la barre entière. Le trait suffit : c'est le dessin
+ * d'onglet que tout le monde lit sans y penser.
+ *
+ * Le libellé « Affichage » précède les icônes en grand. Il saute au
+ * doigt, où trois icônes en bout de barre n'ont besoin d'aucun titre
+ * pour se comprendre, et où la place manque.
+ */
 export function SelecteurDensite({
   densite,
   choisir,
@@ -153,15 +171,19 @@ export function SelecteurDensite({
   offertes: Densite[];
   className?: string;
 }) {
-  const onglet =
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition";
-
   return (
     <div
       role="group"
       aria-label="Densité d'affichage"
-      className={`flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-white/8 p-1 ${className}`}
+      className={`flex shrink-0 items-center gap-1.5 sm:gap-2.5 ${className}`}
     >
+      <span
+        aria-hidden
+        className="hidden text-[9px] font-black uppercase tracking-[0.18em] text-white/66 sm:block"
+      >
+        Affichage
+      </span>
+
       {offertes.map((d) => {
         const Icone = ICONES[d];
         return (
@@ -170,15 +192,30 @@ export function SelecteurDensite({
             type="button"
             onClick={() => choisir(d)}
             aria-pressed={densite === d}
+            /* L'icône est seule : sans intitulé lu, un lecteur d'écran
+               annoncerait trois boutons sans nom. `title` ne suffit
+               pas, il n'est pas annoncé partout. */
+            aria-label={LIBELLES[d].titre}
             title={LIBELLES[d].aide}
-            className={
-              densite === d
-                ? `${onglet} bg-white text-[var(--color-ink)]`
-                : `${onglet} text-white/70 hover:text-white`
-            }
+            className={`grid min-h-[36px] min-w-[32px] place-items-center px-1 transition sm:min-h-[26px] sm:min-w-[27px] ${
+              densite === d ? "text-white" : "text-white/60 hover:text-white/85"
+            }`}
           >
-            <Icone />
-            <span className="hidden sm:inline">{LIBELLES[d].titre}</span>
+            {/*
+              LE TRAIT EST ACCROCHÉ À L'ICÔNE, pas au bas du bouton. Le
+              bouton est plus grand qu'elle — il faut bien pouvoir le
+              toucher — et un soulignement calé sur son bord flotterait
+              dix pixels trop bas au doigt.
+            */}
+            <span className="relative grid place-items-center pb-[6px]">
+              <Icone />
+              {densite === d && (
+                <span
+                  aria-hidden
+                  className="absolute bottom-0 left-1/2 h-[2px] w-[17px] -translate-x-1/2 rounded-full bg-white"
+                />
+              )}
+            </span>
           </button>
         );
       })}

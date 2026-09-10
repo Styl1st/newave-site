@@ -120,7 +120,7 @@ export default function BandeauMarque({
 
     const racine = document.documentElement;
     if (
-      racine.dataset.allege === "1" ||
+      Boolean(racine.dataset.allege) ||
       racine.dataset.fige === "1" ||
       (window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
         racine.dataset.animChoisi !== "1")

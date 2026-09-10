@@ -60,6 +60,16 @@ function EtatsSurLaPhoto({ product, off }: { product: Product; off: number | nul
  * Renvoie vers la fiche interne de la pièce quand elle existe, sinon
  * directement vers la boutique — plutôt que de fabriquer un lien mort.
  */
+/*
+ * L'ŒIL PLUTÔT QUE LA FLÈCHE, sur toute la vignette.
+ *
+ * Une pièce ne s'ouvre pas comme une page : on va la REGARDER, et c'est
+ * ce que dit l'œil. Le curseur du site lit cet attribut sur la cible de
+ * l'évènement, il n'a donc rien à connaître de ce composant. Voir
+ * `Curseur.tsx`.
+ */
+const ZONE = { "data-curseur-zone": "piece", "data-curseur-mot": "Voir" } as const;
+
 function ProductLink({
   href,
   external,
@@ -84,13 +94,14 @@ function ProductLink({
         rel="noopener noreferrer sponsored"
         className={className}
         aria-label={etiquette}
+        {...ZONE}
       >
         {children}
       </a>
     );
   }
   return (
-    <Link href={href} className={className} aria-label={etiquette}>
+    <Link href={href} className={className} aria-label={etiquette} {...ZONE}>
       {children}
     </Link>
   );

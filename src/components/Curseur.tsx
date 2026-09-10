@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Le curseur du site : une flèche aux couleurs de l'ambiance choisie.
+ * Le curseur du site : une flèche aux couleurs de l'ambiance, et sept
+ * autres dessins pour les endroits où une flèche ne dit pas assez.
  *
  * POURQUOI UNE FLÈCHE ET NON UN POINT. Un point rond ne dit pas où il
  * pointe : son centre, sa pointe et son bord se valent, et l'on vise
@@ -11,9 +12,17 @@ import { useEffect, useRef, useState } from "react";
  * pointe, tout le monde sait exactement où elle mord. On garde donc sa
  * forme, et l'on n'en change que la matière.
  *
- * Elle prend les couleurs du thème du compte. Ce n'est pas de la
- * coquetterie : sur une ambiance verte, une flèche violette serait le
- * seul élément de l'écran à ne pas suivre le réglage.
+ * ELLE FAIT QUINZE PIXELS, ET C'EST UNE CORRECTION D'ÉCHELLE.
+ * Elle en faisait vingt-quatre : la taille d'une icône d'interface, pas
+ * d'un pointeur — celui du système en fait douze de large. La lourdeur
+ * qu'on lui reprochait n'était pas une affaire de style.
+ *
+ * UN GLYPHE PAR SITUATION, ET UN MOT QUAND IL Y A UN DOUTE.
+ * Trois états — actif, saisir, saisie — pour un site où l'on ouvre une
+ * marque, agrandit une photo, réordonne des visuels, règle un prix et
+ * supprime une pièce, cela faisait trois réponses pour huit questions.
+ * Le glyphe répond tout de suite ; l'étiquette nomme le verbe la
+ * première fois, et seulement si la zone en porte un.
  *
  * IL Y AVAIT UN ANNEAU QUI LA SUIVAIT, ET IL EST PARTI. Il servait à
  * signaler ce qui est cliquable, puisqu'en masquant le curseur du
@@ -21,10 +30,6 @@ import { useEffect, useRef, useState } from "react";
  * charge maintenant : elle grossit un peu au survol d'un lien et se
  * resserre à l'appui. Une pièce au lieu de deux, et le geste reste
  * lisible.
- *
- * Bon débarras côté coût, aussi : sans anneau à faire rattraper, il n'y
- * a plus d'animation à entretenir. On écrit une position, et rien
- * d'autre, quand la souris bouge.
  *
  * TROIS ENDROITS OÙ IL NE PARAÎT PAS.
  * Les écrans tactiles, où il n'y a pas de pointeur du tout. Les champs
@@ -37,28 +42,74 @@ import { useEffect, useRef, useState } from "react";
 const CLIQUABLE =
   'a, button, [role="button"], summary, label[for], select, input[type="checkbox"], input[type="radio"], input[type="range"], [data-calque]';
 
+/**
+ * Une zone qui nomme elle-même son état.
+ *
+ * C'est ce qui évite d'énumérer ici les composants du site : une
+ * vignette de pièce, une poignée de prix et un bouton de suppression
+ * n'ont aucun sélecteur commun, et les reconnaître de loin voudrait
+ * dire coder l'annuaire dans le curseur.
+ */
+const ZONES = "[data-curseur-zone]";
+
 /** Ce qui s'attrape et se déplace : la flèche devient une main. */
 const SAISISSABLE = "[data-saisissable]";
+
+/** Ce qui est là mais ne répond pas. */
+const ETEINT = '[disabled], [aria-disabled="true"]';
 
 /** Là où le trait du système en dit plus que notre flèche. */
 const SAISIE =
   "input:not([type]), input[type='text'], input[type='email'], input[type='password'], input[type='search'], input[type='url'], input[type='number'], textarea, [contenteditable='true']";
 
+/** La zone qui porte un verbe, et qu'on annonce en toutes lettres. */
+const MOT = "[data-curseur-mot]";
+
+/**
+ * Les états qu'une zone a le droit de réclamer.
+ *
+ * Une valeur inconnue retombe sur la suite de l'ordre de résolution
+ * plutôt que d'aller s'écrire sur `<html>` : une faute de frappe dans
+ * un attribut ferait autrement disparaître le curseur, sans rien dans
+ * la console pour le dire.
+ */
+const ETATS = new Set(["piece", "zoom", "regler", "danger", "saisir", "actif", "inactif"]);
+
+/**
+ * Le temps d'arrêt avant que l'étiquette paraisse.
+ *
+ * C'est lui qui l'empêche de clignoter quand on traverse une grille de
+ * vignettes sans s'arrêter sur aucune. Elle disparaît, en revanche,
+ * sans aucun délai : un mot qui reste après qu'on a quitté la zone est
+ * un mot qui ment.
+ */
+const ATTENTE = 120;
+
 export default function Curseur() {
   /*
-   * La mesure de fluidité tombe une seconde après l'arrivée sur la
-   * page, donc APRÈS que ce composant se soit installé. Sans cet
-   * écouteur, il continuerait de tourner sur une machine qu'on vient
-   * justement de déclarer trop lente. Voir `Menagement`.
+   * IL FAUT DEUX MESURES POUR NOUS DÉMONTER, PAS UNE.
+   *
+   * La flèche partait avec le verre dépoli et les fonds animés, dès la
+   * première mesure de fluidité — alors qu'elle est justement ce qui
+   * redevient fluide une fois tout cela enlevé. Sa lenteur était un
+   * symptôme, pas la cause : une machine qui refloue seize surfaces à
+   * chaque image n'a plus le temps de composer une flèche, et c'est la
+   * flèche qu'on voit traîner.
+   *
+   * `Menagement` allège donc d'abord et remesure ensuite ; ce n'est
+   * qu'au second palier, la page déjà dépouillée, qu'on rend la main au
+   * curseur du système. La flèche coûte aussi deux fois moins qu'avant
+   * — quinze pixels au lieu de vingt-quatre, un tracé au lieu de deux.
    */
   const [allege, setAllege] = useState(false);
   useEffect(() => {
     const surAllege = () => setAllege(true);
-    window.addEventListener("newave:allege", surAllege);
-    return () => window.removeEventListener("newave:allege", surAllege);
+    window.addEventListener("newave:allege-curseur", surAllege);
+    return () => window.removeEventListener("newave:allege-curseur", surAllege);
   }, []);
 
   const fleche = useRef<HTMLDivElement>(null);
+  const etiquette = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     /*
@@ -69,15 +120,17 @@ export default function Curseur() {
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     /*
-     * Sur une machine qui peine, on ne dessine plus rien de tout ça :
-     * voir `Menagement`. Le curseur du système est toujours fluide,
+     * Second palier seulement : la page a déjà été dépouillée et elle
+     * ne tient toujours pas les soixante images. Là, et là seulement, le
+     * curseur du système reprend la main — lui est toujours fluide,
      * puisqu'il n'est pas dessiné par la page.
      */
-    if (allege || document.documentElement.dataset.allege === "1") return;
+    if (allege || document.documentElement.dataset.allege === "2") return;
 
     const racine = document.documentElement;
     const el = fleche.current;
-    if (!el) return;
+    const mot = etiquette.current;
+    if (!el || !mot) return;
 
     racine.dataset.curseur = "1";
 
@@ -98,6 +151,11 @@ export default function Curseur() {
      * On ne fait rien d'autre ici : le reste — deviner ce qu'on survole
      * — est fait à part, sur un évènement moins fréquent. Alourdir ce
      * chemin-là annulerait le bénéfice.
+     *
+     * L'ÉTIQUETTE EST DANS LE MÊME CALQUE, et c'est pour cette raison
+     * qu'elle ne traîne pas derrière : elle voyage dans la seule
+     * transformation écrite ici, sans ressort, sans second nœud à faire
+     * rattraper.
      */
     const placer = (e: PointerEvent) => {
       /*
@@ -106,8 +164,109 @@ export default function Curseur() {
        * celle du système. Centrer la flèche décalerait la visée d'une
        * dizaine de pixels vers le bas.
        */
+      dernierX = e.clientX;
       el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       if (racine.dataset.curseurVu !== "1") racine.dataset.curseurVu = "1";
+    };
+
+    /* ------------------------------------------------------------------
+       L'ÉTIQUETTE
+
+       Elle ne se calcule QUE lorsque la zone survolée change, ou qu'on
+       appuie : le mot ne dépend de rien d'autre. Sa largeur est mesurée
+       une fois par mot, à l'écriture — une lecture de `offsetWidth`
+       oblige le navigateur à calculer la mise en page, et le faire à
+       chaque mouvement rendrait tout le reste inutile.
+       ------------------------------------------------------------------ */
+
+    let zone: HTMLElement | null = null;
+    let dernierX = 0;
+    let appui = false;
+    let visible = false;
+    let largeur = 0;
+    let cote = "";
+    let minuteur = 0;
+
+    const verbe = () =>
+      zone ? (appui && zone.dataset.curseurMotAppui) || zone.dataset.curseurMot || "" : "";
+
+    const ecrire = (texte: string) => {
+      if (mot.textContent === texte) return;
+      mot.textContent = texte;
+      largeur = mot.offsetWidth;
+    };
+
+    const cacher = () => {
+      window.clearTimeout(minuteur);
+      if (!visible) return;
+      visible = false;
+      delete mot.dataset.vu;
+    };
+
+    /* Au bord droit, l'étiquette passe de l'autre côté de la pointe
+       plutôt que de sortir de la fenêtre. */
+    const ranger = (x: number) => {
+      if (!visible) return;
+      const suivant = x + 14 + largeur + 10 > window.innerWidth ? "gauche" : "";
+      if (suivant === cote) return;
+      cote = suivant;
+      if (suivant) mot.dataset.cote = suivant;
+      else delete mot.dataset.cote;
+    };
+
+    const etiqueter = () => {
+      const texte = verbe();
+      if (!texte) {
+        cacher();
+        return;
+      }
+      /*
+       * Déjà visible : le mot change, l'attente ne se rejoue pas. Sans
+       * ça, passer d'une vignette à sa voisine ferait disparaître
+       * l'étiquette pour la faire revenir un dixième de seconde plus
+       * tard, à la même place.
+       */
+      if (visible) {
+        ecrire(texte);
+        ranger(dernierX);
+        return;
+      }
+      window.clearTimeout(minuteur);
+      minuteur = window.setTimeout(() => {
+        ecrire(texte);
+        visible = true;
+        mot.dataset.vu = "1";
+        /*
+         * Le côté se décide ICI aussi, et pas seulement au mouvement
+         * suivant : l'étiquette paraît après cent vingt millisecondes
+         * d'arrêt, c'est-à-dire à un instant où plus aucun évènement ne
+         * passe. Sans ce rappel, une étiquette qui naît contre le bord
+         * droit y déborde jusqu'à ce qu'on rebouge la souris.
+         */
+        ranger(dernierX);
+      }, ATTENTE);
+    };
+
+    /* ------------------------------------------------------------------
+       CE QU'ON SURVOLE
+
+       L'ordre est celui de la spécification, et il compte : une vignette
+       qu'on peut déplacer est aussi un bouton, une poignée de prix est
+       aussi une saisie. Le premier qui répond gagne, et les zones qui se
+       nomment elles-mêmes passent avant tout le reste.
+       ------------------------------------------------------------------ */
+    const etatDe = (cible: Element | null): string => {
+      if (!cible?.closest) return "";
+      if (cible.closest(SAISIE)) return "saisie";
+
+      const nommee = cible.closest(ZONES) as HTMLElement | null;
+      const demande = nommee?.dataset.curseurZone ?? "";
+      if (ETATS.has(demande)) return demande;
+
+      if (cible.closest(SAISISSABLE)) return "saisir";
+      if (cible.closest(ETEINT)) return "inactif";
+      if (cible.closest(CLIQUABLE)) return "actif";
+      return "";
     };
 
     /*
@@ -118,12 +277,14 @@ export default function Curseur() {
      * soit des centaines de fois par seconde, pour aboutir presque
      * toujours au même résultat : on survole le même élément pendant des
      * dizaines d'images d'affilée. Une comparaison suffit à s'en
-     * dispenser.
+     * dispenser — et elle compte double maintenant qu'il y a six
+     * sélecteurs à essayer au lieu de trois.
      */
     let precedente: Element | null = null;
 
     const surMouvement = (e: PointerEvent) => {
       placer(e);
+      ranger(e.clientX);
 
       const cible = (e.target as Element | null) ?? null;
       if (cible === precedente) return;
@@ -136,32 +297,35 @@ export default function Curseur() {
        * défilement : il aurait fallu surveiller le document en
        * permanence pour les rattraper.
        */
-      const saisie = cible?.closest?.(SAISIE) ?? null;
-      /*
-       * L'ordre compte : une vignette qu'on peut déplacer est aussi un
-       * bouton. Si « cliquable » passait devant, la main ne
-       * s'afficherait jamais.
-       */
-      const aSaisir = cible?.closest?.(SAISISSABLE) ?? null;
-      const dessus = cible?.closest?.(CLIQUABLE) ?? null;
-      const etat = saisie ? "saisie" : aSaisir ? "saisir" : dessus ? "actif" : "";
+      const etat = etatDe(cible);
 
       // On n'écrit l'attribut QUE s'il change : chaque écriture invalide
       // les styles de toute la page, et l'état ne bouge presque jamais.
       if (racine.dataset.curseurEtat !== etat) racine.dataset.curseurEtat = etat;
+
+      const porteur = (cible?.closest?.(MOT) as HTMLElement | null) ?? null;
+      if (porteur !== zone) {
+        zone = porteur;
+        etiqueter();
+      }
     };
 
     const brut = "onpointerrawupdate" in window;
 
     const surSortie = () => {
       delete racine.dataset.curseurVu;
+      cacher();
     };
 
     const appuyer = () => {
+      appui = true;
       racine.dataset.curseurAppui = "1";
+      etiqueter();
     };
     const relacher = () => {
+      appui = false;
       delete racine.dataset.curseurAppui;
+      etiqueter();
     };
 
     if (brut) {
@@ -184,6 +348,7 @@ export default function Curseur() {
           placer as EventListener
         );
       }
+      window.clearTimeout(minuteur);
       window.removeEventListener("pointermove", surMouvement);
       window.removeEventListener("pointerdown", appuyer);
       window.removeEventListener("pointerup", relacher);
@@ -196,75 +361,149 @@ export default function Curseur() {
     };
   }, [allege]);
 
+  /*
+   * LES HUIT DESSINS SONT TOUS DANS LA PAGE, EN PERMANENCE.
+   *
+   * Le CSS décide lequel se montre, à partir de l'état écrit sur
+   * <html>. Les fabriquer à la volée obligerait à un rendu React à
+   * chaque survol d'une vignette, pour des images qui ne changent
+   * jamais : huit `<svg>` de quelques nœuds, c'est gratuit ; un rendu
+   * par mouvement de souris ne l'est pas.
+   *
+   * Chacun est enveloppé dans un `<span>` qui porte son décalage. La
+   * flèche mord par son coin haut gauche ; les glyphes centrés — l'œil,
+   * la loupe, les mains, le rond barré — doivent tomber par leur milieu
+   * sur le pixel visé, sans quoi on aurait l'impression de cliquer à
+   * côté. Le décalage est sur le span et l'agrandissement sur le svg :
+   * mis au même endroit, le glyphe se déplacerait en grossissant.
+   */
   return (
     <div ref={fleche} className="curseur-point" aria-hidden>
-      <Glyphe nom="fleche" boite="0 0 22 24">
-        <path d="M2 1.6 L2 20.2 L7.2 15.6 L10.4 22.4 L13.9 20.8 L10.8 14.3 L17.6 14.3 Z" />
-      </Glyphe>
+      <span data-glyphe="fleche">
+        <svg viewBox="0 0 12 16" width="11" height="15">
+          <path
+            className="curseur-trait"
+            strokeWidth="2.4"
+            d="M1 1.2 L1 13.6 L4.35 10.35 L6.5 15 L8.75 13.9 L6.6 9.4 L11 9.4 Z"
+          />
+        </svg>
+      </span>
+
+      {/* L'œil d'une vignette de pièce : on va la REGARDER, pas
+          l'ouvrir dans un nouvel écran. */}
+      <span data-glyphe="piece">
+        <svg viewBox="0 0 22 16" width="22" height="16">
+          <path
+            className="curseur-trait"
+            strokeWidth="2.6"
+            d="M1.6 8 C5 2.6 17 2.6 20.4 8 C17 13.4 5 13.4 1.6 8 Z"
+          />
+          <circle cx="11" cy="8" r="3.1" fill="#fff" />
+        </svg>
+      </span>
+
+      {/* La loupe et son plus : la photo s'agrandit sur place. */}
+      <span data-glyphe="zoom">
+        <svg viewBox="0 0 19 19" width="20" height="20">
+          <rect
+            className="curseur-trait"
+            strokeWidth="2.4"
+            x="11.4"
+            y="12.2"
+            width="7"
+            height="3"
+            rx="1.5"
+            transform="rotate(45 11.4 13.7)"
+          />
+          <circle className="curseur-trait" strokeWidth="2.4" cx="8" cy="8" r="5.6" />
+          <rect x="7.2" y="5.1" width="1.6" height="5.8" rx=".8" fill="#fff" />
+          <rect x="5.1" y="7.2" width="5.8" height="1.6" rx=".8" fill="#fff" />
+        </svg>
+      </span>
+
+      {/* La main ouverte, puis le poing : on tient la vignette. */}
+      <span data-glyphe="main">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <g className="curseur-trait" strokeWidth="2.6">
+            <rect x="5" y="9" width="13" height="11" rx="5" />
+            <rect x="7.2" y="3.2" width="2.8" height="9" rx="1.4" />
+            <rect x="10.6" y="1.9" width="2.8" height="10.3" rx="1.4" />
+            <rect x="14" y="3.4" width="2.8" height="9" rx="1.4" />
+            <rect
+              x="3.4"
+              y="11"
+              width="2.8"
+              height="7.2"
+              rx="1.4"
+              transform="rotate(-22 4.8 14.6)"
+            />
+          </g>
+        </svg>
+      </span>
+
+      <span data-glyphe="poing">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <g className="curseur-trait" strokeWidth="2.6">
+            <rect x="4.8" y="9.6" width="13.6" height="10.4" rx="5" />
+            <rect x="6.9" y="7.4" width="2.6" height="4.2" rx="1.3" />
+            <rect x="10.3" y="6.8" width="2.6" height="4.8" rx="1.3" />
+            <rect x="13.7" y="7.4" width="2.6" height="4.2" rx="1.3" />
+            <rect
+              x="3.3"
+              y="12.2"
+              width="2.6"
+              height="5.2"
+              rx="1.3"
+              transform="rotate(-18 4.6 14.8)"
+            />
+          </g>
+        </svg>
+      </span>
+
+      {/* La double flèche des poignées : ça se pousse à gauche et à
+          droite, et ça ne s'ouvre pas. */}
+      <span data-glyphe="regler">
+        <svg viewBox="0 0 22 12" width="23" height="13">
+          <path
+            className="curseur-trait"
+            strokeWidth="2.4"
+            d="M1 6 L5.4 2.2 L5.4 4.6 L16.6 4.6 L16.6 2.2 L21 6 L16.6 9.8 L16.6 7.4 L5.4 7.4 L5.4 9.8 Z"
+          />
+        </svg>
+      </span>
 
       {/*
-        La main ouverte, puis le poing. Les trois dessins sont toujours
-        présents : seul le CSS décide lequel se montre. Les fabriquer à
-        la volée obligerait à un rendu React à chaque survol d'une
-        vignette, pour une image qui ne change pas.
+        Le rond barré. Il garde ses couleurs propres — un gris violet
+        éteint, sur son contour blanc — parce qu'un bouton indisponible
+        est la seule chose qui doive avoir l'air décolorée.
       */}
-      <Glyphe nom="main" boite="0 0 24 24">
-        <rect x="5" y="9" width="13" height="11" rx="5" />
-        <rect x="7.2" y="3.2" width="2.8" height="9" rx="1.4" />
-        <rect x="10.6" y="1.9" width="2.8" height="10.3" rx="1.4" />
-        <rect x="14" y="3.4" width="2.8" height="9" rx="1.4" />
-        <rect
-          x="3.4"
-          y="11"
-          width="2.8"
-          height="7.2"
-          rx="1.4"
-          transform="rotate(-22 4.8 14.6)"
-        />
-      </Glyphe>
+      <span data-glyphe="inactif">
+        <svg viewBox="0 0 18 18" width="19" height="19">
+          <circle cx="9" cy="9" r="6.8" fill="none" stroke="#fff" strokeWidth="4.6" />
+          <circle cx="9" cy="9" r="6.8" fill="none" stroke="#5b4a86" strokeWidth="2.4" />
+          <rect
+            x="3.6"
+            y="7.9"
+            width="10.8"
+            height="2.2"
+            rx="1.1"
+            transform="rotate(-45 9 9)"
+            fill="#5b4a86"
+            stroke="#fff"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            paintOrder="stroke"
+          />
+        </svg>
+      </span>
 
-      <Glyphe nom="poing" boite="0 0 24 24">
-        <rect x="4.8" y="9.6" width="13.6" height="10.4" rx="5" />
-        <rect x="6.9" y="7.4" width="2.6" height="4.2" rx="1.3" />
-        <rect x="10.3" y="6.8" width="2.6" height="4.8" rx="1.3" />
-        <rect x="13.7" y="7.4" width="2.6" height="4.2" rx="1.3" />
-        <rect
-          x="3.3"
-          y="12.2"
-          width="2.6"
-          height="5.2"
-          rx="1.3"
-          transform="rotate(-18 4.6 14.8)"
-        />
-      </Glyphe>
+      {/*
+        Le mot. Il est vide tant qu'aucune zone n'en porte, et il reste
+        dans le calque même invisible : c'est ce qui permet de mesurer sa
+        largeur avant de le montrer, donc de savoir s'il tiendrait à
+        droite de la pointe.
+      */}
+      <span ref={etiquette} className="curseur-mot" />
     </div>
-  );
-}
-
-/**
- * Un dessin de curseur, tracé deux fois.
- *
- * Le premier passage est un contour blanc épais : c'est lui qui rend la
- * forme visible sur une photo sombre comme sur une plaque claire, sans
- * quoi une teinte de thème foncée disparaîtrait sur le fond du site.
- *
- * Le second est la forme elle-même, remplie de la couleur de
- * l'ambiance. Elle est déclarée en CSS et non ici, pour suivre le
- * réglage du compte sans qu'on ait à le transporter jusqu'ici.
- */
-function Glyphe({
-  nom,
-  boite,
-  children,
-}: {
-  nom: "fleche" | "main" | "poing";
-  boite: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <svg viewBox={boite} width="24" height="24" data-glyphe={nom}>
-      <g className="curseur-contour">{children}</g>
-      <g className="curseur-fleche">{children}</g>
-    </svg>
   );
 }

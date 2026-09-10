@@ -108,6 +108,9 @@ export default function BrandCard({
         href={`/marques/${brand.slug}`}
         aria-label={brand.name}
         data-calque=""
+        /* La flèche s'ouvre déjà toute seule sur un lien ; le mot dit
+           seulement CE QUE le clic va faire. Voir `Curseur.tsx`. */
+        data-curseur-mot="Ouvrir"
         className="absolute inset-0 z-2"
       />
 

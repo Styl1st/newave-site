@@ -20,7 +20,9 @@ export const dynamic = "force-dynamic";
  * les liens des autres pages vers une catégorie précise.
  *
  * `?cat=streetwear` ouvre l'annuaire avec le filtre déjà posé,
- * `?q=denim` avec le champ déjà rempli. Un rayon vide, une puce de
+ * `?q=denim` avec le champ déjà rempli. `?f=style:denim,prix:premium`
+ * et `?lettre=a` sont ce que la barre de requête écrit elle-même : un
+ * lien copié depuis l'annuaire rouvre le même écran, jetons compris. Un rayon vide, une puce de
  * l'accueil ou une recherche commencée ailleurs aboutissent donc à la
  * bonne liste plutôt qu'à l'annuaire entier, où il faudrait tout
  * refaire à la main.
@@ -38,7 +40,7 @@ export const dynamic = "force-dynamic";
 type Props = { searchParams: Promise<AmorceAnnuaire> };
 
 export default async function BrandsPage({ searchParams }: Props) {
-  const { cat, q } = await searchParams;
+  const { cat, q, f, lettre } = await searchParams;
 
   /*
    * L'ordre est retiré à chaque visite.
@@ -91,7 +93,7 @@ export default async function BrandsPage({ searchParams }: Props) {
         brands={brands}
         favoris={Array.from(favoris)}
         notes={notes}
-        amorce={{ cat, q }}
+        amorce={{ cat, q, f, lettre }}
       />
     </div>
   );

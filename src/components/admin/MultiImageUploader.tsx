@@ -325,8 +325,12 @@ export default function MultiImageUploader({
               onPointerUp={lacher}
               onPointerCancel={lacher}
               /* Le curseur du site s'occupe de la main ouverte et du
-                 poing : cet attribut est ce qui le lui dit. */
+                 poing : cet attribut est ce qui le lui dit, et les deux
+                 suivants nomment le geste — le second ne vaut que tant
+                 que le bouton est tenu. */
               data-saisissable=""
+              data-curseur-mot="Glisser"
+              data-curseur-mot-appui="Déposer"
               className={`relative overflow-hidden rounded-[13px] border select-none ${
                 saisi === i
                   ? "vignette-portee z-20 border-white"

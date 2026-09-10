@@ -40,6 +40,8 @@ export default function DeleteButton({
       <button
         type="submit"
         onBlur={desarmer}
+        data-curseur-zone="danger"
+        data-curseur-mot={arme ? "Confirmer" : "Supprimer"}
         className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[12.5px] font-bold transition active:scale-[.97] ${
           arme
             ? "border border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white"

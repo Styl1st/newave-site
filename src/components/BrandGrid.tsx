@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import BrandCard from "./BrandCard";
 import BrandPreview from "./BrandPreview";
 import LigneMarque from "./LigneMarque";
@@ -63,6 +63,8 @@ export default function BrandGrid({
   defaut = "confort",
   densite: densiteImposee,
   onDensite,
+  lettre,
+  onLettre,
   selecteur = true,
 }: {
   brands: Brand[];
@@ -74,6 +76,9 @@ export default function BrandGrid({
   /** Densité tenue par le parent, quand il affiche le rail lui-même. */
   densite?: Densite;
   onDensite?: (d: Densite) => void;
+  /** Lettre d'index tenue par le parent, quand elle part dans l'adresse. */
+  lettre?: string | null;
+  onLettre?: (l: string | null) => void;
   selecteur?: boolean;
   /** Les marques déjà suivies. Absent = on n'affiche pas l'étoile. */
   favoris?: string[];
@@ -98,7 +103,15 @@ export default function BrandGrid({
   const enListe = (densiteImposee ?? defaut) === "liste";
   const [open, setOpen] = useState<string | null>(null);
   const [combien, setCombien] = useState(LOT);
-  const [lettreActive, setLettreActive] = useState<string | null>(null);
+  /*
+   * LA LETTRE PEUT ÊTRE TENUE PLUS HAUT, comme la densité juste au
+   * dessus. L'annuaire la met dans l'adresse — `?lettre=a` — pour qu'un
+   * lien partagé rouvre exactement le même écran ; les autres listes
+   * n'ont rien à en faire et la laissent ici.
+   */
+  const [lettreLocale, setLettreLocale] = useState<string | null>(null);
+  const lettreActive = lettre !== undefined ? lettre : lettreLocale;
+  const poserLettre = onLettre ?? setLettreLocale;
 
   /*
    * Filtrer repart du début.
@@ -120,7 +133,20 @@ export default function BrandGrid({
    * dont un seul se voit, c'est toujours celui qu'on ne voit pas qu'on
    * accuse le site d'avoir cassé.
    */
-  useEffect(() => setLettreActive(null), [brands]);
+  const premierLot = useRef(true);
+  useEffect(() => {
+    /* Sauf au tout premier rendu : `?lettre=a` vient justement d'en
+       poser une, et l'effacer ici rouvrirait l'annuaire entier sur un
+       lien qui demandait les A. */
+    if (premierLot.current) {
+      premierLot.current = false;
+      return;
+    }
+    poserLettre(null);
+    // `poserLettre` change d'identité à chaque rendu quand le parent la
+    // tient : le remettre en dépendance relancerait l'effet en boucle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brands]);
 
   /*
    * EN MODE LISTE, L'ORDRE EST ALPHABÉTIQUE, ET C'EST LA CONDITION DE
@@ -173,8 +199,8 @@ export default function BrandGrid({
    *
    * Retoucher la même lettre efface le filtre.
    */
-  function allerA(lettre: string) {
-    setLettreActive((actuelle) => (actuelle === lettre ? null : lettre));
+  function allerA(choisie: string) {
+    poserLettre(lettreActive === choisie ? null : choisie);
   }
 
   const parLettre = useMemo(
@@ -246,7 +272,7 @@ export default function BrandGrid({
                 active={lettreActive}
                 combien={parLettre?.length ?? 0}
                 onChoisir={allerA}
-                onTout={() => setLettreActive(null)}
+                onTout={() => poserLettre(null)}
               />
 
               {visiblesAlpha.map((b, i) => {
@@ -403,53 +429,72 @@ function IndexAlphabet({
   onTout: () => void;
 }) {
   return (
-    <>
-      {/* La ligne d'état reste dans le flux : au doigt, elle est ce qui
-          dit ce que le rail vient de faire. */}
-      <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 pr-[30px] sm:pr-0">
-        {/* « Lettre » et non « Aller à » : le mot promettait un défilement,
-            et l'on filtre. Un libellé qui décrit autre chose que ce qui se
-            passe est un bogue à lui seul. Il saute au doigt, où le rail se
-            passe d'intitulé. */}
-        <span className="eyebrow m-0 mr-1 hidden text-white/45 sm:block">Lettre</span>
+    <div className="mb-2 pr-[30px] sm:pr-0">
+      <nav
+        aria-label="Index alphabétique des marques"
+        /* Deux formes, une seule balise. En grand : une seule rangée
+           JUSTIFIÉE D'UN BORD À L'AUTRE, sans matière — c'est l'outil de
+           navigation le plus utilisé de la page, il prend donc toute la
+           largeur au lieu d'être traité comme une légende. Au doigt : la
+           pilule de verre dressée au bord droit, centrée sur la hauteur,
+           qui défile sur elle-même si l'écran est trop court pour ses
+           vingt-sept lettres. Celle-là ne bouge pas. */
+        className="rail-index fixed right-[3px] top-1/2 z-30 flex max-h-[calc(100svh-150px)] -translate-y-1/2 flex-col items-center gap-px overflow-y-auto overscroll-contain rounded-full px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:static sm:max-h-none sm:w-full sm:translate-y-0 sm:flex-row sm:flex-nowrap sm:justify-between sm:gap-0 sm:overflow-visible sm:p-0"
+      >
+        {LETTRES.map((l) => {
+          const dispo = pleines.has(l);
+          return (
+            <button
+              key={l}
+              type="button"
+              onClick={() => onChoisir(l)}
+              disabled={!dispo}
+              aria-label={
+                active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
+              }
+              aria-current={active === l ? "true" : undefined}
+              /*
+               * TOUTES LES LETTRES PORTENT LE MÊME REMBOURRAGE, pas
+               * seulement celle qui est posée. Deux raisons, et la
+               * seconde compte plus que la première : la rangée ne
+               * grandit pas de six pixels sous les yeux au moment où
+               * l'on choisit une lettre, et surtout un « W » de onze
+               * pixels de large devient une cible de vingt-sept, ce qui
+               * est la différence entre viser et attraper. Le blanc ne
+               * se voit que sur la lettre courante ; la boîte, elle,
+               * existe pour les vingt-six autres.
+               */
+              className={`grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[7px] px-1 text-[11px] font-extrabold transition sm:h-auto sm:min-w-[26px] sm:rounded-[6px] sm:px-2 sm:pb-[5px] sm:pt-[4px] sm:text-[15px] ${
+                active === l
+                  ? "bg-white font-black text-[var(--color-ink)] sm:font-extrabold"
+                  : dispo
+                    ? "text-white hover:bg-white/15 sm:hover:bg-transparent sm:hover:text-[rgb(var(--accent-1))]"
+                    : "cursor-default text-white/24 sm:text-white/32"
+              }`}
+            >
+              {l}
+            </button>
+          );
+        })}
+      </nav>
 
-        <nav
-          aria-label="Index alphabétique des marques"
-          /* Deux formes, une seule balise. En grand : une rangée qui
-             s'enroule, sans matière. Au doigt : une pilule de verre
-             dressée au bord droit, centrée sur la hauteur, qui défile
-             sur elle-même si l'écran est trop court pour ses
-             vingt-sept lettres. */
-          className="rail-index fixed right-[3px] top-1/2 z-30 flex max-h-[calc(100svh-150px)] -translate-y-1/2 flex-col items-center gap-px overflow-y-auto overscroll-contain rounded-full px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:static sm:max-h-none sm:translate-y-0 sm:flex-row sm:flex-wrap sm:gap-0.5 sm:overflow-visible sm:p-0"
-        >
-          {LETTRES.map((l) => {
-            const dispo = pleines.has(l);
-            return (
-              <button
-                key={l}
-                type="button"
-                onClick={() => onChoisir(l)}
-                disabled={!dispo}
-                aria-label={
-                  active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
-                }
-                aria-current={active === l ? "true" : undefined}
-                className={`grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[7px] px-1 text-[11px] transition sm:h-[26px] sm:min-w-[26px] sm:rounded-[8px] sm:text-[12px] ${
-                  active === l
-                    ? "bg-white font-black text-[var(--color-ink)]"
-                    : dispo
-                      ? "font-extrabold text-white hover:bg-white/15"
-                      : "cursor-default font-extrabold text-white/24"
-                }`}
-              >
-                {l}
-              </button>
-            );
-          })}
-        </nav>
+      {/*
+        LA LÉGENDE EST CE QUI EXPLIQUE L'ALPHABET, et elle n'est pas
+        décorative : sans elle, une rangée à moitié éteinte passe pour un
+        défaut d'affichage. Elle dit que les lettres suivent les filtres
+        posés au-dessus, et c'est la seule chose qui le dise.
+
+        Au doigt il n'y a pas de rangée à expliquer — le rail est au bord
+        droit, il n'a pas d'intitulé : la ligne ne sert alors qu'à dire ce
+        qu'il vient de faire.
+      */}
+      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="m-0 hidden text-[11px] font-bold uppercase tracking-[0.14em] text-white/68 sm:block">
+          Les lettres pâles n&apos;ont aucune marque avec ces filtres
+        </p>
 
         {active && combien > 0 && (
-          <span className="flex items-center gap-2 text-[11.5px] font-semibold text-white/55">
+          <span className="flex items-center gap-2 text-[11.5px] font-semibold text-white/60">
             {active} — {combien} marque{combien > 1 ? "s" : ""}
             {/* Une sortie visible : sans elle, il faut deviner qu'on
                 retouche la même lettre pour tout revoir. */}
@@ -463,6 +508,6 @@ function IndexAlphabet({
           </span>
         )}
       </div>
-    </>
+    </div>
   );
 }

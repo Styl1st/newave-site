@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0f0526; font-family:Archivo, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#e86fd8; text-decoration:none; }
+  a:hover { color:#fff; }
+</style>
+</helmet>
+
+<section id="t1" style="width:1560px;padding:52px 44px 72px;box-sizing:border-box;background:radial-gradient(900px 520px at 10% -8%, rgba(232,111,216,.22), transparent 60%), radial-gradient(900px 640px at 92% 4%, rgba(90,114,224,.26), transparent 58%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff">
+
+  <div style="max-width:960px;margin-bottom:38px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 1 · REFONTE COMPLÈTE DE LA PAGE COUPS DE CŒUR</div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 16px;text-wrap:pretty">Un classement qu'on lit, pas cinq onglets qu'on essaie</h1>
+    <p style="font:500 15.5px/1.68 Archivo;color:rgba(255,255,255,.8);margin:0 0 14px;text-wrap:pretty">Le diagnostic : les cinq onglets (<em>du moment, tout temps, plus suivies, pièces notées, marques notées</em>) sont cinq <strong style="color:#fff">adresses différentes</strong> pour cinq versions du même tableau. Chacun coûte un rechargement de page, aucun ne dit ce qu'il contient avant qu'on clique, et seul « plus suivies » a un sens évident. Résultat : on clique pour découvrir, pas pour choisir.</p>
+    <p style="font:500 15.5px/1.68 Archivo;color:rgba(255,255,255,.8);margin:0 0 14px;text-wrap:pretty">Le pari des trois options : <strong style="color:#fff">une mesure n'est pas un onglet, c'est une colonne</strong>. Cœurs, élan, suivis, note vivent côte à côte sur la même ligne — on les compare d'un regard, et on trie d'un clic sans quitter la page. La doctrine de la page est intacte : <strong style="color:#fff">aucun score composite</strong>, chaque chiffre garde sa colonne, son mot et son seuil.</p>
+    <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.58);margin:0;text-wrap:pretty">Données de démo (12 marques, 8 pièces) — <a href="#1a">1a</a> est vivant : les en-têtes de colonnes trient, les rayons filtrent, la période et Marques/Pièces basculent. <a href="#1b">1b</a> aussi : les trois mots soulignés de la phrase ouvrent de vrais menus et les cœurs se donnent et se reprennent. <a href="#1c">1c</a> est une maquette fixe.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:28px;margin-bottom:44px">
+
+    <!-- ══════════ 1a — LE TABLEAU ══════════ -->
+    <div id="1a" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1a</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Le tableau</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Les cinq onglets deviennent <strong style="color:#fff">quatre colonnes triables</strong> sur une seule liste. Le rang suit la colonne active, la tendance sur 7 semaines est dessinée à côté du nom, et « du moment » n'est plus un onglet mais la colonne <strong style="color:#fff">Élan</strong> (part des cœurs gagnée dans la fenêtre). Deux bascules seulement : Marques/Pièces et la période. Aucun rechargement, tout est visible avant le clic.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#22104f 0%,#180a38 100%);border-radius:18px;padding:32px 36px 28px;max-width:1180px;margin:0 auto;box-sizing:border-box">
+
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;margin-bottom:22px">
+          <div>
+            <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.6);margin-bottom:8px">LE CLASSEMENT</div>
+            <h3 style="font:800 38px Archivo;letter-spacing:-.035em;margin:0">Coups de cœur</h3>
+            <p style="font:600 11px Archivo;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:10px 0 0">{{ resume }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex:0 0 auto">
+            <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.09);border-radius:999px;padding:4px">
+              <button type="button" onClick="{{ voirMarques }}" style="font:800 11px Archivo;letter-spacing:.08em;text-transform:uppercase;border:0;cursor:pointer;border-radius:999px;padding:7px 14px 8px;background:{{ ongletMarques.bg }};color:{{ ongletMarques.fg }}">Marques</button>
+              <button type="button" onClick="{{ voirPieces }}" style="font:800 11px Archivo;letter-spacing:.08em;text-transform:uppercase;border:0;cursor:pointer;border-radius:999px;padding:7px 14px 8px;background:{{ ongletPieces.bg }};color:{{ ongletPieces.fg }}">Pièces</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <span style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5)">SUR</span>
+              <div style="display:flex;align-items:baseline;gap:13px">
+                <button type="button" onClick="{{ mettre7 }}" style="font:700 12.5px Archivo;border:0;background:none;cursor:pointer;padding:0 0 3px;color:{{ p7.fg }};border-bottom:2px solid {{ p7.bd }}">7 jours</button>
+                <button type="button" onClick="{{ mettre30 }}" style="font:700 12.5px Archivo;border:0;background:none;cursor:pointer;padding:0 0 3px;color:{{ p30.fg }};border-bottom:2px solid {{ p30.bd }}">30 jours</button>
+                <button type="button" onClick="{{ mettreTot }}" style="font:700 12.5px Archivo;border:0;background:none;cursor:pointer;padding:0 0 3px;color:{{ ptot.fg }};border-bottom:2px solid {{ ptot.bd }}">Depuis toujours</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0 16px;border-top:1px solid rgba(255,255,255,.12)">
+          <span style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5);margin-right:2px">RAYON</span>
+          <sc-for list="{{ rayons }}" as="r" hint-placeholder-count="6">
+            <button type="button" onClick="{{ r.choisir }}" style="font:700 12px Archivo;letter-spacing:-.005em;border:0;cursor:pointer;border-radius:999px;padding:6px 12px 7px;background:{{ r.bg }};color:{{ r.fg }}">{{ r.nom }}<span style="font:900 9.5px Archivo;vertical-align:super;margin-left:4px;opacity:.6">{{ r.compte }}</span></button>
+          </sc-for>
+        </div>
+
+        <!-- en-têtes : la mesure est une colonne, et la colonne est le tri -->
+        <div style="display:flex;align-items:flex-end;gap:0;padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.16)">
+          <div style="width:60px;flex:0 0 auto;font:900 9px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.45)">RANG</div>
+          <div style="flex:1 1 auto;min-width:210px;font:900 9px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.45)">{{ motEntite }}</div>
+          <sc-if value="{{ avecTendance }}" hint-placeholder-val="{{ true }}">
+            <div style="width:100px;flex:0 0 auto;font:900 9px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.45)">TENDANCE</div>
+          </sc-if>
+          <button type="button" onClick="{{ trierCoeurs }}" style="width:106px;flex:0 0 auto;text-align:left;border:0;background:none;cursor:pointer;padding:0 0 4px;font:900 9px Archivo;letter-spacing:.16em;color:{{ hCoeurs.fg }};border-bottom:2px solid {{ hCoeurs.bd }}">CŒURS {{ hCoeurs.fleche }}</button>
+          <button type="button" onClick="{{ trierElan }}" style="width:86px;flex:0 0 auto;text-align:left;border:0;background:none;cursor:pointer;padding:0 0 4px;font:900 9px Archivo;letter-spacing:.16em;color:{{ hElan.fg }};border-bottom:2px solid {{ hElan.bd }}">ÉLAN {{ hElan.fleche }}</button>
+          <button type="button" onClick="{{ trierSuivis }}" style="width:92px;flex:0 0 auto;text-align:left;border:0;background:none;cursor:pointer;padding:0 0 4px;font:900 9px Archivo;letter-spacing:.16em;color:{{ hSuivis.fg }};border-bottom:2px solid {{ hSuivis.bd }}">SUIVIS {{ hSuivis.fleche }}</button>
+          <sc-if value="{{ avecNotes }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ trierNote }}" style="width:118px;flex:0 0 auto;text-align:left;border:0;background:none;cursor:pointer;padding:0 0 4px;font:900 9px Archivo;letter-spacing:.16em;color:{{ hNote.fg }};border-bottom:2px solid {{ hNote.bd }}">NOTE {{ hNote.fleche }}</button>
+          </sc-if>
+          <div style="width:38px;flex:0 0 auto"></div>
+        </div>
+
+        <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="8">
+          <div style="display:flex;align-items:center;gap:0;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07);background:{{ l.fond }}">
+            <div style="width:60px;flex:0 0 auto;display:flex;align-items:baseline;gap:6px">
+              <span style="font:900 16px Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.03em">{{ l.rang }}</span>
+              <span style="font:800 10px Archivo;color:{{ l.deltaFg }}">{{ l.delta }}</span>
+            </div>
+
+            <div style="flex:1 1 auto;min-width:210px;display:flex;align-items:center;gap:12px">
+              <span style="width:34px;height:34px;flex:0 0 auto;border-radius:10px;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font:900 11px Archivo;letter-spacing:.04em;color:rgba(255,255,255,.75)">{{ l.initiales }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                <span style="font:700 15px Archivo;letter-spacing:-.015em;color:#fff">{{ l.nom }}</span>
+                <span style="font:700 9.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.48)">{{ l.sous }}</span>
+              </span>
+            </div>
+
+            <sc-if value="{{ avecTendance }}" hint-placeholder-val="{{ true }}">
+              <div style="width:100px;flex:0 0 auto">
+                <svg width="76" height="26" viewBox="0 0 76 26" style="display:block;overflow:visible">
+                  <polyline points="{{ l.spark }}" fill="none" stroke="{{ l.sparkFg }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                  <circle cx="76" cy="{{ l.sparkY }}" r="2.6" fill="{{ l.sparkFg }}"></circle>
+                </svg>
+              </div>
+            </sc-if>
+
+            <div style="width:106px;flex:0 0 auto">
+              <span style="display:block;font:900 15px Archivo;font-variant-numeric:tabular-nums;letter-spacing:-.02em">{{ l.coeurs }}</span>
+              <span style="display:block;margin-top:4px;width:74px;height:3px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden">
+                <span style="display:block;height:100%;border-radius:999px;width:{{ l.part }};background:linear-gradient(90deg, rgba(232,111,216,.95), rgba(180,122,234,.9))"></span>
+              </span>
+            </div>
+
+            <div style="width:86px;flex:0 0 auto;font:800 13px Archivo;font-variant-numeric:tabular-nums;color:{{ l.elanFg }}">{{ l.elan }}</div>
+
+            <div style="width:92px;flex:0 0 auto;font:800 13px Archivo;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.82)">{{ l.suivis }}</div>
+
+            <sc-if value="{{ avecNotes }}" hint-placeholder-val="{{ true }}">
+              <div style="width:118px;flex:0 0 auto;display:flex;align-items:baseline;gap:6px">
+                <span style="font:900 13.5px Archivo;font-variant-numeric:tabular-nums;color:{{ l.noteFg }}">{{ l.note }}</span>
+                <span style="font:600 10px Archivo;color:rgba(255,255,255,.5)">{{ l.avis }}</span>
+              </div>
+            </sc-if>
+
+            <div style="width:38px;flex:0 0 auto;display:flex;justify-content:flex-end">
+              <sc-if value="{{ l.aime }}" hint-placeholder-val="{{ false }}">
+                <span style="width:30px;height:30px;border-radius:999px;background:rgba(232,111,216,.2);display:flex;align-items:center;justify-content:center;cursor:pointer">
+                  <svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 14S1 9.6 1 5.3A4.1 4.1 0 0 1 8 2.6 4.1 4.1 0 0 1 15 5.3C15 9.6 8 14 8 14z" fill="#e86fd8"></path></svg>
+                </span>
+              </sc-if>
+              <sc-if value="{{ l.pasAime }}" hint-placeholder-val="{{ true }}">
+                <span style="width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(255,255,255,.18)">
+                  <svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 13.2S1.7 9.2 1.7 5.3A3.5 3.5 0 0 1 8 3.2a3.5 3.5 0 0 1 6.3 2.1c0 3.9-6.3 7.9-6.3 7.9z" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5"></path></svg>
+                </span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding-top:16px">
+          <span style="font:700 11.5px Archivo;color:rgba(255,255,255,.55)">{{ pied }}</span>
+          <span style="font:800 10.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45)">Recompté à chaque visite</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ 1b — LE PODIUM ÉDITORIAL ══════════ -->
+    <div id="1b" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1b</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Le podium éditorial</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Même principe qu'en <a href="#1a">1a</a> — aucun onglet — mais le réglage est <strong style="color:#fff">écrit dans une phrase</strong> : « Les marques classées par <u>cœurs</u> sur <u>7 jours</u> ». Trois mots soulignés, trois vrais menus, et le tableau devient un podium : trois grandes cartes avec visuel, puis des lignes fines. Moins de chiffres à l'écran, plus de DA. Pour ceux qui veulent le détail, la colonne de droite garde les stats vivantes.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#22104f 0%,#180a38 100%);border-radius:18px;padding:32px 36px 30px;max-width:1180px;margin:0 auto;box-sizing:border-box">
+        <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.6);margin-bottom:10px">LE CLASSEMENT</div>
+        <h3 style="font:800 34px/1.25 Archivo;letter-spacing:-.032em;margin:0 0 26px;max-width:1000px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 11px">
+          <span>Les</span>
+          <span data-b-menu="bQuoi" style="position:relative;display:inline-block">
+            <button type="button" onClick="{{ bTapQuoi }}" style="font:inherit;letter-spacing:inherit;color:#fff;background:none;border:0;padding:0 0 3px;cursor:pointer;border-bottom:2px solid #e86fd8;display:inline-flex;align-items:baseline;gap:8px">{{ bQuoiMot }}<svg width="11" height="7" viewBox="0 0 10 6" style="flex:0 0 auto"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#e86fd8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <sc-if value="{{ bMenuQuoi }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:calc(100% + 12px);left:0;z-index:30;width:250px;background:#2b1465;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:6px;box-shadow:0 26px 60px rgba(8,2,20,.65);display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ bOptQuoi }}" as="o" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ o.choisir }}" style="display:flex;width:100%;box-sizing:border-box;align-items:baseline;justify-content:space-between;gap:12px;font:700 13.5px Archivo;text-align:left;background:{{ o.bg }};color:{{ o.fg }};border:0;border-radius:10px;padding:10px 12px;cursor:pointer">{{ o.nom }}<span style="font:700 9.5px Archivo;letter-spacing:.12em;text-transform:uppercase;opacity:.6">{{ o.note }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </span>
+          <span>classées par</span>
+          <span data-b-menu="bMesure" style="position:relative;display:inline-block">
+            <button type="button" onClick="{{ bTapMesure }}" style="font:inherit;letter-spacing:inherit;color:#fff;background:none;border:0;padding:0 0 3px;cursor:pointer;border-bottom:2px solid #e86fd8;display:inline-flex;align-items:baseline;gap:8px">{{ bMesureMot }}<svg width="11" height="7" viewBox="0 0 10 6" style="flex:0 0 auto"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#e86fd8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <sc-if value="{{ bMenuMesure }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:calc(100% + 12px);left:0;z-index:30;width:280px;background:#2b1465;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:6px;box-shadow:0 26px 60px rgba(8,2,20,.65);display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ bOptMesure }}" as="o" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ o.choisir }}" style="display:flex;width:100%;box-sizing:border-box;align-items:baseline;justify-content:space-between;gap:12px;font:700 13.5px Archivo;text-align:left;background:{{ o.bg }};color:{{ o.fg }};border:0;border-radius:10px;padding:10px 12px;cursor:pointer">{{ o.nom }}<span style="font:700 9.5px Archivo;letter-spacing:.12em;text-transform:uppercase;opacity:.6">{{ o.note }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </span>
+          <sc-if value="{{ bAvecPeriode }}" hint-placeholder-val="{{ true }}">
+            <span style="display:inline-flex;align-items:baseline;gap:2px 11px">
+              <span>sur</span>
+          <span data-b-menu="bPeriode" style="position:relative;display:inline-block">
+            <button type="button" onClick="{{ bTapPeriode }}" style="font:inherit;letter-spacing:inherit;color:#fff;background:none;border:0;padding:0 0 3px;cursor:pointer;border-bottom:2px solid #e86fd8;display:inline-flex;align-items:baseline;gap:8px">{{ bPeriodeMot }}<svg width="11" height="7" viewBox="0 0 10 6" style="flex:0 0 auto"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#e86fd8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+            <sc-if value="{{ bMenuPeriode }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:calc(100% + 12px);left:0;z-index:30;width:250px;background:#2b1465;border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:6px;box-shadow:0 26px 60px rgba(8,2,20,.65);display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ bOptPeriode }}" as="o" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ o.choisir }}" style="display:flex;width:100%;box-sizing:border-box;align-items:baseline;justify-content:space-between;gap:12px;font:700 13.5px Archivo;text-align:left;background:{{ o.bg }};color:{{ o.fg }};border:0;border-radius:10px;padding:10px 12px;cursor:pointer">{{ o.nom }}<span style="font:700 9.5px Archivo;letter-spacing:.12em;text-transform:uppercase;opacity:.6">{{ o.note }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </span>
+            </span>
+          </sc-if>
+        </h3>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:30px;align-items:start">
+          <div style="min-width:0">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px">
+              <sc-for list="{{ bPodium }}" as="o" hint-placeholder-count="3">
+                <div style="border-radius:16px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:150px;background:{{ o.fond }};display:flex;align-items:flex-start;justify-content:space-between;padding:14px 16px">
+                    <span style="font:900 46px Archivo;line-height:.8;letter-spacing:-.05em;color:#fff">{{ o.rang }}</span>
+                    <span style="font:800 10px Archivo;letter-spacing:.12em;background:rgba(23,10,51,.55);border-radius:999px;padding:5px 9px 6px;color:{{ o.deltaFg }}">{{ o.delta }}</span>
+                  </div>
+                  <div style="padding:14px 16px 16px">
+                    <div style="font:700 9.5px Archivo;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:5px">{{ o.sous }}</div>
+                    <div style="font:800 19px Archivo;letter-spacing:-.025em;margin-bottom:10px">{{ o.nom }}</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
+                      <span style="font:900 22px Archivo;letter-spacing:-.03em">{{ o.mesure }}</span>
+                      <span style="font:700 10.5px Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)">{{ o.unite }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;border-top:1px solid rgba(255,255,255,.12)">
+                      <span style="font:700 11px Archivo;color:rgba(255,255,255,.65)">{{ o.avis }}</span>
+                      <button type="button" onClick="{{ o.aimer }}" aria-label="Donner un cœur" style="width:30px;height:30px;flex:0 0 auto;border:0;padding:0;border-radius:999px;background:{{ o.coeurBg }};display:flex;align-items:center;justify-content:center;cursor:pointer"><sc-if value="{{ o.aime }}" hint-placeholder-val="{{ true }}"><svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 14S1 9.6 1 5.3A4.1 4.1 0 0 1 8 2.6 4.1 4.1 0 0 1 15 5.3C15 9.6 8 14 8 14z" fill="#e86fd8"></path></svg></sc-if><sc-if value="{{ o.pasAime }}" hint-placeholder-val="{{ false }}"><svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 13.2S1.7 9.2 1.7 5.3A3.5 3.5 0 0 1 8 3.2a3.5 3.5 0 0 1 6.3 2.1c0 3.9-6.3 7.9-6.3 7.9z" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5"></path></svg></sc-if></button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;flex-direction:column;border-bottom:1px solid rgba(255,255,255,.12)">
+              <sc-for list="{{ bRangs }}" as="o" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:16px;padding:11px 0;border-top:1px solid rgba(255,255,255,.12)">
+                  <span style="width:26px;flex:0 0 auto;font:900 15px Archivo;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.85)">{{ o.rang }}</span>
+                  <span style="width:40px;flex:0 0 auto;font:800 10px Archivo;letter-spacing:.06em;color:{{ o.deltaFg }}">{{ o.delta }}</span>
+                  <span style="flex:1 1 auto;min-width:0;font:700 15px Archivo;letter-spacing:-.015em">{{ o.nom }}<span style="font:700 9.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-left:10px">{{ o.sous }}</span></span>
+                  <span style="width:120px;flex:0 0 auto;height:4px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden"><span style="display:block;height:100%;width:{{ o.part }};border-radius:999px;background:linear-gradient(90deg, rgba(232,111,216,.95), rgba(180,122,234,.9))"></span></span>
+                  <span style="width:58px;flex:0 0 auto;text-align:right;font:900 14px Archivo;font-variant-numeric:tabular-nums">{{ o.mesure }}</span>
+                  <button type="button" onClick="{{ o.aimer }}" aria-label="Donner un cœur" style="width:30px;height:30px;flex:0 0 auto;border:0;padding:0;border-radius:999px;background:{{ o.coeurBg }};display:flex;align-items:center;justify-content:center;cursor:pointer"><sc-if value="{{ o.aime }}" hint-placeholder-val="{{ true }}"><svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 14S1 9.6 1 5.3A4.1 4.1 0 0 1 8 2.6 4.1 4.1 0 0 1 15 5.3C15 9.6 8 14 8 14z" fill="#e86fd8"></path></svg></sc-if><sc-if value="{{ o.pasAime }}" hint-placeholder-val="{{ false }}"><svg width="15" height="14" viewBox="0 0 16 15"><path d="M8 13.2S1.7 9.2 1.7 5.3A3.5 3.5 0 0 1 8 3.2a3.5 3.5 0 0 1 6.3 2.1c0 3.9-6.3 7.9-6.3 7.9z" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5"></path></svg></sc-if></button>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ bAvecReste }}" hint-placeholder-val="{{ true }}">
+              <button type="button" style="align-self:flex-start;margin-top:16px;font:800 11px Archivo;letter-spacing:.14em;text-transform:uppercase;background:none;border:0;color:rgba(255,255,255,.7);cursor:pointer;padding:0;border-bottom:2px solid rgba(232,111,216,.8)">{{ bReste }}</button>
+            </sc-if>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:18px;background:rgba(255,255,255,.05)">
+              <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.5);margin-bottom:12px">LES CŒURS, EN CHIFFRES</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+                <span style="font:900 30px Archivo;letter-spacing:-.04em">{{ bTotal }}</span>
+                <sc-if value="{{ bAvecProg }}" hint-placeholder-val="{{ true }}">
+                  <span style="font:800 11px Archivo;color:{{ bProgFg }}">{{ bProg }}</span>
+                </sc-if>
+              </div>
+              <div style="font:700 10.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:16px">{{ bResumeUnite }}</div>
+              <div style="display:flex;gap:3px;align-items:flex-end;height:44px;margin-bottom:6px">
+                <span style="flex:1;height:38%;background:rgba(255,255,255,.22);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:52%;background:rgba(255,255,255,.22);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:44%;background:rgba(255,255,255,.22);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:66%;background:rgba(255,255,255,.22);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:58%;background:rgba(255,255,255,.22);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:82%;background:rgba(232,111,216,.75);border-radius:3px 3px 0 0"></span>
+                <span style="flex:1;height:100%;background:#e86fd8;border-radius:3px 3px 0 0"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font:700 9px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.4)"><span>LUN</span><span>DIM</span></div>
+            </div>
+
+            <div style="border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:18px;background:rgba(255,255,255,.05)">
+              <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.5);margin-bottom:12px">CE QUI BOUGE LE PLUS</div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <sc-for list="{{ bBouge }}" as="o" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:700 13px Archivo">{{ o.nom }}</span><span style="font:800 11px Archivo;color:{{ o.fg }}">{{ o.txt }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="border:1px dashed rgba(255,255,255,.3);border-radius:16px;padding:18px">
+              <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.5);margin-bottom:10px">PREMIER CŒUR À PRENDRE</div>
+              <p style="font:500 12px/1.6 Archivo;color:rgba(255,255,255,.7);margin:0 0 12px">{{ bVides }}</p>
+              <span style="font:800 11px Archivo;letter-spacing:.12em;text-transform:uppercase;color:#fff;border-bottom:2px solid #e86fd8;padding-bottom:2px">En découvrir 4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ 1c — LE JOURNAL DU CLASSEMENT ══════════ -->
+    <div id="1c" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1c</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Le journal du classement</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">L'option la plus radicale : <strong style="color:#fff">zéro bouton de tri</strong>. La page répond aux questions au lieu de proposer des vues. En haut, le graphe des positions sur 7 semaines — on voit qui monte, qui décroche, qui vient d'entrer. En dessous, quatre bandes fixes : le trio, les montées, les entrants, et les mieux notées (avis, jamais mélangés aux cœurs). Le tableau complet reste accessible en un lien, pour ceux qui le veulent.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#22104f 0%,#180a38 100%);border-radius:18px;padding:32px 36px 30px;max-width:1180px;margin:0 auto;box-sizing:border-box">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px">
+          <div>
+            <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.6);margin-bottom:8px">SEMAINE 37 · RECOMPTÉ À CHAQUE VISITE</div>
+            <h3 style="font:800 36px Archivo;letter-spacing:-.035em;margin:0">Ce qui monte</h3>
+          </div>
+          <div style="display:flex;align-items:center;gap:18px;padding-bottom:6px">
+            <span style="font:800 12.5px Archivo;color:#fff;border-bottom:2px solid #e86fd8;padding-bottom:3px">Marques</span>
+            <span style="font:600 12.5px Archivo;color:rgba(255,255,255,.6);border-bottom:2px solid transparent;padding-bottom:3px">Pièces</span>
+            <span style="font:800 10.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);border-left:1px solid rgba(255,255,255,.2);padding-left:18px">Tout le tableau →</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:22px 24px 18px;background:rgba(255,255,255,.04);margin-bottom:26px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px">
+            <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">POSITIONS · 7 DERNIÈRES SEMAINES</span>
+            <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.45)">Rang 1 en haut · une ligne par marque du top 5</span>
+          </div>
+          <svg width="1080" height="216" viewBox="0 0 1080 216" style="display:block;max-width:100%">
+            <line x1="60" y1="24" x2="1000" y2="24" stroke="rgba(255,255,255,.08)" stroke-width="1"></line>
+            <line x1="60" y1="72" x2="1000" y2="72" stroke="rgba(255,255,255,.08)" stroke-width="1"></line>
+            <line x1="60" y1="120" x2="1000" y2="120" stroke="rgba(255,255,255,.08)" stroke-width="1"></line>
+            <line x1="60" y1="168" x2="1000" y2="168" stroke="rgba(255,255,255,.08)" stroke-width="1"></line>
+            <text x="30" y="29" fill="rgba(255,255,255,.45)" font-family="Archivo" font-size="11" font-weight="800">1</text>
+            <text x="30" y="77" fill="rgba(255,255,255,.45)" font-family="Archivo" font-size="11" font-weight="800">3</text>
+            <text x="30" y="125" fill="rgba(255,255,255,.45)" font-family="Archivo" font-size="11" font-weight="800">5</text>
+            <text x="30" y="173" fill="rgba(255,255,255,.45)" font-family="Archivo" font-size="11" font-weight="800">7</text>
+
+            <polyline points="60,144 217,120 373,96 530,96 687,48 843,24 1000,24" fill="none" stroke="#e86fd8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <circle cx="1000" cy="24" r="4.2" fill="#e86fd8"></circle>
+            <text x="1016" y="28" fill="#e86fd8" font-family="Archivo" font-size="11.5" font-weight="800">Kessel</text>
+
+            <polyline points="60,192 217,168 373,144 530,120 687,96 843,96 1000,48" fill="none" stroke="#8fa8f0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <circle cx="1000" cy="48" r="4.2" fill="#8fa8f0"></circle>
+            <text x="1016" y="52" fill="#8fa8f0" font-family="Archivo" font-size="11.5" font-weight="800">Bruit Blanc</text>
+
+            <polyline points="60,24 217,24 373,48 530,48 687,72 843,72 1000,72" fill="none" stroke="#f2ecff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <circle cx="1000" cy="72" r="4.2" fill="#f2ecff"></circle>
+            <text x="1016" y="76" fill="#f2ecff" font-family="Archivo" font-size="11.5" font-weight="800">M. Herbe</text>
+
+            <polyline points="60,48 217,48 373,24 530,24 687,24 843,48 1000,96" fill="none" stroke="#b49bf0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <circle cx="1000" cy="96" r="4.2" fill="#b49bf0"></circle>
+            <text x="1016" y="100" fill="#b49bf0" font-family="Archivo" font-size="11.5" font-weight="800">Farouche</text>
+
+            <polyline points="60,168 217,192 373,192 530,168 687,144 843,120 1000,120" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 0"></polyline>
+            <circle cx="1000" cy="120" r="4.2" fill="rgba(255,255,255,.5)"></circle>
+            <text x="1016" y="124" fill="rgba(255,255,255,.5)" font-family="Archivo" font-size="11.5" font-weight="800">Pôle Nord</text>
+
+            <text x="60" y="212" fill="rgba(255,255,255,.35)" font-family="Archivo" font-size="9.5" font-weight="800" letter-spacing="1.6">S31</text>
+            <text x="990" y="212" fill="rgba(255,255,255,.35)" font-family="Archivo" font-size="9.5" font-weight="800" letter-spacing="1.6">S37</text>
+          </svg>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px">
+          <div style="border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:20px 22px;background:rgba(255,255,255,.04)">
+            <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-bottom:16px">LE TRIO · 212 · 341 · 268 CŒURS CETTE SEMAINE</div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font:900 26px Archivo;letter-spacing:-.04em;width:30px">1</span>
+                <span style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg, rgba(232,111,216,.5), rgba(90,114,224,.4));flex:0 0 auto"></span>
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font:700 15px Archivo;letter-spacing:-.015em">Atelier Kessel</span><span style="display:block;font:700 9.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.48)">Streetwear · 1 284 cœurs au total</span></span>
+                <span style="font:800 11px Archivo;color:#7be0a8;flex:0 0 auto">▲ 1</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font:900 26px Archivo;letter-spacing:-.04em;width:30px;color:rgba(255,255,255,.85)">2</span>
+                <span style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg, rgba(143,168,240,.5), rgba(180,122,234,.4));flex:0 0 auto"></span>
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font:700 15px Archivo;letter-spacing:-.015em">Bruit Blanc</span><span style="display:block;font:700 9.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.48)">Techwear · 1 102 cœurs au total</span></span>
+                <span style="font:800 11px Archivo;color:#7be0a8;flex:0 0 auto">▲ 2</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font:900 26px Archivo;letter-spacing:-.04em;width:30px;color:rgba(255,255,255,.85)">3</span>
+                <span style="width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg, rgba(180,122,234,.45), rgba(232,111,216,.3));flex:0 0 auto"></span>
+                <span style="flex:1 1 auto;min-width:0"><span style="display:block;font:700 15px Archivo;letter-spacing:-.015em">Pôle Nord Club</span><span style="display:block;font:700 9.5px Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.48)">Outerwear · 812 cœurs au total</span></span>
+                <span style="font:800 11px Archivo;color:rgba(255,255,255,.55);flex:0 0 auto">— 0</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:20px 22px;background:rgba(255,255,255,.04)">
+            <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-bottom:16px">LES PLUS GROSSES MONTÉES</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font:800 11px Archivo;letter-spacing:.06em;background:rgba(123,224,168,.16);color:#7be0a8;border-radius:999px;padding:5px 9px 6px;flex:0 0 auto">▲ 4 places</span>
+                <span style="flex:1 1 auto;font:700 14px Archivo;letter-spacing:-.015em">Halo Domestique</span>
+                <span style="font:700 11px Archivo;color:rgba(255,255,255,.6)">12 → 8</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font:800 11px Archivo;letter-spacing:.06em;background:rgba(123,224,168,.16);color:#7be0a8;border-radius:999px;padding:5px 9px 6px;flex:0 0 auto">▲ 3 places</span>
+                <span style="flex:1 1 auto;font:700 14px Archivo;letter-spacing:-.015em">Verso Nine</span>
+                <span style="font:700 11px Archivo;color:rgba(255,255,255,.6)">9 → 6</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font:800 11px Archivo;letter-spacing:.06em;background:rgba(232,111,216,.18);color:#e86fd8;border-radius:999px;padding:5px 9px 6px;flex:0 0 auto">NOUVEAU</span>
+                <span style="flex:1 1 auto;font:700 14px Archivo;letter-spacing:-.015em">Sud Lointain</span>
+                <span style="font:700 11px Archivo;color:rgba(255,255,255,.6)">entre 12<sup>e</sup></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="font:800 11px Archivo;letter-spacing:.06em;background:rgba(240,137,155,.16);color:#f0899b;border-radius:999px;padding:5px 9px 6px;flex:0 0 auto">▼ 3 places</span>
+                <span style="flex:1 1 auto;font:700 14px Archivo;letter-spacing:-.015em">Fille de l'Air</span>
+                <span style="font:700 11px Archivo;color:rgba(255,255,255,.6)">7 → 10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:20px 22px;background:rgba(255,255,255,.04)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px">
+            <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">LES MIEUX NOTÉES · DES AVIS, PAS DES CŒURS</span>
+            <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.45)">5 avis minimum · jamais additionnés aux cœurs</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:13px;background:rgba(255,255,255,.05)">
+              <span style="font:900 22px Archivo;letter-spacing:-.03em">4,8<span style="font:800 12px Archivo;color:#e86fd8;margin-left:5px">★</span></span>
+              <span style="font:700 13.5px Archivo;letter-spacing:-.015em">Bruit Blanc</span>
+              <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.5)">51 avis</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:13px;background:rgba(255,255,255,.05)">
+              <span style="font:900 22px Archivo;letter-spacing:-.03em">4,7<span style="font:800 12px Archivo;color:#e86fd8;margin-left:5px">★</span></span>
+              <span style="font:700 13.5px Archivo;letter-spacing:-.015em">Studio Farouche</span>
+              <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.5)">64 avis</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:13px;background:rgba(255,255,255,.05)">
+              <span style="font:900 22px Archivo;letter-spacing:-.03em">4,6<span style="font:800 12px Archivo;color:#e86fd8;margin-left:5px">★</span></span>
+              <span style="font:700 13.5px Archivo;letter-spacing:-.015em">Atelier Kessel</span>
+              <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.5)">38 avis</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:13px;background:rgba(255,255,255,.05)">
+              <span style="font:900 22px Archivo;letter-spacing:-.03em">4,6<span style="font:800 12px Archivo;color:#e86fd8;margin-left:5px">★</span></span>
+              <span style="font:700 13.5px Archivo;letter-spacing:-.015em">Tôle Ondulée</span>
+              <span style="font:600 10.5px Archivo;color:rgba(255,255,255,.5)">29 avis</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="font:500 13px/1.6 Archivo;color:rgba(255,255,255,.55);margin:0;max-width:1000px;text-wrap:pretty">À essayer ensuite : « <a href="#1a">1a</a> mais avec le podium de <a href="#1b">1b</a> au-dessus du tableau » · « le graphe de <a href="#1c">1c</a> dans la colonne de droite de <a href="#1a">1a</a> » · « <a href="#1b">1b</a> en version mobile » · « enlève la colonne Élan et garde la tendance seule ».</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1560},&quot;triDepart&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;coeurs&quot;,&quot;elan&quot;,&quot;suivis&quot;,&quot;note&quot;],&quot;default&quot;:&quot;coeurs&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tableau 1a&quot;},&quot;lignes&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10,&quot;min&quot;:5,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Tableau 1a&quot;},&quot;avecTendance&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tableau 1a&quot;},&quot;avecNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tableau 1a&quot;}}">
+const MARQUES = [
+  { nom: "Atelier Kessel", rayon: "Streetwear", c: { j7: 212, j30: 661, tot: 1284 }, p: { j7: 2, j30: 1, tot: 1 }, suivis: 946, note: 4.6, avis: 38, h: [6,5,4,4,2,1,1], aime: true },
+  { nom: "Bruit Blanc", rayon: "Techwear", c: { j7: 341, j30: 902, tot: 1102 }, p: { j7: 3, j30: 2, tot: 4 }, suivis: 812, note: 4.8, avis: 51, h: [8,7,6,5,4,4,2] },
+  { nom: "Mauvaise Herbe", rayon: "Denim", c: { j7: 96, j30: 402, tot: 998 }, p: { j7: 6, j30: 4, tot: 2 }, suivis: 705, note: 4.2, avis: 22 },
+  { nom: "Studio Farouche", rayon: "Tailoring", c: { j7: 154, j30: 520, tot: 874 }, p: { j7: 4, j30: 3, tot: 3 }, suivis: 690, note: 4.7, avis: 64, h: [2,2,1,1,1,2,4] },
+  { nom: "Pôle Nord Club", rayon: "Outerwear", c: { j7: 268, j30: 604, tot: 812 }, p: { j7: 1, j30: 6, tot: 8 }, suivis: 640, note: 4.1, avis: 19, h: [7,8,8,7,6,5,5] },
+  { nom: "Cendre & Sel", rayon: "Maille", c: { j7: 61, j30: 288, tot: 744 }, p: { j7: 8, j30: 7, tot: 5 }, suivis: 590, note: 4.5, avis: 31 },
+  { nom: "Verso Nine", rayon: "Sneakers", c: { j7: 205, j30: 498, tot: 690 }, p: { j7: 5, j30: 8, tot: 9 }, suivis: 552, note: 3.9, avis: 44, aime: true },
+  { nom: "Cargo Sainte-Anne", rayon: "Workwear", c: { j7: 88, j30: 310, tot: 655 }, p: { j7: 7, j30: 5, tot: 6 }, suivis: 501, note: 4.4, avis: 27 },
+  { nom: "Halo Domestique", rayon: "Accessoires", c: { j7: 176, j30: 401, tot: 601 }, p: { j7: 12, j30: 11, tot: 12 }, suivis: 470, note: 4.3, avis: 15, aime: true },
+  { nom: "Fille de l'Air", rayon: "Robes", c: { j7: 43, j30: 209, tot: 560 }, p: { j7: 9, j30: 9, tot: 7 }, suivis: 448, note: 4.0, avis: 12 },
+  { nom: "Tôle Ondulée", rayon: "Graphique", c: { j7: 132, j30: 344, tot: 522 }, p: { j7: 11, j30: 10, tot: 11 }, suivis: 402, note: 4.6, avis: 29 },
+  { nom: "Sud Lointain", rayon: "Lin", c: { j7: 71, j30: 190, tot: 498 }, p: { j7: 0, j30: 12, tot: 0 }, suivis: 366, note: 4.2, avis: 3 },
+];
+
+const PIECES = [
+  { nom: "Parka Sillage", rayon: "Vestes", marque: "Pôle Nord Club", c: { j7: 96, j30: 241, tot: 412 }, p: { j7: 2, j30: 1, tot: 1 }, note: 4.7, avis: 24, h: [4,3,3,2,2,1,1], aime: true },
+  { nom: "Jean Mauvaise Coupe", rayon: "Bas", marque: "Mauvaise Herbe", c: { j7: 81, j30: 228, tot: 388 }, p: { j7: 1, j30: 2, tot: 2 }, note: 4.3, avis: 31 },
+  { nom: "Pull Cendre", rayon: "Maille", marque: "Cendre & Sel", c: { j7: 74, j30: 196, tot: 352 }, p: { j7: 4, j30: 3, tot: 3 }, note: 4.5, avis: 18 },
+  { nom: "Blouson Kessel 03", rayon: "Vestes", marque: "Atelier Kessel", c: { j7: 68, j30: 182, tot: 334 }, p: { j7: 3, j30: 4, tot: 4 }, note: 4.6, avis: 27, h: [6,5,5,4,4,3,4] },
+  { nom: "Baskets Verso Nine", rayon: "Chaussures", marque: "Verso Nine", c: { j7: 61, j30: 160, tot: 298 }, p: { j7: 6, j30: 5, tot: 5 }, note: 3.8, avis: 40 },
+  { nom: "Chemise Farouche", rayon: "Hauts", marque: "Studio Farouche", c: { j7: 54, j30: 148, tot: 276 }, p: { j7: 5, j30: 6, tot: 6 }, note: 4.8, avis: 22, aime: true },
+  { nom: "Casquette Halo", rayon: "Accessoires", marque: "Halo Domestique", c: { j7: 47, j30: 112, tot: 210 }, p: { j7: 8, j30: 7, tot: 8 }, note: 4.1, avis: 9 },
+  { nom: "Robe Fille de l'Air", rayon: "Robes", marque: "Fille de l'Air", c: { j7: 39, j30: 101, tot: 188 }, p: { j7: 7, j30: 8, tot: 7 }, note: 4.0, avis: 11 },
+];
+
+const MOT_PERIODE = { j7: "7 jours", j30: "30 jours", tot: "depuis toujours" };
+const SEUIL_AVIS = 5;
+
+function fr(n) { return n.toLocaleString("fr-FR").replace(/\u202f|\u00a0/g, " "); }
+
+class Component extends DCLogic {
+  state = { quoi: "marques", tri: null, periode: "j7", rayon: null, bQuoi: "marques", bMesure: "coeurs", bPeriode: "j7", bMenu: null, bAimes: {} };
+
+  get tri() { return this.state.tri ?? this.props.triDepart ?? "coeurs"; }
+
+  poser(k, v) { this.setState({ [k]: v, rayon: k === "quoi" ? null : this.state.rayon }); }
+
+  /* Une seule règle de tri, quatre clés — jamais de score composite : on
+     lit UNE mesure et on ordonne dessus. */
+  valeurAvec(e, cle, p) {
+    if (!e.c) return -1;
+    if (cle === "coeurs") return e.c[p];
+    if (cle === "elan") return e.c.tot > 0 ? (e.c[p] / e.c.tot) * 100 : 0;
+    if (cle === "suivis") return e.suivis ?? -1;
+    return e.avis >= SEUIL_AVIS ? e.note : -1;
+  }
+
+  valeur(e, cle) { return this.valeurAvec(e, cle, this.state.periode); }
+
+  /* Une pastille (rayon, onglet, période) : deux états, deux couleurs.
+     Rassemblé ici pour que le gabarit ne porte aucune condition. */
+  etat(actif) {
+    return actif
+      ? { bg: "#fff", fg: "#170a33", bd: "#e86fd8" }
+      : { bg: "rgba(255,255,255,.12)", fg: "rgba(255,255,255,.72)", bd: "transparent" };
+  }
+
+  entete(cle) {
+    const actif = this.tri === cle;
+    return {
+      fg: actif ? "#fff" : "rgba(255,255,255,.45)",
+      bd: actif ? "#e86fd8" : "transparent",
+      fleche: actif ? "▾" : "",
+    };
+  }
+
+  /* La courbe de tendance : sept rangs, du plus ancien au plus récent.
+     Rang 1 en haut — d'où l'inversion — et une base plate quand la
+     marque n'a pas d'historique (une entrée récente). */
+  courbe(h) {
+    const rangs = h ?? [7, 7, 6, 6, 6, 5, 5];
+    const pas = 76 / (rangs.length - 1);
+    const y = (r) => 3 + ((Math.min(r, 12) - 1) / 11) * 20;
+    return {
+      points: rangs.map((r, i) => `${Math.round(i * pas)},${y(r).toFixed(1)}`).join(" "),
+      fin: y(rangs[rangs.length - 1]).toFixed(1),
+      monte: rangs[rangs.length - 1] <= rangs[0],
+    };
+  }
+
+  /* ══ 1b — la phrase réglable : trois mots, trois menus, un podium ══ */
+  componentDidMount() {
+    this.dehors = (ev) => {
+      if (!ev.target.closest || !ev.target.closest("[data-b-menu]")) this.setState({ bMenu: null });
+    };
+    document.addEventListener("mousedown", this.dehors);
+  }
+
+  componentWillUnmount() { document.removeEventListener("mousedown", this.dehors); }
+
+  bBascule(m) { this.setState((s) => ({ bMenu: s.bMenu === m ? null : m })); }
+
+  /* Un réglage impossible n'est jamais proposé : on retombe sur une
+     mesure lisible plutôt que d'afficher une colonne vide. */
+  bPoser(cle, v) {
+    const suite = { [cle]: v, bMenu: null };
+    if (cle === "bQuoi" && v === "pieces" && this.state.bMesure === "suivis") suite.bMesure = "coeurs";
+    if (cle === "bMesure" && v === "elan" && this.state.bPeriode === "tot") suite.bPeriode = "j7";
+    this.setState(suite);
+  }
+
+  bAimer(nom, actuel) { this.setState((s) => ({ bAimes: { ...s.bAimes, [nom]: !actuel } })); }
+
+  bOpt(cle, courant, items) {
+    return items.map((it) => {
+      const actif = it.v === courant;
+      return {
+        nom: it.nom,
+        note: it.note || "",
+        bg: actif ? "#fff" : "transparent",
+        fg: actif ? "#170a33" : "rgba(255,255,255,.82)",
+        choisir: () => this.bPoser(cle, it.v),
+      };
+    });
+  }
+
+  bVals() {
+    const { bQuoi, bMesure: bm, bPeriode: bp, bMenu, bAimes } = this.state;
+    const marques = bQuoi === "marques";
+    const source = marques ? MARQUES : PIECES;
+    const classees = [...source].sort((a, b) => this.valeurAvec(b, bm, bp) - this.valeurAvec(a, bm, bp));
+    const sommet = Math.max(1, this.valeurAvec(classees[0] || {}, bm, bp));
+    const suitLeRang = bm === "coeurs" || bm === "elan";
+    const court = bp === "j7" ? "7 j" : bp === "j30" ? "30 j" : "au total";
+
+    const lire = (e) => {
+      if (bm === "coeurs") return { v: fr(e.c[bp]), u: bp === "tot" ? "cœurs au total" : "cœurs · " + court };
+      if (bm === "elan") return { v: Math.round(this.valeurAvec(e, "elan", bp)) + " %", u: "de ses cœurs sur " + court };
+      if (bm === "suivis") return { v: fr(e.suivis), u: "abonnés" };
+      return { v: e.avis >= SEUIL_AVIS ? e.note.toFixed(1).replace(".", ",") : "—", u: "sur 5" };
+    };
+
+    const FONDS = [
+      "linear-gradient(150deg, rgba(232,111,216,.42), rgba(90,114,224,.34))",
+      "linear-gradient(150deg, rgba(143,168,240,.4), rgba(180,122,234,.32))",
+      "linear-gradient(150deg, rgba(180,122,234,.38), rgba(232,111,216,.26))",
+    ];
+
+    const carte = (e, i) => {
+      const rang = i + 1;
+      const prec = e.p[bp];
+      const ecart = prec > 0 ? prec - rang : null;
+      const lu = lire(e);
+      const aime = bAimes[e.nom] === undefined ? !!e.aime : bAimes[e.nom];
+      const noteLue = e.avis >= SEUIL_AVIS;
+      return {
+        rang,
+        nom: e.nom,
+        sous: marques ? e.rayon : e.marque,
+        fond: FONDS[i % 3],
+        mesure: lu.v,
+        unite: lu.u,
+        part: Math.max(6, Math.round((this.valeurAvec(e, bm, bp) / sommet) * 100)) + "%",
+        avis: noteLue ? e.note.toFixed(1).replace(".", ",") + " ★ · " + e.avis + " avis" : e.avis + " avis · min. " + SEUIL_AVIS,
+        delta: !suitLeRang ? "·" : ecart === null ? "NEW" : ecart > 0 ? "▲ " + ecart : ecart < 0 ? "▼ " + -ecart : "— 0",
+        deltaFg: !suitLeRang ? "rgba(255,255,255,.4)" : ecart === null ? "#e86fd8" : ecart > 0 ? "#7be0a8" : ecart < 0 ? "#f0899b" : "rgba(255,255,255,.6)",
+        aime,
+        pasAime: !aime,
+        coeurBg: aime ? "rgba(232,111,216,.2)" : "rgba(255,255,255,.08)",
+        aimer: () => this.bAimer(e.nom, aime),
+      };
+    };
+
+    const somme = (k) => source.reduce((n, e) => n + e.c[k], 0);
+    const total = somme(bp);
+    const ref = bp === "j7" ? somme("j30") / 4.3 : bp === "j30" ? somme("tot") / 6 : 0;
+    const prog = ref > 0 ? Math.round((total / ref - 1) * 100) : 0;
+
+    const bouge = source
+      .map((e) => {
+        const rang = classees.findIndex((x) => x.nom === e.nom) + 1;
+        const prec = e.p[bp];
+        return { nom: e.nom, d: prec > 0 ? prec - rang : 0 };
+      })
+      .filter((x) => x.d !== 0)
+      .sort((a, b) => Math.abs(b.d) - Math.abs(a.d))
+      .slice(0, 3)
+      .map((x) => ({
+        nom: x.nom,
+        txt: (x.d > 0 ? "▲ " : "▼ ") + Math.abs(x.d) + (Math.abs(x.d) > 1 ? " places" : " place"),
+        fg: x.d > 0 ? "#7be0a8" : "#f0899b",
+      }));
+
+    const reste = Math.max(0, classees.length - 8);
+
+    return {
+      bQuoiMot: marques ? "marques" : "pièces",
+      bMesureMot: bm === "coeurs" ? "cœurs" : bm === "elan" ? "élan" : bm === "suivis" ? "abonnés" : "note",
+      bPeriodeMot: MOT_PERIODE[bp],
+      bAvecPeriode: suitLeRang,
+      bMenuQuoi: bMenu === "quoi",
+      bMenuMesure: bMenu === "mesure",
+      bMenuPeriode: bMenu === "periode",
+      bTapQuoi: () => this.bBascule("quoi"),
+      bTapMesure: () => this.bBascule("mesure"),
+      bTapPeriode: () => this.bBascule("periode"),
+      bOptQuoi: this.bOpt("bQuoi", bQuoi, [
+        { v: "marques", nom: "marques", note: MARQUES.length + " au total" },
+        { v: "pieces", nom: "pièces", note: PIECES.length + " au total" },
+      ]),
+      bOptMesure: this.bOpt("bMesure", bm, [
+        { v: "coeurs", nom: "cœurs", note: "volume" },
+        { v: "elan", nom: "élan", note: "part récente" },
+        ...(marques ? [{ v: "suivis", nom: "abonnés", note: "audience" }] : []),
+        { v: "note", nom: "note", note: "min. " + SEUIL_AVIS + " avis" },
+      ]),
+      bOptPeriode: this.bOpt("bPeriode", bp, [
+        { v: "j7", nom: "7 jours", note: "" },
+        { v: "j30", nom: "30 jours", note: "" },
+        ...(bm === "elan" ? [] : [{ v: "tot", nom: "depuis toujours", note: "" }]),
+      ]),
+      bPodium: classees.slice(0, 3).map(carte),
+      bRangs: classees.slice(3, 8).map((e, i) => carte(e, i + 3)),
+      bTotal: fr(total),
+      bProg: (prog >= 0 ? "▲ " : "▼ ") + Math.abs(prog) + " %",
+      bProgFg: prog >= 0 ? "#7be0a8" : "#f0899b",
+      bAvecProg: ref > 0,
+      bResumeUnite: "cœurs donnés · " + MOT_PERIODE[bp],
+      bBouge: bouge,
+      bReste: "Voir les " + reste + " suivantes",
+      bAvecReste: reste > 0,
+      bVides: marques ? "27 marques de l'annuaire n'ont encore aucun cœur." : "9 pièces notées n'ont encore aucun cœur.",
+    };
+  }
+
+  renderVals() {
+    const { quoi, periode, rayon } = this.state;
+    const tri = this.tri;
+    const marques = quoi === "marques";
+    const source = marques ? MARQUES : PIECES;
+    const avecNotes = this.props.avecNotes ?? true;
+    const combien = this.props.lignes ?? 10;
+
+    /* Les rayons se dérivent de ce qui est à l'écran, comme le compteur :
+       on n'annonce jamais un rayon dont la liste serait vide. */
+    const comptes = new Map();
+    source.forEach((e) => comptes.set(e.rayon, (comptes.get(e.rayon) ?? 0) + 1));
+    const rayons = [
+      { nom: "Tout", slug: null, compte: source.length },
+      ...[...comptes.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([nom, compte]) => ({ nom, slug: nom, compte })),
+    ].map((r) => {
+      const e = this.etat(r.slug === rayon);
+      return { ...r, bg: e.bg, fg: e.fg, choisir: () => this.poser("rayon", r.slug) };
+    });
+
+    const filtrees = rayon ? source.filter((e) => e.rayon === rayon) : source;
+    const classees = [...filtrees].sort((a, b) => this.valeur(b, tri) - this.valeur(a, tri));
+    const visibles = classees.slice(0, combien);
+    const sommet = this.valeur(classees[0] ?? {}, "coeurs") || 1;
+
+    const lignes = visibles.map((e, i) => {
+      const rang = i + 1;
+      const prec = e.p[periode];
+      const ecart = prec > 0 ? prec - rang : null;
+      const suitLeRang = tri === "coeurs" || tri === "elan";
+      const c = this.courbe(e.h);
+      const elan = e.c.tot > 0 ? Math.round((e.c[periode] / e.c.tot) * 100) : 0;
+      const noteLue = e.avis >= SEUIL_AVIS;
+      return {
+        rang,
+        nom: e.nom,
+        sous: marques ? e.rayon : `${e.marque} · ${e.rayon}`,
+        initiales: e.nom.replace(/[^A-Za-zÀ-ÿ ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((m) => m[0]).join("").toUpperCase(),
+        coeurs: fr(e.c[periode]),
+        part: `${Math.max(6, Math.round((e.c[periode] / sommet) * 100))}%`,
+        elan: periode === "tot" ? "—" : `${elan} %`,
+        elanFg: periode === "tot" ? "rgba(255,255,255,.35)" : elan >= 25 ? "#7be0a8" : elan >= 12 ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.55)",
+        suivis: marques ? fr(e.suivis) : "—",
+        note: noteLue ? e.note.toFixed(1).replace(".", ",") : "—",
+        avis: noteLue ? `${e.avis} avis` : `${e.avis} avis · min. ${SEUIL_AVIS}`,
+        noteFg: noteLue ? "#fff" : "rgba(255,255,255,.35)",
+        delta: !suitLeRang ? "·" : ecart === null ? "NEW" : ecart > 0 ? `▲${ecart}` : ecart < 0 ? `▼${-ecart}` : "—",
+        deltaFg: !suitLeRang ? "rgba(255,255,255,.28)" : ecart === null ? "#e86fd8" : ecart > 0 ? "#7be0a8" : ecart < 0 ? "#f0899b" : "rgba(255,255,255,.45)",
+        spark: c.points,
+        sparkY: c.fin,
+        sparkFg: c.monte ? "rgba(123,224,168,.9)" : "rgba(240,137,155,.85)",
+        aime: !!e.aime,
+        pasAime: !e.aime,
+      };
+    });
+
+    const totalMesure = filtrees.reduce((n, e) => n + e.c[periode], 0);
+    const mot = marques ? "marques" : "pièces";
+
+    return {
+      ...this.bVals(),
+      lignes,
+      rayons,
+      avecNotes,
+      avecTendance: this.props.avecTendance ?? true,
+      motEntite: marques ? "MARQUE" : "PIÈCE",
+      resume: `${fr(totalMesure)} cœurs · ${filtrees.length} ${mot} classées · ${MOT_PERIODE[periode]}`,
+      pied: `${visibles.length} sur ${classees.length} ${mot} · trié par ${tri === "coeurs" ? "cœurs" : tri === "elan" ? "élan" : tri === "suivis" ? "suivis" : "note"}`,
+      ongletMarques: this.etat(marques),
+      ongletPieces: this.etat(!marques),
+      p7: this.etat(periode === "j7"),
+      p30: this.etat(periode === "j30"),
+      ptot: this.etat(periode === "tot"),
+      hCoeurs: this.entete("coeurs"),
+      hElan: this.entete("elan"),
+      hSuivis: this.entete("suivis"),
+      hNote: this.entete("note"),
+      voirMarques: () => this.poser("quoi", "marques"),
+      voirPieces: () => this.poser("quoi", "pieces"),
+      mettre7: () => this.poser("periode", "j7"),
+      mettre30: () => this.poser("periode", "j30"),
+      mettreTot: () => this.poser("periode", "tot"),
+      trierCoeurs: () => this.poser("tri", "coeurs"),
+      trierElan: () => this.poser("tri", "elan"),
+      trierSuivis: () => this.poser("tri", "suivis"),
+      trierNote: () => this.poser("tri", "note"),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

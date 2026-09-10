@@ -73,6 +73,8 @@ export default function SuppressionCompte({ email }: { email: string }) {
         <button
           type="button"
           onClick={() => setOuvert(true)}
+          data-curseur-zone="danger"
+          data-curseur-mot="Supprimer"
           className="mt-4 inline-flex min-h-[44px] items-center rounded-full border border-[#c2273f] px-5 text-[12.5px] font-extrabold text-white transition hover:bg-[rgba(194,39,63,0.35)] active:scale-[.97] sm:min-h-0 sm:py-2.5"
         >
           Supprimer mon compte
@@ -104,6 +106,8 @@ export default function SuppressionCompte({ email }: { email: string }) {
               type="button"
               onClick={partir}
               disabled={!concorde || enCours}
+              data-curseur-zone="danger"
+              data-curseur-mot="Supprimer"
               className="inline-flex min-h-[44px] items-center rounded-full bg-[#c2273f] px-5 text-[12.5px] font-extrabold text-white transition hover:opacity-90 active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-2.5"
             >
               {enCours ? "Suppression…" : "Supprimer définitivement"}

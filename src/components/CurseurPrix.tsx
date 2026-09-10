@@ -108,6 +108,8 @@ export default function CurseurPrix({
           onChange={(e) => bougerBas(Number(e.target.value))}
           aria-label="Prix minimum"
           aria-valuetext={format(bas)}
+          data-curseur-zone="regler"
+          data-curseur-mot="Ajuster"
           className={curseur}
         />
         <input
@@ -119,6 +121,8 @@ export default function CurseurPrix({
           onChange={(e) => bougerHaut(Number(e.target.value))}
           aria-label="Prix maximum"
           aria-valuetext={format(haut)}
+          data-curseur-zone="regler"
+          data-curseur-mot="Ajuster"
           className={curseur}
         />
 

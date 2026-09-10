@@ -2683,8 +2683,15 @@ html[data-reglage="1"] .ruban {
 }
 
 /* ---------- le curseur ----------
-   Une flèche aux couleurs de l'ambiance, et rien d'autre. La logique
-   est dans `Curseur.tsx` ; ici, la matière.
+   Une flèche de quinze pixels aux couleurs de l'ambiance, sept autres
+   dessins pour les endroits où une flèche ne dit pas assez, et un mot
+   quand la zone en porte un. La logique est dans `Curseur.tsx` ; ici,
+   la matière.
+
+   VINGT-QUATRE PIXELS, C'ÉTAIT UNE TAILLE D'ICÔNE. Celui du système en
+   fait douze de large : la lourdeur qu'on reprochait à cette flèche
+   n'était pas une affaire de style mais d'échelle. À quinze, elle dit
+   la même chose sans se poser sur la page comme un objet.
 
    IL Y AVAIT UN ANNEAU QUI LA SUIVAIT, ET IL EST PARTI. Il annonçait
    ce qui est cliquable, en remplacement de la petite main du système
@@ -2705,9 +2712,6 @@ html[data-reglage="1"] .ruban {
   opacity: 0;
   line-height: 0;
   will-change: transform;
-  /* Le point de départ des agrandissements est la POINTE, pas le
-     centre : sinon la flèche s'écarterait du pixel visé en grossissant. */
-  transform-origin: 2px 2px;
   transition: opacity .2s;
 }
 
@@ -2716,64 +2720,138 @@ html[data-reglage="1"] .ruban {
    élément de la page. */
 html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
 
-.curseur-point > svg {
+/* ---------- les huit dessins ----------
+   La flèche, l'œil, la loupe, la main, le poing, la double flèche, le
+   rond barré. Tous sont dans la page ; seul le CSS décide lequel se
+   montre, selon l'état écrit sur <html> par le composant.
+
+   CHACUN PORTE SON DÉCALAGE SUR SON ENVELOPPE, PAS SUR SON DESSIN.
+   La flèche se pointe par son coin haut gauche, les glyphes centrés par
+   leur milieu — une main dont le poignet tomberait sur le pixel visé
+   donnerait l'impression d'attraper à côté. Le décalage vit donc sur le
+   `<span>` et l'agrandissement sur le `<svg>` : au même endroit, l'un
+   déplacerait l'autre au survol. */
+.curseur-point > [data-glyphe] {
+  position: absolute;
+  display: none;
+}
+.curseur-point > [data-glyphe] > svg {
   display: block;
   transition: transform .16s cubic-bezier(.2, .9, .25, 1);
 }
 
-/* Le contour blanc, tracé sous la flèche : c'est lui qui la détache
-   d'une photo sombre comme d'une plaque claire. Sans lui, une ambiance
-   foncée rendrait le curseur invisible sur son propre fond. */
-.curseur-contour {
-  fill: #fff;
+.curseur-point > [data-glyphe="fleche"] { top: 0; left: 0; }
+.curseur-point > [data-glyphe="piece"] { top: -8px; left: -11px; }
+.curseur-point > [data-glyphe="zoom"] { top: -10px; left: -10px; }
+.curseur-point > [data-glyphe="main"],
+.curseur-point > [data-glyphe="poing"] { top: -10px; left: -10px; }
+.curseur-point > [data-glyphe="regler"] { top: -7px; left: -12px; }
+.curseur-point > [data-glyphe="inactif"] { top: -9px; left: -9px; }
+
+/* Le point de départ des agrandissements est la POINTE, pas le centre :
+   sinon la flèche s'écarterait du pixel visé en grossissant. Les
+   glyphes centrés, eux, grossissent depuis leur milieu, qui est déjà
+   sur ce pixel. */
+.curseur-point > [data-glyphe="fleche"] > svg { transform-origin: 1px 1px; }
+
+/* ---------- la matière ----------
+   Le contour blanc, et c'est lui qui détache la forme d'une photo
+   sombre comme d'une plaque claire. Sans lui, une ambiance foncée
+   rendrait le curseur invisible sur son propre fond.
+
+   Il était tracé deux fois : un dessin épais en blanc, le même par
+   dessus en couleur. `paint-order: stroke` fait le même effet avec un
+   seul tracé — le contour est peint sous le remplissage au lieu d'être
+   centré sur le bord — ce qui divise par deux le nombre de nœuds à
+   peindre. */
+.curseur-trait {
+  fill: var(--color-ink);
   stroke: #fff;
-  stroke-width: 3.2;
   stroke-linejoin: round;
+  paint-order: stroke;
 }
 
-/* La flèche prend la teinte de l'ambiance choisie dans le compte,
-   ASSOMBRIE. L'accent brut est une couleur de décor : elle est faite
-   pour éclairer un fond, pas pour être lue à vingt pixels. Mélangée à
-   l'encre du site, elle garde son identité et gagne le poids qui la
-   rend nette sur une photo claire.
+/* Sur un lien, la flèche prend la teinte de l'ambiance choisie dans le
+   compte, ASSOMBRIE. L'accent brut est une couleur de décor : il est
+   fait pour éclairer un fond, pas pour être lu à quinze pixels. Mélangé
+   à l'encre du site, il garde son identité et gagne le poids qui le
+   rend net sur une photo claire.
 
    `color-mix` n'est pas compris partout : la teinte brute reste écrite
-   au-dessus, elle sert de repli. */
-.curseur-fleche {
+   au-dessus, elle sert de repli.
+
+   Les autres glyphes restent à l'encre. Ce sont des formes, pas des
+   signaux de thème, et une main violet clair sur une photo claire
+   disparaîtrait. Seuls le danger et l'éteint ont leur couleur propre. */
+html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="fleche"] .curseur-trait {
   fill: rgb(var(--accent-3));
   fill: color-mix(in srgb, rgb(var(--accent-3)) 45%, var(--color-ink));
-  /*
-   * PLUS D'OMBRE PORTÉE ICI. Un filtre se recalcule à chaque image, et
-   * celui-ci suivait la souris : sur un écran rapide, c'est ce qui
-   * faisait décrocher la flèche du pointeur. Le contour blanc en dessous
-   * suffit largement à la détacher du fond, et lui ne coûte rien
-   * puisqu'il est peint une fois pour toutes.
-   */
+}
+html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="fleche"] .curseur-trait {
+  fill: #c2273f;
 }
 
-/* ---------- les trois dessins ----------
-   La flèche, la main ouverte, le poing. Tous les trois sont dans la
-   page ; seul le CSS décide lequel se montre, selon l'état écrit sur
-   <html> par le composant.
-
-   La flèche se pointe par son coin haut gauche, les mains par leur
-   centre : d'où le décalage sur ces dernières. Une main dont le poignet
-   tomberait sur le pixel visé donnerait l'impression d'attraper à côté. */
-.curseur-point > svg { display: none; }
-.curseur-point > [data-glyphe="fleche"] { display: block; }
-
-html[data-curseur-etat="saisir"] .curseur-point > [data-glyphe="fleche"] { display: none; }
+/* ---------- qui se montre, et quand ---------- */
+html:not([data-curseur-etat]) .curseur-point > [data-glyphe="fleche"],
+html[data-curseur-etat=""] .curseur-point > [data-glyphe="fleche"],
+html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="fleche"],
+html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="fleche"],
+html[data-curseur-etat="piece"] .curseur-point > [data-glyphe="piece"],
+html[data-curseur-etat="zoom"] .curseur-point > [data-glyphe="zoom"],
+html[data-curseur-etat="regler"] .curseur-point > [data-glyphe="regler"],
+html[data-curseur-etat="inactif"] .curseur-point > [data-glyphe="inactif"],
 html[data-curseur-etat="saisir"] .curseur-point > [data-glyphe="main"] {
   display: block;
-  margin: -12px 0 0 -12px;
 }
+
+/* Le doigt se referme sur ce qu'on tient. */
 html[data-curseur-etat="saisir"][data-curseur-appui="1"] .curseur-point > [data-glyphe="main"] {
   display: none;
 }
 html[data-curseur-etat="saisir"][data-curseur-appui="1"] .curseur-point > [data-glyphe="poing"] {
   display: block;
-  margin: -12px 0 0 -12px;
 }
+
+/* ---------- l'étiquette ----------
+   Le glyphe répond tout de suite, le mot lève le doute la première
+   fois. Elle se pose SOUS et à DROITE de la pointe : au-dessus, elle
+   recouvrirait ce qu'on est en train de viser.
+
+   Elle reste dans le calque même invisible, à `opacity: 0` et non en
+   `display: none` : c'est ce qui permet d'en mesurer la largeur avant
+   de la montrer, donc de savoir si elle tiendrait sans sortir de la
+   fenêtre. Le délai d'apparition est dans le composant ; ici il n'y a
+   aucune transition, une étiquette qui s'estompe traînerait derrière le
+   curseur. */
+.curseur-mot {
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  opacity: 0;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--color-ink);
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 7px;
+  padding: 5px 7px 6px;
+  white-space: nowrap;
+}
+.curseur-mot[data-vu="1"] { opacity: 1; }
+
+/* Au bord droit de la fenêtre, elle passe de l'autre côté de la pointe.
+   Le calque ne fait aucune largeur : `right` se mesure donc depuis le
+   pixel visé lui-même. */
+.curseur-mot[data-cote="gauche"] {
+  left: auto;
+  right: 14px;
+}
+
+html[data-curseur-etat="danger"] .curseur-mot { background: #c2273f; }
 
 /* Le curseur du système reste masqué sur ces vignettes : sans ça, on
    verrait la main du système ET la nôtre. */
@@ -2784,11 +2862,14 @@ html[data-curseur="1"] [data-saisissable] * {
 
 /* Au survol d'un lien elle s'ouvre, à l'appui elle se resserre. C'est
    ce qui remplace la petite main : sans aucun changement, on ne
-   saurait plus ce qui répond au clic. */
-html[data-curseur-etat="actif"] .curseur-point > svg {
-  transform: scale(1.22);
+   saurait plus ce qui répond au clic.
+
+   Dix-huit pour cent et non vingt-deux : à quinze pixels, l'ancien
+   agrandissement se voyait trop. */
+html[data-curseur-etat="actif"] .curseur-point > [data-glyphe] > svg {
+  transform: scale(1.18);
 }
-html[data-curseur-appui="1"] .curseur-point > svg {
+html[data-curseur-appui="1"] .curseur-point > [data-glyphe] > svg {
   transform: scale(.88);
 }
 
@@ -2803,10 +2884,15 @@ html[data-curseur="1"] a,
 html[data-curseur="1"] button,
 html[data-curseur="1"] [role="button"],
 html[data-curseur="1"] label,
-html[data-curseur="1"] summary {
+html[data-curseur="1"] summary,
+html[data-curseur="1"] [data-curseur-zone],
+html[data-curseur="1"] [data-curseur-zone] * {
   cursor: none;
 }
-html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
+/* La poignée d'un curseur de prix est un `input`, mais on lui dessine
+   sa double flèche : elle sort donc de la liste, sans quoi les deux
+   curseurs se superposeraient. */
+html[data-curseur="1"] :is(input:not([type="range"]), textarea, select, [contenteditable="true"]) {
   cursor: auto;
 }
 
@@ -2814,9 +2900,9 @@ html[data-curseur="1"] :is(input, textarea, select, [contenteditable="true"]) {
    l'autre devient instantané. C'est le mouvement qui gêne, pas
    l'information qu'il porte. */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-anim-choisi="1"]) .curseur-point > svg { transition: none; }
+  html:not([data-anim-choisi="1"]) .curseur-point > [data-glyphe] > svg { transition: none; }
 }
-[data-fige="1"] .curseur-point > svg { transition: none; }
+[data-fige="1"] .curseur-point > [data-glyphe] > svg { transition: none; }
 
 /* Le détourage d'un logo posé sur son propre flou.
    Sans lui, un logo blanc sur fond blanc disparaît dans son propre
@@ -3598,7 +3684,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
    parfaitement fluide, puisqu'il n'est plus dessiné par la page. C'est
    le symptôme qu'on remarque en premier, mais c'était rarement la
    cause. */
-html[data-allege="1"] :is(
+html[data-allege] :is(
   .glass,
   .champ,
   .case,
@@ -3614,7 +3700,7 @@ html[data-allege="1"] :is(
 
 /* Les nappes et le dégradé cessent de dériver. Ils restent PEINTS :
    c'est le fond du site, pas une animation décorative. */
-html[data-allege="1"] :is(
+html[data-allege] :is(
   .bg,
   .bg-degrade,
   .bg-nappe,
@@ -3631,23 +3717,37 @@ html[data-allege="1"] :is(
 /* Un flou de quarante pixels sur une surface large est aussi cher qu'un
    verre dépoli. On le réduit sans le supprimer : sans lui, les nappes
    redeviennent des taches aux bords nets. */
-html[data-allege="1"] .bg-nappe,
-html[data-allege="1"] .bg-lueur {
+html[data-allege] .bg-nappe,
+html[data-allege] .bg-lueur {
   filter: blur(24px) !important;
 }
 
-/* Le curseur du système reprend sa place. */
-html[data-allege="1"][data-curseur="1"],
-html[data-allege="1"][data-curseur="1"] * {
+/*
+ * LE CURSEUR DESSINÉ NE PART QU'AU SECOND PALIER, et c'est une
+ * correction : il partait avec tout le reste, alors qu'il est
+ * justement ce qui redevient fluide une fois le reste enlevé.
+ *
+ * Sa lenteur était un SYMPTÔME. Une machine à puce intégrée qui refloue
+ * seize surfaces de verre à chaque image n'a plus le temps de composer
+ * une flèche, et c'est la flèche qu'on voit traîner. On enlève d'abord
+ * le verre ; s'il reste de quoi tenir soixante images, la flèche tient
+ * avec. Elle est aussi deux fois moins chère qu'avant — quinze pixels
+ * au lieu de vingt-quatre, un tracé au lieu de deux.
+ *
+ * Le palier 2 est donc mesuré APRÈS l'allègement, et lui seul rend la
+ * main au curseur du système. Voir `Menagement`.
+ */
+html[data-allege="2"][data-curseur="1"],
+html[data-allege="2"][data-curseur="1"] * {
   cursor: auto;
 }
-html[data-allege="1"] .curseur-point {
+html[data-allege="2"] .curseur-point {
   display: none !important;
 }
 
 /* Plus d'inclinaison ni de décollement : une carte survolée se contente
    de son ombre, qui ne coûte rien puisqu'elle ne bouge pas. */
-html[data-allege="1"] .card-light[data-relief="1"] {
+html[data-allege] .card-light[data-relief="1"] {
   rotate: none;
   translate: none;
   scale: 1;
@@ -3656,13 +3756,13 @@ html[data-allege="1"] .card-light[data-relief="1"] {
 /* Le défilé des pièces s'arrête aussi : plusieurs fondus simultanés sur
    une grille de cartes, c'est exactement ce qu'une machine lente ne sait
    pas faire. La première photo reste affichée. */
-html[data-allege="1"] .vitrine-photo {
+html[data-allege] .vitrine-photo {
   transition: none !important;
 }
 
 /* Le flou de remplissage est le seul effet coûteux de la vitrine : sur
    une machine qui peine, la photo se pose sur un aplat. */
-html[data-allege="1"] .vitrine-flou {
+html[data-allege] .vitrine-flou {
   filter: none;
   opacity: .3;
 }
@@ -3825,10 +3925,10 @@ html[data-allege="1"] .vitrine-flou {
   background: #fff;
 }
 
-html[data-allege="1"] :is(.bandeau-photo, .bandeau-fond, .bandeau-fleche) {
+html[data-allege] :is(.bandeau-photo, .bandeau-fond, .bandeau-fleche) {
   transition: none !important;
 }
-html[data-allege="1"] .bandeau-flou {
+html[data-allege] .bandeau-flou {
   filter: none;
   opacity: .4;
 }
@@ -3857,4 +3957,187 @@ html[data-allege="1"] .bandeau-flou {
     opacity: 1;
     transform: none;
   }
+}
+
+/* ---------- la barre de requête de l'annuaire ----------
+   Elle remplace deux caissons de verre pleine largeur — l'un pour un
+   champ et un bouton, l'autre pour les filtres dépliés — par une seule
+   ligne posée sur un trait. Recherche et filtres ne sont plus deux
+   outils côte à côte : les critères deviennent des jetons DANS le
+   champ, devant le curseur de saisie, et la requête se lit comme une
+   phrase.
+
+   Ce qui suit est ce que Tailwind ne sait pas dire d'une traite : la
+   typographie du champ, le jeton, le trait de remplissage et les
+   badges. Tout le reste — les filets, les gris de texte — passe par les
+   utilitaires en `white`, qui suivent déjà le mode clair puisque
+   `--color-white` y bascule. */
+
+.requete-champ {
+  min-width: 120px;
+  flex: 1 1 120px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  outline: none;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 22px;
+  /* Le rembourrage vertical n'est pas décoratif : sans lui le champ ne
+     fait que vingt pixels de haut, ce qui se vise mal à la souris et se
+     manque au doigt. La ligne s'aère d'autant, et c'est tant mieux. */
+  padding: 5px 0;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  color: var(--color-white);
+}
+@media (max-width: 639px) {
+  /* Au doigt, toucher le champ ouvre la feuille plein écran : c'est
+     donc la cible d'un geste, et elle prend les quarante-quatre pixels
+     d'usage. */
+  .requete-champ { min-height: 44px; }
+}
+
+.requete-champ::placeholder {
+  color: color-mix(in srgb, var(--color-white) 55%, transparent);
+}
+
+/* Le raccourci, dans le même cadre que le « ENTRÉE » de la ligne
+   active : ce sont deux touches, elles se dessinent pareil. */
+.requete-touche {
+  border: 1px solid color-mix(in srgb, var(--color-white) 30%, transparent);
+  border-radius: 7px;
+  padding: 3px 7px 4px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--color-white) 70%, transparent);
+  white-space: nowrap;
+}
+
+/*
+ * LE TRAIT EST UN ORNEMENT, PAS UNE BARRE DE PROGRESSION.
+ *
+ * Sa portion en accent croît avec le nombre de jetons et la longueur du
+ * texte, et c'est tout ce qu'elle dit : que la requête se remplit. Elle
+ * est plafonnée à soixante pour cent dans le composant — une jauge qui
+ * atteindrait le bout promettrait une fin qui n'existe pas, on peut
+ * toujours ajouter un critère.
+ */
+@property --remplissage {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+.requete-trait {
+  height: 2px;
+  transition: --remplissage .25s ease-out;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--accent-1)) 0 var(--remplissage, 0%),
+    color-mix(in srgb, var(--color-white) 22%, transparent) var(--remplissage, 0%) 100%
+  );
+}
+
+/* ---------- le jeton ----------
+   Deux niveaux : la famille en petites capitales, la valeur en gros.
+   Sans la famille, « France » et « Denim » se ressemblent trop pour
+   qu'on sache lequel filtre l'origine et lequel la matière. */
+.jeton {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 5px 10px 7px;
+  background: #fff;
+  color: var(--color-ink);
+}
+.jeton-famille {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 8.5px;
+  line-height: 1;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #6a5a92;
+}
+.jeton-valeur {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+/* La croix a une cible de vingt-quatre pixels, alors qu'elle n'en
+   dessine que huit : c'est la taille au-dessous de laquelle on la
+   manque, et manquer une croix veut dire retirer le mauvais jeton. */
+.jeton-x {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  margin: -6px -6px -6px 0;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  color: #6a5a92;
+}
+.jeton-x:hover { color: var(--color-ink); }
+
+/* Le premier retour arrière VISE le dernier jeton, le second le retire.
+   Sans cette étape, une frappe de trop dans un champ vide efface un
+   critère qu'on ne voit pas partir. */
+.jeton[data-vise="1"] {
+  outline: 2px solid rgb(var(--accent-1));
+  outline-offset: 1px;
+}
+
+/* ---------- les badges de la liste de suggestions ----------
+   Un aplat d'accent dit « ceci deviendra un jeton », un simple contour
+   dit « ceci est une marque, et cliquer l'ouvre ». C'est la seule
+   couleur pleine de toute la barre : elle ne sert qu'à ça. */
+.badge-type {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  padding: 4px 6px 5px;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  font-size: 8.5px;
+  line-height: 1;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge-critere {
+  background: rgb(var(--accent-1));
+  color: var(--color-ink);
+}
+.badge-marque {
+  border: 1px solid color-mix(in srgb, var(--color-white) 30%, transparent);
+  color: color-mix(in srgb, var(--color-white) 72%, transparent);
+}
+
+/* La portion tapée, soulignée et non surlignée : dans une liste où une
+   ligne sur deux porte déjà un aplat de couleur, un troisième fond
+   rendrait le nom illisible. */
+.requete-tape {
+  background: none;
+  color: inherit;
+  box-shadow: inset 0 -2px 0 rgb(var(--accent-1));
+}
+
+/* ---------- le mode clair ----------
+   Un jeton blanc sur une page devenue blanche n'existe plus. Il garde
+   sa forme et son encre, et prend un fond très pâle avec un contour :
+   c'est le même objet, posé sur l'autre fond. */
+html[data-clair="1"] .jeton {
+  background: rgba(23, 10, 51, .06);
+  border-color: var(--color-ink);
 }

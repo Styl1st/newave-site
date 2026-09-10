@@ -71,7 +71,7 @@ export default function Relief() {
      * voir `Menagement`. Le curseur du système est toujours fluide,
      * puisqu'il n'est pas dessiné par la page.
      */
-    if (allege || document.documentElement.dataset.allege === "1") return;
+    if (allege || Boolean(document.documentElement.dataset.allege)) return;
 
     const racine = document.documentElement;
     /*
