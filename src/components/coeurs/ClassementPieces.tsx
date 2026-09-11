@@ -66,6 +66,7 @@ export default function ClassementPieces({
             <LignePiece
               product={place.product}
               coeurs={place.coeurs}
+              elan={place.elan}
               note={place.note}
               aimee={place.aimee}
             />

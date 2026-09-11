@@ -84,7 +84,10 @@ export default function PremierCoeur({
   );
 
   return (
-    <section className="glass mt-7 p-[22px]">
+    /* L'ancre sert au raccourci de la colonne de droite : c'est là que
+       mènent « les marques sans aucun cœur ». `scroll-mt` pour que le
+       titre ne se cale pas sous la barre de navigation collante. */
+    <section id="sans-coeur" className="glass mt-7 scroll-mt-24 p-[22px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="eyebrow m-0 text-white/50">Personne n&apos;a encore voté pour elles</p>

@@ -1,17 +1,38 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { nouvelleAdresse } from "@/lib/anciennes-adresses";
 import { GATE_COOKIE, fingerprint, isOpenPath } from "@/lib/gate";
 
 /**
- * Deux roles, dans cet ordre :
- *   1. le verrou d'acces, tant que le site est en test
- *   2. le rafraichissement du jeton Supabase, sans quoi une session
+ * Trois roles, dans cet ordre :
+ *   1. les anciennes adresses, en 308
+ *   2. le verrou d'acces, tant que le site est en test
+ *   3. le rafraichissement du jeton Supabase, sans quoi une session
  *      expire au bout d'une heure et l'admin se retrouve deconnecte
  *      en pleine saisie
  */
 export async function middleware(request: NextRequest) {
   const gate = process.env.SITE_PASSWORD;
   const path = request.nextUrl.pathname;
+
+  /*
+   * LES ANCIENNES ADRESSES D'ABORD, ET ICI PLUTOT QUE DANS LA PAGE.
+   *
+   * Une redirection ecrite dans un composant serveur ne rend plus un
+   * vrai 308 : le gabarit a deja commence a couler vers le navigateur,
+   * il n'y a plus de statut a changer, et Next glisse la redirection
+   * dans le flux. Le routeur du navigateur la suit ; un moteur de
+   * recherche, un partage ou un client qui ne lit que l'en-tete, non.
+   * Le middleware, lui, repond avant le rendu. Voir
+   * `lib/anciennes-adresses`.
+   */
+  const ailleurs = nouvelleAdresse(path, request.nextUrl.searchParams);
+  if (ailleurs) {
+    const cible = request.nextUrl.clone();
+    cible.pathname = ailleurs.chemin;
+    cible.search = ailleurs.recherche;
+    return NextResponse.redirect(cible, 308);
+  }
 
   if (gate && !isOpenPath(path)) {
     const given = request.cookies.get(GATE_COOKIE)?.value;

@@ -31,6 +31,7 @@ export default function FeuilleFiltres({
   ouvert,
   onFermer,
   id,
+  titre = "Filtres",
   children,
   pied,
 }: {
@@ -38,6 +39,15 @@ export default function FeuilleFiltres({
   onFermer: () => void;
   /** Celui que porte l'`aria-controls` du bouton qui l'ouvre. */
   id: string;
+  /**
+   * Ce qu'annonce un lecteur d'écran en entrant dans la feuille.
+   *
+   * Elle ne sert plus qu'aux filtres : l'index alphabétique du
+   * téléphone monte dans la même, et « Filtres » y serait un
+   * contresens. Le geste, le voile et le portail, eux, restent
+   * exactement les mêmes — c'est tout l'intérêt de n'en avoir qu'une.
+   */
+  titre?: string;
   children: React.ReactNode;
   /** Le bouton de validation, qui compte ce qui attend derrière. */
   pied: React.ReactNode;
@@ -308,7 +318,7 @@ export default function FeuilleFiltres({
             ref={setPanneau}
             role="dialog"
             aria-modal
-            aria-label="Filtres"
+            aria-label={titre}
             id={id}
             onPointerDown={prendre}
             onPointerMove={deplacer}

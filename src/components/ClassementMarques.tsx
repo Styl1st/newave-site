@@ -119,7 +119,17 @@ export default function ClassementMarques({
    * bien ne contenir que deux marques, et deux marches ne font pas un
    * podium.
    */
-  const assezDeCoeurs = mesure === "coeurs" && (total === undefined || total >= SEUIL_PODIUM);
+  /*
+   * L'ÉLAN OUVRE LE PODIUM AUSSI, et pour la même raison que les cœurs :
+   * c'est le total de l'annuaire qui décide s'il y a de quoi faire un
+   * classement, pas la façon de le lire. Une part calculée sur trois
+   * cœurs ne vaut pas mieux qu'un volume de trois cœurs.
+   *
+   * La note, elle, a son propre seuil — le minimum d'avis — et n'a
+   * jamais eu de podium.
+   */
+  const surLesCoeurs = mesure === "coeurs" || mesure === "elan";
+  const assezDeCoeurs = surLesCoeurs && (total === undefined || total >= SEUIL_PODIUM);
   const podium =
     assezDeCoeurs && classement.length >= MARCHES ? classement.slice(0, MARCHES) : [];
   const suite = classement.slice(podium.length);
@@ -158,14 +168,14 @@ export default function ClassementMarques({
                croit à une page inachevée plutôt qu'à un site jeune. */
             <div className="mb-2.5">
               <p className="eyebrow m-0 text-white/50">
-                {mesure === "coeurs" ? "Les premières mises de côté" : "Le classement"}
+                {surLesCoeurs ? "Les premières mises de côté" : "Le classement"}
                 {/* Le rayon dans le titre, parce que la pastille cliquée
                     est loin au-dessus dès qu'on a descendu quelques
                     lignes : sans ça, on lit une liste courte sans se
                     souvenir qu'on l'a soi-même rétrécie. */}
                 {rayon && <span className="text-white/40"> · {rayon}</span>}
               </p>
-              {mesure === "coeurs" && total !== undefined && total < SEUIL_PODIUM && (
+              {surLesCoeurs && total !== undefined && total < SEUIL_PODIUM && (
                 <p className="m-0 mt-1 text-[12px] leading-relaxed text-white/50">
                   Le podium s&apos;ouvrira à {SEUIL_PODIUM} cœurs.
                 </p>
@@ -200,6 +210,7 @@ export default function ClassementMarques({
                   brand={entree.brand}
                   rang={podium.length > 0 ? podium.length + i + 1 : undefined}
                   coeurs={entree.coeurs}
+                  elan={entree.elan}
                   note={entree.note}
                   favori={{ initial: suivies.has(entree.brand.id) }}
                   onApercu={() => setOuvert(entree.brand.slug)}
@@ -248,7 +259,7 @@ function Marche({
   entree: PlaceMarque;
   suivie: boolean;
 }) {
-  const { brand, coeurs = 0 } = entree;
+  const { brand, coeurs, elan } = entree;
   const premier = place === 1;
 
   /* Même arbitrage que `BrandCard` : le logo passe devant la
@@ -362,9 +373,18 @@ function Marche({
           {/* Le compteur sur le visuel et non sous le nom : c'est lui
               qui justifie la place, il doit se lire dans le même
               regard. */}
-          <span className="absolute bottom-2.5 right-2.5 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.75)] px-2.5 py-1 text-[12px] font-black text-white backdrop-blur-sm sm:text-[13px]">
-            <CoeurPlein className="h-3 w-3" />
-            {enChiffres(coeurs)}
+          <span
+            title={elan ? `${enChiffres(elan.fenetre)} sur ${enChiffres(elan.total)} cœurs` : undefined}
+            className="absolute bottom-2.5 right-2.5 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.75)] px-2.5 py-1 text-[12px] font-black text-white backdrop-blur-sm sm:text-[13px]"
+          >
+            {/* Pas de cœur devant une part : « ♥ 18 » se lit dix-huit
+                cœurs, et c'est dix-huit pour cent. */}
+            {elan ? `${elan.part} %` : (
+              <>
+                <CoeurPlein className="h-3 w-3" />
+                {enChiffres(coeurs ?? 0)}
+              </>
+            )}
           </span>
 
           <div className="pointer-events-auto absolute bottom-2.5 left-2.5 z-4">

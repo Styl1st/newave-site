@@ -88,7 +88,24 @@ export type MiseDeCote = {
 /** Ce que la page des coups de cœur a besoin de savoir, en une fois. */
 export type PaysageDesCoeurs = {
   total: number;
-  classement: { brand: Brand; favoris: number }[];
+  classement: {
+    brand: Brand;
+    /** Les cœurs de la fenêtre demandée. */
+    favoris: number;
+    /**
+     * Et ceux de TOUJOURS, pour la même marque.
+     *
+     * IL NE COÛTE AUCUNE REQUÊTE. L'agrégat complet est lu à chaque
+     * appel de toute façon — c'est lui qui donne le total qui décide
+     * des seuils — et l'on jetait simplement le détail par marque. Le
+     * garder est ce qui rend l'élan calculable sans rien demander de
+     * plus : part = favoris / total de la marque.
+     *
+     * Sur la fenêtre « depuis toujours », les deux nombres sont
+     * évidemment égaux.
+     */
+    total: number;
+  }[];
   sansCoeur: Brand[];
   rayons: Rayon[];
 };
@@ -203,10 +220,21 @@ export async function getPaysageDesCoeurs(
       }[])
     : rows;
 
+  /* Le total par marque, pris sur l'agrégat complet déjà lu plus haut.
+     Une marque absente de cet agrégat n'a jamais reçu de cœur, donc son
+     total vaut ce que la fenêtre en dit — zéro dans les deux cas. */
+  const parTotal = new Map(rows.map((r) => [r.brand_id, r.favoris]));
+
   const classement = classes
     .slice(0, limite)
-    .map((r) => ({ brand: parId.get(r.brand_id), favoris: r.favoris }))
-    .filter((x): x is { brand: Brand; favoris: number } => Boolean(x.brand));
+    .map((r) => ({
+      brand: parId.get(r.brand_id),
+      favoris: r.favoris,
+      total: parTotal.get(r.brand_id) ?? r.favoris,
+    }))
+    .filter((x): x is { brand: Brand; favoris: number; total: number } =>
+      Boolean(x.brand)
+    );
 
   /* Une marque absente de l'agrégat n'a jamais été mise de côté. On les
      prend parmi les PUBLIÉES seulement : proposer un brouillon à

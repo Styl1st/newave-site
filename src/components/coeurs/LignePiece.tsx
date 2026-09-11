@@ -5,6 +5,7 @@ import LikeButton from "../LikeButton";
 import { CoeurPlein } from "../LigneMarque";
 import { enChiffres } from "../chiffres";
 import Notee from "./Notee";
+import type { Elan } from "./classement";
 import type { NoteAffichee } from "./classement";
 import { estUneVideo } from "@/lib/medias";
 import { rayonDe } from "@/lib/rayons";
@@ -43,12 +44,15 @@ import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 export default function LignePiece({
   product,
   coeurs,
+  elan,
   note,
   aimee,
 }: {
   product: Product;
-  /** Coups de cœur reçus. Absent sur l'onglet des notes. */
+  /** Coups de cœur reçus. Absent sur les autres mesures. */
   coeurs?: number;
+  /** La part reçue sur la fenêtre, À LA PLACE des cœurs. Jamais avec. */
+  elan?: Elan;
   /** La note moyenne et son nombre d'avis. Absent sur les onglets de cœurs. */
   note?: NoteAffichee;
   /** Le geste de la personne connectée, et rien que le sien. */
@@ -220,6 +224,24 @@ export default function LignePiece({
           >
             <CoeurPlein className="h-3 w-3 text-[#8a7bab] sm:h-3.5 sm:w-3.5" />
             {enChiffres(coeurs)}
+          </span>
+        )}
+
+        {/*
+          L'ÉLAN S'ÉCRIT EN POUR CENT, ET SANS CŒUR À CÔTÉ.
+          Un cœur suivi de « 18 » se lit « dix-huit cœurs » ; ici c'est
+          une part, et le signe pour cent est ce qui l'empêche d'être
+          confondue avec un volume. Les deux nombres qui la fabriquent
+          sont dans l'infobulle : une part sans son total ne se vérifie
+          pas.
+        */}
+        {elan && (
+          <span
+            title={`${enChiffres(elan.fenetre)} sur ${enChiffres(elan.total)} cœurs`}
+            className="inline-flex shrink-0 items-baseline gap-0.5 text-[13px] font-extrabold tabular-nums text-[var(--color-ink)] sm:mr-1 sm:text-[17px]"
+          >
+            {elan.part}
+            <span className="text-[9px] font-black sm:text-[11px]">%</span>
           </span>
         )}
 

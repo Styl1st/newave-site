@@ -152,6 +152,35 @@ export async function getMostLiked(
 }
 
 /**
+ * Les coups de cœur de TOUJOURS, pour des pièces qu'on a déjà en main.
+ *
+ * C'est la seconde moitié de l'élan : la première, le compte de la
+ * fenêtre, vient de `getMostLiked`. Côté marques les deux nombres
+ * sortent de la même lecture ; ici les deux fenêtres sont deux vues
+ * séparées en base — `product_like_counts` ne compte que sept jours,
+ * `product_like_counts_total` compte tout — d'où cette lecture de plus.
+ *
+ * Elle est bornée aux identifiants déjà classés, jamais à la table
+ * entière : on ne demande le total que des cent vingt pièces qu'on
+ * s'apprête à afficher.
+ */
+export async function getTotauxLikes(ids: string[]): Promise<Map<string, number>> {
+  const vide = new Map<string, number>();
+  if (ids.length === 0) return vide;
+
+  const supabase = await createClient();
+  if (!supabase) return vide;
+
+  const { data } = await supabase
+    .from("product_like_counts_total")
+    .select("product_id, likes")
+    .in("product_id", ids);
+
+  const rows = (data ?? []) as { product_id: string; likes: number }[];
+  return new Map(rows.map((r) => [r.product_id, r.likes]));
+}
+
+/**
  * La place d'une pièce au classement des coups de cœur, ou rien.
  *
  * Une pièce sur le podium ne le savait que depuis la page des

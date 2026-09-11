@@ -1,20 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import SelecteurClassement from "@/components/SelecteurClassement";
 import ClassementEnRayons from "@/components/coeurs/ClassementEnRayons";
+import PhraseDuClassement from "@/components/coeurs/PhraseDuClassement";
+import type { MenuDeLaPhrase } from "@/components/coeurs/PhraseDuClassement";
 import PremierCoeur from "@/components/coeurs/PremierCoeur";
 import RailDesCoeurs from "@/components/coeurs/RailDesCoeurs";
 import type { EnTeteDuRail } from "@/components/coeurs/RailDesCoeurs";
-import SelecteurPeriode from "@/components/coeurs/SelecteurPeriode";
-import type { Contenu, Mesure, RayonVide } from "@/components/coeurs/classement";
+import type { Contenu, Mesure, Quoi } from "@/components/coeurs/classement";
+import {
+  laMesure,
+  leQuoi,
+  MESURE_URL,
+  LIEN_DE_LA_PERIODE,
+  MOT_DE_LA_MESURE_LUE,
+  MOT_DE_LA_PERIODE,
+  MOT_DU_QUOI,
+} from "@/components/coeurs/classement";
 import {
   MISES_DE_COTE_RECENTES,
   RESERVE_A_DECOUVRIR,
   SEUIL_PODIUM,
-  SEUIL_RAYON,
 } from "@/components/coeurs/seuils";
 import { enChiffres } from "@/components/chiffres";
-import { getMostLiked, getMyLikes } from "@/lib/likes";
+import { getMostLiked, getMyLikes, getTotauxLikes } from "@/lib/likes";
 import { getDerniersFavoris, getMyFavorites, getPaysageDesCoeurs } from "@/lib/favorites";
 import type { PaysageDesCoeurs, PeriodeCoeurs } from "@/lib/favorites";
 import { melanger } from "@/lib/melange";
@@ -29,7 +37,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ vue?: string; periode?: string }> };
+type Props = {
+  searchParams: Promise<{
+    quoi?: string;
+    mesure?: string;
+    periode?: string;
+  }>;
+};
 
 /*
  * Trois gestes, trois classements, et surtout : jamais mélangés.
@@ -42,37 +56,36 @@ type Props = { searchParams: Promise<{ vue?: string; periode?: string }> };
  *
  * Les additionner donnerait un chiffre qui ne voudrait plus rien dire.
  *
- * ⚠️ LES CINQ ONGLETS PARTAGENT MAINTENANT LE MÊME GABARIT — ligne de
- * rayons, lignes, colonne de droite — ET CELA NE CHANGE RIEN À CE
- * COMMENTAIRE. Unifier l'APPARENCE n'est pas mélanger les CHIFFRES :
- * chaque onglet garde sa mesure, son vocabulaire et son seuil, et rien
- * dans la page ne sait fabriquer un score composite. C'est même
- * l'inverse : le type `Contenu` n'a de place que pour UNE mesure par
- * ligne, ce qui rend le mélange impossible à écrire par distraction.
+ * ⚠️ LA PHRASE RÉGLABLE A REMPLACÉ LES CINQ ONGLETS, ET CELA NE CHANGE
+ * RIEN À CE COMMENTAIRE. Elle sépare enfin trois questions que les
+ * onglets confondaient — quoi, par quoi, sur quand — mais elle choisit
+ * toujours UNE mesure et ordonne dessus. Rien dans la page ne sait
+ * fabriquer un score composite : le type `Contenu` n'a de place que pour
+ * une mesure par ligne, ce qui rend le mélange impossible à écrire par
+ * distraction.
  */
-const ONGLETS = [
-  { id: "semaine", court: "Du moment", label: "Coups de cœur du moment" },
-  { id: "toujours", court: "Tout temps", label: "Coups de cœur, tout temps" },
-  { id: "marques", court: "Plus suivies", label: "Marques les plus suivies" },
-  { id: "notes-pieces", court: "Pièces notées", label: "Pièces les mieux notées" },
-  { id: "notes-marques", court: "Marques notées", label: "Marques les mieux notées" },
-] as const;
 
-/**
- * La période demandée dans l'adresse, ou « depuis toujours ».
- *
- * Écrit en toutes lettres plutôt qu'avec un transtypage : `?periode=` est
- * une chaîne que n'importe qui peut écrire à la main, et un
- * `as PeriodeCoeurs` la ferait passer pour une valeur du type sans que
- * rien ne l'ait vérifiée. Elle finirait dans un calcul de date.
- */
-function laPeriode(valeur: string | undefined): PeriodeCoeurs {
-  return valeur === "semaine" || valeur === "mois" ? valeur : "toujours";
+/** L'adresse d'un réglage, avec les trois mots en clair. */
+function adresse(quoi: Quoi, mesure: Mesure, periode?: PeriodeCoeurs): string {
+  const p = new URLSearchParams({ quoi, mesure: MESURE_URL[mesure] });
+  if (periode) p.set("periode", periode);
+  return `/populaires?${p}`;
+}
+
+/** La part d'une entrée reçue sur la fenêtre, de 0 à 100. */
+function partDe(fenetre: number, total: number): number {
+  return total > 0 ? Math.round((fenetre / total) * 1000) / 10 : 0;
 }
 
 export default async function PopulairesPage({ searchParams }: Props) {
-  const { vue, periode: periodeDemandee } = await searchParams;
-  const onglet = ONGLETS.some((o) => o.id === vue) ? (vue as string) : "semaine";
+  const { quoi: quoiDemande, mesure: mesureDemandee, periode: periodeDemandee } =
+    await searchParams;
+
+  /* `?vue=` — les cinq anciens onglets — est redirigé en 308 par le
+     middleware, avant tout rendu. Voir `lib/anciennes-adresses`. */
+
+  const quoi = leQuoi(quoiDemande);
+  const mesureVoulue = laMesure(mesureDemandee);
 
   const seuil = await avisMinimum();
 
@@ -83,30 +96,113 @@ export default async function PopulairesPage({ searchParams }: Props) {
    *
    * DEUX LECTURES, ET LA PREMIÈRE DÉCIDE DE LA SECONDE. On lit d'abord
    * « depuis toujours » — c'est la seule fenêtre qui donne le total, donc
-   * la seule qui sache si le sélecteur de période a le droit d'exister.
-   * On ne redemande le classement borné dans le temps que si la réponse
-   * est oui ET que quelqu'un a effectivement choisi une période. Tant que
+   * la seule qui sache si la fenêtre a le droit d'exister. On ne
+   * redemande le classement borné dans le temps que si la réponse est
+   * oui ET qu'une fenêtre a effectivement été choisie. Tant que
    * l'annuaire n'a pas atteint le seuil, la seconde lecture n'est jamais
    * faite : on ne construit pas un delta hebdomadaire que personne ne
    * peut demander.
    */
-  const vueDesCoeurs = onglet === "marques";
-  const paysageComplet: PaysageDesCoeurs = vueDesCoeurs
+  const surDesCoeurs = quoi === "marques" && mesureVoulue !== "avis";
+  const paysageComplet: PaysageDesCoeurs = surDesCoeurs
     ? await getPaysageDesCoeurs()
     : { total: 0, classement: [], sansCoeur: [], rayons: [] };
 
   const surLeSeuil = paysageComplet.total >= SEUIL_PODIUM;
-  const periode = surLeSeuil ? laPeriode(periodeDemandee) : "toujours";
+
+  /*
+   * ------------------------------------------------------------------
+   * CE QUE LA PHRASE A LE DROIT DE DIRE
+   *
+   * Trois règles, et la même à chaque fois : un réglage impossible n'est
+   * pas grisé, il n'est pas là — et s'il était demandé, on retombe sur
+   * le plus proche qui existe. Un menu qui propose ce qu'il refusera
+   * pose une question pour rien.
+   *
+   *   1. La note ne dépend pas du temps : la clause « sur … » disparaît.
+   *   2. Les marques n'ont de fenêtre qu'au-dessus de `SEUIL_PODIUM`
+   *      cœurs sur l'annuaire. En dessous, découper le total en trois
+   *      donne trois listes de presque rien, qui se lisent comme des
+   *      classements alors que ce sont des accidents.
+   *   3. Les pièces n'ont que deux fenêtres, et c'est la base qui le
+   *      dit : `product_like_counts` est une vue figée à sept jours,
+   *      `product_like_counts_total` compte tout. Il n'existe aucune vue
+   *      à trente jours, donc « 30 jours » n'est pas dans le menu.
+   *
+   * L'élan, lui, a besoin d'une fenêtre pour vouloir dire quelque chose :
+   * la part reçue « depuis toujours » vaut cent pour cent par
+   * construction. Sans fenêtre disponible, il n'est pas proposé.
+   * ------------------------------------------------------------------
+   */
+  const fenetresPossibles: PeriodeCoeurs[] =
+    mesureVoulue === "avis"
+      ? []
+      : quoi === "marques"
+        ? surLeSeuil
+          ? ["semaine", "mois", "toujours"]
+          : []
+        : ["semaine", "toujours"];
+
+  const elanTenable = fenetresPossibles.some((f) => f !== "toujours");
+  const mesure: Mesure =
+    mesureVoulue === "elan" && !elanTenable ? "coeurs" : mesureVoulue;
+
+  /* L'élan retire « depuis toujours » du menu : cent pour cent par
+     construction n'est pas un classement. */
+  const fenetres = mesure === "elan" ? fenetresPossibles.filter((f) => f !== "toujours") : fenetresPossibles;
+
+  /*
+   * SANS `?periode=`, C'EST SEPT JOURS ET NON « TOUJOURS ».
+   *
+   * `laPeriode` répond « toujours » à une adresse muette, parce qu'elle
+   * a été écrite pour l'ancien classement des marques, où l'absence de
+   * paramètre voulait dire le total. La phrase, elle, ouvre sur
+   * l'équivalent de l'ancien onglet « du moment ». La valeur par défaut
+   * appartient donc à la page, pas à la fonction de lecture.
+   */
+  const demandee: PeriodeCoeurs =
+    periodeDemandee === "semaine" ||
+    periodeDemandee === "mois" ||
+    periodeDemandee === "toujours"
+      ? periodeDemandee
+      : "semaine";
+  const periode: PeriodeCoeurs = fenetres.includes(demandee)
+    ? demandee
+    : (fenetres[0] ?? "toujours");
+
   const paysage =
-    periode === "toujours" ? paysageComplet : await getPaysageDesCoeurs(60, periode);
+    !surDesCoeurs || periode === "toujours"
+      ? paysageComplet
+      : await getPaysageDesCoeurs(60, periode);
 
   const marques = paysage.classement;
-  const marquesNotees = onglet === "notes-marques" ? await getMieuxNoteesMarques() : [];
-  const piecesNotees = onglet === "notes-pieces" ? await getMieuxNoteesPieces() : [];
+  const marquesNotees =
+    quoi === "marques" && mesure === "avis" ? await getMieuxNoteesMarques() : [];
+  const piecesNotees =
+    quoi === "pieces" && mesure === "avis" ? await getMieuxNoteesPieces() : [];
+
+  /*
+   * Les pièces n'ont que deux fenêtres en base : toute fenêtre bornée se
+   * lit sur la vue des sept jours. Voir la règle 3 plus haut.
+   */
   const classement =
-    onglet === "semaine" || onglet === "toujours"
-      ? await getMostLiked(120, onglet === "toujours" ? "toujours" : "semaine")
+    quoi === "pieces" && mesure !== "avis"
+      ? await getMostLiked(120, periode === "toujours" ? "toujours" : "semaine")
       : [];
+
+  /*
+   * L'ÉLAN COÛTE UNE LECTURE DE PLUS, MAIS D'UN SEUL CÔTÉ.
+   *
+   * Pour une marque, le total de toujours sort de la même lecture que le
+   * compte de la fenêtre — l'agrégat complet est lu à chaque fois pour
+   * établir le seuil, voir `getPaysageDesCoeurs`. Pour une pièce, les
+   * deux fenêtres sont deux vues séparées : il faut donc redemander les
+   * totaux, bornés aux pièces déjà classées.
+   */
+  const totauxPieces =
+    quoi === "pieces" && mesure === "elan"
+      ? await getTotauxLikes(classement.map((c) => c.product.id))
+      : new Map<string, number>();
 
   const idsAimes = [
     ...classement.map((c) => c.product.id),
@@ -128,7 +224,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
    * coûterait plusieurs centaines de kilo-octets pour un bloc de quatre
    * cartes. Voir `RESERVE_A_DECOUVRIR`.
    */
-  const aDecouvrir = vueDesCoeurs
+  const aDecouvrir = surDesCoeurs
     ? melanger(paysageComplet.sansCoeur).slice(0, RESERVE_A_DECOUVRIR)
     : [];
 
@@ -139,7 +235,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
    * décider chacun de son côté finirait par les faire diverger : on
    * verrait soit les deux, soit aucun des deux.
    */
-  const decouverteSuit = vueDesCoeurs && aDecouvrir.length > 0;
+  const decouverteSuit = surDesCoeurs && aDecouvrir.length > 0;
 
   /*
    * Les dernières mises de côté : la marque et l'ancienneté, jamais par
@@ -182,136 +278,142 @@ export default async function PopulairesPage({ searchParams }: Props) {
     aInterroger.length > 0 ? await getMyFavorites(aInterroger) : new Set<string>();
 
   /*
-   * CE QUE COMPTE L'ONGLET, EN UN SEUL ENDROIT.
-   *
-   * Deux vocabulaires, pas plus : des cœurs — favoris de marque ou coups
-   * de cœur sur une pièce — ou des avis. Toute la page en descend : le
-   * mot des pastilles de rayon, la mesure au bout de chaque ligne, le
-   * bloc du haut du rail. Le déduire une fois ici évite qu'un des trois
-   * se trompe tout seul.
-   */
-  const mesure: Mesure =
-    onglet === "notes-pieces" || onglet === "notes-marques" ? "avis" : "coeurs";
-
-  /*
-   * LE CLASSEMENT, RAMENÉ À UNE SEULE FORME POUR LES CINQ ONGLETS.
+   * LE CLASSEMENT, RAMENÉ À UNE SEULE FORME POUR LES SIX RÉGLAGES.
    *
    * Chaque entrée porte ses rayons, parce que la question « dans quel
    * rayon est-ce rangé ? » ne se répond pas de la même façon des deux
    * côtés : une marque déclare ses catégories dans sa fiche, une pièce
    * doit passer par la déduction de `lib/rayons`. En posant la réponse
-   * ici, sur le serveur, le filtre du navigateur redevient une seule
-   * ligne de code — la même pour les cinq. Voir `rayonsDeLAffichage`.
+   * ici, sur le serveur, chaque entrée sait où elle est rangée sans
+   * qu'on ait à le redemander. La ligne de filtre qui s'en servait est
+   * partie, mais la fiche de marque et la vitrine, elles, l'affichent
+   * toujours.
+   *
+   * UNE SEULE MESURE PAR ENTRÉE, et le `...` ci-dessous est ce qui le
+   * garantit : c'est `coeurs` OU `elan`, jamais les deux champs à la
+   * fois. Le type n'a de place que pour l'un des trois.
    *
    * Aucune de ces formes n'a de champ où loger qui a mis quoi de côté ou
    * qui a aimé quoi : `suivies` et `aimee` ne parlent que de la personne
    * qui regarde, et de ses propres gestes.
    */
   const contenu: Contenu =
-    onglet === "marques"
+    quoi === "marques"
       ? {
           quoi: "marques",
-          entrees: marques.map(({ brand, favoris }) => ({
-            brand,
-            rayons: brand.categories ?? [],
-            coeurs: favoris,
-          })),
+          entrees:
+            mesure === "avis"
+              ? marquesNotees.map(({ brand, note }) => ({
+                  brand,
+                  rayons: brand.categories ?? [],
+                  note,
+                }))
+              : marques.map(({ brand, favoris, total }) => ({
+                  brand,
+                  rayons: brand.categories ?? [],
+                  ...(mesure === "elan"
+                    ? { elan: { fenetre: favoris, total, part: partDe(favoris, total) } }
+                    : { coeurs: favoris }),
+                })),
           suivies: [...mesFavoris],
-          total: paysageComplet.total,
+          total: mesure === "avis" ? undefined : paysageComplet.total,
         }
-      : onglet === "notes-marques"
-        ? {
-            quoi: "marques",
-            entrees: marquesNotees.map(({ brand, note }) => ({
-              brand,
-              rayons: brand.categories ?? [],
-              note,
-            })),
-            suivies: [...mesFavoris],
-          }
-        : onglet === "notes-pieces"
-          ? {
-              quoi: "pieces",
-              entrees: piecesNotees.map(({ product, note }) => ({
-                product,
-                rayons: [rayonDe(product)],
-                note,
-                aimee: myLikes.has(product.id),
-              })),
-            }
-          : {
-              quoi: "pieces",
-              entrees: classement.map(({ product, likes }) => ({
-                product,
-                rayons: [rayonDe(product)],
-                coeurs: likes,
-                aimee: myLikes.has(product.id),
-              })),
-            };
+      : {
+          quoi: "pieces",
+          entrees:
+            mesure === "avis"
+              ? piecesNotees.map(({ product, note }) => ({
+                  product,
+                  rayons: [rayonDe(product)],
+                  note,
+                  aimee: myLikes.has(product.id),
+                }))
+              : classement.map(({ product, likes }) => {
+                  const total = totauxPieces.get(product.id) ?? likes;
+                  return {
+                    product,
+                    rayons: [rayonDe(product)],
+                    ...(mesure === "elan"
+                      ? { elan: { fenetre: likes, total, part: partDe(likes, total) } }
+                      : { coeurs: likes }),
+                    aimee: myLikes.has(product.id),
+                  };
+                }),
+        };
 
   /*
-   * Les rayons de l'annuaire qui n'ont encore aucun cœur.
+   * L'ÉLAN NE SORT PAS DE LA BASE DANS SON ORDRE.
    *
-   * Ils ne se dérivent pas de l'affichage — par définition, ils n'y sont
-   * pas — et ils ne concernent que le classement des marques suivies :
-   * c'est le seul où « et celles que personne n'a encore vues ? » est
-   * une vraie question, et le seul dont la zone du bas mène quelque part
-   * (l'annuaire filtré). Voir `LigneDesRayons`.
+   * Les deux lectures rendent leurs lignes triées par VOLUME — c'est ce
+   * qu'elles savent faire, et c'est l'ordre de la mesure « cœurs ». La
+   * part, elle, se calcule ici : il faut donc reclasser, sinon la phrase
+   * annoncerait un classement par élan sur un ordre de cœurs.
    *
-   * Ils se lisent sur le paysage DE LA PÉRIODE affichée et non sur celui
-   * de toujours : en regardant « cette semaine », un rayon qui n'a rien
-   * reçu cette semaine-là est bien un rayon sans cœur à l'écran.
+   * À part égale, le volume départage. Sans ce second critère, toutes
+   * les entrées à cent pour cent — un cœur reçu cette semaine, un seul
+   * depuis toujours — se rangeraient au hasard de la lecture précédente.
+   * Ça ne les empêche pas d'être en tête : c'est la limite connue de
+   * cette mesure sur un site jeune, et l'inventer un seuil de volume
+   * serait fabriquer une règle que personne n'a écrite.
    */
-  const rayonsVides: RayonVide[] = vueDesCoeurs
-    ? paysage.rayons
-        .filter((r) => r.coeurs < SEUIL_RAYON)
-        .map((r) => ({ nom: r.nom, slug: r.slug, marques: r.marques }))
-    : [];
+  if (mesure === "elan") {
+    contenu.entrees.sort(
+      (a, b) => (b.elan?.part ?? 0) - (a.elan?.part ?? 0) ||
+        (b.elan?.fenetre ?? 0) - (a.elan?.fenetre ?? 0)
+    );
+  }
 
   /*
-   * LE PREMIER BLOC DU RAIL DIT LA RÈGLE DE L'ONGLET, PAS CELLE DU
-   * VOISIN. Une jauge « 40 sur 100 cœurs » posée au-dessus d'un
+   * LE PREMIER BLOC DU RAIL DIT LA RÈGLE DU RÉGLAGE EN COURS, PAS CELLE
+   * DU VOISIN. Une jauge « 40 sur 100 cœurs » posée au-dessus d'un
    * classement de notes annoncerait un seuil qui ne s'y applique pas —
    * et sur un classement public, un chiffre faux coûte plus cher qu'un
    * chiffre absent.
    */
   const entete: EnTeteDuRail =
-    onglet === "marques"
-      ? { genre: "podium", total: paysageComplet.total, seuil: SEUIL_PODIUM }
-      : mesure === "avis"
-        ? { genre: "avis", seuil }
+    mesure === "avis"
+      ? { genre: "avis", seuil }
+      : quoi === "marques"
+        ? { genre: "podium", total: paysageComplet.total, seuil: SEUIL_PODIUM }
         : {
             genre: "coups-de-coeur",
             total: classement.reduce((somme, c) => somme + c.likes, 0),
             pieces: classement.length,
-            fenetre: onglet === "toujours" ? "toujours" : "semaine",
+            fenetre: periode === "toujours" ? "toujours" : "semaine",
           };
 
   const explication =
-    onglet === "notes-pieces" || onglet === "notes-marques" ? (
+    mesure === "avis" ? (
       <>
         Des <strong className="font-extrabold text-white">notes</strong>, pas des cœurs.
         Il faut au moins {seuil} avis pour apparaître.
       </>
-    ) : onglet === "marques" ? (
+    ) : mesure === "elan" ? (
+      <>
+        L&apos;élan, c&apos;est la{" "}
+        <strong className="font-extrabold text-white">part des cœurs reçue</strong> sur la
+        fenêtre choisie, pas leur nombre. Une entrée qui vient d&apos;arriver y monte plus
+        haut qu&apos;une autre qui a déjà tout reçu.
+      </>
+    ) : quoi === "marques" ? (
       <>
         <strong className="font-extrabold text-white">
           Rien n&apos;est acheté ici : c&apos;est le nombre de cœurs, et rien d&apos;autre,
           qui fait l&apos;ordre.
         </strong>
       </>
-    ) : onglet === "toujours" ? (
+    ) : periode === "toujours" ? (
       <>
         Le total des coups de cœur depuis l&apos;ouverture du site :{" "}
         <strong className="font-extrabold text-white">rien n&apos;est jamais effacé</strong>.
-        L&apos;onglet « du moment » ne fait que compter les plus récents.
+        Les sept derniers jours ne font que compter les plus récents.
       </>
     ) : (
       <>
         Ce que la communauté préfère en ce moment : seuls les coups de cœur des{" "}
         <strong className="font-extrabold text-white">sept derniers jours</strong> sont
-        comptés ici. Les anciens ne disparaissent pas pour autant, ils vivent dans
-        l&apos;onglet « depuis toujours ». Rien ne s&apos;achète pour figurer dans ces
+        comptés ici. Les anciens ne disparaissent pas pour autant, ils vivent dans la
+        fenêtre « depuis toujours ». Rien ne s&apos;achète pour figurer dans ces
         classements.
       </>
     );
@@ -325,37 +427,105 @@ export default async function PopulairesPage({ searchParams }: Props) {
    * savoir deux ensembles différents. Ce qu'on affiche ici est la somme
    * exacte de ce qui est classé en dessous, ni plus ni moins.
    *
-   * C'est aussi la règle qui gouverne la ligne de rayons depuis qu'elle
-   * coiffe les cinq onglets : elle additionne les entrées affichées, et
-   * ne va rien redemander en base. Voir `rayonsDeLAffichage`.
+   *
+   * SUR L'ÉLAN, LE COMPTEUR REVIENT AU VOLUME. Additionner des
+   * pourcentages ne veut rien dire, et une moyenne de parts serait un
+   * chiffre inventé. On annonce donc les cœurs de la fenêtre, qui sont
+   * exactement ce que la part rapporte au total.
    */
+  const combien = contenu.entrees.length;
   const compteurs =
-    onglet === "marques"
-      ? marques.length > 0
-        ? `${enChiffres(marques.reduce((somme, m) => somme + m.favoris, 0))} cœurs · ${marques.length} marques classées`
-        : null
-      : onglet === "semaine" || onglet === "toujours"
-        ? classement.length > 0
-          ? `${enChiffres(classement.reduce((somme, c) => somme + c.likes, 0))} coups de cœur · ${classement.length} pièces classées`
-          : null
-        : onglet === "notes-pieces"
-          ? piecesNotees.length > 0
-            ? `${piecesNotees.length} pièces notées · ${seuil} avis minimum`
-            : null
-          : marquesNotees.length > 0
-            ? `${marquesNotees.length} marques notées · ${seuil} avis minimum`
-            : null;
+    combien === 0
+      ? null
+      : mesure === "avis"
+        ? `${combien} ${quoi === "marques" ? "marques notées" : "pièces notées"} · ${seuil} avis minimum`
+        : quoi === "marques"
+          ? `${enChiffres(marques.reduce((somme, m) => somme + m.favoris, 0))} cœurs · ${combien} marques classées`
+          : `${enChiffres(classement.reduce((somme, c) => somme + c.likes, 0))} coups de cœur · ${combien} pièces classées`;
 
   const vide =
-    onglet === "marques"
-      ? periode === "toujours"
-        ? "Aucune marque n'a encore été mise en favori."
-        : "Aucune marque n'a été mise de côté sur cette période."
-      : onglet === "notes-marques"
+    mesure === "avis"
+      ? quoi === "marques"
         ? "Aucune marque n'a encore reçu assez d'avis."
-        : onglet === "notes-pieces"
-          ? "Aucune pièce n'a encore reçu assez d'avis."
-          : "Personne n'a encore donné de coup de cœur.";
+        : "Aucune pièce n'a encore reçu assez d'avis."
+      : quoi === "marques"
+        ? periode === "toujours"
+          ? "Aucune marque n'a encore été mise en favori."
+          : "Aucune marque n'a été mise de côté sur cette période."
+        : "Personne n'a encore donné de coup de cœur.";
+
+  /*
+   * LES TROIS MENUS DE LA PHRASE SE CONSTRUISENT ICI, ET C'EST VOULU.
+   *
+   * Les règles de disponibilité — quelle fenêtre existe, quelle mesure
+   * est tenable, sous quel seuil — sont déjà écrites plus haut, à côté
+   * des lectures qu'elles gouvernent. Les redonner au composant lui
+   * demanderait de les rejouer, et deux copies d'une même règle finissent
+   * toujours par diverger. Il ne reçoit donc que des listes toutes
+   * prêtes, avec leurs adresses.
+   *
+   * La fenêtre du lien SUIT la mesure du lien : passer de « note » à
+   * « cœurs » redonne la fenêtre par défaut plutôt que d'emmener une
+   * période qui n'existait pas dans la phrase qu'on quitte.
+   */
+  const fenetrePour = (m: Mesure): PeriodeCoeurs | undefined => {
+    if (m === "avis") return undefined;
+    if (m === mesure) return periode;
+    const possibles = m === "elan" ? fenetres.filter((f) => f !== "toujours") : fenetres;
+    return possibles.includes(periode) ? periode : (possibles[0] ?? "toujours");
+  };
+
+  const menuQuoi: MenuDeLaPhrase = {
+    mot: MOT_DU_QUOI[quoi],
+    libelle: "Classer",
+    options: (["marques", "pieces"] as Quoi[]).map((q) => ({
+      mot: MOT_DU_QUOI[q],
+      href: adresse(q, mesure, fenetrePour(mesure)),
+      actif: q === quoi,
+    })),
+  };
+
+  const GLOSE: Record<Mesure, string> = {
+    coeurs: "volume",
+    elan: "part récente",
+    avis: `min. ${seuil} avis`,
+  };
+
+  const menuMesure: MenuDeLaPhrase = {
+    mot: MOT_DE_LA_MESURE_LUE[mesure],
+    libelle: "Classer par",
+    /* L'élan n'est proposé que si une fenêtre peut le porter : sans
+       fenêtre, la part vaut cent pour cent et ne classe rien. */
+    options: (elanTenable
+      ? (["coeurs", "elan", "avis"] as Mesure[])
+      : (["coeurs", "avis"] as Mesure[])
+    ).map((m) => ({
+      mot: MOT_DE_LA_MESURE_LUE[m],
+      glose: GLOSE[m],
+      href: adresse(quoi, m, fenetrePour(m)),
+      actif: m === mesure,
+    })),
+  };
+
+  /*
+   * La clause « sur … » existe dès que la mesure dépend du temps, même
+   * quand il n'y a rien à régler : c'est `PhraseDuClassement` qui décide
+   * alors de l'écrire sans menu. Elle ne disparaît que sur la note, qui
+   * ne connaît pas de fenêtre.
+   */
+  const menuPeriode: MenuDeLaPhrase | undefined =
+    mesure === "avis"
+      ? undefined
+      : {
+          mot: MOT_DE_LA_PERIODE[periode],
+          lien: LIEN_DE_LA_PERIODE[periode],
+          libelle: "Sur",
+          options: fenetres.map((f) => ({
+            mot: MOT_DE_LA_PERIODE[f],
+            href: adresse(quoi, mesure, f),
+            actif: f === periode,
+          })),
+        };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -375,45 +545,28 @@ export default async function PopulairesPage({ searchParams }: Props) {
       </header>
 
       {/*
-       * « Recompté à chaque visite » et non « mis à jour ce matin » :
-       * cette page est en `force-dynamic`, le classement est donc établi
-       * au moment où elle s'ouvre. Annoncer une heure de calcul qui
-       * n'existe pas serait faux, et sur un classement public un chiffre
-       * faux coûte plus cher qu'un chiffre absent.
+       * LA PHRASE A REMPLACÉ CINQ ONGLETS ET UNE LIGNE DE PÉRIODE.
+       *
+       * « Recompté à chaque visite » reste écrit à côté d'elle et non
+       * « mis à jour ce matin » : cette page est en `force-dynamic`, le
+       * classement est établi au moment où elle s'ouvre. Annoncer une
+       * heure de calcul qui n'existe pas serait faux, et sur un
+       * classement public un chiffre faux coûte plus cher qu'un chiffre
+       * absent.
        */}
-      <SelecteurClassement
-        onglets={ONGLETS}
-        actif={onglet}
-        base="/populaires"
-        defaut="semaine"
-        prefixe="Classement"
-        aside="Recompté à chaque visite"
-      />
+      {/* `relative z-30` : les menus de la phrase s'ouvrent PAR-DESSUS le
+          classement. Sans ça, la grille qui suit — elle porte `rise`,
+          donc une animation, donc son propre plan — passerait devant, et
+          les options seraient visibles mais pas cliquables. */}
+      <div className="relative z-30 mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <PhraseDuClassement quoi={menuQuoi} mesure={menuMesure} periode={menuPeriode} />
+        <p className="m-0 shrink-0 text-[10.5px] font-black uppercase tracking-[0.18em] text-white/45">
+          Recompté à chaque visite
+        </p>
+      </div>
 
       {/*
-       * LE SÉLECTEUR DE PÉRIODE N'EXISTE QU'AU-DESSUS DE CENT CŒURS, ET
-       * C'EST UNE RÈGLE, PAS UN OUBLI.
-       *
-       * En dessous, découper le total en trois fenêtres donne trois
-       * listes de presque rien : « cette semaine » y affiche deux marques
-       * à un cœur, ce qui se lit comme un classement alors que c'est un
-       * accident. On ne le grise pas et on ne l'explique pas — un réglage
-       * qu'on voit mais qu'on n'a aucune raison d'utiliser est une
-       * question posée pour rien. Il n'apparaît pas du tout.
-       *
-       * ET IL NE TOUCHE QUE LE CLASSEMENT DES MARQUES. Les onglets
-       * au-dessus tiennent séparés trois gestes qui ne s'additionnent
-       * jamais — le cœur, le favori, l'avis, voir `ONGLETS` — et cette
-       * seconde ligne ne choisit pas parmi eux : elle dit seulement sur
-       * quelle fenêtre de temps on compte les favoris. Deux questions,
-       * deux lignes.
-       */}
-      {vueDesCoeurs && surLeSeuil && (
-        <SelecteurPeriode actif={periode} vue={onglet} />
-      )}
-
-      {/*
-       * LE MÊME GABARIT POUR LES CINQ CLASSEMENTS.
+       * LE MÊME GABARIT POUR TOUS LES RÉGLAGES.
        *
        * C'était le vrai défaut de cette page : la ligne de rayons, le
        * podium et la colonne de droite n'existaient que dans l'onglet des
@@ -439,7 +592,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
       <div className="rise rise-1 grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-7">
         <div className="min-w-0">
           {contenu.entrees.length > 0 ? (
-            <ClassementEnRayons contenu={contenu} mesure={mesure} vides={rayonsVides} />
+            <ClassementEnRayons contenu={contenu} mesure={mesure} />
           ) : (
             /*
              * DEUX FAÇONS DE N'AVOIR RIEN À CLASSER, ET UNE SEULE PHRASE
@@ -477,7 +630,14 @@ export default async function PopulairesPage({ searchParams }: Props) {
           )}
         </div>
 
-        <RailDesCoeurs entete={entete} recentes={recentes} />
+        {/* Le compte des marques sans cœur n'existe que si l'on a lu le
+            paysage complet, donc sur un classement de marques. Ailleurs,
+            le raccourci ne s'affiche pas. */}
+        <RailDesCoeurs
+          entete={entete}
+          recentes={recentes}
+          sansCoeur={decouverteSuit ? paysageComplet.sansCoeur.length : 0}
+        />
       </div>
     </div>
   );

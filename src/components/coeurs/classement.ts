@@ -1,4 +1,5 @@
 import { enSlugDeCategorie } from "@/lib/taxonomy";
+import type { PeriodeCoeurs } from "@/lib/favorites";
 import type { Brand, Product } from "@/lib/types";
 
 /**
@@ -36,7 +37,41 @@ import type { Brand, Product } from "@/lib/types";
  * onglets se répartissent entre les deux, et aucune ligne n'affiche les
  * deux à la fois.
  */
-export type Mesure = "coeurs" | "avis";
+export type Mesure = "coeurs" | "avis" | "elan";
+
+/**
+ * Ce qu'on classe : des marques ou des pièces.
+ *
+ * C'est la première des trois questions de la phrase — quoi, par quoi,
+ * sur quand — et la seule qui décide de la FORME des entrées. Les deux
+ * autres ne changent que le nombre au bout de la ligne.
+ */
+export const QUOIS = ["pieces", "marques"] as const;
+export type Quoi = (typeof QUOIS)[number];
+
+/**
+ * L'ÉLAN : LA PART, PAS LE VOLUME.
+ *
+ * Une marque qui reçoit trente cœurs cette semaine sur trente-cinq
+ * depuis toujours vient d'arriver ; une autre qui en reçoit trente sur
+ * mille deux cents ne fait que continuer. Le volume les met côte à côte,
+ * la part les sépare.
+ *
+ * Les trois nombres voyagent ensemble parce qu'ils se vérifient l'un
+ * l'autre : `part` est ce qui ordonne et ce qui s'affiche, `fenetre` est
+ * ce que la ligne de rayons additionne — on n'additionne pas des
+ * pourcentages — et `total` est ce qui rend la part lisible en survol.
+ * Ce n'est pas un score composite : c'est une seule mesure qui a besoin
+ * de deux chiffres pour être honnête.
+ */
+export type Elan = {
+  /** Les cœurs reçus sur la fenêtre choisie. */
+  fenetre: number;
+  /** Le total de l'entrée, toutes fenêtres confondues. */
+  total: number;
+  /** La part, de 0 à 100. */
+  part: number;
+};
 
 /**
  * Le mot de la mesure, pour que les pastilles de rayon ne mentent pas.
@@ -49,7 +84,95 @@ export type Mesure = "coeurs" | "avis";
 export const MOT_DE_LA_MESURE: Record<Mesure, string> = {
   coeurs: "cœurs",
   avis: "avis",
+  /*
+   * « cœurs » ET NON « élan », et ce n'est pas une étourderie.
+   *
+   * La ligne de rayons ADDITIONNE la mesure de ce qui est affiché.
+   * Additionner des pourcentages ne veut rien dire : « Streetwear · 240 »
+   * pour huit marques à 30 % d'élan est un nombre qui n'existe pas. Elle
+   * retombe donc sur le volume de la fenêtre — `Elan.fenetre`, voir
+   * `mesureDe` — et le mot suit ce qu'elle compte vraiment.
+   */
+  elan: "cœurs",
 };
+
+/** Le mot de chaque réglage, tel qu'il se lit dans la phrase. */
+export const MOT_DU_QUOI: Record<Quoi, string> = {
+  marques: "marques",
+  pieces: "pièces",
+};
+
+export const MOT_DE_LA_MESURE_LUE: Record<Mesure, string> = {
+  coeurs: "cœurs",
+  elan: "élan",
+  avis: "note",
+};
+
+export const MOT_DE_LA_PERIODE: Record<PeriodeCoeurs, string> = {
+  semaine: "7 jours",
+  mois: "30 jours",
+  toujours: "toujours",
+};
+
+/**
+ * Le petit mot qui relie la mesure à la fenêtre.
+ *
+ * « sur 7 jours » mais « DEPUIS toujours » : avec un seul connecteur,
+ * la phrase disait « sur depuis toujours ». Il appartient donc à la
+ * fenêtre, pas à la phrase.
+ */
+export const LIEN_DE_LA_PERIODE: Record<PeriodeCoeurs, string> = {
+  semaine: "sur",
+  mois: "sur",
+  toujours: "depuis",
+};
+
+/**
+ * Le mot de la mesure DANS L'ADRESSE, et l'inverse.
+ *
+ * `note` dehors, `avis` dedans : l'adresse parle la langue de la phrase
+ * — « classées par note » — et le code garde le nom du champ qu'il lit.
+ * La table est écrite dans les deux sens ici plutôt que devinée à deux
+ * endroits.
+ */
+export const MESURE_URL: Record<Mesure, string> = {
+  coeurs: "coeurs",
+  elan: "elan",
+  avis: "note",
+};
+
+/**
+ * La mesure demandée par l'adresse, ou les cœurs.
+ *
+ * En toutes lettres et jamais par transtypage : `?mesure=` est une
+ * chaîne que n'importe qui peut écrire à la main, et un `as Mesure` la
+ * ferait passer pour une valeur du type sans que rien ne l'ait
+ * vérifiée. Elle finirait dans un `Record` et rendrait `undefined`.
+ * Même règle que `laPeriode`.
+ */
+export function laMesure(valeur: string | undefined): Mesure {
+  if (valeur === "note") return "avis";
+  if (valeur === "elan") return "elan";
+  return "coeurs";
+}
+
+export function leQuoi(valeur: string | undefined): Quoi {
+  return valeur === "marques" ? "marques" : "pieces";
+}
+
+/**
+ * L'unité écrite sous le chiffre d'une carte de podium.
+ *
+ * Elle dit la mesure ET la fenêtre, parce que « 42 » tout seul ne
+ * distingue pas quarante-deux cœurs de cette semaine de quarante-deux
+ * depuis l'ouverture du site.
+ */
+export function uniteDeLaMesure(mesure: Mesure, periode: PeriodeCoeurs): string {
+  if (mesure === "avis") return "de note";
+  const fenetre =
+    periode === "semaine" ? " · 7 j" : periode === "mois" ? " · 30 j" : "";
+  return mesure === "elan" ? `de ses cœurs${fenetre}` : `cœurs${fenetre}`;
+}
 
 /** Une note moyenne ET le nombre d'avis qui la fabrique. */
 export type NoteAffichee = {
@@ -82,6 +205,8 @@ export type PlaceMarque = {
   brand: Brand;
   rayons: string[];
   coeurs?: number;
+  /** La part reçue sur la fenêtre. À LA PLACE des cœurs, jamais avec. */
+  elan?: Elan;
   note?: NoteAffichee;
 };
 
@@ -89,6 +214,8 @@ export type PlacePiece = {
   product: Product;
   rayons: string[];
   coeurs?: number;
+  /** La part reçue sur la fenêtre. À LA PLACE des cœurs, jamais avec. */
+  elan?: Elan;
   note?: NoteAffichee;
   /**
    * La personne connectée a-t-elle déjà donné son coup de cœur ?
@@ -159,9 +286,19 @@ export type RayonVide = {
   marques: number;
 };
 
-/** La mesure d'une entrée, quelle que soit celle de l'onglet. */
-export function mesureDe(entree: { coeurs?: number; note?: { avis: number } }): number {
-  return entree.coeurs ?? entree.note?.avis ?? 0;
+/**
+ * La mesure d'une entrée, quelle que soit celle du classement.
+ *
+ * Elle sert à ADDITIONNER, pas à afficher : c'est la ligne de rayons qui
+ * l'appelle. D'où l'élan rendu en volume et non en part — voir
+ * `MOT_DE_LA_MESURE.elan`.
+ */
+export function mesureDe(entree: {
+  coeurs?: number;
+  elan?: { fenetre: number };
+  note?: { avis: number };
+}): number {
+  return entree.coeurs ?? entree.elan?.fenetre ?? entree.note?.avis ?? 0;
 }
 
 /**

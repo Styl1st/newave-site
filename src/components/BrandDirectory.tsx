@@ -895,13 +895,7 @@ export default function BrandDirectory({
           Ce qui tenait le tout est un trait de deux pixels, dont la
           portion gauche se colore à mesure que la requête se remplit.
           Le reste s'accroche à des filets d'un pixel. */}
-      <div
-        ref={bloc}
-        /* En mode liste, le rail d'index est fixé au bord droit sur
-           téléphone : la barre lui laisse sa gouttière plutôt que de
-           passer dessous. Voir `IndexAlphabet` dans `BrandGrid`. */
-        className={`relative z-20 mb-4 ${densite === "liste" ? "mr-[30px] sm:mr-0" : ""}`}
-      >
+      <div ref={bloc} className="relative z-20 mb-4">
         <div className="flex items-start gap-3">
           <IconLoupe className="mt-[7px] h-[19px] w-[19px] shrink-0 text-white/85" />
 
@@ -1068,6 +1062,10 @@ export default function BrandDirectory({
           onDensite={choisirDensite}
           lettre={lettre}
           onLettre={setLettre}
+          /* La largeur est déjà mesurée ici pour la feuille de recherche :
+             l'index s'en sert pour choisir sa forme, et les deux
+             basculent donc au même pixel. Voir `IndexAlphabet`. */
+          auDoigt={auDoigt}
           selecteur={false}
           aside={
             <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">

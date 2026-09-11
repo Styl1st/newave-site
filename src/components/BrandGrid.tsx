@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import BrandCard from "./BrandCard";
 import BrandPreview from "./BrandPreview";
 import LigneMarque from "./LigneMarque";
@@ -65,6 +66,7 @@ export default function BrandGrid({
   onDensite,
   lettre,
   onLettre,
+  auDoigt = false,
   selecteur = true,
 }: {
   brands: Brand[];
@@ -79,6 +81,16 @@ export default function BrandGrid({
   /** Lettre d'index tenue par le parent, quand elle part dans l'adresse. */
   lettre?: string | null;
   onLettre?: (l: string | null) => void;
+  /**
+   * Vrai sous 640 px, mesuré par le parent.
+   *
+   * L'annuaire le calcule déjà pour sa feuille de recherche : le passer
+   * évite un second écouteur de redimensionnement, et surtout garantit
+   * que les deux formes basculent au même pixel. Faux par défaut, ce qui
+   * donne la rangée du grand écran — la bonne valeur pour une liste qui
+   * ne mesure rien.
+   */
+  auDoigt?: boolean;
   selecteur?: boolean;
   /** Les marques déjà suivies. Absent = on n'affiche pas l'étoile. */
   favoris?: string[];
@@ -92,15 +104,6 @@ export default function BrandGrid({
   notes?: Record<string, { moyenne: number; avis: number }>;
 }) {
   const suivies = new Set(favoris ?? []);
-  /*
-   * La densité effective, vue d'ici.
-   *
-   * `Grille` la donne à ses enfants par une fonction, mais le pied de
-   * pagination vit EN DEHORS d'elle : il lui faut donc la valeur à ce
-   * niveau pour savoir s'il doit réserver la gouttière du rail. Le seul
-   * appelant, `BrandDirectory`, impose toujours la sienne.
-   */
-  const enListe = (densiteImposee ?? defaut) === "liste";
   const [open, setOpen] = useState<string | null>(null);
   const [combien, setCombien] = useState(LOT);
   /*
@@ -174,6 +177,19 @@ export default function BrandGrid({
     () => new Set(alphabetique.map((b) => lettreDe(b.name))),
     [alphabetique]
   );
+
+  /* L'épaisseur de chaque groupe, pour l'écrire à côté de son titre. Sur
+     la liste ENTIÈRE et non sur ce qui est déplié : « M · 12 marques »
+     au-dessus de trois lignes se lirait comme une erreur, alors que
+     c'est la pagination qui n'en a montré que trois. */
+  const parLettreCompte = useMemo(() => {
+    const compte = new Map<string, number>();
+    for (const b of alphabetique) {
+      const l = lettreDe(b.name);
+      compte.set(l, (compte.get(l) ?? 0) + 1);
+    }
+    return compte;
+  }, [alphabetique]);
 
   /*
    * UNE LETTRE FILTRE, ELLE NE FAIT PLUS DÉFILER — ET C'EST UNE
@@ -271,6 +287,8 @@ export default function BrandGrid({
                 pleines={lettresPleines}
                 active={lettreActive}
                 combien={parLettre?.length ?? 0}
+                restantes={parLettre?.length ?? brands.length}
+                auDoigt={auDoigt}
                 onChoisir={allerA}
                 onTout={() => poserLettre(null)}
               />
@@ -296,23 +314,30 @@ export default function BrandGrid({
                    */
                   <Fragment key={b.id}>
                     {premiere && (
-                      /* `pr-[30px]` : la gouttière du rail d'index, qui
-                         est en position fixe au bord droit sur
-                         téléphone. Sans elle, la lettre passerait
-                         dessous. Voir `IndexAlphabet`. */
+                      /*
+                       * LE COMPTE DU GROUPE À DROITE DU TITRE, et il a
+                       * une raison : le rail parti, plus rien ne dit
+                       * l'épaisseur d'une lettre pendant qu'on descend.
+                       * On lisait « M » sans savoir s'il y en avait
+                       * trois ou trente.
+                       */
                       <h2
                         id={`lettre-${lettre}`}
-                        className={`m-0 mb-1 scroll-mt-24 pr-[30px] text-[26px] font-extrabold leading-none tracking-[-0.03em] text-white/42 sm:pr-0 ${
+                        className={`m-0 mb-1 flex items-baseline justify-between gap-3 scroll-mt-24 text-[26px] font-extrabold leading-none tracking-[-0.03em] text-white/42 ${
                           i === 0 ? "" : "mt-4"
                         }`}
                       >
                         {lettre}
+                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">
+                          {parLettreCompte.get(lettre) ?? 0} marque
+                          {(parLettreCompte.get(lettre) ?? 0) > 1 ? "s" : ""}
+                        </span>
                       </h2>
                     )}
                     {/* `ligne-eco` met de côté ce qui est hors écran sur
                         téléphone : le navigateur cesse de peindre les
                         lignes qu'on ne regarde pas. Voir globals.css. */}
-                    <div className="ligne-eco pr-[30px] sm:pr-0">
+                    <div className="ligne-eco">
                       <LigneMarque
                         brand={b}
                         favori={favoris ? { initial: suivies.has(b.id) } : undefined}
@@ -322,6 +347,16 @@ export default function BrandGrid({
                   </Fragment>
                 );
               })}
+
+              {/*
+               * QUATRE-VINGT-SEIZE PIXELS DE VIDE SOUS LA DERNIÈRE
+               * MARQUE, et ce n'est pas une marge de confort : le bouton
+               * d'index flotte à vingt pixels du bord bas et recouvre
+               * tout ce qui passe dessous. Sans ce rembourrage, la
+               * dernière ligne de la liste est sous le bouton, et il n'y
+               * a aucun moyen de l'atteindre.
+               */}
+              {auDoigt && <div aria-hidden className="h-24" />}
             </>
           ) : (
             visiblesMelangees.map((b) => (
@@ -353,15 +388,7 @@ export default function BrandGrid({
          * qui décide de cliquer ou d'aller chercher autrement.
          */
         <div
-          className={`barre barre-pied mt-6 flex flex-col items-center gap-2.5 px-5 py-4 sm:mr-0 sm:flex-row sm:justify-center sm:gap-5 ${
-            /* En mode liste, le rail d'index court le long du bord
-               droit : le pied lui laisse sa gouttière plutôt que de
-               passer dessous. Il reste dans le flux et non flottant —
-               une pilule fixée en bas recouvrirait en permanence la
-               dernière ligne de la liste, et croiserait la zone
-               sensible de `ProgressionLecture`. */
-            enListe ? "mr-[30px]" : ""
-          }`}
+          className="barre barre-pied mt-6 flex flex-col items-center gap-2.5 px-5 py-4 sm:flex-row sm:justify-center sm:gap-5"
         >
           <p className="m-0 text-[11.5px] font-bold uppercase tracking-[0.14em] text-white/55">
             {Math.min(combien, brands.length)} sur {brands.length} affichées
@@ -385,7 +412,7 @@ export default function BrandGrid({
 }
 
 /**
- * La rangée de lettres — et, au doigt, le rail du bord droit.
+ * La rangée de lettres — et, au doigt, le bouton qui ouvre l'alphabet.
  *
  * UNE LETTRE VIDE RESTE VISIBLE MAIS S'ÉTEINT. La retirer ferait
  * glisser toutes les suivantes sous le doigt d'une recherche à l'autre :
@@ -393,31 +420,39 @@ export default function BrandGrid({
  * toujours la même forme se vise sans regarder, et l'extinction dit déjà
  * qu'il n'y a rien à y trouver.
  *
- * SUR TÉLÉPHONE, ELLE SE DRESSE AU BORD DROIT. Vingt-sept lettres en
- * travers d'un écran de quatre cents pixels tiennent sur trois rangs,
- * chacune large de onze : on ne les vise pas, on les manque. Debout au
- * bord, c'est le répertoire du carnet d'adresses — le pouce y arrive
- * sans traverser l'écran, et la liste continue de se lire à côté.
+ * SUR TÉLÉPHONE, LE RAIL DU BORD DROIT EST PARTI. Vingt-sept lettres
+ * dressées dans une pilule, c'était une liste qui défilait dans une
+ * liste qui défile : dès qu'un écran était court, les dernières lettres
+ * sortaient de la pilule et il fallait faire défiler l'index lui-même
+ * pour atteindre le W. Les cibles y faisaient vingt-deux pixels, la
+ * moitié de ce qu'un doigt demande, et la gouttière de trente pixels
+ * qu'il réservait au bord droit coûtait à quatre endroits du code.
  *
- * ELLE EST FIXE ET NON POSÉE DANS LE FLUX, et c'est ce qui la rend
- * utile : l'envie de sauter à une lettre arrive au milieu de la liste.
- * Ancrée en haut de page, elle serait déjà sortie de l'écran au moment
- * où l'on en a besoin.
+ * À sa place, UN SEUL BOUTON SOUS LE POUCE, qui porte la lettre posée,
+ * et une feuille où les vingt-sept cibles tiennent en quatre rangées —
+ * toutes visibles, quelle que soit la hauteur de l'écran. Le geste
+ * devient celui d'un menu et non d'une visée, et c'est déjà le couple
+ * bouton + feuille de la vitrine.
  *
- * MÊME BALISE DANS LES DEUX FORMES. Rendre deux fois les vingt-sept
- * lettres, l'une cachée en grand, l'autre en petit, doublerait la liste
- * pour les lecteurs d'écran : ils annonceraient cinquante-quatre boutons
- * dont la moitié invisibles. Ce sont donc les mêmes boutons, que les
- * classes redressent.
+ * ⚠️ UNE SEULE DES DEUX FORMES EST RENDUE, ET C'EST LE JAVASCRIPT QUI
+ * DÉCIDE. Les deux formes ne sont plus le même objet : d'un côté une
+ * rangée de vingt-sept boutons, de l'autre un bouton qui en ouvre
+ * vingt-sept ailleurs. Les faire coexister en CSS annoncerait
+ * cinquante-quatre boutons à un lecteur d'écran. La mesure vient de
+ * `BrandDirectory`, qui la fait déjà pour la feuille de recherche : une
+ * seule mesure de largeur pour toute la page.
  *
- * ⚠️ ELLE FILTRE, ELLE NE FAIT PAS DÉFILER — voir `allerA`. Le rail lui
- * ressemble pourtant beaucoup, et c'est justement pour ça que le libellé
- * dit « Lettre » et non « Aller à » : il ne promet pas un défilement.
+ * ⚠️ ELLE FILTRE, ELLE NE FAIT PAS DÉFILER — voir `allerA`. Le bouton
+ * lui ressemble pourtant beaucoup, et c'est justement pour ça que le
+ * libellé dit « Lettre » et non « Aller à » : il ne promet pas un
+ * défilement.
  */
 function IndexAlphabet({
   pleines,
   active,
   combien,
+  restantes,
+  auDoigt,
   onChoisir,
   onTout,
 }: {
@@ -425,21 +460,182 @@ function IndexAlphabet({
   active: string | null;
   /** Combien de marques sous la lettre active. */
   combien: number;
+  /** Combien de marques la page affiche derrière la feuille. */
+  restantes: number;
+  /** Vrai sous 640 px. Mesuré une seule fois, dans `BrandDirectory`. */
+  auDoigt: boolean;
   onChoisir: (lettre: string) => void;
   onTout: () => void;
 }) {
+  const [feuille, setFeuille] = useState(false);
+  const bouton = useRef<HTMLButtonElement>(null);
+  const dejaOuverte = useRef(false);
+
+  /* En repassant au grand écran, la feuille n'a plus de raison d'être :
+     la rangée est là, entière, sous les yeux. */
+  useEffect(() => {
+    if (!auDoigt) setFeuille(false);
+  }, [auDoigt]);
+
+  /*
+   * LE FOCUS REVIENT SUR LE BOUTON QUAND LA FEUILLE SE REFERME.
+   *
+   * Sans ça, Échap renvoie au début du document : la personne qui
+   * navigue au clavier repart du logo pour retrouver l'endroit où elle
+   * était. Le bouton est démonté pendant que la feuille est ouverte, il
+   * revient donc neuf — d'où le drapeau, qui empêche de voler le focus
+   * au premier rendu de la page.
+   */
+  useEffect(() => {
+    if (feuille) {
+      dejaOuverte.current = true;
+      return;
+    }
+    if (dejaOuverte.current) bouton.current?.focus();
+  }, [feuille]);
+
+  const legende = "Les lettres pâles n'ont aucune marque avec ces filtres";
+
+  if (auDoigt) {
+    return (
+      <>
+        {/*
+         * LE BOUTON EST EN BAS À DROITE, ET C'EST LE POINT DE L'ÉCRAN.
+         * Sauter à une lettre est le geste qu'on refait dix fois en
+         * parcourant cent trente-six marques ; il doit être là où le
+         * pouce se trouve déjà. Il porte la lettre posée, donc il dit
+         * aussi ce qui filtre la liste — ce qu'un rail refermé sur
+         * lui-même ne disait plus.
+         *
+         * `z-40` : au-dessus de la liste, SOUS les feuilles. Quand
+         * celle de la recherche ou des filtres s'ouvre, son voile le
+         * recouvre, et il n'y a aucune condition à écrire pour ça.
+         */}
+        {!feuille && (
+          <button
+            ref={bouton}
+            type="button"
+            onClick={() => setFeuille(true)}
+            aria-haspopup="dialog"
+            aria-controls="index-alphabet"
+            aria-expanded={feuille}
+            aria-label={active ? `Lettre ${active} — changer` : "Aller à une lettre"}
+            className="bouton-index fixed z-40 inline-flex h-[54px] items-center gap-3 rounded-full bg-white pl-5 pr-2 text-[19px] font-black tracking-[-0.01em] text-[var(--color-ink)] transition active:scale-[.97]"
+            style={{
+              right: "calc(env(safe-area-inset-right, 0px) + 16px)",
+              bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
+            }}
+          >
+            {active ?? "A–Z"}
+            {/* Le rond est ce qui dit « ça ouvre quelque chose » : sans
+                lui, le bouton se lit comme une étiquette. */}
+            <span
+              aria-hidden
+              className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-[var(--color-ink)] text-white"
+            >
+              <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
+                <path d="M4 7h16M4 12h16M4 17h9" />
+              </svg>
+            </span>
+          </button>
+        )}
+
+        <FeuilleFiltres
+          ouvert={feuille}
+          onFermer={() => setFeuille(false)}
+          id="index-alphabet"
+          titre="Aller à une lettre"
+          pied={
+            <button
+              type="button"
+              onClick={() => setFeuille(false)}
+              className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
+            >
+              Voir {restantes > 1 ? "les" : "la"} {restantes} marque
+              {restantes > 1 ? "s" : ""}
+            </button>
+          }
+        >
+          <div className="mb-3 flex items-baseline justify-between gap-4">
+            <p className="m-0 text-[10px] font-black uppercase tracking-[0.2em] text-white/72">
+              Aller à la lettre
+            </p>
+            {/* La sortie, et seulement quand il y a de quoi sortir. */}
+            {active && (
+              <button
+                type="button"
+                onClick={() => {
+                  onTout();
+                  setFeuille(false);
+                }}
+                className="text-[12.5px] font-bold text-white underline underline-offset-[3px]"
+              >
+                Tout afficher
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5">
+            {LETTRES.map((l) => {
+              const dispo = pleines.has(l);
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => {
+                    onChoisir(l);
+                    setFeuille(false);
+                  }}
+                  disabled={!dispo}
+                  aria-label={
+                    active === l ? `Afficher toutes les marques` : `Voir les marques en ${l}`
+                  }
+                  aria-current={active === l ? "true" : undefined}
+                  /* Quarante-quatre pixels de haut : c'est la cible d'un
+                     doigt, et c'est tout l'objet de ce chantier. */
+                  className={`grid h-[44px] place-items-center rounded-[12px] text-[15px] font-extrabold transition ${
+                    active === l
+                      ? "bg-white text-[var(--color-ink)]"
+                      : dispo
+                        ? "bg-white/12 text-white active:scale-95"
+                        : "cursor-default bg-white/[0.03] text-white/24"
+                  }`}
+                >
+                  {l}
+                </button>
+              );
+            })}
+          </div>
+
+          {/*
+            LA LÉGENDE SUIT L'ALPHABET LÀ OÙ IL EST, et c'est pour ça
+            qu'elle est écrite ici plutôt que rendue deux fois. Sans
+            elle, une grille à moitié éteinte passe pour un défaut
+            d'affichage : elle est la seule chose qui dise que les
+            lettres suivent les filtres posés au-dessus.
+          */}
+          <p className="m-0 mt-3.5 text-center text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/55">
+            {legende}
+          </p>
+        </FeuilleFiltres>
+      </>
+    );
+  }
+
   return (
-    <div className="mb-2 pr-[30px] sm:pr-0">
+    <div className="mb-2">
       <nav
         aria-label="Index alphabétique des marques"
-        /* Deux formes, une seule balise. En grand : une seule rangée
-           JUSTIFIÉE D'UN BORD À L'AUTRE, sans matière — c'est l'outil de
-           navigation le plus utilisé de la page, il prend donc toute la
-           largeur au lieu d'être traité comme une légende. Au doigt : la
-           pilule de verre dressée au bord droit, centrée sur la hauteur,
-           qui défile sur elle-même si l'écran est trop court pour ses
-           vingt-sept lettres. Celle-là ne bouge pas. */
-        className="rail-index fixed right-[3px] top-1/2 z-30 flex max-h-[calc(100svh-150px)] -translate-y-1/2 flex-col items-center gap-px overflow-y-auto overscroll-contain rounded-full px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:static sm:max-h-none sm:w-full sm:translate-y-0 sm:flex-row sm:flex-nowrap sm:justify-between sm:gap-0 sm:overflow-visible sm:p-0"
+        /* UNE SEULE RANGÉE, JUSTIFIÉE D'UN BORD À L'AUTRE, sans matière :
+           c'est l'outil de navigation le plus utilisé de la page, il
+           prend donc toute la largeur au lieu d'être traité comme une
+           légende.
+
+           `hidden sm:flex` en plus de la mesure : le premier rendu se
+           fait toujours en « grand écran », avant que `matchMedia` ait
+           répondu. Sur un téléphone, cette rangée-là déborderait de
+           l'écran le temps d'une image. */
+        className="hidden w-full flex-row flex-nowrap items-center justify-between gap-0 sm:flex"
       >
         {LETTRES.map((l) => {
           const dispo = pleines.has(l);
@@ -464,12 +660,12 @@ function IndexAlphabet({
                * se voit que sur la lettre courante ; la boîte, elle,
                * existe pour les vingt-six autres.
                */
-              className={`grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-[7px] px-1 text-[11px] font-extrabold transition sm:h-auto sm:min-w-[26px] sm:rounded-[6px] sm:px-2 sm:pb-[5px] sm:pt-[4px] sm:text-[15px] ${
+              className={`grid min-w-[26px] shrink-0 place-items-center rounded-[6px] px-2 pb-[5px] pt-[4px] text-[15px] font-extrabold transition ${
                 active === l
-                  ? "bg-white font-black text-[var(--color-ink)] sm:font-extrabold"
+                  ? "bg-white text-[var(--color-ink)]"
                   : dispo
-                    ? "text-white hover:bg-white/15 sm:hover:bg-transparent sm:hover:text-[rgb(var(--accent-1))]"
-                    : "cursor-default text-white/24 sm:text-white/32"
+                    ? "text-white hover:text-[rgb(var(--accent-1))]"
+                    : "cursor-default text-white/32"
               }`}
             >
               {l}
@@ -478,19 +674,9 @@ function IndexAlphabet({
         })}
       </nav>
 
-      {/*
-        LA LÉGENDE EST CE QUI EXPLIQUE L'ALPHABET, et elle n'est pas
-        décorative : sans elle, une rangée à moitié éteinte passe pour un
-        défaut d'affichage. Elle dit que les lettres suivent les filtres
-        posés au-dessus, et c'est la seule chose qui le dise.
-
-        Au doigt il n'y a pas de rangée à expliquer — le rail est au bord
-        droit, il n'a pas d'intitulé : la ligne ne sert alors qu'à dire ce
-        qu'il vient de faire.
-      */}
       <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="m-0 hidden text-[11px] font-bold uppercase tracking-[0.14em] text-white/68 sm:block">
-          Les lettres pâles n&apos;ont aucune marque avec ces filtres
+          {legende}
         </p>
 
         {active && combien > 0 && (

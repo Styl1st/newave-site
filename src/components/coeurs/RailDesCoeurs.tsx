@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconCoeur } from "../Icons";
 import { CoeurPlein } from "../LigneMarque";
 import { enChiffres } from "../chiffres";
 import { vignette } from "@/lib/vignette";
@@ -59,10 +60,21 @@ export type EnTeteDuRail =
 export default function RailDesCoeurs({
   entete,
   recentes,
+  sansCoeur = 0,
 }: {
   entete: EnTeteDuRail;
   /** Les dernières marques mises de côté. Jamais par qui. */
   recentes: MiseDeCote[];
+  /**
+   * Combien de marques de l'annuaire n'ont encore AUCUN cœur.
+   *
+   * Zéro quand on l'ignore, et on l'ignore souvent : le chiffre vient du
+   * paysage complet des cœurs, qui n'est lu que pour un classement de
+   * marques. Sur un classement de pièces ou de notes, le raccourci ne
+   * s'affiche donc pas — plutôt que d'annoncer un nombre qu'on n'a pas
+   * ou d'aller le chercher par une requête de plus.
+   */
+  sansCoeur?: number;
 }) {
   return (
     <aside className="flex flex-col gap-4">
@@ -143,6 +155,43 @@ export default function RailDesCoeurs({
             On ne dit jamais qui a mis quoi de côté.
           </p>
         </section>
+      )}
+
+      {/*
+       * LES MARQUES QUE PERSONNE N'A ENCORE VUES, EN UN SEUL ENDROIT.
+       *
+       * Elles étaient une seconde rangée de pastilles au-dessus du
+       * classement, rayon par rayon : « Accessoires 33 · Alternative 13
+       * · Vintage 11 »... Découpées ainsi, elles posaient une question
+       * de rangement — dans quel style veux-tu chercher ? — alors que la
+       * bonne question est plus simple, et sans style : lesquelles
+       * n'ont rien reçu ?
+       *
+       * Le raccourci descend donc ici, au-dessus de « ta liste à toi » :
+       * on vient de lire ce que les autres ont aimé, c'est le moment où
+       * l'on se demande ce qui manque.
+       */}
+      {sansCoeur > 0 && (
+        <Link
+          href="#sans-coeur"
+          className="card-light block p-4 no-underline"
+        >
+          <span className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--color-ink)] text-white">
+              {/* Le cœur EN TRAIT : ces marques n'en ont reçu aucun, et
+                  le cœur plein, juste dessous, dit déjà l'inverse. */}
+              <IconCoeur className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-extrabold leading-tight text-[var(--color-ink)]">
+                {sansCoeur} marque{sansCoeur > 1 ? "s" : ""} sans aucun cœur
+              </span>
+              <span className="mt-0.5 block text-[11px] font-semibold text-[#6a5a92]">
+                Tous styles confondus. Le premier est à prendre.
+              </span>
+            </span>
+          </span>
+        </Link>
       )}
 
       {/* Le renvoi vers sa propre liste EN DERNIER : on vient de lire ce

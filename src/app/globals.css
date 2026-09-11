@@ -1789,25 +1789,6 @@ option {
   }
 }
 
-/* Le rail d'index de l'annuaire, dressé au bord droit sur téléphone.
-
-   Même raison d'être opaque : le flou n'existe pas à cette largeur, et
-   des lettres posées sur un verre qui ne floute rien se lisent sur la
-   photo d'une pièce. En grand, le rail redevient la rangée de lettres
-   d'origine, sans matière. */
-.rail-index {
-  background-color: rgba(var(--voile), .88);
-  border: 1px solid rgba(255, 255, 255, .16);
-  box-shadow: 0 10px 30px rgba(var(--voile), .5);
-}
-@media (min-width: 640px) {
-  .rail-index {
-    background: none;
-    border: 0;
-    box-shadow: none;
-  }
-}
-
 @keyframes feuilleMonte {
   from { transform: translateY(34px); opacity: 0; }
   to   { transform: none;             opacity: 1; }
@@ -2027,15 +2008,6 @@ html[data-clair="1"] .panneau-entete {
 html[data-clair="1"] .feuille-pleine {
   background: #ffffff;
 }
-/* Le rail suit le fond de la page : ses lettres sont en `text-white`,
-   que le pivot retourne en encre. Sur une pilule restée sombre, elles
-   disparaîtraient. */
-html[data-clair="1"] .rail-index {
-  background-color: rgba(255, 255, 255, .92);
-  border-color: rgba(34, 16, 70, .12);
-  box-shadow: 0 10px 30px rgba(34, 16, 70, .16);
-}
-
 /* ---------- typographie ---------- */
 html[data-clair="1"] .tagline {
   color: #221046;
@@ -4140,4 +4112,48 @@ html[data-allege] .bandeau-flou {
 html[data-clair="1"] .jeton {
   background: rgba(23, 10, 51, .06);
   border-color: var(--color-ink);
+}
+
+/* ---------- le menu d'un mot réglable ----------
+   La phrase de `/populaires` se règle en trois mots soulignés ; ce qui
+   s'ouvre dessous doit être OPAQUE. Le verre dépoli du site laisse voir
+   le classement à travers, et une liste posée sur des chiffres qui
+   défilent ne se lit pas. */
+.menu-phrase {
+  background: var(--color-ink);
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 14px;
+  box-shadow: 0 26px 60px rgba(8, 2, 20, .55);
+}
+
+/* En clair, la même carte à l'envers : un blanc plein sur la page
+   pastel, et l'encre pour l'écrire. */
+html[data-clair="1"] .menu-phrase {
+  background: #fff;
+  border-color: rgba(34, 16, 70, .16);
+  box-shadow: 0 26px 60px rgba(60, 30, 120, .18);
+}
+
+/* ---------- le bouton d'index du téléphone ----------
+   Il flotte en bas à droite de l'annuaire en mode liste et ouvre
+   l'alphabet en feuille. Tout ce qui est géométrie vit dans le
+   composant ; ici, les deux choses que Tailwind ne dit pas bien. */
+.bouton-index {
+  box-shadow: 0 14px 34px -10px rgba(12, 3, 36, .9);
+}
+
+/* Le menu plein écran du téléphone passe par-dessus tout. Un bouton
+   blanc qui flotterait par-dessus lui se remarque au premier essai :
+   il s'efface, comme la barre de progression de lecture. */
+html[data-menu="1"] .bouton-index {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* En clair, un bouton blanc sur une page devenue claire n'a plus de
+   bord : on lui en donne un, et l'ombre calculée pour un fond sombre
+   s'allège. */
+html[data-clair="1"] .bouton-index {
+  border: 1px solid rgba(34, 16, 70, .12);
+  box-shadow: 0 14px 30px -12px rgba(34, 16, 70, .28);
 }
