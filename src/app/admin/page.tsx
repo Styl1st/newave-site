@@ -11,33 +11,11 @@ import {
   type BrandAdmin,
 } from "@/lib/admin-queries";
 import { getSignalements } from "@/lib/moderation";
-import { obstacleAPublication } from "@/lib/publication";
+import { CANDIDATURES_EN_ATTENTE } from "@/lib/types";
+import { obstacleAPublication, resumeDObstacle } from "@/lib/publication";
 import { getStats } from "@/lib/stats";
-
-/**
- * Le résumé d'un obstacle, pour le faire tenir sur une carte.
- *
- * LA CLÉ EST LE MESSAGE EXACT DE `obstacleAPublication()`.
- *
- * On aurait pu relire `cover_url` et `pieces` ici pour classer les
- * fiches par nature de manque : ce serait une deuxième définition de
- * « publiable », et `publication.ts` explique précisément pourquoi il
- * n'en existe qu'une. Le compte vient donc de la fonction, et ce
- * tableau ne fait que raccourcir sa phrase.
- *
- * Si un message y est réécrit un jour, la répartition affichera
- * « autre obstacle » — visible, et donc réparable, plutôt que faux.
- */
-const RESUME_OBSTACLE: Record<string, string> = {
-  "Cette fiche n'a ni visuel ni texte. Ajoute au moins une image et une accroche avant de la publier.":
-    "ni visuel ni texte",
-  "Cette fiche n'a ni couverture ni logo. Une carte sans image dessert la marque : ajoute un visuel avant de la publier.":
-    "sans visuel",
-  "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.":
-    "sans texte",
-  "Cette fiche n'a aucune pièce. Lance l'import du catalogue, ou ajoute au moins une pièce à la main avant de la publier.":
-    "sans catalogue",
-};
+/* La phrase d'attente est partagée avec la pile : voir `lib/attente`. */
+import { ancienneteDeLaPile } from "@/lib/attente";
 
 /** Les trois natures de signalement, pour dire de quoi la pile est faite. */
 const NATURES = [
@@ -45,20 +23,6 @@ const NATURES = [
   { cle: "piece", un: "pièce", plusieurs: "pièces" },
   { cle: "marque", un: "marque", plusieurs: "marques" },
 ] as const;
-
-/**
- * L'attente d'une candidature, dite en clair.
- *
- * Une date de dépôt oblige à compter dans sa tête pour savoir si c'est
- * grave. « Depuis onze jours » se lit d'un coup, et c'est la seule
- * chose qu'on veut savoir devant une pile.
- */
-function anciennete(iso: string): string {
-  const jours = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (jours <= 0) return "la plus ancienne est arrivée aujourd'hui";
-  if (jours === 1) return "la plus ancienne attend depuis hier";
-  return `la plus ancienne attend depuis ${jours} jours`;
-}
 
 export default async function AdminHome() {
   /*
@@ -79,7 +43,9 @@ export default async function AdminHome() {
   ]);
 
   /* ---------- candidatures ---------- */
-  const nouvelles = candidatures.filter((a) => a.status === "nouvelle");
+  const nouvelles = candidatures.filter((a) =>
+    (CANDIDATURES_EN_ATTENTE as readonly string[]).includes(a.status)
+  );
   // La lecture les rend de la plus récente à la plus ancienne : la
   // dernière du tableau est celle qui attend depuis le plus longtemps.
   const plusVieille = nouvelles[nouvelles.length - 1];
@@ -118,7 +84,7 @@ export default async function AdminHome() {
   for (const j of bloquees) parObstacle.set(j.obstacle, (parObstacle.get(j.obstacle) ?? 0) + 1);
   const repartition = [...parObstacle.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([message, n]) => `${n} ${RESUME_OBSTACLE[message] ?? "autre obstacle"}`)
+    .map(([message, n]) => `${n} ${resumeDObstacle(message)}`)
     .join(", ");
 
   /*
@@ -136,7 +102,9 @@ export default async function AdminHome() {
     {
       titre: "Candidatures à traiter",
       compte: nouvelles.length,
-      phrase: plusVieille ? anciennete(plusVieille.created_at) : "rien n'attend de réponse",
+      phrase: plusVieille
+        ? ancienneteDeLaPile(plusVieille.created_at)
+        : "rien n'attend de réponse",
       href: "/admin/candidatures",
       lien: "Ouvrir la pile",
       pastille: "#c2273f",
@@ -245,7 +213,13 @@ export default async function AdminHome() {
         <EtatDuSite compteurs={compteurs} />
       </div>
 
-      {stats && <StatsPanel stats={stats} />}
+      {/* L'ancre que vise « Fréquentation » dans la feuille « Plus » de
+          la barre d'admin : la fréquentation n'a pas d'écran à elle, et
+          lui en inventer un pour un seul panneau serait une page de
+          plus à tenir. */}
+      <div id="frequentation" className="scroll-mt-24">
+        {stats && <StatsPanel stats={stats} />}
+      </div>
 
       {/* Proposition du dessin, laissée inerte et dite comme telle.
           Le site n'écrit nulle part qui a publié quoi : reconstituer un

@@ -82,6 +82,13 @@ export const IconFiltre = (p: Props) => (
 export const IconChevron = (p: Props) => (
   <Svg {...p}><path d="m6 9 6 6 6-6" /></Svg>
 );
+/* Le fanion de la modération. Il vivait dans `admin/layout.tsx`, où il
+   était le seul dessin du site à ne pas venir d'ici ; la barre de pied
+   et la page de la pile en ont besoin toutes les deux, et deux copies
+   d'un même tracé finissent par ne plus se ressembler. */
+export const IconDrapeau = (p: Props) => (
+  <Svg {...p}><path d="M4 21V4" /><path d="M4 4h11l-1.6 3.5L15 11H4" /></Svg>
+);
 export const IconLoupe = (p: Props) => (
   <Svg {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></Svg>
 );

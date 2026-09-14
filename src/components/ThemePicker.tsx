@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { enregistrerApparence } from "@/app/apparence-actions";
-import { IconCheck, IconPlus, IconTrash } from "./Icons";
+import { IconBack, IconCheck, IconChevron, IconPlus, IconTrash } from "./Icons";
 import {
   MOUVEMENT_DEFAUT,
   PREFERENCES_DEFAUT,
@@ -13,8 +13,10 @@ import {
   appliquerMouvement,
   appliquerTheme,
   decrire,
+  decrireApparence,
   ecrire,
   lire,
+  memeTheme,
   type Ambiance,
   type Mouvement,
   type Preferences,
@@ -24,10 +26,6 @@ import {
 
 const LABELS = ["Départ", "Transition", "Cœur", "Pic", "Retour", "Fin"];
 
-
-function memeTheme(a: Theme, b: Theme) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
 
 function Vignette({ theme }: { theme: Theme }) {
   return (
@@ -75,6 +73,23 @@ export default function ThemePicker({
    */
   const [reglage, setReglage] = useState<Mouvement | null>(null);
   const differe = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /*
+   * DEUX NIVEAUX, ET SEULEMENT AU DOIGT.
+   *
+   * Tout tenait sur un seul écran : le fond, les ambiances, les six
+   * teintes, les trois nappes, les pastilles de mouvement, deux
+   * curseurs, deux champs de nom et un retour aux réglages par défaut.
+   * Quatre écrans de téléphone empilés pour une page où la plupart des
+   * gens viennent choisir une ambiance et repartir.
+   *
+   * Le premier niveau garde donc ce qu'on vient chercher — l'aperçu,
+   * clair ou sombre, les ambiances toutes prêtes — et « Composer »
+   * ouvre le reste. À partir de `lg`, où la place existe, les deux
+   * niveaux redeviennent une seule page : c'est exactement ce qu'elle
+   * est aujourd'hui, et elle ne bouge pas.
+   */
+  const [composer, setComposer] = useState(false);
 
   useEffect(() => {
     // Le compte fait foi : c'est le réglage de la personne, pas celui
@@ -177,6 +192,11 @@ export default function ThemePicker({
   const etiquette =
     "text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/50";
 
+  /* Ce qui se voit au premier niveau, ce qui attend au second. Les deux
+     s'annulent à partir de `lg` : la page y est entière. */
+  const niveau1 = composer ? "hidden lg:block" : "";
+  const niveau2 = composer ? "" : "hidden lg:block";
+
   return (
     /*
      * `data-no-reveal` : les panneaux de réglage ne s'inclinent pas au
@@ -220,19 +240,36 @@ export default function ThemePicker({
         )}
       </div>
 
-      {/* Deux colonnes seulement à partir de `xl` : en dessous, la
-          colonne de droite tomberait sous les trois cent quarante
-          pixels qu'il lui faut pour que l'aperçu reste lisible. */}
-      {/* Le template au premier palier aussi : voir `CompteEcran`. Une
-          colonne implicite est dimensionnée en `auto`, donc à la largeur
-          de son contenu le plus large — ici les rangées de pastilles de
-          couleur, qui déborderaient l'écran et emmèneraient tout le
-          reste avec elles. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+      {/*
+       * Deux colonnes seulement à partir de `xl` : en dessous, la
+       * colonne de droite tomberait sous les trois cent quarante
+       * pixels qu'il lui faut pour que l'aperçu reste lisible.
+       *
+       * ⚠️ EN DESSOUS, CE N'EST PLUS UNE GRILLE MAIS UNE COLONNE
+       * SOUPLE, et les deux enveloppes passent en `contents` : leurs
+       * blocs deviennent alors les enfants directs de cette colonne,
+       * et l'aperçu peut remonter en tête par `order` alors qu'il
+       * appartient à l'autre enveloppe.
+       *
+       * C'est aussi ce qui rend l'aperçu COLLANT possible. Un élément
+       * collé est borné par sa zone de grille ; dans une grille à une
+       * seule colonne, cette zone est exactement sa propre boîte, et il
+       * ne colle à rien. Dans une colonne souple, il est borné par
+       * toute la colonne — donc par toute la page de réglages.
+       *
+       * Le template explicite reste écrit pour `xl` : une colonne de
+       * grille implicite est dimensionnée en `auto`, donc à la largeur
+       * de son contenu le plus large — ici les rangées de pastilles de
+       * couleur, qui déborderaient l'écran et emmèneraient tout le
+       * reste avec elles. Voir `CompteEcran`. Une colonne souple, elle,
+       * ne prend jamais la largeur de son contenu : c'est son parent
+       * qui la lui donne.
+       */}
+      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         {/* ================= les réglages ================= */}
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-5">
           {/* ---- clair ou sombre ---- */}
-          <section className="glass p-4 sm:p-5">
+          <section className={`glass p-4 sm:p-5 ${niveau1}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="eyebrow m-0">Fond</p>
               <div className="flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
@@ -265,7 +302,7 @@ export default function ThemePicker({
           </section>
 
           {/* ---- ambiances ---- */}
-          <section className="glass p-4 sm:p-5">
+          <section className={`glass p-4 sm:p-5 ${niveau1}`}>
             <p className="eyebrow m-0 mb-3">Ambiances</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {toutes.map((a) => {
@@ -362,13 +399,54 @@ export default function ThemePicker({
                 choisie, et poussait toute la page vers le bas avant de la
                 laisser remonter. C'était le saut constaté en bêta. */}
             <p className="m-0 mt-3 min-h-[2.4em] text-[12.5px] leading-relaxed text-white/55">
-              Compose tes couleurs <strong className="font-bold text-white/75">plus
-              bas</strong>, puis enregistre-les sous un nom.
+              Compose tes couleurs{" "}
+              <strong className="font-bold text-white/75">
+                {/* Au doigt elles ne sont plus « plus bas » mais derrière
+                    un bouton : une indication de place qui ne mène nulle
+                    part se cherche deux fois avant qu'on renonce. */}
+                <span className="lg:hidden">dans « Composer »</span>
+                <span className="hidden lg:inline">plus bas</span>
+              </strong>
+              , puis enregistre-les sous un nom.
             </p>
           </section>
 
+          {/* ---- l'entrée du second niveau ----
+              En tirets, comme la tuile « enregistrer ces couleurs » : sur
+              cette page, le tiret dit « ici on fabrique », par opposition
+              aux ambiances toutes prêtes. */}
+          <button
+            type="button"
+            onClick={() => setComposer(true)}
+            className={`${
+              composer ? "hidden" : "flex lg:hidden"
+            } min-h-[56px] w-full items-center justify-between gap-3 rounded-[16px] border border-dashed border-white/35 px-4 text-left transition active:scale-[.98]`}
+          >
+            <span className="min-w-0">
+              <span className="block text-[14.5px] font-bold text-white">
+                Composer la mienne
+              </span>
+              <span className="mt-0.5 block truncate text-[12px] font-semibold text-white/55">
+                Teintes, nappes et mouvement
+              </span>
+            </span>
+            <IconChevron className="h-4 w-4 shrink-0 -rotate-90 text-white/45" />
+          </button>
+
           {/* ---- réglage fin des couleurs ---- */}
-          <section className="glass p-4 sm:p-5">
+          <section className={`glass p-4 sm:p-5 ${niveau2}`}>
+            {/* Le retour au premier niveau. Celui de la page, au-dessus,
+                ramène au hub du compte : deux gestes différents, deux
+                boutons différents, et celui-ci dit où il va. */}
+            <button
+              type="button"
+              onClick={() => setComposer(false)}
+              className="mb-3 inline-flex min-h-[44px] items-center gap-2 text-[13px] font-bold text-white/75 transition active:scale-[.97] lg:hidden"
+            >
+              <IconBack className="h-4 w-4" />
+              Ambiances
+            </button>
+
             <p className="eyebrow m-0 mb-1">Composer</p>
             <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/60">
               Six teintes de fond, trois accents.
@@ -413,7 +491,7 @@ export default function ThemePicker({
         </div>
 
         {/* ================= l'aperçu et le mouvement ================= */}
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-4">
           {/*
            * L'APERÇU MONTRE LA PAGE, PAS LE CURSEUR QU'ON TIENT.
            *
@@ -424,9 +502,21 @@ export default function ThemePicker({
            * comme `data-reglage` gèle le décor — sans quoi on aurait
            * remplacé un grand scintillement par un petit.
            */}
-          <div>
+          {/*
+           * L'APERÇU PASSE EN TÊTE AU DOIGT, ET IL Y RESTE.
+           *
+           * `-order-1` le remonte avant les réglages alors qu'il
+           * appartient, dans le document, à la colonne de droite — ce
+           * qui évite de le rendre deux fois. Collé sous la barre du
+           * haut, il reste sous les yeux pendant qu'on choisit : on juge
+           * une couleur en la voyant, pas en s'en souvenant.
+           *
+           * À `xl`, la colonne de droite existe pour de bon : il reprend
+           * sa place et son ordre, et ne colle plus à rien.
+           */}
+          <div className="-order-1 sticky top-[70px] z-20 xl:static xl:order-none">
             <div
-              className="relative h-[210px] overflow-hidden rounded-[20px] border border-white/20 shadow-[0_10px_30px_rgba(45,15,100,0.26)]"
+              className="relative h-[150px] overflow-hidden rounded-[22px] border border-white/20 shadow-[0_14px_34px_-10px_rgba(45,15,100,0.55)] xl:h-[210px] xl:rounded-[20px] xl:shadow-[0_10px_30px_rgba(45,15,100,0.26)]"
               style={{
                 background:
                   "linear-gradient(168deg, var(--bg-1) 0%, var(--bg-2) 22%, var(--bg-3) 44%, var(--bg-4) 62%, var(--bg-5) 82%, var(--bg-6) 100%)",
@@ -463,6 +553,14 @@ export default function ThemePicker({
                 Aperçu
               </span>
 
+              {/* Le nom de l'ambiance sur sa propre pastille, et pas à
+                  même le dégradé : le fond est choisi par la personne,
+                  et une ambiance claire effacerait un libellé posé
+                  dessus. Même raison que le mot « Aperçu » à gauche. */}
+              <span className="absolute right-3 top-3 max-w-[58%] truncate rounded-full bg-[rgba(8,2,30,0.42)] px-2.5 py-1 text-[9.5px] font-black uppercase tracking-[0.12em] text-white/80">
+                {decrireApparence(prefs)}
+              </span>
+
               {/* Une barre de nav en réduction : le contraste d'un bouton
                   blanc sur l'ambiance choisie ne se juge pas sur un
                   aplat, il se juge sur un bouton. */}
@@ -475,13 +573,18 @@ export default function ThemePicker({
               </span>
             </div>
 
-            <p className="m-0 mt-2 rounded-[13px] bg-[rgba(8,2,30,0.42)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-white/70">
-              {decrire(prefs.mouvement)}
-            </p>
           </div>
 
+          {/* Elle décrit le mouvement : elle appartient donc au second
+              niveau, et reste collée à l'aperçu par le même `order`. */}
+          <p
+            className={`${niveau2} -order-1 m-0 rounded-[13px] bg-[rgba(8,2,30,0.42)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-white/70 xl:-mt-2 xl:order-none`}
+          >
+            {decrire(prefs.mouvement)}
+          </p>
+
           {/* ---- mouvement ---- */}
-          <section className="glass p-4 sm:p-5">
+          <section className={`glass p-4 sm:p-5 ${niveau2}`}>
             <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
 
             {/* `items-start` : sans lui, les pastilles d'une même ligne
@@ -640,7 +743,7 @@ export default function ThemePicker({
           </section>
 
           {systemeReduit && (
-            <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white">
+            <p className={`${niveau2} m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white`}>
               Ton système demande de réduire les animations. On respecte ce réglage par
               défaut. Mais si tu choisis un mouvement ici, c&apos;est le tien qui
               s&apos;applique.
@@ -650,7 +753,7 @@ export default function ThemePicker({
           <button
             type="button"
             onClick={() => poser({ ...prefs, theme: THEME_DEFAUT, mouvement: MOUVEMENT_DEFAUT })}
-            className="min-h-[44px] w-full rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97] sm:min-h-0"
+            className={`${niveau2} min-h-[44px] w-full rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97] sm:min-h-0`}
           >
             Revenir aux réglages par défaut
           </button>

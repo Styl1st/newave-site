@@ -300,7 +300,7 @@ export default function EditeurFiche({
           modifications > 0 ? "pb-[150px] sm:pb-[120px]" : "pb-10"
         }`}
       >
-        <SommaireFiche entrees={sommaire} />
+        <SommaireFiche entrees={sommaire} obstacle={obstacle} />
 
         <form
           key={cle}

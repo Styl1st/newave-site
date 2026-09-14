@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { bulkBrandAction } from "@/app/admin/actions";
 import { annoncer } from "@/components/Confirmations";
 import { useConfirmationCle } from "@/lib/confirmation";
-import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
+import { obstacleAPublication, peutEtrePubliee, resumeDObstacle } from "@/lib/publication";
 import { conditionsDePublication } from "@/components/publication/conditions";
 import { doitAvoirDesPieces } from "@/lib/acces";
 import { StatusPill } from "./ListRow";
@@ -253,11 +253,19 @@ function ecrireVues(vues: VueGardee[]): boolean {
   }
 }
 
+/*
+ * `min-h-11` AU DOIGT, ET PAS AU-DELÀ. Ces contrôles font trente-sept
+ * pixels de haut, ce qui va très bien à la souris et pas au doigt, qui
+ * en demande quarante-quatre. La même écriture que partout ailleurs
+ * dans le site : la hauteur minimale tombe dès qu'il y a un pointeur
+ * fin, pour ne pas étirer une barre de filtres de grand écran.
+ */
 const CHAMP =
-  "w-full rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[13px] text-white placeholder:text-white/45 focus:border-white/60 focus:outline-none";
+  "w-full min-h-11 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[13px] text-white placeholder:text-white/45 focus:border-white/60 focus:outline-none sm:min-h-0";
 
 /** Une pastille de vue : le nom, puis son nombre. */
-const PUCE = "rounded-full border px-3.5 py-2 text-[12.5px] font-bold transition";
+const PUCE =
+  "inline-flex min-h-11 items-center rounded-full border px-3.5 py-2 text-[12.5px] font-bold transition sm:min-h-0";
 
 export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
   const router = useRouter();
@@ -515,13 +523,36 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
 
   return (
     <>
-      {/* ---------- filtres ---------- */}
-      <div className="glass mb-4 flex flex-col gap-3 p-4 sm:px-5">
+      {/* ---------- filtres ----------
+
+          IL COLLE EN HAUT AU DOIGT, ET LA LISTE DÉFILE DESSOUS. Sur un
+          téléphone, ce bloc occupait le premier écran entier : on
+          descendait dans les soixante-dix lignes, et la recherche —
+          celle qui sert à ne pas avoir à descendre — était trois écrans
+          plus haut. Collé, il coûte cent pixels et reste sous le pouce.
+
+          Les menus et les critères passent DERRIÈRE « Filtres » en
+          dessous de `lg` : les garder dépliés aurait rendu le bloc plus
+          haut que ce qu'il filtre. Au grand écran, rien ne change. */}
+      <div
+        /* Déplié, il ne colle plus. Menus et critères ouverts, le bloc
+           fait sept cents pixels : collé, il ne resterait rien de la
+           liste qu'il filtre. On règle, on referme, et il reprend sa
+           place sous la barre du site. */
+        className={`glass z-30 mb-4 flex flex-col gap-2.5 p-3 sm:gap-3 sm:p-4 sm:px-5 lg:static lg:top-auto ${
+          ouverts ? "" : "sticky top-[70px]"
+        }`}
+      >
         {/* Première ligne : les vues, et le nombre qu'elles promettent.
             C'est ce qui remplace le repli en tête de panneau — on entre
             dans la liste par une question (« qu'est-ce qui est prêt ? »)
-            plutôt que par un bouton qui ne dit rien de ce qu'il cache. */}
-        <div className="flex flex-wrap items-center gap-2">
+            plutôt que par un bouton qui ne dit rien de ce qu'il cache.
+
+            Une seule rangée qui défile au doigt : ici le balayage est
+            acceptable, la première vue est la plus utile et rien n'y est
+            caché d'essentiel — tout ce qu'elles posent se repose à la
+            main dans « Filtres ». */}
+        <div className="sans-ascenseur -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-0.5 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
           {VUES.map((v, i) => {
             const allumee = surLAxeDe(v.filtre);
             return (
@@ -530,11 +561,11 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                 type="button"
                 onClick={() => appliquerVue(v, allumee)}
                 aria-pressed={allumee}
-                className={
+                className={`shrink-0 ${
                   allumee
                     ? `${PUCE} border-white bg-white text-[var(--color-ink)]`
                     : `${PUCE} border-white/25 text-white/75 hover:bg-white/12 hover:text-white`
-                }
+                }`}
               >
                 {v.nom}
                 <span className={allumee ? "ml-1.5 text-[#6a5a92]" : "ml-1.5 text-white/45"}>
@@ -551,8 +582,8 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                 key={v.nom}
                 className={
                   allumee
-                    ? "flex items-center overflow-hidden rounded-full border border-white bg-white"
-                    : "flex items-center overflow-hidden rounded-full border border-white/25"
+                    ? "flex shrink-0 items-center overflow-hidden rounded-full border border-white bg-white"
+                    : "flex shrink-0 items-center overflow-hidden rounded-full border border-white/25"
                 }
               >
                 <button
@@ -604,7 +635,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                     ? `${VUES_MAX} vues au maximum : oublies-en une pour en garder une autre.`
                     : "Garder ces filtres sous un nom, dans ce navigateur."
               }
-              className="rounded-full border border-dashed border-white/35 px-3.5 py-2 text-[12.5px] font-bold text-white/60 transition hover:border-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/35 disabled:hover:text-white/60"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-dashed border-white/35 px-3.5 py-2 text-[12.5px] font-bold text-white/60 sm:min-h-0 transition hover:border-white/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/35 disabled:hover:text-white/60"
             >
               + Enregistrer cette vue
             </button>
@@ -656,7 +687,9 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             type="search"
             value={filtre.recherche}
             onChange={(e) => poser({ recherche: e.target.value })}
-            placeholder="Nom, pseudo, ville, site"
+            /* Le nombre dans l'invite : c'est la seule chose qui dise,
+               avant d'écrire, sur quoi la recherche porte. */
+            placeholder={`Chercher dans ${brands.length} fiches…`}
             aria-label="Chercher une marque"
             className={`${CHAMP} min-w-0 flex-1`}
           />
@@ -664,7 +697,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             type="button"
             onClick={() => setOuverts((o) => !o)}
             aria-expanded={ouverts}
-            className={`shrink-0 rounded-full border px-4 py-2 text-[12.5px] font-bold transition ${
+            className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 py-2 text-[12.5px] font-bold transition sm:min-h-0 ${
               nbReplies > 0 || ouverts
                 ? "border-white/60 bg-white/18 text-white"
                 : "border-white/30 text-white/78 hover:bg-white/12 hover:text-white"
@@ -693,7 +726,11 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             la piste implicite se dimensionne sur le contenu, et un nom
             de catégorie un peu long pousse la page entière en travers
             sur téléphone. */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={`grid-cols-[minmax(0,1fr)] gap-2.5 sm:grid-cols-2 lg:grid lg:grid-cols-4 ${
+            ouverts ? "grid" : "hidden"
+          }`}
+        >
           <select
             value={filtre.pays}
             onChange={(e) => poser({ pays: e.target.value })}
@@ -789,7 +826,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                         onClick={() => basculerCritere(critere.cle, f.sens)}
                         aria-pressed={actif}
                         disabled={f.n === 0 && !actif}
-                        className={`px-3 py-1.5 text-[11.5px] font-bold transition disabled:opacity-25 ${
+                        className={`min-h-11 px-3 py-1.5 text-[11.5px] font-bold transition disabled:opacity-25 sm:min-h-0 ${
                           i === 1 ? "border-l border-white/20" : ""
                         } ${
                           actif
@@ -830,7 +867,11 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
          * appliquait déjà en silence : la sélection ne porte JAMAIS sur
          * des lignes masquées par un filtre.
          */
-        <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(680px,calc(100%-2rem))] flex-wrap items-center justify-between gap-3 rounded-[999px] border border-white/20 bg-[rgba(8,2,30,0.72)] px-4 py-3 shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9)] backdrop-blur-[24px] sm:px-5">
+        /* `--pied` DÉGAGE LA BARRE D'ADMINISTRATION, qui flotte au même
+           endroit depuis qu'elle est passée sous le pouce. La variable
+           vaut zéro partout ailleurs, et zéro au grand écran : aucune
+           condition à écrire ici. Voir `BarreAdmin`. */
+        <div className="fixed inset-x-0 bottom-[calc(16px_+_var(--pied,0px))] z-40 mx-auto flex w-[min(680px,calc(100%-2rem))] flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.72)] px-4 py-3 shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9)] backdrop-blur-[24px] sm:rounded-[999px] sm:px-5">
           <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
             {retenues.length} sélectionnée{retenues.length > 1 ? "s" : ""}
             <span className="ml-1.5 font-semibold normal-case tracking-normal text-white/45">
@@ -899,7 +940,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             onClick={() =>
               setSelection(toutCoche ? new Set() : new Set(visibles.map((b) => b.id)))
             }
-            className="mb-3 rounded-full border border-white/35 px-4 py-2 text-[12px] font-bold text-white/85 transition hover:bg-white/12"
+            className="mb-3 inline-flex min-h-11 items-center rounded-full border border-white/35 px-4 py-2 text-[12px] font-bold text-white/85 transition hover:bg-white/12 sm:min-h-0"
           >
             {toutCoche ? "Tout décocher" : `Cocher les ${visibles.length} affichées`}
           </button>
@@ -907,7 +948,11 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
           {/* La barre flotte au-dessus du bas de page : ce dégagement
               évite qu'elle recouvre la dernière ligne, celle qu'on vient
               justement de cocher. */}
-          <div className={`flex flex-col gap-3 ${retenues.length > 0 ? "pb-24" : ""}`}>
+          <div
+            className={`flex flex-col gap-2.5 sm:gap-3 ${
+              retenues.length > 0 ? "pb-[calc(96px_+_var(--pied,0px))]" : ""
+            }`}
+          >
             {visibles.map((b) => {
               const coche = selection.has(b.id);
               const visuel = b.logo_url ?? b.cover_url;
@@ -920,15 +965,45 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                 .filter(Boolean)
                 .join(" · ");
 
+              /*
+               * AU DOIGT, LA LIGNE DIT CE QUI LA RETIENT.
+               *
+               * La jauge qui le disait est réservée au grand écran —
+               * cent trente pixels qu'un téléphone n'a pas — et l'état
+               * seul (« brouillon ») ne dit pas POURQUOI la fiche est
+               * encore là. « brouillon · sans visuel » tient sur une
+               * ligne et donne le geste suivant.
+               *
+               * Le résumé vient de `publication.ts`, qui le tire des
+               * mêmes constantes que le message complet : il n'existe
+               * toujours qu'une définition de « publiable ».
+               */
+              const retient = obstacleAPublication({
+                tagline: b.tagline,
+                description: b.description,
+                cover_url: b.cover_url,
+                logo_url: b.logo_url,
+                pieces: b.pieces,
+                exigeDesPieces: doitAvoirDesPieces(b),
+              });
+              const etat = b.status === "published" ? "en ligne" : "brouillon";
+              const sousTitreCourt = retient
+                ? `${etat} · ${resumeDObstacle(retient)}`
+                : `${etat} · ${b.pieces} pièce${b.pieces > 1 ? "s" : ""}`;
+
               return (
                 <div
                   key={b.id}
-                  className={`card-light relative flex items-center gap-4 p-4 transition ${
+                  className={`card-light relative flex min-h-[66px] items-center gap-3 p-3 transition sm:gap-4 sm:p-4 ${
                     coche ? "ring-3 ring-white" : ""
                   }`}
                 >
-                  <div className="relative z-3 flex w-full items-center gap-4">
-                    <label className="flex shrink-0 cursor-pointer items-center p-1">
+                  <div className="relative z-3 flex w-full items-center gap-3 sm:gap-4">
+                    {/* Quarante-quatre pixels autour d'une case qui en
+                        fait vingt et un : c'est le geste principal de
+                        cet écran, et le seul qu'on refait soixante-dix
+                        fois de suite. */}
+                    <label className="flex min-h-[44px] min-w-[44px] shrink-0 cursor-pointer items-center justify-center p-1 sm:min-h-0 sm:min-w-0 sm:justify-start">
                       <input
                         type="checkbox"
                         checked={coche}
@@ -938,7 +1013,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                       />
                     </label>
 
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[11px] bg-[#e6dcfb]">
+                    <div className="h-[42px] w-[42px] shrink-0 overflow-hidden rounded-[11px] bg-[#e6dcfb] sm:h-14 sm:w-14">
                       {visuel && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={visuel} alt="" className="h-full w-full object-cover" />
@@ -951,23 +1026,36 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
                         pour modifier une fiche, et c'est le même que
                         celui qu'ouvre la marque chez elle : par l'adresse
                         de la page, donc, et non par l'identifiant. */}
-                    <Link href={`/espace-marque/${b.slug}/modifier`} className="min-w-0 flex-1">
+                    {/* Le lien prend la hauteur de la ligne : viser un
+                        nom de quatorze pixels sur une carte de
+                        soixante-six en laissait les trois quarts
+                        inertes. */}
+                    <Link
+                      href={`/espace-marque/${b.slug}/modifier`}
+                      className="flex min-h-[44px] min-w-0 flex-1 flex-col justify-center"
+                    >
                       <span className="block truncate text-[14.5px] font-extrabold text-[var(--color-ink)]">
                         {b.name}
                       </span>
                       <span className="mt-0.5 block truncate text-[12px] font-semibold text-[#6a5a92]">
-                        {sousTitre}
+                        <span className="sm:hidden">{sousTitreCourt}</span>
+                        <span className="hidden sm:inline">{sousTitre}</span>
                       </span>
                     </Link>
 
                     <Publiable brand={b} />
 
-                    <StatusPill status={b.status} />
+                    {/* L'état est déjà dans la ligne au doigt, en toutes
+                        lettres et avec sa raison : la pastille ne ferait
+                        que le répéter, sur une largeur qu'on n'a pas. */}
+                    <span className="hidden sm:block">
+                      <StatusPill status={b.status} />
+                    </span>
 
                     <Link
                       href={`/espace-marque/${b.slug}/modifier`}
                       aria-label={`Ouvrir ${b.name}`}
-                      className="text-[18px] font-black text-[#3a2470]"
+                      className="hidden text-[18px] font-black text-[#3a2470] sm:block"
                     >
                       →
                     </Link>

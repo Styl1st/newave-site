@@ -36,11 +36,15 @@ export function ListRow({
      * le lien passe donc DERRIÈRE la ligne, en calque, et seul le
      * bouton reprend la main sur le curseur.
      */
-    <div className="card-light relative flex items-center gap-4 p-4">
+    /* Soixante-six pixels au doigt, comme toutes les lignes d'admin :
+       la vignette descend à quarante-deux et le rembourrage à douze,
+       ce qui fait tenir deux lignes de plus par écran sans rien
+       retirer de ce qui se lit. */
+    <div className="card-light relative flex min-h-[66px] items-center gap-3 p-3 sm:gap-4 sm:p-4">
       <Link href={href} aria-label={title} data-calque="" className="absolute inset-0 z-2" />
 
-      <div className="pointer-events-none relative z-3 flex w-full items-center gap-4">
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[11px] bg-[#e6dcfb]">
+      <div className="pointer-events-none relative z-3 flex w-full items-center gap-3 sm:gap-4">
+        <div className="h-[42px] w-[42px] shrink-0 overflow-hidden rounded-[11px] bg-[#e6dcfb] sm:h-14 sm:w-14">
           {thumb && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={thumb} alt="" className="h-full w-full object-cover" />
@@ -54,7 +58,7 @@ export function ListRow({
         </div>
         {status && <StatusPill status={status} />}
         {action && <div className="pointer-events-auto shrink-0">{action}</div>}
-        <span className="text-[18px] font-black text-[#3a2470]">→</span>
+        <span className="hidden text-[18px] font-black text-[#3a2470] sm:block">→</span>
       </div>
     </div>
   );

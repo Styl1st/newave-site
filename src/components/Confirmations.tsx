@@ -156,7 +156,10 @@ export default function Confirmations() {
       // `polite` : le lecteur d'écran finit sa phrase avant d'annoncer,
       // au lieu de couper la parole pour un message de confort.
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-[min(23rem,calc(100vw-2rem))] flex-col gap-2.5 sm:bottom-6 sm:right-6"
+      /* `--pied` dégage la barre d'administration quand elle est là :
+         sans ça, une confirmation montait pile sur les onglets. Elle
+         vaut zéro partout ailleurs. Voir `BarreAdmin`. */
+      className="pointer-events-none fixed bottom-[calc(16px_+_var(--pied,0px))] right-4 z-[70] flex w-[min(23rem,calc(100vw-2rem))] flex-col gap-2.5 sm:bottom-[calc(24px_+_var(--pied,0px))] sm:right-6"
     >
       {messages.map((m) => (
         <div

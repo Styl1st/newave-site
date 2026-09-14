@@ -56,15 +56,34 @@ export default function SuppressionCompte({ email }: { email: string }) {
   }
 
   return (
+    /*
+     * AU DOIGT, LE CADRE ROUGE DISPARAÎT TANT QU'ON N'A RIEN DEMANDÉ.
+     *
+     * Sur un écran de téléphone, ce panneau d'alerte de cent cinquante
+     * pixels était la dernière chose qu'on voyait de son compte, et il
+     * criait pour une action qu'on fait une fois dans sa vie. Il ne
+     * reste qu'un lien discret ; tout le reste — l'avertissement, la
+     * recopie de l'adresse, le bouton rouge — revient identique dès
+     * qu'on y touche. Rien n'a bougé du chemin lui-même : c'est la même
+     * confirmation, au même prix.
+     */
     <section
-      className="mt-4 rounded-[var(--radius)] border p-4 sm:p-[26px]"
-      style={{
-        borderColor: "rgba(194,39,63,.45)",
-        backgroundColor: "rgba(70,10,26,.28)",
-      }}
+      className={`mt-4 rounded-[var(--radius)] lg:border lg:border-[rgba(194,39,63,.45)] lg:bg-[rgba(70,10,26,.28)] lg:p-[26px] ${
+        ouvert ? "border border-[rgba(194,39,63,.45)] bg-[rgba(70,10,26,.28)] p-4" : ""
+      }`}
     >
-      <h2 className="m-0 text-[17px] font-extrabold text-white">Supprimer mon compte</h2>
-      <p className="m-0 mt-2 max-w-prose text-[13px] leading-relaxed text-white/70">
+      <h2
+        className={`m-0 text-[17px] font-extrabold text-white lg:block ${
+          ouvert ? "" : "hidden"
+        }`}
+      >
+        Supprimer mon compte
+      </h2>
+      <p
+        className={`m-0 mt-2 max-w-prose text-[13px] leading-relaxed text-white/70 lg:block ${
+          ouvert ? "" : "hidden"
+        }`}
+      >
         Tes favoris et tes avis partent avec. Les marques que tu gères restent dans
         l&apos;annuaire.
       </p>
@@ -75,7 +94,7 @@ export default function SuppressionCompte({ email }: { email: string }) {
           onClick={() => setOuvert(true)}
           data-curseur-zone="danger"
           data-curseur-mot="Supprimer"
-          className="mt-4 inline-flex min-h-[44px] items-center rounded-full border border-[#c2273f] px-5 text-[12.5px] font-extrabold text-white transition hover:bg-[rgba(194,39,63,0.35)] active:scale-[.97] sm:min-h-0 sm:py-2.5"
+          className="inline-flex min-h-[44px] items-center text-[12.5px] font-bold text-white/45 underline underline-offset-[3px] transition hover:text-white/75 lg:mt-4 lg:rounded-full lg:border lg:border-[#c2273f] lg:px-5 lg:py-2.5 lg:font-extrabold lg:text-white lg:no-underline lg:hover:bg-[rgba(194,39,63,0.35)]"
         >
           Supprimer mon compte
         </button>

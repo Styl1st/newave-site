@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import {
-  DisplayNameForm,
-  EmailForm,
-  LienReinitialisation,
-} from "@/components/AccountForms";
+import { LienReinitialisation, MonCompteForm } from "@/components/AccountForms";
 import CompteEcran, { type Espace } from "@/components/CompteEcran";
+import VisuelMonCompte from "@/components/compte/VisuelMonCompte";
 import SuppressionCompte from "@/components/SuppressionCompte";
 import ThemePicker from "@/components/ThemePicker";
 import { requireUser } from "@/lib/auth";
@@ -13,6 +9,7 @@ import { lireApparenceDuCompte } from "@/lib/apparence";
 import { ROLE_LABEL } from "@/lib/types";
 import { getManagedBrands } from "@/lib/brand-space";
 import { getFavoriteBrands } from "@/lib/favorites";
+import { PREFERENCES_DEFAUT, decrireApparence } from "@/lib/theme";
 
 export const metadata: Metadata = { title: "Mon compte" };
 export const dynamic = "force-dynamic";
@@ -27,92 +24,82 @@ export default async function ComptePage() {
 
   const isAdmin = profile.role === "admin";
 
-  /* Une seule liste pour les deux endroits qui la montrent : les cartes
-     de raccourci du volet Profil et le groupe « Mes espaces » du rail.
-     Deux listes voudraient dire deux filtres par rôle à tenir d'accord. */
-  const raccourcis = [
-    {
-      href: "/favoris",
-      label: "Mes favoris",
-      note: favorites.length
-        ? `${favorites.length} marque${favorites.length > 1 ? "s" : ""}`
-        : "Aucune pour l'instant",
-      compte: favorites.length,
-      show: true,
-    },
-    {
-      href: "/espace-marque",
-      label: "Espace marque",
-      note: brands.length
-        ? `${brands.length} marque${brands.length > 1 ? "s" : ""} à gérer`
-        : "Aucune marque rattachée",
-      compte: brands.length,
-      show: brands.length > 0 || isAdmin || profile.role === "createur",
-    },
-    {
-      href: "/admin",
-      label: "Administration",
-      note: "Posts, marques, candidatures",
-      compte: null,
-      show: isAdmin,
-    },
-  ].filter((r) => r.show);
-
-  const espaces: Espace[] = raccourcis.map(({ href, label, compte }) => ({
-    href,
-    label,
-    compte,
-  }));
+  /*
+   * UNE SEULE LISTE, ET UN SEUL ENDROIT QUI LA REND.
+   *
+   * Elle se rendait deux fois : en cartes dans le volet Profil, puis en
+   * lignes dans le rail. Les mêmes trois liens, l'un sous l'autre, à
+   * deux endroits de la même page — dont un qu'il fallait faire défiler
+   * pour voir. C'est ce que ce chantier corrige : `CompteEcran` en tire
+   * des tuiles au doigt, des lignes de rail au grand écran, et les deux
+   * formes ne coexistent jamais.
+   */
+  const espaces: Espace[] = (
+    [
+      {
+        href: "/favoris",
+        label: "Mes favoris",
+        note: favorites.length
+          ? `${favorites.length} marque${favorites.length > 1 ? "s" : ""}`
+          : "Aucune pour l'instant",
+        compte: favorites.length,
+        icone: "favoris",
+        show: true,
+      },
+      {
+        href: "/espace-marque",
+        label: "Espace marque",
+        note: brands.length
+          ? `${brands.length} marque${brands.length > 1 ? "s" : ""} à gérer`
+          : "Aucune marque rattachée",
+        compte: brands.length,
+        icone: "marque",
+        show: brands.length > 0 || isAdmin || profile.role === "createur",
+      },
+      {
+        href: "/admin",
+        label: "Administration",
+        note: "Posts, marques, candidatures",
+        compte: null,
+        icone: "admin",
+        show: isAdmin,
+      },
+    ] satisfies (Espace & { show: boolean })[]
+  )
+    .filter((r) => r.show)
+    .map((r) => ({
+      href: r.href,
+      label: r.label,
+      note: r.note,
+      compte: r.compte,
+      icone: r.icone,
+    }));
 
   const initiale =
     (profile.display_name ?? profile.email ?? "?").trim().charAt(0).toUpperCase() || "?";
+  const role = profile.role !== "membre" ? ROLE_LABEL[profile.role] : null;
 
-  /* ---------------- 8a — le volet Profil ---------------- */
-  const voletProfil = (
+  /* ---------------- « Mon compte » : nom, adresse, mot de passe ---------------- */
+  const pageMonCompte = (
     <div className="flex flex-col gap-5">
-      <div className="rise rise-1 grid gap-3.5 sm:grid-cols-2">
-        {raccourcis.map((r) => (
-          /* Le rayon est posé en ligne : `.card-light` déclare le sien
-             hors de toute couche CSS, où une classe Tailwind ne peut pas
-             le reprendre. Le liseré `::before` en hérite. */
-          <Link
-            key={r.href}
-            href={r.href}
-            style={{ borderRadius: "18px" }}
-            className="card-light px-5 py-[18px]"
-          >
-            <div className="relative z-3 flex items-center justify-between gap-3">
-              <span className="min-w-0">
-                <span className="block text-[15px] font-extrabold text-[var(--color-ink)]">
-                  {r.label}
-                </span>
-                <span className="mt-1 block truncate text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
-                  {r.note}
-                </span>
-              </span>
-              <span className="text-[19px] font-black text-[#3a2470]">→</span>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <VisuelMonCompte initiale={initiale} role={role} />
 
-      {/* ---------- identité ----------
-          Deux formulaires, deux boutons, deux messages. Ils partent vers
-          deux endroits différents — la base pour le nom, Supabase Auth
-          pour l'adresse — et n'échouent pas ensemble. Une barre
-          d'enregistrement commune laisserait croire le contraire. */}
-      <section className="glass rise rise-2 p-4 sm:p-[26px]">
-        <h2 className="m-0 mb-5 text-[17px] font-extrabold text-white">Ton identité</h2>
-        <DisplayNameForm current={profile.display_name ?? ""} />
-        {profile.email && <EmailForm actuel={profile.email} />}
-      </section>
+      {/* Le nom part en base, l'adresse part dans Supabase Auth, et les
+          deux n'échouent pas ensemble : c'est tout le soin qu'il y a
+          dans `MonCompteForm`. */}
+      <MonCompteForm
+        nomActuel={profile.display_name ?? ""}
+        emailActuel={profile.email ?? null}
+      />
 
-      {/* ---------- mot de passe ---------- */}
+      {/* ---------- mot de passe ----------
+          Une ligne, et non un formulaire : il n'y a rien à saisir ici,
+          seulement un lien à demander. */}
       <section className="glass rise rise-3 p-4 sm:p-[26px]">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Mot de passe</h2>
         {/* La colonne du premier palier est écrite, pas implicite : voir
             le commentaire de `CompteEcran`. */}
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-[26px]">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-[26px]">
           <div>
             <p className="m-0 text-[13.5px] leading-relaxed text-white/70">
               On t&apos;envoie un lien : il faut accéder à ta boîte mail pour aller au
@@ -132,10 +119,13 @@ export default async function ComptePage() {
     </div>
   );
 
-  /* ---------------- 8b — le volet Apparence ---------------- */
-  const voletApparence = (
+  /* ---------------- « Apparence » ---------------- */
+  const pageApparence = (
     <div className="flex flex-col gap-4">
-      <div className="rise rise-1">
+      {/* Au doigt, l'aperçu de `ThemePicker` tient ce rôle : il montre
+          l'ambiance au lieu de la nommer, et il ne défile pas. Répéter
+          un titre au-dessus lui prendrait sa place. */}
+      <div className="rise rise-1 hidden lg:block">
         <h2 className="m-0 text-[17px] font-extrabold text-white">Apparence</h2>
         <p className="m-0 mt-2 text-[13.5px] leading-relaxed text-white/70">
           Le fond du site, à ton goût. Le réglage est rangé avec ton compte : il te suit
@@ -148,7 +138,11 @@ export default async function ComptePage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
-      <header className="rise mb-7 flex items-center gap-4 sm:mb-9 sm:gap-5">
+      {/* L'en-tête ne sert plus qu'au grand écran : au doigt, le bandeau
+          compact du hub dit la même chose en quarante-six pixels, et les
+          quatre-vingts qu'il rendait sont ce qui manquait pour que le
+          hub tienne sans défiler. */}
+      <header className="rise mb-7 hidden items-center gap-4 sm:mb-9 sm:gap-5 lg:flex">
         <span
           aria-hidden
           className="grid h-[62px] w-[62px] shrink-0 place-items-center rounded-[24px] text-[24px] font-black text-white sm:h-[76px] sm:w-[76px] sm:text-[28px]"
@@ -169,12 +163,27 @@ export default async function ComptePage() {
             <p className="m-0 min-w-0 truncate text-[14.5px] font-medium text-white/78">
               {profile.email}
             </p>
-            {profile.role !== "membre" && <span className="badge">{ROLE_LABEL[profile.role]}</span>}
+            {role && <span className="badge">{role}</span>}
           </div>
         </div>
       </header>
 
-      <CompteEcran espaces={espaces} profil={voletProfil} apparence={voletApparence} />
+      <CompteEcran
+        espaces={espaces}
+        identite={{
+          nom: profile.display_name ?? "Mon compte",
+          email: profile.email ?? null,
+          initiale,
+          role,
+        }}
+        /* Le compte fait foi, comme partout ailleurs sur l'apparence.
+           Le stockage local ne reprend la main que pour un visiteur qui
+           n'a jamais rien enregistré — et le hub relit cette copie-là au
+           retour de la page Apparence, quand elle est à jour. */
+        apparenceInitiale={decrireApparence(apparence ?? PREFERENCES_DEFAUT)}
+        profil={pageMonCompte}
+        apparence={pageApparence}
+      />
     </div>
   );
 }

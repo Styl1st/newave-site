@@ -38,6 +38,25 @@ export type FichePubliable = {
 };
 
 /**
+ * LES QUATRE MESSAGES SONT NOMMÉS, ET C'EST CE QUI TIENT LE RÉSUMÉ.
+ *
+ * `admin/page.tsx` en tenait une table pour les raccourcir sur une
+ * carte — « 3 sans visuel, 1 sans catalogue » — et cette table était
+ * indexée par les phrases recopiées à la main. Réécrire une phrase ici
+ * suffisait à la faire tomber en « autre obstacle », silencieusement.
+ * Les deux listes partent maintenant des mêmes constantes : une phrase
+ * corrigée reste résumée.
+ */
+const SANS_RIEN =
+  "Cette fiche n'a ni visuel ni texte. Ajoute au moins une image et une accroche avant de la publier.";
+const SANS_VISUEL =
+  "Cette fiche n'a ni couverture ni logo. Une carte sans image dessert la marque : ajoute un visuel avant de la publier.";
+const SANS_TEXTE =
+  "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.";
+const SANS_CATALOGUE =
+  "Cette fiche n'a aucune pièce. Lance l'import du catalogue, ou ajoute au moins une pièce à la main avant de la publier.";
+
+/**
  * Renvoie ce qui manque, ou null si la fiche peut partir.
  *
  * Le message est écrit pour être montré tel quel : il dit ce qui
@@ -47,9 +66,7 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
   const aDuTexte = Boolean(fiche.tagline?.trim() || fiche.description?.trim());
   const aUnVisuel = Boolean(fiche.cover_url?.trim() || fiche.logo_url?.trim());
 
-  if (!aDuTexte && !aUnVisuel) {
-    return "Cette fiche n'a ni visuel ni texte. Ajoute au moins une image et une accroche avant de la publier.";
-  }
+  if (!aDuTexte && !aUnVisuel) return SANS_RIEN;
   if (!aUnVisuel) {
     /*
      * L'image n'est pas une décoration.
@@ -59,11 +76,9 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
      * elle-même qui en paraît négligée. Mieux vaut qu'elle attende un
      * jour de plus que de se présenter comme ça.
      */
-    return "Cette fiche n'a ni couverture ni logo. Une carte sans image dessert la marque : ajoute un visuel avant de la publier.";
+    return SANS_VISUEL;
   }
-  if (!aDuTexte) {
-    return "Cette fiche n'a ni accroche ni description. Remplis-en au moins une avant de la publier.";
-  }
+  if (!aDuTexte) return SANS_TEXTE;
 
   /*
    * Une marque sans une seule pièce n'a rien à montrer.
@@ -75,7 +90,7 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
    * régler ça plutôt que de la présenter vide.
    */
   if (fiche.pieces === 0 && fiche.exigeDesPieces !== false) {
-    return "Cette fiche n'a aucune pièce. Lance l'import du catalogue, ou ajoute au moins une pièce à la main avant de la publier.";
+    return SANS_CATALOGUE;
   }
   return null;
 }
@@ -83,4 +98,27 @@ export function obstacleAPublication(fiche: FichePubliable): string | null {
 /** Version courte, quand on trie une liste plutôt qu'on explique. */
 export function peutEtrePubliee(fiche: FichePubliable): boolean {
   return obstacleAPublication(fiche) === null;
+}
+
+/**
+ * Le même obstacle, en deux ou trois mots.
+ *
+ * Une phrase entière ne tient ni sur une ligne de liste — soixante-six
+ * pixels de haut, un nom et un état déjà dessus — ni dans le
+ * « 3 sans visuel, 1 sans catalogue » du tableau de bord. Ce n'est pas
+ * une seconde définition de « publiable » : la décision reste celle de
+ * `obstacleAPublication`, on ne fait que raccourcir ce qu'elle a dit.
+ *
+ * Un message inconnu se résume en « autre obstacle » : visible, donc
+ * réparable, plutôt que faux.
+ */
+const RESUME: Record<string, string> = {
+  [SANS_RIEN]: "ni visuel ni texte",
+  [SANS_VISUEL]: "sans visuel",
+  [SANS_TEXTE]: "sans texte",
+  [SANS_CATALOGUE]: "sans catalogue",
+};
+
+export function resumeDObstacle(message: string): string {
+  return RESUME[message] ?? "autre obstacle";
 }

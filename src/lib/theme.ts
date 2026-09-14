@@ -91,6 +91,36 @@ export const PRESETS: Ambiance[] = [
 
 export const CLE_STOCKAGE = "newave-theme";
 
+/**
+ * Deux thèmes identiques ? La comparaison porte sur les valeurs.
+ *
+ * Un thème n'est que douze chaînes de caractères : deux objets
+ * différents peuvent porter exactement la même ambiance, et c'est même
+ * le cas le plus courant — celui d'un preset recopié dans les
+ * préférences. Comparer les références dirait « non » à chaque fois.
+ *
+ * Elle vit ici et non dans `ThemePicker` parce que le hub du compte a
+ * besoin de la même réponse pour nommer l'ambiance en cours. Deux
+ * définitions de « le même thème » finiraient par se contredire, et
+ * c'est le genre de désaccord qu'on ne voit qu'en production.
+ */
+export function memeTheme(a: Theme, b: Theme): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
+ * L'apparence en cours, lue en toutes lettres : « NEWAVE · Sombre ».
+ *
+ * « Sur mesure » quand aucune ambiance enregistrée ne correspond : les
+ * couleurs ont alors été composées à la main, et il n'existe aucun nom
+ * à donner. Dire « NEWAVE » dans ce cas serait faux, et laisser le
+ * champ vide laisserait croire à un réglage perdu.
+ */
+export function decrireApparence(prefs: Preferences): string {
+  const connue = [...PRESETS, ...prefs.ambiances].find((a) => memeTheme(a.theme, prefs.theme));
+  return `${connue?.nom ?? "Sur mesure"} · ${prefs.clair ? "Clair" : "Sombre"}`;
+}
+
 /** Une phrase qui décrit le réglage courant, pour ne pas laisser deux nombres nus. */
 export function decrire(m: Mouvement): string {
   if (m.amplitude <= 0.02) return "Aucun mouvement. Le fond reste immobile.";

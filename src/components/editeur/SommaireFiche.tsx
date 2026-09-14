@@ -43,7 +43,23 @@ export type EntreeSommaire = {
   vides: number;
 };
 
-export default function SommaireFiche({ entrees }: { entrees: EntreeSommaire[] }) {
+export default function SommaireFiche({
+  entrees,
+  obstacle,
+}: {
+  entrees: EntreeSommaire[];
+  /**
+   * Ce qui retient la fiche, tel que `obstacleAPublication` l'a écrit.
+   *
+   * Il s'affiche SOUS LA RANGÉE, et seulement au doigt. La check-list
+   * qui le porte vit dans la troisième colonne ; à 390 pixels cette
+   * colonne passe sous le formulaire, donc trois écrans plus bas — on
+   * ne découvrait ce qui bloque qu'après avoir tout fait défiler, ou
+   * après avoir essayé de publier. Au grand écran, la check-list est à
+   * côté, en entier, et le répéter ici ne servirait à rien.
+   */
+  obstacle?: string | null;
+}) {
   return (
     <nav
       aria-label="Sections de la fiche"
@@ -74,6 +90,28 @@ export default function SommaireFiche({ entrees }: { entrees: EntreeSommaire[] }
           </li>
         ))}
       </ul>
+
+      {obstacle !== undefined && (
+        /* Il mène à la check-list plutôt que de la recopier : le détail
+           condition par condition y est déjà, et deux listes du même
+           verdict finiraient par ne plus dire la même chose. */
+        <a
+          href="#publier"
+          className="mt-2 flex items-start gap-2.5 rounded-[13px] px-3 py-2.5 transition active:scale-[.98] lg:hidden"
+          style={{
+            background: obstacle ? "rgba(242,176,60,0.14)" : "rgba(87,217,154,0.14)",
+          }}
+        >
+          <span
+            aria-hidden
+            className="mt-[3px] h-[9px] w-[9px] shrink-0 rounded-full"
+            style={{ background: obstacle ? AMBRE : VERT }}
+          />
+          <span className="text-[12px] font-semibold leading-snug text-white/85">
+            {obstacle ?? "Rien ne retient cette fiche : elle peut partir en ligne."}
+          </span>
+        </a>
+      )}
     </nav>
   );
 }

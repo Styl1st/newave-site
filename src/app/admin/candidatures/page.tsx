@@ -9,7 +9,10 @@ function Carte({ a }: { a: Application }) {
   const proprietaire = a.relationship === "proprietaire";
 
   return (
-    <article className="glass p-4 sm:p-5">
+    /* L'ancre que vise la pile. Sans elle, ouvrir un dossier depuis la
+       pile ramenait en haut d'une liste de vingt, à recommencer la
+       recherche à l'œil. `scroll-mt` la décolle de la barre du haut. */
+    <article id={a.id} className="glass scroll-mt-24 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="m-0 text-[17px] font-extrabold text-white">{a.brand_name}</h3>

@@ -1534,6 +1534,24 @@ html[data-menu="1"] > body > footer {
    n'est dans aucune couche : elle passe devant les utilitaires
    Tailwind quoi qu'on écrive dans le `className`. Même piège que la
    hauteur de `.champ`. */
+/* Ce qui flotte en bas se pose AU-DESSUS de la barre d'administration.
+   ---------------------------------------------------------------
+   Deux pilules au même endroit, c'est ce qui arrive dès qu'un écran
+   d'admin fait flotter quelque chose : la barre de sélection de
+   l'annuaire, et les confirmations qui montent en bas à droite. Elles
+   ne se connaissent pas entre elles, et leur demander de se connaître
+   voudrait dire faire remonter un état de navigation dans chacune.
+
+   `BarreAdmin` pose l'attribut tant qu'elle est montée, et tout ce qui
+   flotte lit la même variable. Au grand écran la barre n'existe pas :
+   le dégagement retombe à zéro, et personne n'a de condition à écrire.
+
+   Voir `BarreAdmin`, `BrandBulkList` et `Confirmations`. */
+html[data-pied="admin"] { --pied: 90px; }
+@media (min-width: 1024px) {
+  html[data-pied="admin"] { --pied: 0px; }
+}
+
 .barre-pied { border-radius: 24px; }
 @media (min-width: 640px) {
   .barre-pied { border-radius: 999px; }

@@ -1,17 +1,26 @@
 import Link from "next/link";
+import BarreAdmin from "@/components/admin/BarreAdmin";
 import { requireAdmin } from "@/lib/auth";
-import { IconGrid, IconImage, IconInbox, IconTag, IconUser } from "@/components/Icons";
+import { compteDeLaPile } from "@/lib/admin-queries";
+import {
+  IconDrapeau,
+  IconGrid,
+  IconImage,
+  IconInbox,
+  IconTag,
+  IconUser,
+} from "@/components/Icons";
 
-/** Le fanion de la modération : aucune icône existante ne convenait. */
-function IconDrapeau() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 21V4" />
-      <path d="M4 4h11l-1.6 3.5L15 11H4" />
-    </svg>
-  );
-}
-
+/*
+ * La barre du haut reste, mais elle ne sert plus qu'au grand écran.
+ *
+ * Elle porte les six entrées sur un rang dès qu'il y a la place, et
+ * c'est la bonne forme là où le pointeur est déjà en haut de l'écran.
+ * En dessous de `lg`, elle s'enroulait sur deux rangs : deux rangs de
+ * pastilles au-dessus de chaque page, à viser en haut d'un écran qu'on
+ * tient par le bas. C'est `BarreAdmin` qui prend le relais, sous le
+ * pouce. Les deux ne coexistent jamais.
+ */
 const NAV = [
   { href: "/admin", label: "Tableau de bord", Icon: IconGrid },
   { href: "/admin/posts", label: "Posts", Icon: IconImage },
@@ -25,18 +34,28 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireAdmin();
+  /* Deux comptages en tête, sans aucune ligne transportée : voir
+     `compteDeLaPile`. C'est ce qui rend le badge tenable sur toutes
+     les pages de l'administration. */
+  const pile = await compteDeLaPile();
 
   return (
     // Même raison que l'espace marque : on ne fait pas danser une
     // table de travail. Voir espace-marque/layout.tsx.
-    <div data-no-reveal className="mx-auto w-full max-w-6xl px-[var(--pad)] py-6 sm:py-9">
-      <div data-no-reveal className="glass mb-8 flex flex-wrap items-center justify-between gap-4 p-4 sm:px-6">
-        {/* Elle s'enroule, elle ne défile plus.
-            Six entrées ne tiennent pas sur la largeur d'un téléphone :
-            on les faisait glisser latéralement, ce qui veut dire que
-            les deux dernières — dont les signalements — n'existaient
-            pas pour qui ne pensait pas à balayer. Deux rangs visibles
-            valent mieux qu'un rang caché. */}
+    //
+    // ⚠️ CENT HUIT PIXELS EN BAS, ET CE N'EST PAS UNE MARGE DE CONFORT.
+    // La pilule de navigation flotte au-dessus de la page : sans eux,
+    // la dernière ligne de chaque liste se range dessous et devient
+    // inatteignable. C'est le défaut le plus probable de cette forme,
+    // et il ne se voit qu'en arrivant au bas d'une longue liste.
+    <div
+      data-no-reveal
+      className="mx-auto w-full max-w-6xl px-[var(--pad)] pb-[108px] pt-6 sm:pt-9 lg:pb-9"
+    >
+      <div
+        data-no-reveal
+        className="glass mb-8 hidden flex-wrap items-center justify-between gap-4 p-4 sm:px-6 lg:flex"
+      >
         <nav className="flex flex-wrap items-center gap-1">
           {NAV.map(({ href, label, Icon }) => (
             <Link
@@ -61,6 +80,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </div>
 
       {children}
+
+      <BarreAdmin pile={pile.total} qui={profile.display_name ?? profile.email ?? "administrateur"} />
     </div>
   );
 }

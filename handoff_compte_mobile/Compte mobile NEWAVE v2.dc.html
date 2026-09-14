@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  /* LE FOND EST SUR `html`, ET C'EST NÉCESSAIRE. En mode canevas, l'hôte
+     donne au `body` la hauteur du seul écran visible ET un fond crème à
+     `html` : un fond posé sur le `body` ne se propage donc plus au
+     canevas, et il ne peint que ses 540 premiers pixels. Tout le texte
+     clair situé plus bas passait blanc sur crème, donc invisible. */
+  html { background:#140a2e; }
+  body { margin:0; background:#140a2e; color:#f2ecff; font-family:Archivo, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  * { box-sizing:border-box; }
+  a { color:#f2ecff; text-decoration:underline; text-underline-offset:3px; }
+  a:hover { color:#ffffff; }
+  @keyframes respire { from { transform:translate3d(-8%,-9%,0) scale(1.02); } to { transform:translate3d(8%,9%,0) scale(1.1); } }
+  @keyframes nappe1 { 0%{transform:translate3d(-22%,-16%,0) scale(1) rotate(0deg);opacity:.9} 50%{transform:translate3d(6%,10%,0) scale(1.25) rotate(6deg);opacity:1} 100%{transform:translate3d(24%,20%,0) scale(1.4) rotate(11deg);opacity:.85} }
+  @keyframes monte { from { transform:translateY(28px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+  @keyframes apparait { from { opacity:0 } to { opacity:1 } }
+  @keyframes pousse { from { transform:translateX(26px); opacity:0 } to { transform:translateX(0); opacity:1 } }
+  .liste-tel { scrollbar-width:none; }
+  .liste-tel::-webkit-scrollbar { display:none; }
+  input[type=range].cur { -webkit-appearance:none; appearance:none; height:30px; background:transparent; }
+  input[type=range].cur::-webkit-slider-runnable-track { height:6px; border-radius:999px; background:rgba(255,255,255,.25); }
+  input[type=range].cur::-webkit-slider-thumb { -webkit-appearance:none; width:26px; height:26px; margin-top:-10px; border-radius:999px; background:#fff; box-shadow:0 3px 10px rgba(10,2,32,.5); }
+</style>
+</helmet>
+
+<section style="padding:56px 48px 64px;max-width:none">
+  <div style="max-width:920px;margin:0 0 40px">
+    <p style="margin:0;font:900 11px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,236,255,.55)">Retenu · Le compte et l'admin sur téléphone</p>
+    <h1 style="margin:14px 0 0;font:800 40px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Une liste pour le compte, une console pour l'admin</h1>
+    <p style="margin:18px 0 0;font:500 16px/1.65 Archivo;color:rgba(242,236,255,.78);text-wrap:pretty">Aujourd'hui l'écran empile tout : rail d'onglets qui défile à l'horizontale, trois cartes de raccourci, puis les mêmes trois liens une seconde fois dans le rail, puis identité, mot de passe, suppression — et l'Apparence seule fait quatre écrans de haut. <strong style="font-weight:800;color:#fff">Chaque lien n'existe plus qu'une fois</strong>, et le hub tient sans défilement.</p>
+    <p style="margin:14px 0 0;font:500 16px/1.65 Archivo;color:rgba(242,236,255,.78);text-wrap:pretty">Deux directions gardées : <a href="#1b">1b</a> pour le compte — destinations en tuiles, réglages en trois lignes, identité et mot de passe sur une seule page — et <a href="#1d">1d</a> pour l'administration, traitée comme une table de travail avec sa barre de pied à cinq places. Tout est cliquable. Les écartées (1a hub à sous-écrans, 1c feuilles) restent dans <em>Compte mobile NEWAVE.dc.html</em>.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start">
+
+    <!-- ============================== 1b ============================== -->
+    <div id="1b" data-screen-label="1b Tuiles et page unique" style="flex:0 0 auto;width:402px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+        <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">1b</span>
+        <h2 style="margin:0;font:800 18px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Les destinations d'abord</h2>
+      </div>
+      <p style="margin:0 0 14px;font:500 13.5px/1.55 Archivo;color:rgba(242,236,255,.6);max-width:380px">On vient rarement sur son compte pour changer son nom : on vient pour aller ailleurs. Les espaces passent en tuiles hautes sous le pouce, les réglages en trois lignes dessous. Identité et mot de passe tiennent sur une seule page — deux écrans pour quatre champs, c'était une page de trop.</p>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="position:relative;height:874px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif;display:flex;flex-direction:column">
+          <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+            <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#31217c 0%,#4e5bc0 26%,#9e63d6 48%,#c255c4 66%,#5a54c8 84%,#33217f 100%);animation:respire 18s ease-in-out infinite alternate"></div>
+            <div style="position:absolute;inset:-26%;filter:blur(26px);background:radial-gradient(circle at 70% 20%,rgba(90,114,224,.8) 0%,transparent 40%),radial-gradient(circle at 20% 70%,rgba(232,111,216,.72) 0%,transparent 42%);animation:nappe1 13s ease-in-out infinite alternate"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(44,16,100,.52) 0%,rgba(44,16,100,.06) 24%,rgba(44,16,100,.1) 70%,rgba(44,16,100,.62) 100%)"></div>
+          </div>
+
+          <sc-if value="{{ bHub }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="flex:0 0 auto;width:46px;height:46px;border-radius:16px;background:linear-gradient(140deg,rgba(232,111,216,.5),rgba(90,114,224,.44));display:grid;place-items:center;font:900 18px/1 Archivo;color:#fff">C</span>
+                  <span style="flex:1;min-width:0;display:block">
+                    <span style="display:block;font:800 17px/1.15 Archivo;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Clara Vidal</span>
+                    <span style="display:block;margin-top:2px;font:600 12.5px/1.3 Archivo;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">clara.vidal@gmail.com</span>
+                  </span>
+                  <sc-if value="{{ roleBadge }}" hint-placeholder-val="{{ true }}">
+                    <span style="flex:0 0 auto;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:4px 9px 5px;font:900 8.5px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:#fff">{{ roleBadge }}</span>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:24px 16px 26px">
+                <p style="margin:0 0 11px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)">Mes espaces</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+                  <sc-for list="{{ tuiles }}" as="t" hint-placeholder-count="3">
+                    <a href="#1b" style="grid-column:{{ t.col }};display:flex;flex-direction:column;justify-content:space-between;min-height:124px;border-radius:20px;padding:15px;text-decoration:none;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 10px 26px -8px rgba(52,18,110,.45);font-family:Archivo">
+                      <span style="display:flex;align-items:flex-start;justify-content:space-between">
+                        <span style="width:34px;height:34px;border-radius:11px;background:rgba(23,10,51,.08);display:grid;place-items:center;color:#3a2470">{{ t.icone }}</span>
+                        <span style="font:900 26px/1 Archivo;letter-spacing:-.04em;color:#170a33">{{ t.n }}</span>
+                      </span>
+                      <span style="display:block">
+                        <span style="display:block;font:800 15.5px/1.15 Archivo;letter-spacing:-.02em;color:#170a33">{{ t.nom }}</span>
+                        <span style="display:block;margin-top:4px;font:700 10px/1.3 Archivo;letter-spacing:.08em;text-transform:uppercase;color:#6a5a92">{{ t.note }}</span>
+                      </span>
+                    </a>
+                  </sc-for>
+                </div>
+
+                <p style="margin:26px 0 11px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)">Réglages</p>
+                <div style="border-radius:18px;overflow:hidden;background-color:rgba(8,2,30,.5);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%);backdrop-filter:blur(24px) saturate(1.5);border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 36px -14px rgba(44,16,100,.6)">
+                  <button type="button" onClick="{{ nav.b_compte }}" style="display:flex;align-items:center;gap:13px;width:100%;min-height:60px;padding:11px 14px;border:none;background:none;text-align:left;cursor:pointer;font-family:Archivo">
+                    <span style="flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.13);display:grid;place-items:center;color:#fff"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
+                    <span style="flex:1;min-width:0;display:block">
+                      <span style="display:block;font:700 15px/1.2 Archivo;color:#fff">Mon compte</span>
+                      <span style="display:block;margin-top:3px;font:600 12px/1.3 Archivo;color:rgba(255,255,255,.5)">Nom, email, mot de passe</span>
+                    </span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                  </button>
+                  <button type="button" onClick="{{ nav.b_apparence }}" style="display:flex;align-items:center;gap:13px;width:100%;min-height:60px;padding:11px 14px;border:none;border-top:1px solid rgba(255,255,255,.12);background:none;text-align:left;cursor:pointer;font-family:Archivo">
+                    <span style="flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:{{ apercu }};display:grid;place-items:center"></span>
+                    <span style="flex:1;min-width:0;display:block">
+                      <span style="display:block;font:700 15px/1.2 Archivo;color:#fff">Apparence</span>
+                      <span style="display:block;margin-top:3px;font:600 12px/1.3 Archivo;color:rgba(255,255,255,.5)">{{ sousApparence }}</span>
+                    </span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                  </button>
+                  <span style="display:flex;align-items:center;gap:13px;width:100%;min-height:60px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.12)">
+                    <span style="flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.08);display:grid;place-items:center;color:rgba(255,255,255,.4)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+                    <span style="flex:1;min-width:0;font:700 15px/1.2 Archivo;color:rgba(255,255,255,.4)">Notifications</span>
+                    <span style="flex:0 0 auto;border-radius:999px;background:rgba(255,255,255,.12);padding:4px 9px 5px;font:900 8.5px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)">À venir</span>
+                  </span>
+                </div>
+
+                <button type="button" style="margin-top:22px;width:100%;min-height:52px;border-radius:16px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.09);color:#fff;font:800 14.5px/1 Archivo;cursor:pointer;font-family:Archivo">Se déconnecter</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- une seule page pour identité + mot de passe + sortie -->
+          <sc-if value="{{ bCompte }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%;animation:pousse .22s cubic-bezier(.2,.9,.3,1)">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <button type="button" onClick="{{ nav.b_hub }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px 0 11px;border:none;border-radius:999px;background:rgba(8,2,30,.5);backdrop-filter:blur(20px);color:#fff;font:700 13.5px/1 Archivo;cursor:pointer;font-family:Archivo">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>Retour
+                </button>
+              </div>
+              <!-- Le visuel d'en-tête remplace le titre : même géométrie que
+                   celui d'Apparence — 150 px, rayon 22 — pour que les deux
+                   catégories s'ouvrent de la même façon. Le fond est le
+                   chrome de `--chrome-edge`, voilé pour rester lisible ;
+                   la plaque du monogramme porte l'ambiance choisie, seul
+                   lien visible entre les deux pages. -->
+              <div style="flex:0 0 auto;padding:16px 16px 0">
+                <div style="position:relative;height:150px;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.22);box-shadow:0 14px 34px -10px rgba(45,15,100,.55);background-image:linear-gradient(140deg,#ffffff 0%,#c9c9d4 14%,#7e7e91 32%,#f4f4f8 47%,#9d9daf 62%,#e9e9f1 76%,#6f6f82 89%,#ffffff 100%)">
+<!-- Le chrome commence par du blanc pur en haut à gauche, là même où
+                       se pose l'œil-de-bœuf : le voile y est donc assombri, sans
+                       quoi le libellé tombe sous le rapport de contraste exigé. -->
+                  <span aria-hidden="" style="position:absolute;inset:0;background:linear-gradient(170deg,rgba(20,8,52,.68) 0%,rgba(20,8,52,.78) 52%,rgba(20,8,52,.92) 100%)"></span>
+                  <span style="position:absolute;left:16px;top:14px;font:900 9.5px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:#fff">Mon compte</span>
+                  <sc-if value="{{ roleBadge }}" hint-placeholder-val="{{ true }}">
+                    <span style="position:absolute;right:14px;top:12px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.36);padding:4px 9px 5px;font:900 8.5px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:#fff">{{ roleBadge }}</span>
+                  </sc-if>
+                  <span style="position:absolute;left:16px;right:16px;bottom:15px;display:flex;align-items:center;gap:13px">
+<!-- Le dégradé d'accents de `compte/page.tsx`, pas celui du fond : une
+                         ambiance claire laverait le monogramme, et le même compte
+                         serait peint de deux façons entre le hub et cette carte. -->
+                    <span style="flex:0 0 auto;width:58px;height:58px;border-radius:18px;background:linear-gradient(140deg,rgba(232,111,216,.5),rgba(90,114,224,.44));display:grid;place-items:center;font:900 23px/1 Archivo;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 20px -6px rgba(8,2,30,.7)">C</span>
+                    <span style="flex:1;min-width:0;display:block">
+                      <span style="display:block;font:800 21px/1.1 Archivo;letter-spacing:-.03em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Clara Vidal</span>
+                      <span style="display:block;margin-top:5px;font:600 12.5px/1.3 Archivo;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">clara.vidal@gmail.com</span>
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:20px 16px 110px;display:flex;flex-direction:column;gap:18px">
+                <label style="display:block">
+                  <span style="display:block;margin:0 0 8px 3px;font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">Nom affiché</span>
+                  <input value="Clara Vidal" style="width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.09);padding:0 15px;font:600 15.5px Archivo;color:#fff;outline:none">
+                </label>
+                <label style="display:block">
+                  <span style="display:block;margin:0 0 8px 3px;font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">Adresse email</span>
+                  <input value="clara.vidal@gmail.com" style="width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.09);padding:0 15px;font:600 15.5px Archivo;color:#fff;outline:none">
+                  <span style="display:block;margin:8px 0 0 3px;font:500 12.5px/1.45 Archivo;color:rgba(255,255,255,.5)">Il faudra ouvrir un lien dans l'ancienne boîte et un dans la nouvelle.</span>
+                </label>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:16px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);padding:14px 15px">
+                  <span style="display:block;min-width:0">
+                    <span style="display:block;font:800 14px/1.2 Archivo;color:#fff">Mot de passe</span>
+                    <span style="display:block;margin-top:3px;font:500 12px/1.4 Archivo;color:rgba(255,255,255,.55)">On t'envoie un lien par mail</span>
+                  </span>
+                  <button type="button" style="flex:0 0 auto;min-height:44px;padding:0 16px;border:none;border-radius:999px;background:#fff;color:#170a33;font:900 12.5px/1 Archivo;cursor:pointer;font-family:Archivo">Envoyer</button>
+                </div>
+                <a href="#1b" style="align-self:flex-start;font:600 12.5px/1.4 Archivo;color:rgba(255,255,255,.45);text-decoration:underline;text-underline-offset:3px">Supprimer mon compte</a>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;z-index:20;padding:14px 16px 30px;background:linear-gradient(180deg,rgba(20,8,52,0) 0%,rgba(20,8,52,.82) 46%);backdrop-filter:blur(10px)">
+                <button type="button" onClick="{{ nav.b_hub }}" style="width:100%;min-height:52px;border:none;border-radius:16px;background:#fff;color:#170a33;font:900 15px/1 Archivo;cursor:pointer;font-family:Archivo;box-shadow:0 14px 34px -10px rgba(12,3,40,.7)">Enregistrer</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ bApp }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%;animation:pousse .22s cubic-bezier(.2,.9,.3,1)">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <button type="button" onClick="{{ nav.b_hub }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px 0 11px;border:none;border-radius:999px;background:rgba(8,2,30,.5);backdrop-filter:blur(20px);color:#fff;font:700 13.5px/1 Archivo;cursor:pointer;font-family:Archivo">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>Retour
+                </button>
+              </div>
+              <!-- l'aperçu est collant : on juge la couleur en même temps qu'on la choisit -->
+              <div style="flex:0 0 auto;padding:16px 16px 0">
+                <div style="position:relative;height:150px;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:{{ apercu }};box-shadow:0 14px 34px -10px rgba(45,15,100,.55)">
+<!-- Le fond de cette carte est choisi par la personne : une ambiance
+                       claire comme Craie effacerait un libellé posé à même le
+                       dégradé. Il porte donc sa propre pastille sombre, comme
+                       le « Aperçu » de `ThemePicker.tsx`, et pour la même raison. -->
+                  <span style="position:absolute;left:14px;top:11px;border-radius:999px;background:rgba(8,2,30,.42);padding:5px 10px 6px;font:900 9.5px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:#fff;backdrop-filter:blur(10px)">Apparence</span>
+                  <span style="position:absolute;right:14px;top:11px;border-radius:999px;background:rgba(8,2,30,.42);border:1px solid rgba(255,255,255,.24);padding:5px 10px 6px;font:800 9.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:#fff;backdrop-filter:blur(10px)">{{ sousApparence }}</span>
+                  <span style="position:absolute;left:16px;right:16px;bottom:15px;display:flex;align-items:center;justify-content:space-between;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(8,2,30,.42);padding:7px 13px;backdrop-filter:blur(10px)">
+                    <span style="font:900 11px/1 Archivo;letter-spacing:.14em;color:rgba(255,255,255,.85)">NEWAVE</span>
+                    <span style="border-radius:999px;background:#fff;padding:5px 11px;font:900 9.5px/1 Archivo;color:#170a33">Bouton</span>
+                  </span>
+                </div>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:18px 16px 26px">
+                <div style="display:flex;gap:4px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);padding:4px">
+                  <button type="button" onClick="{{ nav.clairOff }}" style="flex:1;min-height:42px;border:none;border-radius:999px;cursor:pointer;font:800 13.5px/1 Archivo;font-family:Archivo;background:{{ bgSombre }};color:{{ colSombre }}">Sombre</button>
+                  <button type="button" onClick="{{ nav.clairOn }}" style="flex:1;min-height:42px;border:none;border-radius:999px;cursor:pointer;font:800 13.5px/1 Archivo;font-family:Archivo;background:{{ bgClair }};color:{{ colClair }}">Clair</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px">
+                  <sc-for list="{{ ambiances }}" as="am" hint-placeholder-count="6">
+                    <button type="button" onClick="{{ am.on }}" style="padding:0;border:none;border-radius:17px;overflow:hidden;cursor:pointer;font-family:Archivo;background:rgba(255,255,255,.08);box-shadow:{{ am.anneau }}">
+                      <span style="display:block;height:70px;background:{{ am.g }}"></span>
+                      <span style="display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 4px;font:800 13px/1 Archivo;color:#fff">{{ am.marque }}{{ am.nom }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <button type="button" onClick="{{ nav.b_composer }}" style="margin-top:16px;display:flex;align-items:center;gap:13px;width:100%;min-height:60px;padding:11px 15px;border-radius:18px;border:1px dashed rgba(255,255,255,.3);background:rgba(255,255,255,.06);text-align:left;cursor:pointer;font-family:Archivo">
+                  <span style="flex:1;min-width:0;display:block">
+                    <span style="display:block;font:700 15px/1.2 Archivo;color:#fff">Composer la mienne</span>
+                    <span style="display:block;margin-top:3px;font:600 12px/1.3 Archivo;color:rgba(255,255,255,.5)">Teintes, nappes, mouvement</span>
+                  </span>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                </button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ bComp }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%;animation:pousse .22s cubic-bezier(.2,.9,.3,1)">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <button type="button" onClick="{{ nav.b_apparence }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px 0 11px;border:none;border-radius:999px;background:rgba(8,2,30,.5);backdrop-filter:blur(20px);color:#fff;font:700 13.5px/1 Archivo;cursor:pointer;font-family:Archivo">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>Apparence
+                </button>
+                <h1 style="margin:18px 0 0;font:800 30px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Composer</h1>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:20px 16px 26px">
+                <p style="margin:0 0 10px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)">Six teintes de fond</p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                  <sc-for list="{{ teintes }}" as="t" hint-placeholder-count="6">
+                    <label style="display:flex;flex-direction:column;gap:7px">
+                      <span style="display:block;height:56px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:{{ t.c }}"></span>
+                      <span style="font:800 9.5px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center">{{ t.nom }}</span>
+                    </label>
+                  </sc-for>
+                </div>
+                <p style="margin:22px 0 10px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)">Trois nappes</p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                  <sc-for list="{{ nappes }}" as="t" hint-placeholder-count="3">
+                    <label style="display:flex;flex-direction:column;gap:7px">
+                      <span style="display:block;height:56px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:{{ t.c }}"></span>
+                      <span style="font:800 9.5px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center">{{ t.nom }}</span>
+                    </label>
+                  </sc-for>
+                </div>
+                <div style="margin-top:22px;display:flex;flex-direction:column;gap:16px;border-radius:18px;background-color:rgba(8,2,30,.5);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.16);padding:16px">
+                  <label style="display:block">
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;font:800 13px/1 Archivo;color:#fff">Vitesse<span style="font:700 12px/1 Archivo;color:rgba(255,255,255,.5)">{{ vitTxt }}</span></span>
+                    <input class="cur" type="range" min="0.1" max="3" step="0.05" value="{{ vit }}" onChange="{{ setVit }}" style="width:100%;margin-top:6px">
+                  </label>
+                  <label style="display:block">
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;font:800 13px/1 Archivo;color:#fff">Ampleur<span style="font:700 12px/1 Archivo;color:rgba(255,255,255,.5)">{{ ampTxt }}</span></span>
+                    <input class="cur" type="range" min="0" max="2" step="0.05" value="{{ amp }}" onChange="{{ setAmp }}" style="width:100%;margin-top:6px">
+                  </label>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </x-import>
+    </div>
+
+    <!-- ============================== 1d ============================== -->
+    <div id="1d" data-screen-label="1d Console admin" style="flex:0 0 auto;width:402px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+        <span style="display:inline-block;padding:5px 12px 6px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);font:900 11px/1 Archivo;letter-spacing:.14em">1d</span>
+        <h2 style="margin:0;font:800 18px/1.2 Archivo;letter-spacing:-.02em;color:#fff">La console</h2>
+      </div>
+      <p style="margin:0 0 14px;font:500 13.5px/1.55 Archivo;color:rgba(242,236,255,.6);max-width:380px">L'admin n'est pas un écran de réglages : c'est une table de travail. Les six entrées qui s'enroulaient sur deux rangs deviennent une barre de pied à cinq places, toujours sous le pouce. Les listes gardent leur recherche collante, et la fiche se découpe en étapes au lieu d'un formulaire de trois écrans. Change d'onglet en bas.</p>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+        <div style="position:relative;height:874px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif;display:flex;flex-direction:column">
+          <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+            <div style="position:absolute;inset:-25%;background:linear-gradient(168deg,#2a1c6e 0%,#3f4aa8 26%,#7d4fb8 48%,#a3459f 66%,#4a46ad 84%,#291b6a 100%);animation:respire 22s ease-in-out infinite alternate"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,8,52,.72) 0%,rgba(20,8,52,.4) 30%,rgba(20,8,52,.55) 70%,rgba(20,8,52,.86) 100%)"></div>
+          </div>
+
+          <!-- ---------- tableau de bord ---------- -->
+          <sc-if value="{{ dBord }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <span style="display:block">
+                    <span style="display:block;font:900 9.5px/1 Archivo;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.6)">Administration</span>
+                    <span style="display:block;margin-top:8px;font:800 29px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Console</span>
+                  </span>
+                  <span style="flex:0 0 auto;width:40px;height:40px;border-radius:14px;background:linear-gradient(140deg,rgba(232,111,216,.5),rgba(90,114,224,.44));display:grid;place-items:center;font:900 15px/1 Archivo;color:#fff">C</span>
+                </div>
+                <p style="margin:10px 0 0;font:600 13.5px/1.45 Archivo;color:rgba(255,255,255,.62)">Six choses attendent une décision.</p>
+              </div>
+
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:20px 16px 108px">
+                <p style="margin:0 0 11px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6)">La file</p>
+                <div style="display:flex;flex-direction:column;gap:11px">
+                  <sc-for list="{{ file }}" as="f" hint-placeholder-count="2">
+                    <div style="border-radius:20px;padding:15px 16px;background:linear-gradient(160deg,#fff 0%,#f4efff 52%,#e6dcfb 100%);box-shadow:0 10px 26px -8px rgba(52,18,110,.45)">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="flex:0 0 auto;width:9px;height:9px;border-radius:999px;background:{{ f.pastille }}"></span>
+                        <span style="flex:1;min-width:0;font:800 15.5px/1.2 Archivo;letter-spacing:-.02em;color:#170a33">{{ f.titre }}</span>
+                        <span style="flex:0 0 auto;font:900 26px/1 Archivo;letter-spacing:-.04em;color:#170a33">{{ f.n }}</span>
+                      </div>
+                      <p style="margin:7px 0 0;font:600 12px/1.45 Archivo;color:#6a5a92">{{ f.phrase }}</p>
+                      <button type="button" onClick="{{ f.on }}" style="margin-top:12px;width:100%;min-height:44px;border:none;border-radius:13px;background:#170a33;color:#fff;font:800 13px/1 Archivo;cursor:pointer;font-family:Archivo">{{ f.action }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <p style="margin:24px 0 11px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6)">L'état du site</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <sc-for list="{{ compteurs }}" as="k" hint-placeholder-count="4">
+                    <div style="border-radius:17px;padding:14px;background-color:rgba(8,2,30,.46);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15)">
+                      <p style="margin:0;font:900 24px/1 Archivo;letter-spacing:-.03em;color:#fff">{{ k.n }}</p>
+                      <p style="margin:6px 0 0;font:700 10px/1.3 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)">{{ k.nom }}</p>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <button type="button" style="margin-top:14px;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:11px 15px;border-radius:17px;border:1px solid rgba(255,255,255,.16);background-color:rgba(8,2,30,.46);backdrop-filter:blur(20px);text-align:left;cursor:pointer;font-family:Archivo">
+                  <span style="flex:1;min-width:0;font:700 14.5px/1.2 Archivo;color:#fff">Fréquentation</span>
+                  <span style="flex:0 0 auto;font:600 12px/1.2 Archivo;color:rgba(255,255,255,.5)">7 derniers jours</span>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                </button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- liste des marques ---------- -->
+          <sc-if value="{{ dMarques }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%">
+              <div style="flex:0 0 auto;padding:56px 16px 12px">
+                <h1 style="margin:0;font:800 27px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Marques</h1>
+                <div style="display:flex;align-items:center;gap:9px;margin-top:14px;border-radius:14px;padding:13px 14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22)">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                  <span style="font:600 14.5px/1.2 Archivo;color:rgba(255,255,255,.5)">Chercher dans 136 fiches…</span>
+                </div>
+                <div class="liste-tel" style="display:flex;gap:7px;margin-top:11px;overflow-x:auto;padding-bottom:2px">
+                  <sc-for list="{{ filtres }}" as="fl" hint-placeholder-count="5">
+                    <button type="button" onClick="{{ fl.on }}" style="flex:0 0 auto;min-height:40px;padding:0 15px;border:none;border-radius:999px;cursor:pointer;white-space:nowrap;font:800 12.5px/1 Archivo;font-family:Archivo;background:{{ fl.bg }};color:{{ fl.col }}">{{ fl.nom }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:6px 16px 108px">
+                <p style="margin:0 0 10px 3px;font:800 10px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)">{{ filtreNote }}</p>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ fiches }}" as="m" hint-placeholder-count="7">
+                    <button type="button" onClick="{{ nav.d_fiche }}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:66px;padding:11px 13px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background-color:rgba(8,2,30,.46);backdrop-filter:blur(18px);text-align:left;cursor:pointer;font-family:Archivo">
+                      <span style="flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 7px,rgba(255,255,255,.07) 7px 14px);display:grid;place-items:center;font:800 13px/1 Archivo;color:rgba(255,255,255,.8)">{{ m.ini }}</span>
+                      <span style="flex:1;min-width:0;display:block">
+                        <span style="display:block;font:800 14.5px/1.2 Archivo;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.nom }}</span>
+                        <span style="display:flex;align-items:center;gap:6px;margin-top:5px">
+                          <span style="flex:0 0 auto;width:7px;height:7px;border-radius:999px;background:{{ m.pastille }}"></span>
+                          <span style="font:600 11.5px/1.2 Archivo;color:rgba(255,255,255,.55)">{{ m.etat }}</span>
+                        </span>
+                      </span>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- fiche en étapes ---------- -->
+          <sc-if value="{{ dFiche }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%;animation:pousse .22s cubic-bezier(.2,.9,.3,1)">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <button type="button" onClick="{{ nav.d_marques }}" style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px 0 11px;border:none;border-radius:999px;background:rgba(8,2,30,.5);backdrop-filter:blur(20px);color:#fff;font:700 13.5px/1 Archivo;cursor:pointer;font-family:Archivo">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>Marques
+                </button>
+                <h1 style="margin:16px 0 0;font:800 27px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Maison Ferrat</h1>
+                <div class="liste-tel" style="display:flex;gap:7px;margin-top:14px;overflow-x:auto;padding-bottom:2px">
+                  <sc-for list="{{ etapes }}" as="et" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ et.on }}" style="flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border:none;border-radius:999px;cursor:pointer;white-space:nowrap;font:800 12.5px/1 Archivo;font-family:Archivo;background:{{ et.bg }};color:{{ et.col }}">
+                      <span style="width:7px;height:7px;border-radius:999px;background:{{ et.pastille }}"></span>{{ et.nom }}
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:18px 16px 116px;display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;align-items:flex-start;gap:11px;border-radius:16px;background:rgba(194,39,63,.22);border:1px solid rgba(255,141,158,.4);padding:13px 15px">
+                  <span style="flex:0 0 auto;width:9px;height:9px;border-radius:999px;background:#ff8d9e;margin-top:5px"></span>
+                  <p style="margin:0;font:600 12.5px/1.5 Archivo;color:#fff">Pas publiable : <strong style="font-weight:800">il manque une couverture</strong>. L'étape Visuels le dit aussi.</p>
+                </div>
+                <sc-for list="{{ champs }}" as="c" hint-placeholder-count="3">
+                  <label style="display:block">
+                    <span style="display:block;margin:0 0 8px 3px;font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">{{ c.nom }}</span>
+                    <input value="{{ c.val }}" style="width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.09);padding:0 15px;font:600 15px Archivo;color:#fff;outline:none">
+                  </label>
+                </sc-for>
+                <label style="display:block">
+                  <span style="display:block;margin:0 0 8px 3px;font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">Accroche</span>
+                  <textarea rows="3" style="width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.09);padding:13px 15px;font:600 15px/1.5 Archivo;color:#fff;outline:none;resize:none">Maroquinerie tannée à Millau, séries de trente pièces.</textarea>
+                </label>
+              </div>
+
+              <div style="position:absolute;left:0;right:0;bottom:0;z-index:20;padding:13px 16px 30px;background:linear-gradient(180deg,rgba(20,8,52,0) 0%,rgba(20,8,52,.86) 44%);backdrop-filter:blur(12px);display:flex;gap:9px">
+                <button type="button" onClick="{{ nav.d_marques }}" style="flex:1;min-height:52px;border:none;border-radius:16px;background:#fff;color:#170a33;font:900 14.5px/1 Archivo;cursor:pointer;font-family:Archivo;box-shadow:0 14px 34px -10px rgba(12,3,40,.7)">Enregistrer</button>
+                <button type="button" disabled="" style="flex:0 0 auto;min-height:52px;padding:0 18px;border:1px solid rgba(255,255,255,.2);border-radius:16px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.38);font:900 14.5px/1 Archivo;cursor:not-allowed;font-family:Archivo">Publier</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- posts ---------- -->
+          <sc-if value="{{ dPosts }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%">
+              <div style="flex:0 0 auto;padding:56px 16px 12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <h1 style="margin:0;font:800 27px/1.05 Archivo;letter-spacing:-.03em;color:#fff">Posts</h1>
+                  <button type="button" style="display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 16px;border:none;border-radius:999px;background:#fff;color:#170a33;font:900 12.5px/1 Archivo;cursor:pointer;font-family:Archivo">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>Écrire
+                  </button>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px;margin-top:14px;border-radius:14px;padding:13px 14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22)">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                  <span style="font:600 14.5px/1.2 Archivo;color:rgba(255,255,255,.5)">Chercher dans 24 posts…</span>
+                </div>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:6px 16px 108px">
+                <p style="margin:0 0 10px 3px;font:800 10px/1 Archivo;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)">2 brouillons, 22 publiés</p>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ posts }}" as="po" hint-placeholder-count="5">
+                    <button type="button" style="display:flex;align-items:center;gap:12px;width:100%;min-height:66px;padding:11px 13px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background-color:rgba(8,2,30,.46);backdrop-filter:blur(18px);text-align:left;cursor:pointer;font-family:Archivo">
+                      <span style="flex:0 0 auto;width:52px;height:42px;border-radius:11px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 7px,rgba(255,255,255,.07) 7px 14px);display:grid;place-items:center;font:800 12px/1 Archivo;color:rgba(255,255,255,.75)">{{ po.ini }}</span>
+                      <span style="flex:1;min-width:0;display:block">
+                        <span style="display:block;font:800 14.5px/1.2 Archivo;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ po.nom }}</span>
+                        <span style="display:flex;align-items:center;gap:6px;margin-top:5px">
+                          <span style="flex:0 0 auto;width:7px;height:7px;border-radius:999px;background:{{ po.pastille }}"></span>
+                          <span style="font:600 11.5px/1.2 Archivo;color:rgba(255,255,255,.55)">{{ po.etat }}</span>
+                        </span>
+                      </span>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- la pile : candidatures + signalements au même endroit ---------- -->
+          <sc-if value="{{ dPile }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative;z-index:10;display:flex;flex-direction:column;height:100%">
+              <div style="flex:0 0 auto;padding:56px 16px 0">
+                <h1 style="margin:0;font:800 27px/1.05 Archivo;letter-spacing:-.03em;color:#fff">La pile</h1>
+                <p style="margin:9px 0 0;font:600 13.5px/1.45 Archivo;color:rgba(255,255,255,.62)">Quatre candidatures, deux signalements. Rien d'autre ne demande de décision.</p>
+              </div>
+              <div class="liste-tel" style="flex:1;min-height:0;overflow-y:auto;padding:20px 16px 108px">
+                <p style="margin:0 0 10px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6)">Candidatures</p>
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <sc-for list="{{ cands }}" as="cd" hint-placeholder-count="4">
+                    <div style="border-radius:17px;padding:13px 14px;border:1px solid rgba(255,255,255,.14);background-color:rgba(8,2,30,.46);backdrop-filter:blur(18px)">
+                      <div style="display:flex;align-items:center;gap:11px">
+                        <span style="flex:1;min-width:0;display:block">
+                          <span style="display:block;font:800 14.5px/1.2 Archivo;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cd.nom }}</span>
+                          <span style="display:block;margin-top:4px;font:600 11.5px/1.2 Archivo;color:rgba(255,255,255,.55)">{{ cd.phrase }}</span>
+                        </span>
+                        <span style="flex:0 0 auto;display:flex;gap:7px">
+                          <button type="button" aria-label="Accepter la candidature" style="width:44px;height:44px;border:none;border-radius:13px;background:rgba(87,217,154,.22);color:#8ff0c0;display:grid;place-items:center;cursor:pointer">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                          </button>
+                          <button type="button" aria-label="Refuser la candidature" style="width:44px;height:44px;border:none;border-radius:13px;background:rgba(255,141,158,.18);color:#ffa8b6;display:grid;place-items:center;cursor:pointer">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <p style="margin:24px 0 10px 3px;font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6)">Signalements</p>
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <sc-for list="{{ signs }}" as="sg" hint-placeholder-count="2">
+                    <div style="border-radius:17px;padding:13px 14px;border:1px solid rgba(255,141,158,.34);background:rgba(194,39,63,.18)">
+                      <div style="display:flex;align-items:center;gap:11px">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#ff8d9e" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="M4 21V4"></path><path d="M4 4h11l-1.6 3.5L15 11H4"></path></svg>
+                        <span style="flex:1;min-width:0;display:block">
+                          <span style="display:block;font:800 14px/1.2 Archivo;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sg.nom }}</span>
+                          <span style="display:block;margin-top:4px;font:600 11.5px/1.2 Archivo;color:rgba(255,255,255,.62)">{{ sg.phrase }}</span>
+                        </span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- barre de pied : les six entrées sans enroulement ---------- -->
+          <div style="position:absolute;left:12px;right:12px;bottom:22px;z-index:30;display:flex;align-items:stretch;gap:2px;border-radius:22px;padding:7px;background-color:rgba(8,2,30,.7);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%);backdrop-filter:blur(28px) saturate(1.6);border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 44px -12px rgba(8,2,30,.8)">
+            <sc-for list="{{ pied }}" as="p" hint-placeholder-count="5">
+              <button type="button" onClick="{{ p.on }}" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:54px;border:none;border-radius:16px;cursor:pointer;font-family:Archivo;background:{{ p.bg }};color:{{ p.col }}">
+                {{ p.icone }}
+                <span style="font:800 9.5px/1 Archivo;letter-spacing:.04em">{{ p.nom }}</span>
+                <sc-if value="{{ p.badge }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:absolute;top:4px;right:8px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#ff5d74;display:grid;place-items:center;font:900 9.5px/1 Archivo;color:#fff">{{ p.badge }}</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ dSheet }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ nav.d_plusOff }}" style="position:absolute;inset:0;z-index:40;background:rgba(9,2,28,.62);backdrop-filter:blur(6px);animation:apparait .18s ease-out"></div>
+          </sc-if>
+          <sc-if value="{{ dSheet }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;z-index:50;left:0;right:0;bottom:0;padding:16px 16px 30px;border-radius:26px 26px 0 0;background:linear-gradient(180deg,rgba(38,18,92,.97),rgba(20,8,52,.99));border-top:1px solid rgba(255,255,255,.2);box-shadow:0 -20px 60px rgba(6,1,20,.6);animation:monte .24s cubic-bezier(.2,.9,.3,1)">
+              <div style="width:40px;height:4px;border-radius:999px;background:rgba(255,255,255,.3);margin:0 auto 16px"></div>
+              <p style="margin:0 0 12px 3px;font:900 10px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)">Le reste</p>
+              <div style="border-radius:18px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                <sc-for list="{{ plus }}" as="pl" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ nav.d_plusOff }}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:11px 14px;border:none;border-top:{{ pl.trait }};background:none;text-align:left;cursor:pointer;font-family:Archivo">
+                    <span style="flex:1;min-width:0;font:700 14.5px/1.2 Archivo;color:#fff">{{ pl.nom }}</span>
+                    <span style="flex:0 0 auto;font:600 12px/1.2 Archivo;color:rgba(255,255,255,.5)">{{ pl.note }}</span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto"><path d="m9 6 6 6-6 6"></path></svg>
+                  </button>
+                </sc-for>
+              </div>
+              <button type="button" onClick="{{ nav.d_plusOff }}" style="margin-top:12px;width:100%;min-height:50px;border-radius:16px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;font:800 13.5px/1 Archivo;cursor:pointer;font-family:Archivo">Déconnexion</button>
+            </div>
+          </sc-if>
+        </div>
+      </x-import>
+    </div>
+  </div>
+
+  <p style="margin:36px 0 0;font:500 14px/1.65 Archivo;color:rgba(242,236,255,.55);max-width:900px">Essayer ensuite : «&nbsp;dans <a href="#1b">1b</a>, montre l'écran Favoris et l'Espace marque&nbsp;» · «&nbsp;<a href="#1d">1d</a> avec les listes en balayage pour valider/refuser&nbsp;» · «&nbsp;fais le dossier de passation pour cowork&nbsp;» · «&nbsp;écris-moi le vrai code Next de ces deux écrans&nbsp;»</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;membre&quot;,&quot;createur&quot;,&quot;admin&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;\&quot;membre\&quot; | \&quot;createur\&quot; | \&quot;admin\&quot;&quot;,&quot;section&quot;:&quot;Compte simulé&quot;},&quot;montrerValeurs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Compte simulé&quot;},&quot;ambianceDepart&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Aurore&quot;,&quot;Nuit&quot;,&quot;Forêt&quot;,&quot;Braise&quot;,&quot;Lagon&quot;,&quot;Craie&quot;],&quot;default&quot;:&quot;Aurore&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Compte simulé&quot;}}">
+const AMB = [
+  { nom: "Aurore", g: "linear-gradient(140deg,#31217c,#4e5bc0,#9e63d6,#c255c4)" },
+  { nom: "Nuit", g: "linear-gradient(140deg,#0f0824,#2b1d63,#4a2a9e,#7b52e8)" },
+  { nom: "Forêt", g: "linear-gradient(140deg,#0f2a24,#1b5145,#2f8a6b,#8fd6a8)" },
+  { nom: "Braise", g: "linear-gradient(140deg,#2b0f18,#7a1c31,#d4453f,#f5a15c)" },
+  { nom: "Lagon", g: "linear-gradient(140deg,#08243a,#12557e,#2b9fc4,#a8e6ef)" },
+  { nom: "Craie", g: "linear-gradient(140deg,#e9e4f5,#cfc6e8,#b0a4d8,#8e80c4)" },
+];
+
+const TEINTES = [
+  { nom: "Départ", c: "#31217c" }, { nom: "Transition", c: "#4e5bc0" },
+  { nom: "Cœur", c: "#9e63d6" }, { nom: "Pic", c: "#c255c4" },
+  { nom: "Retour", c: "#5a54c8" }, { nom: "Fin", c: "#33217f" },
+];
+const NAPPES = [
+  { nom: "Nappe 1", c: "#e86fd8" }, { nom: "Nappe 2", c: "#5a72e0" }, { nom: "Nappe 3", c: "#b47aea" },
+];
+
+const FICHES = [
+  { ini: "MF", nom: "Maison Ferrat", etat: "brouillon · sans visuel", pastille: "#ff8d9e" },
+  { ini: "AT", nom: "Atelier Tournel", etat: "brouillon · sans catalogue", pastille: "#ffc46b" },
+  { ini: "BR", nom: "Brut Rivage", etat: "brouillon · prêt à publier", pastille: "#57d99a" },
+  { ini: "CL", nom: "Calme Ordinaire", etat: "brouillon · sans texte", pastille: "#ffc46b" },
+  { ini: "DÉ", nom: "Désordre Studio", etat: "brouillon · sans visuel", pastille: "#ff8d9e" },
+  { ini: "GS", nom: "Grès & Sable", etat: "brouillon · prêt à publier", pastille: "#57d99a" },
+  { ini: "HO", nom: "Hors-Saison", etat: "brouillon · sans catalogue", pastille: "#ffc46b" },
+];
+
+class Component extends DCLogic {
+  state = {
+    b: "hub",
+    d: "bord", dSheet: false, dStep: "Identité", dFiltre: "Brouillons",
+    amb: null, clair: false, vit: 1, amp: 1,
+  };
+
+  go(cle, val) { return () => this.setState({ [cle]: val }); }
+
+  /* Les dessins viennent tels quels de src/components/Icons.tsx : même
+     viewBox, même épaisseur de trait, mêmes chemins. Un glyphe inventé
+     ici deviendrait un glyphe différent à l'implémentation. */
+  ico(nom, w) {
+    const JEU = {
+      user: [["circle", { cx: 12, cy: 8, r: 4 }], ["path", { d: "M4 21a8 8 0 0 1 16 0" }]],
+      image: [["rect", { x: 3, y: 4, width: 18, height: 16, rx: 2 }], ["circle", { cx: 8.5, cy: 9.5, r: 1.6 }], ["path", { d: "m21 16-5-5L5 20" }]],
+      inbox: [["path", { d: "M3 12h5l2 3h4l2-3h5" }], ["path", { d: "M5 5h14l2 7v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Z" }]],
+      clock: [["circle", { cx: 12, cy: 12, r: 9 }], ["path", { d: "M12 7v5l3 2" }]],
+      coeur: [["path", { d: "M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" }]],
+      tag: [["path", { d: "M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" }], ["circle", { cx: 7.5, cy: 7.5, r: 1.2, fill: "currentColor" }]],
+      grid: [["rect", { x: 3, y: 3, width: 7, height: 7, rx: 1.5 }], ["rect", { x: 14, y: 3, width: 7, height: 7, rx: 1.5 }], ["rect", { x: 3, y: 14, width: 7, height: 7, rx: 1.5 }], ["rect", { x: 14, y: 14, width: 7, height: 7, rx: 1.5 }]],
+      plus: [["path", { d: "M12 5v14" }], ["path", { d: "M5 12h14" }]],
+      check: [["path", { d: "M20 6 9 17l-5-5" }]],
+      cross: [["path", { d: "M18 6 6 18" }], ["path", { d: "m6 6 12 12" }]],
+      drapeau: [["path", { d: "M4 21V4" }], ["path", { d: "M4 4h11l-1.6 3.5L15 11H4" }]],
+    };
+    return React.createElement("svg", {
+      viewBox: "0 0 24 24", width: w || 17, height: w || 17, fill: "none",
+      stroke: "currentColor", strokeWidth: 2.1, strokeLinecap: "round", strokeLinejoin: "round",
+    }, (JEU[nom] || []).map((c, i) => React.createElement(c[0], { key: i, ...c[1] })));
+  }
+
+  renderVals() {
+    const p = this.props;
+    const role = p.role ?? "admin";
+    const admin = role === "admin";
+    const createur = admin || role === "createur";
+    const valeurs = p.montrerValeurs ?? true;
+    const s = this.state;
+
+    const ambActive = s.amb ?? (p.ambianceDepart ?? "Aurore");
+    const courante = AMB.find((x) => x.nom === ambActive) ?? AMB[0];
+
+    const nav = {};
+    ["hub", "compte", "apparence", "composer"].forEach((v) => { nav["b_" + v] = this.go("b", v); });
+    ["bord", "marques", "fiche", "posts", "pile"].forEach((v) => { nav["d_" + v] = () => this.setState({ d: v, dSheet: false }); });
+    nav.d_plus = this.go("dSheet", true);
+    nav.d_plusOff = this.go("dSheet", false);
+    nav.clairOn = this.go("clair", true);
+    nav.clairOff = this.go("clair", false);
+
+    /* Les espaces : une seule liste, comme dans compte/page.tsx — mais
+       elle n'est plus affichée deux fois sur le même écran. */
+    /* Mêmes icônes que le site : IconCoeur pour les favoris, IconTag
+       pour l'espace marque, IconGrid pour l'administration — c'est le
+       jeu de `admin/layout.tsx` et de `CompteEcran.tsx`. */
+    const brut = [
+      { nom: "Mes favoris", note: "12 marques", ic: "coeur", montre: true },
+      { nom: "Espace marque", note: "2 à gérer", ic: "tag", montre: createur },
+      { nom: "Administration", note: "6 en attente", ic: "grid", montre: admin },
+    ].filter((e) => e.montre);
+
+    const espaces = brut.map((e, i) => ({
+      nom: e.nom, note: e.note,
+      icone: this.ico(e.ic),
+      trait: i === 0 ? "none" : "1px solid rgba(255,255,255,.12)",
+    }));
+
+    const tuiles = brut.map((e, i) => ({
+      nom: e.nom, note: e.note,
+      n: e.nom === "Administration" ? "6" : (e.nom === "Mes favoris" ? "12" : "2"),
+      icone: this.ico(e.ic, 18),
+      /* En nombre impair, la DERNIÈRE tuile prend les deux colonnes :
+         un trou dans une grille de deux se lit comme une case
+         manquante. La règle est sur la parité, pas sur le compte —
+         un membre simple n'a qu'une tuile (les favoris), et c'est le
+         cas le plus fréquent du site. */
+      col: brut.length % 2 === 1 && i === brut.length - 1 ? "span 2" : "auto",
+    }));
+
+    const ambiances = AMB.map((x) => ({
+      nom: x.nom, g: x.g,
+      on: () => this.setState({ amb: x.nom }),
+      anneau: x.nom === ambActive
+        ? "0 0 0 2px #fff, 0 8px 22px -8px rgba(12,3,40,.6)"
+        : "inset 0 0 0 1px rgba(255,255,255,.2)",
+      marque: x.nom === ambActive ? "✓ " : "",
+    }));
+
+    /* ---------- 1d ---------- */
+    const file = [
+      { titre: "Candidatures", n: "4", phrase: "la plus ancienne attend depuis 11 jours", action: "Ouvrir la pile", pastille: "#c2273f", on: nav.d_bord },
+      { titre: "Signalements", n: "2", phrase: "1 avis, 1 pièce", action: "Modérer", pastille: "#e07a1f", on: nav.d_bord },
+    ];
+    const compteurs = [
+      { n: "136", nom: "Marques" }, { n: "24", nom: "Posts" },
+      { n: "312", nom: "Comptes" }, { n: "9", nom: "Prêtes à publier" },
+    ];
+    const FILTRES = ["Brouillons", "Toutes", "Publiées", "Sans visuel", "Sans catalogue"];
+    const filtres = FILTRES.map((f) => ({
+      nom: f, on: this.go("dFiltre", f),
+      bg: f === s.dFiltre ? "#fff" : "rgba(255,255,255,.1)",
+      col: f === s.dFiltre ? "#170a33" : "rgba(255,255,255,.82)",
+    }));
+    const fiches = FICHES;
+
+    const ETAPES = [
+      { nom: "Identité", ok: true }, { nom: "Visuels", ok: false },
+      { nom: "Catalogue", ok: true }, { nom: "Publication", ok: false },
+    ];
+    const etapes = ETAPES.map((e) => ({
+      nom: e.nom, on: this.go("dStep", e.nom),
+      bg: e.nom === s.dStep ? "#fff" : "rgba(255,255,255,.1)",
+      col: e.nom === s.dStep ? "#170a33" : "rgba(255,255,255,.82)",
+      pastille: e.ok ? "#57d99a" : "#ff8d9e",
+    }));
+    const champs = [
+      { nom: "Nom de la marque", val: "Maison Ferrat" },
+      { nom: "Adresse de la fiche", val: "maison-ferrat" },
+      { nom: "Ville", val: "Millau" },
+    ];
+
+    const posts = [
+      { ini: "01", nom: "Le retour du denim brut", etat: "publié · 12 mars", pastille: "#57d99a" },
+      { ini: "02", nom: "Cinq ateliers en Aveyron", etat: "brouillon · sans visuel", pastille: "#ff8d9e" },
+      { ini: "03", nom: "Ce que veut dire « fait ici »", etat: "publié · 2 mars", pastille: "#57d99a" },
+      { ini: "04", nom: "Les prix, expliqués", etat: "brouillon · prêt", pastille: "#ffc46b" },
+      { ini: "05", nom: "Marque de la semaine : Grès & Sable", etat: "publié · 24 févr.", pastille: "#57d99a" },
+    ];
+    const cands = [
+      { nom: "Rive Nord", phrase: "attend depuis 11 jours" },
+      { nom: "Ossature", phrase: "attend depuis 6 jours" },
+      { nom: "Petit Nord", phrase: "attend depuis 4 jours" },
+      { nom: "Tissage Lent", phrase: "arrivée aujourd'hui" },
+    ];
+    const signs = [
+      { nom: "Avis sur Brut Rivage", phrase: "3 signalements · propos haineux" },
+      { nom: "Pièce « Veste 03 »", phrase: "1 signalement · photo trompeuse" },
+    ];
+
+    /* CINQ PLACES, PAS SIX ENTRÉES QUI S'ENROULENT.
+       `admin/layout.tsx` note que les deux dernières — dont les
+       signalements — n'existaient pas pour qui ne pensait pas à
+       balayer. La pile les remonte au premier rang, badge compris ;
+       Comptes et Catalogues, qu'on ouvre une fois par semaine,
+       descendent dans « Plus ». */
+    const PIED = [
+      { nom: "Bord", vue: "bord", ic: "grid" },
+      { nom: "Marques", vue: "marques", ic: "tag" },
+      { nom: "Posts", vue: "posts", ic: "image" },
+      { nom: "Pile", vue: "pile", badge: "6", ic: "inbox" },
+      { nom: "Plus", vue: "plus", ic: "plus" },
+    ];
+    const pied = PIED.map((t) => {
+      const actif = t.vue === s.d || (t.vue === "marques" && s.d === "fiche") || (t.vue === "plus" && s.dSheet);
+      return {
+        nom: t.nom, badge: t.badge ?? null,
+        icone: this.ico(t.ic, 19),
+        on: t.vue === "plus" ? nav.d_plus : nav["d_" + t.vue],
+        bg: actif ? "#fff" : "transparent",
+        col: actif ? "#170a33" : "rgba(255,255,255,.68)",
+      };
+    });
+    const plus = [
+      { nom: "Candidatures", note: "4" }, { nom: "Signalements", note: "2" },
+      { nom: "Comptes", note: "312" }, { nom: "Catalogues", note: "à jour" },
+    ].map((x, i) => ({ ...x, trait: i === 0 ? "none" : "1px solid rgba(255,255,255,.12)" }));
+
+    return {
+      nav, espaces, tuiles, ambiances, valeurs,
+      teintes: TEINTES, nappes: NAPPES,
+      file, compteurs, filtres, fiches, etapes, champs, pied, plus,
+      posts, cands, signs,
+      dPosts: s.d === "posts", dPile: s.d === "pile",
+      filtreNote: s.dFiltre === "Toutes" ? "136 fiches" : "17 brouillons",
+
+      roleBadge: admin ? "Admin" : (role === "createur" ? "Créateur" : null),
+      apercu: courante.g,
+      sousApparence: ambActive + " · " + (s.clair ? "clair" : "sombre"),
+      mouvementTxt: s.amp === 0 ? "figé" : "×" + s.vit.toFixed(2) + " vitesse, ×" + s.amp.toFixed(2) + " ampleur",
+
+      bHub: s.b === "hub", bCompte: s.b === "compte", bApp: s.b === "apparence", bComp: s.b === "composer",
+      dBord: s.d === "bord", dMarques: s.d === "marques", dFiche: s.d === "fiche", dSheet: s.dSheet,
+
+      vit: s.vit, amp: s.amp,
+      vitTxt: "×" + s.vit.toFixed(2), ampTxt: "×" + s.amp.toFixed(2),
+      setVit: (e) => this.setState({ vit: Number(e.target.value) }),
+      setAmp: (e) => this.setState({ amp: Number(e.target.value) }),
+      bgSombre: s.clair ? "transparent" : "#fff",
+      colSombre: s.clair ? "rgba(255,255,255,.82)" : "#170a33",
+      bgClair: s.clair ? "#fff" : "transparent",
+      colClair: s.clair ? "#170a33" : "rgba(255,255,255,.82)",
+    };
+  }
+}
+
+</script>
+</body>
+</html>

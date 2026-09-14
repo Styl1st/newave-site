@@ -1,5 +1,5 @@
 import { createClient } from "./supabase/server";
-import type { Application, Brand, Post, Profile } from "./types";
+import { CANDIDATURES_EN_ATTENTE, type Application, type Brand, type Post, type Profile } from "./types";
 
 /**
  * Lectures cote administration : contrairement a queries.ts, on renvoie
@@ -147,6 +147,49 @@ export async function adminCounts() {
     users: profiles.length,
     admins: profiles.filter((p) => p.role === "admin").length,
   };
+}
+
+/**
+ * Ce qui attend une décision, en deux nombres et rien d'autre.
+ *
+ * ⚠️ POURQUOI PAS `adminGetApplications()` ET `getSignalements()`.
+ * Elles rendent les lignes entières — tout le dossier de chaque
+ * candidature, puis, pour les signalements, quatre lectures de plus
+ * pour résoudre les noms et les adresses des cibles. C'est ce qu'il
+ * faut à une page qui les affiche ; ici on veut un badge sur un onglet,
+ * et ce badge est rendu SUR CHAQUE PAGE de l'administration. Charger
+ * quatre tables pour écrire « 6 » se paierait à chaque navigation.
+ *
+ * `head: true` ne ramène aucune ligne : la base compte, et renvoie le
+ * nombre dans un en-tête. Deux requêtes, aucune donnée transportée.
+ *
+ * Elle ne revérifie pas les droits : le gabarit d'administration a
+ * déjà appelé `requireAdmin()` avant de la demander, et les règles de
+ * la base refuseraient de toute façon de compter pour quelqu'un
+ * d'autre.
+ */
+export async function compteDeLaPile(): Promise<{
+  candidatures: number;
+  signalements: number;
+  total: number;
+}> {
+  const supabase = await createClient();
+  if (!supabase) return { candidatures: 0, signalements: 0, total: 0 };
+
+  const [candidatures, signalements] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .in("status", [...CANDIDATURES_EN_ATTENTE]),
+    supabase
+      .from("signalements")
+      .select("id", { count: "exact", head: true })
+      .is("traite_at", null),
+  ]);
+
+  const a = candidatures.count ?? 0;
+  const s = signalements.count ?? 0;
+  return { candidatures: a, signalements: s, total: a + s };
 }
 
 /** Les comptes rattaches a une marque. */

@@ -2,7 +2,11 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 mt-20 w-full">
+    /* `--pied` réserve la hauteur de la barre d'administration, qui
+       flotte au-dessus du bas de page : sans elle, sur un écran
+       d'admin court, la pilule se posait sur les mentions légales. Elle
+       vaut zéro partout ailleurs. Voir `BarreAdmin`. */
+    <footer className="relative z-10 mt-20 w-full pb-[var(--pied,0px)]">
       <div className="mx-auto w-full max-w-6xl px-[var(--pad)] pb-12">
         <div className="flex flex-col items-center gap-5 border-t border-white/15 pt-10 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col items-center gap-3 sm:items-start">

@@ -184,6 +184,21 @@ export type Application = {
   reseaux?: { reseau: string; identifiant: string }[];
 };
 
+/**
+ * UNE CANDIDATURE QUI ATTEND, C'EST CELLE-CI ET PAS UNE AUTRE.
+ *
+ * Trois écrans posent la même question — le bandeau du tableau de bord,
+ * le badge de la barre d'admin, la pile — et la posaient de deux
+ * façons : « nouvelle » ici, « nouvelle ou en cours » là. Deux chiffres
+ * différents pour la même chose, sur le même écran, se lisent comme un
+ * bogue, et c'en est un. La définition vit donc à un seul endroit.
+ *
+ * `en_cours` n'est écrit par aucune action aujourd'hui : la liste ne
+ * change donc rien aux nombres affichés. Elle les empêche de diverger
+ * le jour où quelque chose l'écrira.
+ */
+export const CANDIDATURES_EN_ATTENTE = ["nouvelle", "en_cours"] as const;
+
 export const PRICE_TIER_LABEL: Record<PriceTier, string> = {
   accessible: "Accessible",
   intermediaire: "Intermédiaire",
