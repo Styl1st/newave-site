@@ -10,6 +10,25 @@ export type Theme = {
  * taille de l'écran, autant laisser régler.
  */
 export type Mouvement = { vitesse: number; amplitude: number };
+
+/**
+ * Le décor bouge, ou il ne bouge pas.
+ *
+ * POURQUOI CE RÉGLAGE EXISTE À PART DE `mouvement`. La vitesse et
+ * l'ampleur décrivent COMMENT le décor dérive ; celui-ci décide S'IL
+ * dérive. La différence n'est pas cosmétique : un fond animé est la
+ * seule chose du site qui consomme en permanence, sur un onglet où
+ * personne ne touche à rien, et pendant toute la durée de la visite.
+ * Tout le reste — le cylindre de défilement, l'inclinaison des cartes,
+ * les entrées en cascade — ne coûte que pendant le geste qui le
+ * déclenche.
+ *
+ * IL EST DONC FIXE PAR DÉFAUT, POUR TOUT LE MONDE. Quelqu'un qui passe
+ * trente secondes sur une fiche n'a rien demandé, et il ne doit pas
+ * payer le ventilateur d'un décor qu'il n'a pas choisi. Celui qui veut
+ * le mouvement l'allume depuis son compte, et c'est alors un choix.
+ */
+export type Fond = "fixe" | "anime";
 export type PresetMouvement = { id: string; nom: string; mouvement: Mouvement };
 
 export type Ambiance = { id: string; nom: string; theme: Theme };
@@ -25,6 +44,11 @@ export type Preferences = {
    */
   clair?: boolean;
   mouvement: Mouvement;
+  /**
+   * Fond animé ou fixe. Absent vaut « fixe » : un compte créé avant ce
+   * réglage, ou qui n'y a jamais touché, part du défaut économe.
+   */
+  fond?: Fond;
   /** Ambiances créées par la personne, en plus des nôtres. */
   ambiances: Ambiance[];
   /** Réglages de mouvement enregistrés par la personne. */
@@ -38,10 +62,14 @@ export const THEME_DEFAUT: Theme = {
 
 export const MOUVEMENT_DEFAUT: Mouvement = { vitesse: 1, amplitude: 1 };
 
+/** Immobile. Voir le commentaire du type `Fond`. */
+export const FOND_DEFAUT: Fond = "fixe";
+
 export const PREFERENCES_DEFAUT: Preferences = {
   theme: THEME_DEFAUT,
   clair: false,
   mouvement: MOUVEMENT_DEFAUT,
+  fond: FOND_DEFAUT,
   ambiances: [],
   mouvements: [],
 };
@@ -162,6 +190,21 @@ export function appliquerTheme(theme: Theme, cible: HTMLElement) {
 export function appliquerClarte(clair: boolean, cible: HTMLElement) {
   if (clair) cible.dataset.clair = "1";
   else delete cible.dataset.clair;
+}
+
+/**
+ * Pose ou retire le drapeau qui fige le décor.
+ *
+ * ON ÉCRIT LE CAS FIXE, ET ON EFFACE POUR ANIMER. C'est l'inverse de
+ * l'habitude, et c'est voulu : le serveur écrit `data-fond="fixe"` dans
+ * le HTML lui-même pour tout visiteur sans compte, donc l'absence
+ * d'attribut est ce qui demande le mouvement. Un décor qui démarrerait
+ * animé le temps que JavaScript arrive, pour se figer ensuite, serait
+ * exactement le scintillement qu'on cherche à éviter partout ailleurs.
+ */
+export function appliquerFond(fond: Fond | undefined, cible: HTMLElement) {
+  if (fond === "anime") delete cible.dataset.fond;
+  else cible.dataset.fond = "fixe";
 }
 
 export function appliquerMouvement(m: Mouvement, cible: HTMLElement, explicite = false) {

@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { enregistrerApparence } from "@/app/apparence-actions";
 import { IconBack, IconCheck, IconChevron, IconPlus, IconTrash } from "./Icons";
 import {
+  FOND_DEFAUT,
   MOUVEMENT_DEFAUT,
   PREFERENCES_DEFAUT,
   PRESETS,
   PRESETS_MOUVEMENT,
   THEME_DEFAUT,
   appliquerClarte,
+  appliquerFond,
   appliquerMouvement,
   appliquerTheme,
   decrire,
@@ -18,6 +20,7 @@ import {
   lire,
   memeTheme,
   type Ambiance,
+  type Fond,
   type Mouvement,
   type Preferences,
   type PresetMouvement,
@@ -107,6 +110,17 @@ export default function ThemePicker({
     setPrefs(next);
     appliquerTheme(next.theme, document.documentElement);
     appliquerMouvement(next.mouvement, document.documentElement, true);
+    /*
+     * SANS COMPTE, LE FOND RESTE FIXE, QUOI QUE DISE LE NAVIGATEUR.
+     *
+     * `lire()` peut très bien rendre un `fond: "anime"` laissé dans le
+     * stockage local par une session connectée précédente, sur un
+     * ordinateur partagé ou après une déconnexion. Sans cette garde, un
+     * simple changement de couleur rallumerait le décor pour quelqu'un
+     * qui n'a pas de compte, ce qui est exactement ce que le réglage
+     * cherche à empêcher.
+     */
+    appliquerFond(connecte ? next.fond : FOND_DEFAUT, document.documentElement);
     appliquerClarte(Boolean(next.clair), document.documentElement);
 
     // On garde toujours une copie locale : c'est elle qui peint les
@@ -586,6 +600,56 @@ export default function ThemePicker({
           {/* ---- mouvement ---- */}
           <section className={`glass p-4 sm:p-5 ${niveau2}`}>
             <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
+
+            {/* ---- il bouge, ou il ne bouge pas ----
+
+                C'EST L'INTERRUPTEUR, ET LE RESTE N'EST QUE DU RÉGLAGE.
+                Les pastilles et les curseurs en dessous décrivent COMMENT
+                le décor dérive ; celui-ci décide S'IL dérive. On le met
+                donc en tête, parce que régler la vitesse d'un fond qu'on
+                a laissé fixe est le genre de manipulation dont on ne
+                comprend le silence qu'au bout de trois essais. */}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              {(
+                [
+                  ["fixe", "Fond fixe"],
+                  ["anime", "Fond animé"],
+                ] as const
+              ).map(([valeur, libelle]) => {
+                const actif = connecte
+                  ? (prefs.fond ?? FOND_DEFAUT) === valeur
+                  : valeur === FOND_DEFAUT;
+                return (
+                  <button
+                    key={valeur}
+                    type="button"
+                    disabled={!connecte}
+                    aria-pressed={actif}
+                    onClick={() => poser({ ...prefs, fond: valeur as Fond })}
+                    className={`min-h-[44px] rounded-full px-4 py-1.5 text-[11.5px] font-bold transition sm:min-h-0 ${
+                      connecte ? "active:scale-[.97]" : "cursor-not-allowed opacity-45"
+                    } ${
+                      actif
+                        ? "bg-white text-[var(--color-ink)]"
+                        : "border border-white/30 bg-white/8 text-white/80" +
+                          (connecte ? " hover:border-white/60 hover:text-white" : "")
+                    }`}
+                  >
+                    {libelle}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="m-0 mb-4 text-[12.5px] leading-relaxed text-white/55">
+              Le fond est <strong className="font-bold text-white/75">fixe par défaut</strong>,
+              pour tout le monde. C&apos;est la seule chose du site qui tourne en
+              permanence, même sur une page où personne ne touche à rien, et
+              elle se paie en batterie et en ventilateur.{" "}
+              {connecte
+                ? "Les réglages ci-dessous ne s'appliquent qu'au fond animé."
+                : "Le mouvement se rallume depuis un compte : c'est une préférence de personne, pas de machine."}
+            </p>
 
             {/* `items-start` : sans lui, les pastilles d'une même ligne
                 s'étirent à la hauteur de la plus haute, et une ligne

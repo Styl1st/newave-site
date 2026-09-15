@@ -1129,6 +1129,39 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
   animation: none !important;
 }
 
+/* ---------- le décor est immobile par défaut ----------
+
+   MÊME LISTE QUE CI-DESSUS, ET POURTANT UN AUTRE ATTRIBUT.
+
+   `data-fige` est le réglage « figer les animations » : il coupe le
+   décor, mais il coupe AUSSI l'inclinaison des cartes et il empêche
+   `Reveal` de poser `data-defilement`, donc le cylindre de défilement
+   avec. C'est ce que demande quelqu'un qui veut un site calme, et il
+   faut que ça reste tel quel.
+
+   Ce n'est pas ce qu'on veut par défaut. Le cylindre, l'inclinaison,
+   les entrées en cascade ne coûtent que pendant le geste qui les
+   déclenche : on ne paie que quand on défile, et on ne défile pas en
+   permanence. Le décor, lui, dérive tant que l'onglet est ouvert, que
+   la personne lise, réfléchisse ou soit partie boire un café. C'est la
+   seule dépense continue du site, et c'est donc la seule qu'on éteint
+   d'office.
+
+   D'où un second attribut, qui ne touche qu'aux huit couches du décor.
+   `data-fond="fixe"` est écrit par le serveur dans le HTML pour tout
+   visiteur sans compte. On le retire pour animer, jamais l'inverse :
+   voir `appliquerFond` dans lib/theme.ts. */
+[data-fond="fixe"] .bg,
+[data-fond="fixe"] .bg-degrade,
+[data-fond="fixe"] .bg::before,
+[data-fond="fixe"] .bg::after,
+[data-fond="fixe"] .bg-nappe,
+[data-fond="fixe"] .bg-lueur,
+[data-fond="fixe"] .glyph-track,
+[data-fond="fixe"] .chrome img {
+  animation: none !important;
+}
+
 /* Une translation verticale, un très léger recul et un soupçon de
    flou : c'est le flou qui donne la sensation d'un objet qui arrive
    plutôt que d'un calque dont on monte l'opacité. */

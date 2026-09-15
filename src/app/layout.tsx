@@ -104,6 +104,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
          de zéro. Voir globals.css, près de `pageIn`. */
       data-entree="a"
       data-fige={apparence && apparence.mouvement.amplitude <= 0.02 ? "1" : undefined}
+      /* LE DÉCOR EST IMMOBILE PAR DÉFAUT, ET C'EST LE SERVEUR QUI LE DIT.
+
+         Écrit ici plutôt que posé par le navigateur : un décor qui
+         démarrerait animé le temps que JavaScript arrive, pour se figer
+         ensuite, serait le scintillement qu'on évite partout ailleurs.
+
+         Pas de compte, ou un compte qui n'a pas demandé le mouvement :
+         l'attribut est présent et le décor ne bouge pas. Seul un
+         `fond: "anime"` enregistré le retire, et laisse les nappes
+         dériver. Voir le type `Fond` dans lib/theme.ts. */
+      data-fond={apparence?.fond === "anime" ? undefined : "fixe"}
       /* Écrit par le serveur pour qui a un compte, et par le script
          anti-flash pour les autres : sans ça, le site s'afficherait
          sombre une fraction de seconde avant de basculer. */

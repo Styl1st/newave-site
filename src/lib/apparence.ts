@@ -32,6 +32,16 @@ export function nettoyerApparence(brut: unknown): Preferences | null {
       vitesse: Number(o.mouvement?.vitesse ?? 1) || 1,
       amplitude: Number(o.mouvement?.amplitude ?? 1) || 0,
     },
+    /*
+     * ABSENT VAUT « FIXE », ET C'EST LE POINT DE CE RÉGLAGE.
+     *
+     * Un compte enregistré avant l'existence de ce champ n'a rien
+     * demandé : il retombe donc sur le décor immobile, comme un
+     * visiteur de passage. Seul un « anime » écrit noir sur blanc
+     * rallume le mouvement, ce qui fait de lui un choix et non un
+     * héritage.
+     */
+    fond: o.fond === "anime" ? "anime" : "fixe",
     // Une borne, sinon rien n'empêche d'enregistrer mille ambiances et
     // de faire grossir chaque page d'autant.
     ambiances: Array.isArray(o.ambiances) ? o.ambiances.slice(0, 40) : [],

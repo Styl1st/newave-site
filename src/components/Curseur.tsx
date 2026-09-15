@@ -157,7 +157,23 @@ export default function Curseur() {
      * transformation écrite ici, sans ressort, sans second nœud à faire
      * rattraper.
      */
+    /*
+     * La dernière position écrite, pour ne pas l'écrire deux fois.
+     *
+     * `pointerrawupdate` et `pointermove` livrent la même position à un
+     * instant donné : le premier plus tôt, le second de toute façon.
+     * Les deux sont écoutés, parce que le premier n'existe pas partout
+     * et qu'on ne veut pas de repli conditionnel qui se teste mal. Une
+     * comparaison suffit à ne payer qu'une écriture.
+     */
+    let posX = -1;
+    let posY = -1;
+
     const placer = (e: PointerEvent) => {
+      if (e.clientX === posX && e.clientY === posY) return;
+      posX = e.clientX;
+      posY = e.clientY;
+
       /*
        * PAS DE RECENTRAGE. La pointe du dessin est son coin haut
        * gauche : c'est elle qui doit tomber sur le pixel visé, comme
@@ -167,6 +183,14 @@ export default function Curseur() {
       dernierX = e.clientX;
       el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       if (racine.dataset.curseurVu !== "1") racine.dataset.curseurVu = "1";
+
+      /*
+       * Le rangement de l'étiquette reste ici, mais seulement quand il
+       * y en a une à ranger, c'est-à-dire presque jamais. Une comparaison
+       * de booléen au lieu d'un appel de fonction : sur un chemin qui
+       * passe mille fois par seconde, ça compte.
+       */
+      if (visible) ranger(e.clientX);
     };
 
     /* ------------------------------------------------------------------
@@ -282,10 +306,25 @@ export default function Curseur() {
      */
     let precedente: Element | null = null;
 
-    const surMouvement = (e: PointerEvent) => {
-      placer(e);
-      ranger(e.clientX);
-
+    /*
+     * DEVINER CE QU'ON SURVOLE N'EST PLUS SUR LE CHEMIN DU MOUVEMENT, ET
+     * C'EST TOUTE LA CORRECTION.
+     *
+     * Ce travail vivait dans `pointermove`. Or `etatDe` essaie jusqu'à
+     * cinq sélecteurs, chacun remontant le document depuis la cible, et
+     * l'étiquette en ajoute un sixième — dont `CLIQUABLE`, qui teste neuf
+     * sélecteurs à chaque niveau. Sur une grille de cartes, la cible
+     * change à presque chaque image : on traversait donc l'arbre six fois
+     * par image, et surtout AVANT que l'image soit peinte. La position
+     * écrite juste avant attendait ce travail pour s'afficher, et c'est
+     * exactement ce qu'on voit comme un retard de la flèche.
+     *
+     * `pointerover` porte la même information et le navigateur ne
+     * l'émet QUE lorsque le pointeur entre dans un autre élément. Bouger
+     * à l'intérieur d'une même carte ne coûte donc plus rien du tout, et
+     * le chemin du mouvement ne fait plus qu'écrire une transformation.
+     */
+    const surSurvol = (e: PointerEvent) => {
       const cible = (e.target as Element | null) ?? null;
       if (cible === precedente) return;
       precedente = cible;
@@ -315,6 +354,14 @@ export default function Curseur() {
     const surSortie = () => {
       delete racine.dataset.curseurVu;
       cacher();
+      /*
+       * On oublie la dernière position : en revenant par le même pixel
+       * qu'on a quitté, le dédoublonnage refuserait sinon la seule
+       * écriture qui remontre la flèche.
+       */
+      posX = -1;
+      posY = -1;
+      precedente = null;
     };
 
     const appuyer = () => {
@@ -335,7 +382,8 @@ export default function Curseur() {
         { passive: true }
       );
     }
-    window.addEventListener("pointermove", surMouvement, { passive: true });
+    window.addEventListener("pointermove", placer, { passive: true });
+    window.addEventListener("pointerover", surSurvol, { passive: true });
     window.addEventListener("pointerdown", appuyer, { passive: true });
     window.addEventListener("pointerup", relacher, { passive: true });
     document.addEventListener("pointerleave", surSortie);
@@ -349,7 +397,8 @@ export default function Curseur() {
         );
       }
       window.clearTimeout(minuteur);
-      window.removeEventListener("pointermove", surMouvement);
+      window.removeEventListener("pointermove", placer);
+      window.removeEventListener("pointerover", surSurvol);
       window.removeEventListener("pointerdown", appuyer);
       window.removeEventListener("pointerup", relacher);
       document.removeEventListener("pointerleave", surSortie);
