@@ -1252,7 +1252,33 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
      Ici, le bloc se met en place puis reste net jusqu'à disparaître
      par le haut. On perd la moitié de l'effet, on garde le texte
      lisible tant qu'il est à l'écran, ce qui n'est pas négociable. */
-  @media (max-width: 900px) {
+/* ---------- et la même chose sur un écran BAS, pas seulement étroit ----------
+
+     LE CYLINDRE À DEUX BORDS EST UNE AFFAIRE DE HAUTEUR, PAS DE LARGEUR.
+
+     La course animée vaut la hauteur de l'écran PLUS celle du bloc, et
+     le bloc n'est net qu'entre le quart et les trois quarts de cette
+     course. Autrement dit, la part de l'écran où un bloc reste droit
+     dépend du rapport entre sa hauteur et celle de la fenêtre. Sur un
+     écran haut, un bloc a largement quitté la zone de lecture avant de
+     commencer à pencher. Sur un portable 1080p, où la fenêtre fait
+     autour de neuf cent cinquante pixels utiles, il penche encore en
+     plein milieu de l'écran : on lit une carte qui bascule et pâlit
+     sous les yeux, alors qu'on n'a pas fini de la regarder.
+
+     C'est exactement ce qui se voit sur l'accueil en 1080p, et c'est
+     pour ça que ça ne se voit pas sur une tour en 1440p.
+
+     La condition était donc posée au mauvais endroit : `max-width`
+     attrape les téléphones et laisse passer tous les portables. On
+     ajoute la hauteur, et les deux mènent au même repli — le bloc se
+     met en place en arrivant, puis reste net jusqu'à disparaître par le
+     haut.
+
+     MILLE CENT PIXELS. C'est ce qui sépare un portable 1080p (fenêtre
+     utile ~950) d'un écran 1440p (~1300). Si tu veux rendre le cylindre
+     à un écran donné, c'est ce seul nombre qu'il faut baisser. */
+  @media (max-width: 900px), (max-height: 1100px) {
     html[data-defilement="1"] main
       :is([data-reveal], .card-light, .glass):not(.rise, [data-no-reveal], :has(nav)):not([data-reveal] *):not([data-no-reveal] *):not(:is(a, button):not(:has(img, h1, h2, h3)):not([data-reveal])) {
       animation-name: cylindreArrivee;
