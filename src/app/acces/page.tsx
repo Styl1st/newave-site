@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 /**
  * L'aperçu du lien, quand on le colle quelque part.
@@ -86,6 +87,27 @@ type Props = { searchParams: Promise<{ suite?: string; erreur?: string }> };
  * les aspérités, et il les remonte.
  */
 export default async function AccesPage({ searchParams }: Props) {
+  /*
+   * LE SITE EST OUVERT : CETTE PAGE N'A PLUS RIEN À DEMANDER.
+   *
+   * Tout le verrou tient à `SITE_PASSWORD`. Quand la variable
+   * disparaît, le middleware ne redirige plus personne ici, mais
+   * l'adresse reste joignable à la main — et elle afficherait alors un
+   * formulaire de code qui ne valide rien, puisque `/api/acces` renvoie
+   * à l'accueil dès qu'il n'y a plus de mot de passe à comparer.
+   *
+   * Un vieux lien d'invitation, un signet, une capture partagée pendant
+   * la bêta : tout cela continuera de circuler après l'ouverture. Ces
+   * gens-là doivent atterrir sur le site, pas sur une porte qui ne
+   * ferme plus.
+   *
+   * ON NE SUPPRIME PAS LA PAGE POUR AUTANT. Le jour où il faut
+   * refermer, il suffit de reposer `SITE_PASSWORD` sur Vercel : le
+   * verrou, la page et le `noindex` reviennent ensemble, sans
+   * déploiement de code.
+   */
+  if (!process.env.SITE_PASSWORD) redirect("/");
+
   const { suite, erreur } = await searchParams;
 
   return (
