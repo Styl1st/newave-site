@@ -313,6 +313,63 @@ export default function ThemePicker({
             <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
               En clair, la palette est simplement diluée.
             </p>
+
+            {/* ---- le décor bouge, ou pas ----
+
+                IL EST ICI, AU PREMIER NIVEAU, ET C'EST TOUT LE POINT.
+
+                Il était rangé avec la vitesse et l'ampleur, dans
+                « Composer ». Au doigt, ce second niveau est derrière un
+                bouton et trois écrans de défilement : le seul réglage qui
+                décide si le site consomme en permanence était donc le plus
+                difficile à atteindre, et sur téléphone, c'est-à-dire
+                précisément là où la batterie compte.
+
+                Il rejoint clair/sombre, parce que c'est la même nature de
+                choix : deux états, aucun réglage, on tranche et on repart.
+                La vitesse et l'ampleur restent au second niveau, elles. */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+              <p className="eyebrow m-0">Mouvement</p>
+              <div className="flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
+                {(
+                  [
+                    ["fixe", "Fixe"],
+                    ["anime", "Animé"],
+                  ] as const
+                ).map(([valeur, libelle]) => {
+                  const actif = connecte
+                    ? (prefs.fond ?? FOND_DEFAUT) === valeur
+                    : valeur === FOND_DEFAUT;
+                  return (
+                    <button
+                      key={valeur}
+                      type="button"
+                      disabled={!connecte}
+                      aria-pressed={actif}
+                      onClick={() => poser({ ...prefs, fond: valeur as Fond })}
+                      className={`${chip} ${
+                        connecte ? "" : "cursor-not-allowed opacity-45"
+                      } ${
+                        actif
+                          ? "bg-white text-[var(--color-ink)]"
+                          : "text-white/80" +
+                            (connecte ? " hover:bg-white/12 hover:text-white" : "")
+                      }`}
+                    >
+                      {libelle}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
+              Le décor est <strong className="font-bold text-white/80">fixe par défaut</strong>,
+              pour tout le monde. C&apos;est la seule chose du site qui tourne en
+              permanence, même sur une page où personne ne touche à rien, et elle
+              se paie en batterie.{" "}
+              {!connecte && "Le mouvement se rallume depuis un compte."}
+            </p>
           </section>
 
           {/* ---- ambiances ---- */}
@@ -601,54 +658,13 @@ export default function ThemePicker({
           <section className={`glass p-4 sm:p-5 ${niveau2}`}>
             <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
 
-            {/* ---- il bouge, ou il ne bouge pas ----
-
-                C'EST L'INTERRUPTEUR, ET LE RESTE N'EST QUE DU RÉGLAGE.
-                Les pastilles et les curseurs en dessous décrivent COMMENT
-                le décor dérive ; celui-ci décide S'IL dérive. On le met
-                donc en tête, parce que régler la vitesse d'un fond qu'on
-                a laissé fixe est le genre de manipulation dont on ne
-                comprend le silence qu'au bout de trois essais. */}
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              {(
-                [
-                  ["fixe", "Fond fixe"],
-                  ["anime", "Fond animé"],
-                ] as const
-              ).map(([valeur, libelle]) => {
-                const actif = connecte
-                  ? (prefs.fond ?? FOND_DEFAUT) === valeur
-                  : valeur === FOND_DEFAUT;
-                return (
-                  <button
-                    key={valeur}
-                    type="button"
-                    disabled={!connecte}
-                    aria-pressed={actif}
-                    onClick={() => poser({ ...prefs, fond: valeur as Fond })}
-                    className={`min-h-[44px] rounded-full px-4 py-1.5 text-[11.5px] font-bold transition sm:min-h-0 ${
-                      connecte ? "active:scale-[.97]" : "cursor-not-allowed opacity-45"
-                    } ${
-                      actif
-                        ? "bg-white text-[var(--color-ink)]"
-                        : "border border-white/30 bg-white/8 text-white/80" +
-                          (connecte ? " hover:border-white/60 hover:text-white" : "")
-                    }`}
-                  >
-                    {libelle}
-                  </button>
-                );
-              })}
-            </div>
-
-            <p className="m-0 mb-4 text-[12.5px] leading-relaxed text-white/55">
-              Le fond est <strong className="font-bold text-white/75">fixe par défaut</strong>,
-              pour tout le monde. C&apos;est la seule chose du site qui tourne en
-              permanence, même sur une page où personne ne touche à rien, et
-              elle se paie en batterie et en ventilateur.{" "}
-              {connecte
-                ? "Les réglages ci-dessous ne s'appliquent qu'au fond animé."
-                : "Le mouvement se rallume depuis un compte : c'est une préférence de personne, pas de machine."}
+            {/* L'interrupteur fixe/animé n'est PAS ici : il est au premier
+                niveau, avec clair/sombre. Ce qui suit ne décrit que la
+                manière dont le décor dérive quand il est animé, et n'a
+                donc aucun effet tant qu'il est fixe. */}
+            <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/55">
+              Ces réglages ne s&apos;appliquent qu&apos;au{" "}
+              <strong className="font-bold text-white/75">fond animé</strong>.
             </p>
 
             {/* `items-start` : sans lui, les pastilles d'une même ligne

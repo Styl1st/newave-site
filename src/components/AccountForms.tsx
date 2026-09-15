@@ -183,32 +183,45 @@ export function MonCompteForm({
         </div>
       )}
 
-      </section>
-
       {/*
-       * LA BARRE COLLE AU BAS DE L'ÉCRAN AU DOIGT, ET PAS AU-DELÀ.
+       * LE BOUTON EST DANS LA CARTE, AVEC LES CHAMPS SUR LESQUELS IL AGIT.
        *
-       * Elle est `sticky` et non `fixed` : elle occupe sa place dans le
-       * flux, donc rien ne passe dessous et il n'y a aucun rembourrage
-       * à ajouter au bas de la page pour la rattraper — c'est le bogue
-       * que le brief redoute, et il n'a pas lieu d'être ici.
+       * Il a longtemps vécu dehors, dans une barre `sticky bottom-0`
+       * portant un voile dégradé, censée rester sous le pouce pendant
+       * qu'on remplissait le formulaire. Elle ne collait à rien : un
+       * élément `sticky` ne se décolle que dans les limites de son
+       * parent, et ce formulaire s'arrête juste sous le bouton. Il n'y
+       * avait aucune course pendant laquelle coller, seulement une dalle
+       * pâle à l'arête franche posée entre deux cartes arrondies.
        *
-       * Elle est POSÉE HORS DE LA CARTE, et non dedans : un voile
-       * dégradé collé à l'intérieur d'un panneau arrondi déborde ses
-       * deux coins du bas, et ce petit carré sombre se voit.
+       * Le voile parti, plus rien ne justifie de le tenir à l'écart. Un
+       * bouton qui enregistre deux champs appartient au bloc qui porte
+       * ces deux champs : on lit le titre, les champs, puis l'action, et
+       * l'ensemble se comprend d'un seul regard. Dehors, il flottait
+       * entre « Ton identité » et « Mot de passe » sans qu'on sache
+       * lequel des deux il concernait.
        *
-       * Au grand écran, où toute la page tient sous les yeux, elle
-       * redevient un bouton ordinaire aligné à gauche.
+       * Le filet au-dessus sépare la saisie de l'action sans ajouter un
+       * bloc de plus. Au grand écran, le bouton redevient une pastille
+       * alignée à gauche.
        */}
-      <div className="sticky bottom-0 z-10 rounded-[18px] bg-[linear-gradient(180deg,rgba(20,8,52,0),rgba(20,8,52,.72)_58%)] pb-2 pt-7 backdrop-blur-[6px] lg:static lg:bg-none lg:p-0 lg:backdrop-blur-none">
+      {/* `flex` sur l'enveloppe, et ce n'est pas décoratif : le bouton est
+          lui-même en `display: flex`, donc de niveau bloc. Dans un `div`
+          ordinaire, `lg:w-auto` le laisserait occuper toute la largeur et
+          la pastille du grand écran ne se réduirait jamais. En faisant de
+          l'enveloppe un conteneur flexible, il redevient un élément qu'on
+          peut réduire, aligné à gauche par défaut. */}
+      <div className="flex border-t border-white/10 pt-5">
         <button
           type="submit"
           disabled={!aFaire || enCours}
-          className="flex min-h-[52px] w-full items-center justify-center rounded-[16px] bg-white px-6 text-[14px] font-extrabold text-[var(--color-ink)] transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto lg:min-h-0 lg:self-start lg:rounded-full lg:py-3.5"
+          className="flex min-h-[52px] w-full items-center justify-center rounded-[16px] bg-white px-6 text-[14px] font-extrabold text-[var(--color-ink)] transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-45 lg:min-h-0 lg:w-auto lg:rounded-full lg:py-3.5"
         >
           {enCours ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
+
+      </section>
     </form>
   );
 }
