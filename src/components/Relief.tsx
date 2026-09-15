@@ -159,16 +159,35 @@ export default function Relief() {
       carte.style.setProperty("--relief-dx", `${(px * 4).toFixed(1)}px`);
     };
 
-    const surMouvement = (e: PointerEvent) => {
-      const dessus = ((e.target as Element | null)?.closest?.(CARTES) ??
-        null) as HTMLElement | null;
+    /*
+     * LA CIBLE PRÉCÉDENTE, POUR NE PAS REMONTER L'ARBRE POUR RIEN.
+     *
+     * `closest()` remonte le document jusqu'à trouver une carte, et il
+     * le faisait à CHAQUE mouvement — plus de cent fois par seconde,
+     * sur un annuaire de cent cartes, pour retrouver presque toujours
+     * le même élément : on survole le même endroit pendant des dizaines
+     * d'images d'affilée.
+     *
+     * Une comparaison de référence suffit à s'en dispenser. C'est le
+     * même garde-fou que dans `Curseur`, pour la même raison.
+     */
+    let precedente: Element | null = null;
 
-      if (dessus !== carte) {
-        relacher(carte);
-        carte = dessus;
-        if (carte) {
-          carte.dataset.relief = "1";
-          mesurer(carte);
+    const surMouvement = (e: PointerEvent) => {
+      const cible = (e.target as Element | null) ?? null;
+
+      if (cible !== precedente) {
+        precedente = cible;
+
+        const dessus = (cible?.closest?.(CARTES) ?? null) as HTMLElement | null;
+
+        if (dessus !== carte) {
+          relacher(carte);
+          carte = dessus;
+          if (carte) {
+            carte.dataset.relief = "1";
+            mesurer(carte);
+          }
         }
       }
       if (!carte) return;
@@ -181,6 +200,13 @@ export default function Relief() {
     const surSortie = () => {
       relacher(carte);
       carte = null;
+      /*
+       * On oublie aussi la cible retenue : sans cela, le défilement
+       * relâcherait la carte sans que le curseur ait bougé, et le
+       * garde-fou ci-dessus empêcherait de la reprendre tant que le
+       * pointeur reste immobile sur le même élément.
+       */
+      precedente = null;
     };
 
     /*

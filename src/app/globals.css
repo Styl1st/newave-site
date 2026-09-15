@@ -143,8 +143,30 @@ body {
      laisser apparaître le vide. */
   background-repeat: no-repeat;
   background-color: var(--bg-1);
-  animation: teinte calc(41s / var(--vit)) ease-in-out infinite alternate;
-  animation-delay: var(--phase, 0s);
+
+  /* PAS D'ANIMATION DE `filter` ICI, ET C'EST LA CORRECTION DE
+     PERFORMANCE LA PLUS IMPORTANTE DE CE FICHIER.
+
+     Ce cadre faisait dériver sa teinte avec `animation: teinte`, qui
+     anime `hue-rotate()` et `saturate()`. Or `filter` n'est pas une
+     propriété de composition : le navigateur ne peut pas se contenter
+     de déplacer un calque déjà peint, il doit REPEINDRE la surface
+     puis lui repasser le filtre, à chaque image.
+
+     Et il ne repeint pas que ce cadre. Un filtre posé sur un parent
+     force l'aplatissement de TOUT ce qu'il contient dans une seule
+     texture avant d'être appliqué : le dégradé et les deux nappes,
+     qui dérivent eux aussi, étaient donc redessinés soixante fois par
+     seconde sur une surface d'une fois et demie l'écran. C'est ce qui
+     consommait trente pour cent d'un cœur en permanence, sur un
+     onglet où personne ne touchait à rien.
+
+     Ce qu'on perd : une dérive de teinte de ±13° étalée sur
+     quarante-et-une secondes. Ce qu'on garde : les trois nappes qui
+     se croisent à des vitesses différentes, chacune sur sa couleur
+     d'accent, ce qui fait déjà varier la couleur de chaque point de
+     l'écran en continu — et gratuitement, puisque ce sont des
+     transformations. */
 }
 
 /* LE DÉGRADÉ EST SUR SON PROPRE CALQUE, ET C'EST LA CORRECTION DE
@@ -193,57 +215,55 @@ body {
   }
 }
 
-/* ---------- la dérive des couleurs ----------
-   Faire glisser les couches ne suffisait pas : chaque teinte restait
-   la même à sa place, et l'ensemble gardait un air de décor peint.
-   Une rotation de teinte lente fait vraiment respirer la palette.
+/* ---------- la dérive des couleurs, et pourquoi elle est partie ----------
 
-   L'amplitude reste volontairement faible — au-delà d'une quinzaine
-   de degrés, un violet vire au bleu franc et la personnalisation
-   choisie n'a plus de sens. */
-@keyframes teinte {
-  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94); }
-  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08); }
-  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1); }
-}
+   Trois jeux d'images vivaient ici : `teinte`, `teinteFloue` et
+   `teinteInverseFloue`. Toutes les trois animaient `filter`, avec un
+   `hue-rotate()` de quelques degrés, pour faire respirer la palette.
 
-/* Mêmes dérives, pour les nappes.
+   C'ÉTAIT LA DÉPENSE PRINCIPALE DU SITE. `filter` ne se compose pas :
+   contrairement à `transform` et `opacity`, qui laissent le navigateur
+   déplacer un calque déjà peint, une valeur de filtre qui change
+   l'oblige à repeindre la surface puis à la refiltrer, à chaque image.
+   Quatre couches d'une fois et demie l'écran, soixante fois par
+   seconde, en permanence, même sur un onglet immobile.
 
-   LE FLOU N'EST PLUS DANS L'ANIMATION, et c'est une correction de
-   performance importante. Il variait entre 30 et 38 pixels au fil du
-   cycle : à chaque image, le navigateur devait donc reflouter une
-   surface plein écran, soixante fois par seconde, sur trois couches à
-   la fois. C'est l'opération la plus coûteuse qu'on puisse demander au
-   processeur graphique d'un téléphone, et elle tournait en permanence.
+   ET LE RENDU N'Y GAGNAIT RIEN. Une animation de `filter` écrase la
+   valeur statique de la règle : les `filter: blur(26px)` posés sur les
+   nappes étaient donc annulés dès le premier cycle. On payait le
+   filtre sans avoir le flou, pour une rotation de teinte de treize
+   degrés étalée sur trente à quarante secondes que personne ne voit
+   passer.
 
-   Le flou est désormais posé une fois sur l'élément, et seule la
-   teinte varie. Personne ne voyait ces quatre pixels d'écart ; tout le
-   monde subissait leur coût. */
-@keyframes teinteFloue {
-  0%   { filter: hue-rotate(calc(-7deg * var(--amp))) saturate(0.94); }
-  50%  { filter: hue-rotate(calc(4deg * var(--amp))) saturate(1.08); }
-  100% { filter: hue-rotate(calc(13deg * var(--amp))) saturate(1); }
-}
+   CE QUI FAIT VIVRE LA COULEUR MAINTENANT. Les trois nappes portent
+   chacune une couleur d'accent différente et se croisent à trois
+   vitesses qui ne retombent jamais en phase (13 s, 17 s, 23 s). La
+   couleur de chaque point de l'écran change donc en continu, comme
+   avant, mais parce que des calques se déplacent — ce que la carte
+   graphique fait sans rien redessiner.
 
-/* Les nappes dérivent en sens inverse : les deux mouvements se
-   croisent au lieu de se superposer, ce qui multiplie les teintes
-   traversées sans jamais s'éloigner de la couleur de départ. */
-@keyframes teinteInverseFloue {
-  0%   { filter: hue-rotate(calc(6deg * var(--amp))) saturate(1.05); }
-  50%  { filter: hue-rotate(calc(-5deg * var(--amp))) saturate(0.96); }
-  100% { filter: hue-rotate(calc(-12deg * var(--amp))) saturate(1.1); }
-}
+   SI TU VEUX LA REMETTRE UN JOUR : pose-la sur un SEUL élément, qui
+   n'a ni enfant animé ni autre animation, et mesure. Sur `.bg`, elle
+   entraînait tout le décor dans son repaint. */
 
 .bg::before, .bg::after {
   content: ''; position: absolute; inset: -26%;
-  /* Posé une fois, jamais animé. Voir teinteFloue.
+  /* PLUS DE `filter` DU TOUT SUR LES NAPPES.
 
-     LA TAILLE COMPTE AUTANT QUE LE RAYON. Un flou coûte proportionnel-
-     lement au nombre de pixels traités : à -45 %, chaque nappe faisait
-     près de quatre fois la surface de l'écran, et il y en avait trois.
-     À -26 % on en traite deux fois moins, pour une différence
-     invisible — ce sont des taches diffuses, pas des formes. */
-  filter: blur(26px);
+     Il y avait ici `filter: blur(26px)`, et il ne servait à rien : les
+     deux animations posées plus bas animaient `filter`, ce qui écrase
+     la valeur statique de la règle. Le flou était donc absent à
+     l'écran depuis le début, alors que le navigateur payait quand
+     même un passage de filtre par image.
+
+     Le retirer ne change donc rien à ce qu'on voit, et fait sortir ces
+     deux couches du chemin de peinture : elles ne font plus que
+     bouger, ce qui se compose sur la carte graphique.
+
+     Ces nappes n'en ont de toute façon pas besoin. Ce sont des
+     dégradés radiaux qui s'éteignent sur `transparent` entre 40 et
+     42 % : le fondu est déjà dans le dégradé, flouter un flou ne se
+     voit pas. */
 }
 
 .bg::before {
@@ -252,9 +272,10 @@ body {
     radial-gradient(circle at 74% 60%, rgba(var(--accent-2), .85) 0%, transparent 42%),
     radial-gradient(circle at 48% 94%, rgba(var(--accent-3), .75) 0%, transparent 40%);
   background-repeat: no-repeat;
-  animation:
-    nappe1 calc(13s / var(--vit)) ease-in-out infinite alternate,
-    teinteInverseFloue calc(37s / var(--vit)) ease-in-out infinite alternate;
+  /* Une seule animation, et elle ne touche que `transform` et
+     `opacity` : les deux seules propriétés que le navigateur sait
+     animer sans repeindre. */
+  animation: nappe1 calc(13s / var(--vit)) ease-in-out infinite alternate;
   animation-delay: var(--phase, 0s);
 }
 .bg::after {
@@ -263,23 +284,21 @@ body {
     radial-gradient(circle at 20% 70%, rgba(var(--accent-1), .72) 0%, transparent 42%),
     radial-gradient(circle at 86% 86%, rgba(var(--accent-3), .78) 0%, transparent 40%);
   background-repeat: no-repeat;
-  animation:
-    nappe2 calc(17s / var(--vit)) ease-in-out infinite alternate,
-    teinteFloue calc(31s / var(--vit)) ease-in-out infinite alternate;
+  animation: nappe2 calc(17s / var(--vit)) ease-in-out infinite alternate;
   animation-delay: var(--phase, 0s);
 }
 
 .bg-nappe {
   position: fixed; inset: -28%; z-index: 0; pointer-events: none;
-  filter: blur(26px);
+  /* Pas de `filter` : voir `.bg::before`. Le flou déclaré ici était
+     écrasé par l'animation de teinte, donc invisible, et coûtait un
+     passage de filtre plein écran par image. */
   background:
     radial-gradient(circle at 55% 40%, rgba(var(--accent-3), .6) 0%, transparent 36%),
     radial-gradient(circle at 15% 25%, rgba(var(--accent-2), .55) 0%, transparent 38%),
     radial-gradient(circle at 85% 70%, rgba(var(--accent-1), .5) 0%, transparent 36%);
   background-repeat: no-repeat;
-  animation:
-    nappe3 calc(23s / var(--vit)) ease-in-out infinite alternate,
-    teinteInverseFloue calc(29s / var(--vit)) ease-in-out infinite alternate;
+  animation: nappe3 calc(23s / var(--vit)) ease-in-out infinite alternate;
   animation-delay: var(--phase, 0s);
 }
 
@@ -289,9 +308,22 @@ body {
   /* La plus large des quatre couches, donc la plus chère : à -60 %,
      elle faisait presque cinq fois la surface de l'écran. */
   position: fixed; inset: -32%; z-index: 1; pointer-events: none;
-  /* Aucune animation de filtre sur cette couche : le flou peut donc
-     être posé une fois pour toutes. */
-  filter: blur(30px);
+  /* PAS DE FLOU NON PLUS, ET POUR UNE AUTRE RAISON QUE LES NAPPES.
+
+     Celui-ci était bien appliqué, lui : aucune animation ne vient
+     écraser `filter` sur cette couche. Mais `balayage` la fait passer
+     de `scale(1)` à `scale(1.3)`, et un calque flouté qui change
+     d'échelle doit être REDESSINÉ à la nouvelle taille — le flou est
+     recalculé à chaque palier, sur la plus grande surface du décor
+     (164 % de l'écran).
+
+     Or il n'y a rien à flouter. C'est un dégradé radial de blanc à
+     13 % qui s'éteint sur `transparent` : le fondu est déjà dans le
+     dégradé, et trente pixels de flou sur une tache sans arête ne se
+     voient pas. Sans lui, la couche ne fait plus que se déplacer et
+     changer d'opacité, donc elle est peinte une fois pour toutes.
+
+     Pour revenir en arrière, une ligne : `filter: blur(30px);`. */
   will-change: transform;
   background: radial-gradient(
     ellipse 42% 34% at 50% 50%,
@@ -658,7 +690,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: .82;
   pointer-events: none;
-  animation: liseré calc(26s / var(--vit)) ease-in-out .55s infinite alternate;
+  animation: liseré calc(26s / var(--vit)) steps(48) .55s infinite alternate;
 }
 
 /* Le contenu passe devant les nappes. Sans ça, `z-index: -1` sur la
@@ -1509,11 +1541,26 @@ html[data-menu="1"] > body > footer {
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: .55;
   pointer-events: none;
-  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+  animation: liseré calc(26s / var(--vit)) steps(48) infinite alternate;
 }
 
 /* Le chrome dérive lentement le long du contour : c'est ce qui le fait
-   ressembler à du métal plutôt qu'à un dégradé imprimé. */
+   ressembler à du métal plutôt qu'à un dégradé imprimé.
+
+   EN PALIERS, ET PAS EN CONTINU. `background-position` est la propriété
+   la plus chère à animer après `filter` : elle ne se compose pas, donc
+   chaque image demande une repeinte — ici d'un liseré masqué deux fois
+   (`mask-composite: exclude`), sur une barre collante présente à toutes
+   les pages.
+
+   Or le mouvement est SOUS-PIXELLIQUE. La position parcourt 140 % de la
+   largeur en vingt-six secondes : sur une barre de mille pixels, cela
+   fait moins d'un pixel par image. Personne ne peut voir la différence
+   entre ce glissement et quarante-huit paliers, et on passe de mille
+   cinq cents repeintes par cycle à quarante-huit.
+
+   `steps()` remplace l'assouplissement, qui ne se voyait pas non plus
+   sur une dérive aussi lente. */
 @keyframes liseré {
   from { background-position: 0% 50%; }
   to   { background-position: 100% 50%; }
@@ -2386,7 +2433,7 @@ html[data-reglage="1"] .ruban {
   mask-composite: exclude;
   opacity: .62;
   pointer-events: none;
-  animation: liseré calc(26s / var(--vit)) ease-in-out infinite alternate;
+  animation: liseré calc(26s / var(--vit)) steps(48) infinite alternate;
 }
 
 /* L'éclat qui traverse une fois à l'apparition. Il attrape l'œil sans
@@ -3704,12 +3751,26 @@ html[data-allege] :is(
   animation: none !important;
 }
 
-/* Un flou de quarante pixels sur une surface large est aussi cher qu'un
-   verre dépoli. On le réduit sans le supprimer : sans lui, les nappes
-   redeviennent des taches aux bords nets. */
+/* AUCUN FLOU NON PLUS EN MODE ALLÉGÉ, ET SURTOUT PAS ICI.
+
+   Cette règle remettait `filter: blur(24px)` sur les deux plus grandes
+   couches du décor, précisément sur les machines qui ne suivent pas.
+   Elle avait un sens quand les nappes portaient un flou en temps
+   normal : `animation: none` les figeait, le flou de base réapparaissait
+   d'un coup, et il fallait le ramener à une valeur tenable.
+
+   Ce n'est plus le cas. Les nappes n'ont plus de flou du tout, ni en
+   mode normal ni ici, donc il n'y a plus de « bords nets » à rattraper :
+   ce sont des dégradés radiaux qui s'éteignent sur `transparent`, le
+   fondu est dans le dégradé. Le mode allégé rend maintenant exactement
+   la même image que le mode normal, en un calque peint une seule fois.
+
+   On garde la règle, en `none`, pour que l'intention reste écrite : sur
+   une machine qui peine, aucune surface plein écran ne passe par un
+   filtre. */
 html[data-allege] .bg-nappe,
 html[data-allege] .bg-lueur {
-  filter: blur(24px) !important;
+  filter: none !important;
 }
 
 /*
