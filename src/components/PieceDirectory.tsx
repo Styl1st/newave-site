@@ -93,7 +93,24 @@ function crantDe(etendue: number): number {
   return 10000;
 }
 
-export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
+export default function PieceDirectory({
+  pieces,
+  rayonsDuCatalogue,
+}: {
+  pieces: Product[];
+  /**
+   * Les rayons du site entier, comptés par Postgres.
+   *
+   * La page ne porte qu'un échantillon — dix pièces par marque — et la
+   * colonne de filtres comptait donc l'échantillon : « Hauts 413 » sur
+   * un site qui en a des milliers. Ces nombres-là viennent de la base
+   * (voir `compterLeCatalogue`) et disent le catalogue.
+   *
+   * Absent en démonstration, ou si la lecture échoue : on retombe sur
+   * le comptage de ce qui est chargé, qui est ce qu'on faisait avant.
+   */
+  rayonsDuCatalogue?: { rayon: string; total: number }[];
+}) {
   /*
    * LA DENSITÉ EST TENUE ICI ET NON DANS LA GRILLE, parce que son rail
    * de boutons est posé dans la ligne de tri, à droite du compteur. La
@@ -296,9 +313,11 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
    * des marques.
    */
   const rayonsDisponibles = useMemo(
-    () => compterLesRayons(parRecherche.filter((p) => bonPrix(p) && bonEtat(p) && bonneMarque(p))),
+    () =>
+      rayonsDuCatalogue ??
+      compterLesRayons(parRecherche.filter((p) => bonPrix(p) && bonEtat(p) && bonneMarque(p))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [parRecherche, prix, prixActif, stock, promo, marque]
+    [rayonsDuCatalogue, parRecherche, prix, prixActif, stock, promo, marque]
   );
 
   const marquesDisponibles = useMemo(() => {
@@ -368,9 +387,17 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
 
   const nomDeLaMarque = marquesDisponibles.find((m) => m.slug === marque)?.nom ?? null;
 
-  /* « 214 PIÈCES · HAUTS, EN STOCK » : la phrase dit ce qu'on regarde.
-     Un compteur seul laisse croire à un catalogue entier quand trois
-     filtres sont posés plus haut, dans une colonne qu'on ne relit pas. */
+  /* « 214 PIÈCES DANS LA VITRINE · HAUTS, EN STOCK » : la phrase dit ce
+     qu'on regarde. Un compteur seul laisse croire à un catalogue entier
+     quand trois filtres sont posés plus haut, dans une colonne qu'on ne
+     relit pas.
+
+     ⚠️ « DANS LA VITRINE » N'EST PAS UN ORNEMENT. Depuis que l'en-tête
+     annonce le catalogue — « 26 507 pièces au catalogue » — il y a deux
+     nombres de pièces sur le même écran, à dix centimètres l'un de
+     l'autre. Sans un mot pour les distinguer, le plus petit se lit comme
+     une panne : c'est exactement ce qui a été rapporté. L'un compte le
+     site, l'autre ce que cette page a sous la main. */
   const legende =
     [
       rayons.length > 0 ? rayons.join(", ") : null,
@@ -424,11 +451,12 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
                 prix et la marque hors de la feuille, et l'on referme sans
                 les avoir vus. */}
             <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col lg:gap-0.5">
-              {/* « Tout » compte ce que donneraient les autres
-                  familles SANS aucun rayon coché — pas la liste
-                  courante. Sinon la ligne annoncerait le nombre de
-                  hauts au moment où l'on veut savoir combien il y a
-                  de pièces si on les décoche. */}
+              {/* « Tout », c'est la somme des rayons listés : le
+                  catalogue entier quand la base l'a compté, et sinon ce
+                  que donneraient les autres familles SANS aucun rayon
+                  coché — surtout pas la liste courante, qui annoncerait
+                  le nombre de hauts au moment où l'on veut savoir
+                  combien il reste si on les décoche. */}
               <LigneRayon
                 libelle="Tout"
                 total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
@@ -731,15 +759,44 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
         <div className="min-w-0">
           {ordonnes.length === 0 ? (
             <div className="glass p-8 text-center">
-              <p className="m-0 text-[15px] text-white/90">
-                Rien ne correspond. Essaie avec moins de filtres, ou{" "}
-                <Link
-                  href="/marques"
-                  className="font-bold text-white underline underline-offset-2"
-                >
-                  parcours les marques
-                </Link>
-                .
+              {/*
+               * DEUX RAISONS DE NE RIEN TROUVER, ET ELLES NE SE
+               * RÉPARENT PAS PAREIL.
+               *
+               * « Moins de filtres » est le bon conseil quand on en a
+               * empilé quatre. Il ne l'est plus depuis que les rayons
+               * annoncent le CATALOGUE : « Robes 9 » peut très bien
+               * n'avoir aucune robe dans la vitrine, qui ne prend que
+               * dix pièces par marque. Le filtre a alors parfaitement
+               * fonctionné, il n'y a simplement rien à montrer ici — et
+               * dire « essaie avec moins de filtres » enverrait chercher
+               * une erreur qui n'existe pas.
+               */}
+              <p className="m-0 text-[15px] leading-relaxed text-white/90">
+                {rayonsDuCatalogue && rayons.length > 0 ? (
+                  <>
+                    Ce rayon existe au catalogue, mais aucune de ses pièces n&apos;est dans
+                    la vitrine : elle en montre dix par marque.{" "}
+                    <Link
+                      href="/marques"
+                      className="font-bold text-white underline underline-offset-2"
+                    >
+                      Va les voir chez les marques
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    Rien ne correspond. Essaie avec moins de filtres, ou{" "}
+                    <Link
+                      href="/marques"
+                      className="font-bold text-white underline underline-offset-2"
+                    >
+                      parcours les marques
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             </div>
           ) : (
@@ -759,8 +816,8 @@ export default function PieceDirectory({ pieces }: { pieces: Product[] }) {
                   raison d'aller se cacher. */}
               <div className="mb-4 flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
                 <p className="m-0 min-w-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
-                  {enChiffres(ordonnes.length)} pièce{ordonnes.length > 1 ? "s" : ""} ·{" "}
-                  {legende}
+                  {enChiffres(ordonnes.length)} pièce{ordonnes.length > 1 ? "s" : ""}
+                  {rayonsDuCatalogue && " dans la vitrine"} · {legende}
                 </p>
 
                 {!auDoigt && (
@@ -1005,7 +1062,7 @@ function LigneRayon({
     >
       <span className="min-w-0 truncate text-[12.5px] font-bold">{libelle}</span>
       <span className={`shrink-0 text-[11.5px] font-bold tabular-nums ${actif ? "opacity-70" : "opacity-55"}`}>
-        {total}
+        {enChiffres(total)}
       </span>
     </button>
   );

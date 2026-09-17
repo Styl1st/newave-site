@@ -1,7 +1,9 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "./supabase/server";
+import { parTranches } from "./stats";
 import { createPublicClient } from "./supabase/public";
 import { DEMO_BRANDS, DEMO_POSTS, DEMO_PRODUCTS } from "./demo-data";
+import { PRODUCT_CATEGORIES } from "./taxonomy";
 import type { Brand, Post, Product, Recherche } from "./types";
 
 /**
@@ -134,15 +136,45 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return DEMO_PRODUCTS.filter((p) => p.brand_id === brandId);
 
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("brand_id", brandId)
-    .eq("status", "published")
-    .order("position", { ascending: true });
+  /*
+   * PAR TRANCHES, PARCE QUE POSTGREST S'ARRÊTE À MILLE LIGNES SANS LE
+   * DIRE. C'est le plafond `max-rows` de Supabase, déjà décrit en long
+   * dans `stats.ts` — et déjà payé deux fois, sur les pages vues puis
+   * sur les statistiques d'une marque. Il frappe ici pour la même
+   * raison : une boutique qui importe onze cents pièces en recevait
+   * mille, sans erreur ni avertissement, et son catalogue annonçait
+   * « Tout 1000 ». Un compte rond de mille est la signature du
+   * plafond, jamais un vrai total.
+   *
+   * L'ORDRE PORTE UN SECOND CRITÈRE, ET IL N'EST PAS DÉCORATIF. Deux
+   * tranches ne se suivent que si la base rend les lignes dans le même
+   * ordre à chaque appel. `position` ne suffit pas : elle peut être
+   * nulle, ou répétée sur un catalogue importé deux fois, et les
+   * lignes à égalité se rangent alors comme la base veut — deux
+   * tranches successives se recouvrent, et une pièce apparaît en
+   * double pendant qu'une autre disparaît. `id` tranche toujours.
+   */
+  /* `parTranches` ne regarde que les lignes : on retient l'erreur au
+     passage pour ne pas perdre le message dans la console du serveur,
+     qui est la seule chose qui distingue « aucune pièce » d'une lecture
+     qui a échoué. */
+  let echec: { message: string } | null = null;
+  const data = await parTranches<Product>((de, a) =>
+    supabase
+      .from("products")
+      .select("*")
+      .eq("brand_id", brandId)
+      .eq("status", "published")
+      .order("position", { ascending: true })
+      .order("id", { ascending: true })
+      .range(de, a)
+      .then((res) => {
+        if (res.error) echec = res.error;
+        return res;
+      })
+  );
 
-  report("pièces de la marque", error);
-  if (error || !data) return [];
+  report("pièces de la marque", echec);
 
   /*
    * Ce qui est encore en vente d'abord, ce qui a été retiré ensuite.
@@ -157,7 +189,7 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
    * est absente, tout est considéré comme en vente, et l'ordre reste
    * celui des positions. Le site fonctionne avant comme après.
    */
-  return (data as Product[])
+  return data
     .slice()
     .sort((a, b) => Number(Boolean(a.retired_at)) - Number(Boolean(b.retired_at)));
 }
@@ -192,22 +224,146 @@ export async function getVitrine(parMarque = 10): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return DEMO_PRODUCTS;
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(`*, ${BRAND_REF}`)
-    .eq("status", "published")
-    .is("retired_at", null)
-    .lt("position", parMarque)
-    /*
-     * Un plafond de sécurité, pas un critère de choix. Il n'existe que
-     * pour le jour où l'annuaire comptera mille marques : personne ne
-     * descend dix mille vignettes, et les envoyer coûterait à chaque
-     * visite ce qu'on met des semaines à économiser ailleurs.
-     */
-    .limit(1500);
+  /*
+   * ⚠️ `.limit(1500)` NE SUFFISAIT PAS, ET IL ÉTAIT MÊME TROMPEUR.
+   *
+   * PostgREST s'arrête à mille lignes quoi qu'on demande (le plafond
+   * `max-rows`, décrit en long dans `stats.ts`) : une limite écrite à
+   * mille cinq cents n'a jamais rendu plus de mille. Avec cent trente-
+   * six marques et dix pièces chacune, la vitrine en visait treize cent
+   * soixante et en recevait mille — et surtout, sans `order`, ces mille
+   * lignes sont celles que la base a sous la main, donc les plus
+   * ANCIENNES. Les marques importées en dernier n'apparaissaient plus
+   * du tout : très exactement le défaut que `position` était venue
+   * corriger, revenu par une autre porte.
+   *
+   * On demande donc par tranches jusqu'au plafond, qui reste ce qu'il
+   * était : une sécurité, pas un critère de choix. Personne ne descend
+   * dix mille vignettes, et les envoyer coûterait à chaque visite ce
+   * qu'on met des semaines à économiser ailleurs.
+   *
+   * L'ordre sert au découpage, pas à l'affichage : `repartirParMarque`
+   * rebat tout de suite après. Il doit être TOTAL — `brand_id` et
+   * `position` se répètent, `id` tranche — sinon deux tranches se
+   * recouvrent et une pièce sort en double pendant qu'une autre
+   * disparaît.
+   */
+  const PLAFOND = 1500;
+  const TRANCHE = 1000;
+  const tout: Product[] = [];
 
-  if (error || !data) return DEMO_PRODUCTS;
-  return data as unknown as Product[];
+  for (let de = 0; de < PLAFOND; de += TRANCHE) {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`*, ${BRAND_REF}`)
+      .eq("status", "published")
+      .is("retired_at", null)
+      .lt("position", parMarque)
+      .order("brand_id", { ascending: true })
+      .order("position", { ascending: true })
+      .order("id", { ascending: true })
+      .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
+
+    if (error) return DEMO_PRODUCTS;
+    if (!data?.length) break;
+
+    tout.push(...(data as unknown as Product[]));
+    if (data.length < TRANCHE) break;
+  }
+
+  /* Un catalogue vide n'est pas une panne : on rend une liste vide, et
+     la page dit qu'il n'y a rien. Le repli sur les données de
+     démonstration est réservé à l'erreur, traitée dans la boucle. */
+  return tout;
+}
+
+/** Ce que le catalogue contient, sans qu'aucune pièce ne descende. */
+export type CompteDuCatalogue = {
+  /** Pièces publiées, en vente, de marques publiées. */
+  pieces: number;
+  marques: number;
+  /** Par rayon, dans l'ordre de la taxonomie, « Autres » en dernier. */
+  rayons: { rayon: string; total: number }[];
+};
+
+/**
+ * LES VRAIS NOMBRES DU CATALOGUE, COMPTÉS PAR POSTGRES.
+ *
+ * La vitrine ne montre que dix pièces par marque : `pieces.length` y
+ * répond « 983 » sur un site qui en porte des milliers, et le chiffre
+ * se lit comme un compteur en panne. Il ne peut pas se corriger en
+ * rapatriant plus de lignes — PostgREST s'arrête à mille, et personne
+ * ne veut télécharger vingt mille pièces pour en afficher trente.
+ *
+ * On demande donc le comptage à la base. Le total des marques est un
+ * `count: "exact", head: true` ordinaire ; celui des rayons passe par
+ * une fonction SQL, parce qu'une pièce peut porter deux rayons et que
+ * le site n'en retient qu'un — le premier. Huit comptages séparés la
+ * compteraient deux fois. Voir `migration-31.sql`, qui explique le
+ * détail, et `rayonDe` pour la règle qu'elle reproduit.
+ *
+ * ⚠️ LA LISTE DES RAYONS PART D'ICI. La fonction SQL n'en connaît
+ * aucune : elle reçoit `PRODUCT_CATEGORIES` en argument. C'est ce qui
+ * garantit qu'un rayon ajouté à la taxonomie sera compté le jour même,
+ * sans migration.
+ *
+ * Le client PUBLIC, et non le client habituel : ce dernier lit les
+ * cookies, ce que Next interdit dans un cache. Même raison que pour
+ * l'annuaire, un peu plus haut.
+ */
+const lireLesComptes = unstable_cache(
+  async (): Promise<CompteDuCatalogue | null> => {
+    const supabase = createPublicClient();
+    if (!supabase) return null;
+
+    const [rayons, marques] = await Promise.all([
+      supabase.rpc("compter_les_rayons", { p_rayons: [...PRODUCT_CATEGORIES] }),
+      supabase
+        .from("brands")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published"),
+    ]);
+
+    report("comptes du catalogue", rayons.error);
+    if (rayons.error || !rayons.data) return null;
+
+    const lignes = rayons.data as { rayon: string | null; total: number }[];
+
+    /* `rayon` vaut NULL pour une pièce qui ne porte aucun rayon connu.
+       Le nom « Autres » reste du côté du site : la base compte, elle ne
+       nomme pas. C'est aussi ce que fait `compterLesRayons`. */
+    const parRayon = new Map<string, number>();
+    for (const l of lignes) {
+      const cle = l.rayon ?? "Autres";
+      parRayon.set(cle, (parRayon.get(cle) ?? 0) + l.total);
+    }
+
+    const ordre = [...PRODUCT_CATEGORIES, "Autres"];
+
+    return {
+      pieces: lignes.reduce((n, l) => n + l.total, 0),
+      marques: marques.count ?? 0,
+      rayons: ordre
+        .filter((r) => parRayon.has(r))
+        .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
+    };
+  },
+  ["comptes-catalogue"],
+  /* Cinq minutes : un catalogue ne bouge qu'à l'import, et ces trois
+     nombres n'ont pas besoin d'être à la seconde. C'est autant de
+     comptages que la base ne refait pas à chaque visite. */
+  { revalidate: 300, tags: ["pieces"] }
+);
+
+/**
+ * Combien de pièces le site porte vraiment, et dans quels rayons.
+ *
+ * `null` quand la base n'est pas configurée ou que la lecture échoue :
+ * la page retombe alors sur ce qu'elle a sous la main, plutôt que
+ * d'afficher zéro.
+ */
+export async function compterLeCatalogue(): Promise<CompteDuCatalogue | null> {
+  return lireLesComptes();
 }
 
 /**

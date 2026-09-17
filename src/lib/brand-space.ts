@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
+import { parTranches } from "./stats";
 import { getProfile } from "./auth";
 import type { Brand, Product, Profile } from "./types";
 
@@ -92,13 +93,20 @@ export async function requireManagedBrand(
 export async function getBrandProducts(brandId: string): Promise<Product[]> {
   const supabase = await createClient();
   if (!supabase) return [];
-  const { data } = await supabase
-    .from("products")
-    .select("*")
-    .eq("brand_id", brandId)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: false });
-  return (data as Product[]) ?? [];
+  /* Par tranches : PostgREST s'arrête à mille lignes sans le dire, et
+     l'espace marque doit montrer le catalogue entier — c'est là qu'on
+     le corrige. `id` en dernier critère donne l'ordre total sans lequel
+     deux tranches se recouvrent. Voir `stats.ts`. */
+  return parTranches<Product>((de, a) =>
+    supabase
+      .from("products")
+      .select("*")
+      .eq("brand_id", brandId)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(de, a)
+  );
 }
 
 export async function getBrandProduct(id: string): Promise<Product | null> {
@@ -156,15 +164,37 @@ export async function getCatalogueInsight(brandId: string): Promise<{
   const gerant = Boolean(link);
   if (!gerant && profile.role !== "admin") return null;
 
-  // Sans filtre de statut : c'est justement l'ecart entre les deux
-  // chiffres qui explique une page vide.
-  const { data } = await supabase.from("products").select("status").eq("brand_id", brandId);
-  const rows = (data as { status: string }[]) ?? [];
+  /*
+   * DEUX COMPTES DEMANDÉS À POSTGRES, ET AUCUNE LIGNE RAPATRIÉE.
+   *
+   * On lisait les statuts pour les compter en mémoire, ce qui butait
+   * sur le plafond de mille lignes : au-delà, une boutique voyait son
+   * total figé à mille. Pour un TOTAL, la bonne réponse est
+   * `count: "exact", head: true` — Postgres compte, rien ne descend sur
+   * le réseau, et aucun plafond ne s'applique. Voir `stats.ts`.
+   *
+   * Sans filtre de statut pour le premier : c'est justement l'écart
+   * entre les deux chiffres qui explique une page vide.
+   */
+  const [tout, publiees] = await Promise.all([
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("brand_id", brandId),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("brand_id", brandId)
+      .eq("status", "published"),
+  ]);
+
+  const total = tout.count ?? 0;
+  const published = publiees.count ?? 0;
 
   return {
-    total: rows.length,
-    published: rows.filter((r) => r.status === "published").length,
-    drafts: rows.filter((r) => r.status === "draft").length,
+    total,
+    published,
+    /* Ce qui n'est pas publié est en brouillon : la colonne n'a que ces
+       deux valeurs. Un troisième compte serait une requête de plus pour
+       une soustraction. */
+    drafts: total - published,
     gerant,
   };
 }

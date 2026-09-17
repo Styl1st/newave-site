@@ -111,14 +111,39 @@ export async function synchroniserCatalogue(
   // Les taux du jour, lus une fois pour tout le catalogue.
   const taux = await lireLesTaux();
 
-  const { data: brut, error: lecture } = await supabase
-    .from("products")
-    .select("id, source_id, shop_url, slug, status, position, categories, featured, retired_at")
-    .eq("brand_id", brandId);
+  /*
+   * ⚠️ LA LECTURE DE L'EXISTANT SE FAIT PAR TRANCHES, ET C'EST LA PLUS
+   * IMPORTANTE DES TROIS.
+   *
+   * PostgREST s'arrête à mille lignes sans le dire (voir `stats.ts`).
+   * Sur une boutique de onze cents pièces, cette requête en rendait
+   * mille : les cent dernières n'existaient plus pour la synchro. Elle
+   * les aurait donc traitées comme des nouveautés — réinsérées en
+   * double, ou refusées par la contrainte d'unicité sur `source_id` —
+   * et, avec `marquerLesAbsentes`, le calcul des disparues aurait porté
+   * sur un existant incomplet.
+   *
+   * C'est le seul des trois plafonds qui ÉCRIT. Les autres affichent un
+   * chiffre faux ; celui-ci abîme le catalogue.
+   */
+  const existantes: Existante[] = [];
+  const TRANCHE = 1000;
+  for (let de = 0; de < 100 * TRANCHE; de += TRANCHE) {
+    const { data: brut, error: lecture } = await supabase
+      .from("products")
+      .select("id, source_id, shop_url, slug, status, position, categories, featured, retired_at")
+      .eq("brand_id", brandId)
+      /* Un ordre total, sinon deux tranches peuvent se recouvrir : une
+         pièce serait alors lue deux fois et une autre jamais. */
+      .order("id", { ascending: true })
+      .range(de, de + TRANCHE - 1);
 
-  if (lecture) return { creees: 0, majs: 0, retirees: 0, erreur: lecture.message };
+    if (lecture) return { creees: 0, majs: 0, retirees: 0, erreur: lecture.message };
 
-  const existantes = (brut as Existante[] | null) ?? [];
+    const lot = (brut as Existante[] | null) ?? [];
+    existantes.push(...lot);
+    if (lot.length < TRANCHE) break;
+  }
   const parSource = new Map<string, Existante>();
   const parLien = new Map<string, Existante>();
   const slugsPris = new Set<string>();

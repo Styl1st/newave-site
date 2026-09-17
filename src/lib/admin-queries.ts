@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/server";
+import { parTranches } from "./stats";
 import { CANDIDATURES_EN_ATTENTE, type Application, type Brand, type Post, type Profile } from "./types";
 
 /**
@@ -49,22 +50,54 @@ export async function adminGetBrandsDetaillees(): Promise<BrandAdmin[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const [{ data: marques }, { data: pieces }, { data: gerants }] = await Promise.all([
-    supabase.from("brands").select("*").order("name"),
-    supabase.from("products").select("brand_id"),
-    supabase.from("brand_managers").select("brand_id"),
+  /*
+   * ⚠️ CES TROIS LECTURES ÉTAIENT PLAFONNÉES À MILLE LIGNES, ET C'EST
+   * LE COMPTE DE PIÈCES QUI EN MOURAIT.
+   *
+   * PostgREST ne rend jamais plus de mille lignes et ne le dit pas
+   * (voir `stats.ts`). `select("brand_id")` sur TOUTES les pièces du
+   * site : passé mille pièces au total, les marques absentes de ces
+   * mille premières lignes se retrouvaient avec zéro pièce. Zéro pièce
+   * veut dire « sans catalogue » pour `obstacleAPublication`, donc une
+   * fiche complète déclarée impubliable, un filtre « Sans pièce » qui
+   * ment, et une ligne de liste qui annonce un manque inexistant.
+   *
+   * Le second critère d'ordre n'est pas décoratif : `brand_id` se
+   * répète des centaines de fois, et deux tranches successives se
+   * recouvriraient sans une clé qui tranche pour de bon.
+   */
+  const [marques, pieces, gerants] = await Promise.all([
+    parTranches<Brand>((de, a) =>
+      supabase.from("brands").select("*").order("name").order("id").range(de, a)
+    ),
+    parTranches<{ brand_id: string }>((de, a) =>
+      supabase
+        .from("products")
+        .select("brand_id")
+        .order("brand_id")
+        .order("id")
+        .range(de, a)
+    ),
+    parTranches<{ brand_id: string }>((de, a) =>
+      supabase
+        .from("brand_managers")
+        .select("brand_id")
+        .order("brand_id")
+        .order("user_id")
+        .range(de, a)
+    ),
   ]);
 
-  const compter = (lignes: { brand_id: string }[] | null) => {
+  const compter = (lignes: { brand_id: string }[]) => {
     const total = new Map<string, number>();
-    for (const l of lignes ?? []) total.set(l.brand_id, (total.get(l.brand_id) ?? 0) + 1);
+    for (const l of lignes) total.set(l.brand_id, (total.get(l.brand_id) ?? 0) + 1);
     return total;
   };
 
-  const parPieces = compter(pieces as { brand_id: string }[] | null);
-  const parGerants = compter(gerants as { brand_id: string }[] | null);
+  const parPieces = compter(pieces);
+  const parGerants = compter(gerants);
 
-  return ((marques as Brand[]) ?? []).map((b) => ({
+  return marques.map((b) => ({
     ...b,
     pieces: parPieces.get(b.id) ?? 0,
     gerants: parGerants.get(b.id) ?? 0,
