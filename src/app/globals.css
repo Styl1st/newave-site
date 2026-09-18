@@ -4295,3 +4295,87 @@ html[data-clair="1"] .bouton-index {
   border: 1px solid rgba(34, 16, 70, .12);
   box-shadow: 0 14px 30px -12px rgba(34, 16, 70, .28);
 }
+
+/* ---------- la colonne de filtres des pièces, sur écran bas ----------
+   ELLE N'A PLUS D'ASCENSEUR À ELLE (voir `PieceDirectory`), donc il faut
+   qu'elle TIENNE. Sur un portable de treize pouces, ou dans une fenêtre
+   qui n'est pas en plein écran, les quatre familles de filtres
+   dépassaient d'une centaine de pixels : on ne voyait ni le prix ni la
+   marque, et rien ne disait qu'ils existaient.
+
+   LE REMÈDE N'EST PAS DE COUPER, C'EST DE SERRER. Les traits de
+   séparation se rapprochent, les lignes de rayon perdent leurs quelques
+   pixels de confort, la colonne ses bords. Rien ne disparaît, rien ne
+   change de place, et l'on récupère de quoi tout loger.
+
+   TROIS PALIERS, PARCE QU'IL Y A TROIS ÉCRANS. Un grand moniteur n'a
+   aucun problème ; un portable rétina (1440 × 900, soit 760 de fenêtre)
+   en a un petit ; un portable ordinaire (1366 × 768, soit 650 de
+   fenêtre) en a un vrai — et c'est celui-là qui décide des valeurs du
+   dernier palier, calées pour que l'ensemble passe au pixel près.
+
+   En dessous encore, la colonne renonce à rester collée et redevient un
+   bloc qui défile avec la page : c'est `colonneTient` qui s'en charge,
+   parce que cela ne se décide qu'en mesurant.
+
+   Rien sous `lg` : là, la colonne n'existe pas. C'est la feuille qui
+   monte, et son défilement à elle est légitime. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .colonne-filtres {
+    padding: 15px;
+  }
+
+  .colonne-filtres .section-filtre {
+    margin-top: 11px;
+    padding-top: 11px;
+  }
+
+  .colonne-filtres .section-filtre > div:first-child {
+    margin-bottom: 7px;
+  }
+
+  .colonne-filtres .ligne-filtre {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 780px) {
+  .colonne-filtres {
+    padding: 12px;
+  }
+
+  .colonne-filtres .section-filtre {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .colonne-filtres .section-filtre > div:first-child {
+    margin-bottom: 5px;
+  }
+
+  .colonne-filtres .ligne-filtre {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 700px) {
+  .colonne-filtres {
+    padding: 10px;
+  }
+
+  .colonne-filtres .section-filtre {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .colonne-filtres .section-filtre > div:first-child {
+    margin-bottom: 4px;
+  }
+
+  .colonne-filtres .ligne-filtre {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
