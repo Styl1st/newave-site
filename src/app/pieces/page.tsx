@@ -28,7 +28,16 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-export default async function PiecesPage() {
+/** `?q=veste` ouvre la vitrine déjà filtrée. Voir `amorce`. */
+type Props = { searchParams: Promise<{ q?: string | string[] }> };
+
+export default async function PiecesPage({ searchParams }: Props) {
+  const { q } = await searchParams;
+
+  /* Bornée comme la saisie de l'annuaire : une adresse s'écrit à la
+     main, et quelques milliers de caractères collés dans le champ ne
+     cherchent rien et débordent la ligne de requête. */
+  const amorce = (Array.isArray(q) ? q[0] : q)?.slice(0, 80) ?? "";
   /*
    * Une pièce sans photo n'a rien à faire dans une vitrine. Voir
    * `aUneIllustration` : ce n'est pas une suppression, sa fiche reste
@@ -99,7 +108,7 @@ export default async function PiecesPage() {
 
       {/* Les rayons du catalogue entier, pour que la colonne de filtres
           annonce le site et non l'échantillon. */}
-      <PieceDirectory pieces={pieces} rayonsDuCatalogue={catalogue?.rayons} />
+      <PieceDirectory pieces={pieces} rayonsDuCatalogue={catalogue?.rayons} amorce={amorce} />
     </div>
   );
 }

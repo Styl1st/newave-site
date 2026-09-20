@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { IconLoupe } from "@/components/Icons";
 import type { Recherche } from "@/lib/types";
 import { BandePieces, LigneMarque, Surligne } from "./Suggestions";
@@ -65,6 +66,7 @@ export default function PanneauRecherche({
   /** Mesuré par la barre, pas rendu deux fois : voir `BarreDuHaut`. */
   auDoigt: boolean;
 }) {
+  const chemin = usePathname();
   const mot = query.trim();
   const marques = suggestions?.marques ?? [];
   const pieces = suggestions?.pieces ?? [];
@@ -131,13 +133,14 @@ export default function PanneauRecherche({
              * son index. Le mot tapé part avec (`?q=`), donc on ne
              * recommence pas.
              */}
-            <Link
+            <VersLAnnuaire
               href={`/marques?q=${encodeURIComponent(mot)}`}
+              chemin={chemin}
               onClick={() => onOuvrir(mot)}
               className="mt-3 inline-block text-[11.5px] font-bold text-[rgb(var(--accent-1))] underline underline-offset-4 transition hover:text-white"
             >
               Tout voir dans l&apos;annuaire
-            </Link>
+            </VersLAnnuaire>
           </div>
 
           {/* ---------- dans le site ---------- */}
@@ -184,13 +187,14 @@ export default function PanneauRecherche({
         <p className="m-0 px-2 py-6 text-center text-[13.5px] leading-relaxed text-white/60">
           Rien ne correspond pour l&apos;instant.
           <br />
-          <Link
+          <VersLAnnuaire
             href={`/marques?q=${encodeURIComponent(mot)}`}
+            chemin={chemin}
             onClick={() => onOuvrir(mot)}
             className="font-bold text-white underline underline-offset-2"
           >
             Chercher dans l&apos;annuaire
-          </Link>
+          </VersLAnnuaire>
         </p>
       ) : (
         <>
@@ -238,13 +242,14 @@ export default function PanneauRecherche({
                */}
               <div className="flex flex-wrap gap-2">
                 {enCeMoment.map((e) => (
-                  <Link
+                  <VersLAnnuaire
                     key={e.href}
                     href={e.href}
+                    chemin={chemin}
                     className="rounded-full bg-white/12 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.07em] text-white/84 transition hover:bg-white/20 hover:text-white"
                   >
                     {e.label}
-                  </Link>
+                  </VersLAnnuaire>
                 ))}
               </div>
             </>
@@ -252,5 +257,50 @@ export default function PanneauRecherche({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * La sortie vers l'annuaire, et le seul endroit du pop-up qui regarde
+ * où l'on se trouve.
+ *
+ * DEPUIS L'ANNUAIRE LUI-MÊME, UN LIEN CLIENT NE SUFFIT PAS. Aller de
+ * `/marques` à `/marques?q=denim` ne change pas le chemin : React
+ * conserve `BrandDirectory` monté, et son amorce — le mot cherché, la
+ * catégorie, les jetons — n'est lue qu'au montage. L'adresse changeait
+ * donc dans la barre du navigateur sans que la liste bouge d'une
+ * ligne, ce qui est pire que de ne rien proposer.
+ *
+ * On recharge donc pour de bon dans ce cas précis, avec une balise
+ * `a` : c'est un geste rare, et la page remontée lit son amorce comme
+ * elle le fait depuis n'importe quelle autre page du site. Partout
+ * ailleurs, `Link` garde la navigation douce.
+ */
+function VersLAnnuaire({
+  href,
+  chemin,
+  onClick,
+  className,
+  children,
+}: {
+  href: string;
+  /** Le chemin courant, sans la requête. */
+  chemin: string;
+  onClick?: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (chemin === "/marques") {
+    return (
+      <a href={href} onClick={onClick} className={className}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} onClick={onClick} className={className}>
+      {children}
+    </Link>
   );
 }

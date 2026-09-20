@@ -44,6 +44,8 @@ export default function Suggestions({
   feuille = false,
   criteres = [],
   onPoser,
+  uniteCompte = "marques",
+  intertitres = feuille,
 }: {
   suggestions: Recherche;
   query: string;
@@ -57,6 +59,27 @@ export default function Suggestions({
   /** Les critères posables, déjà comptés par l'annuaire. */
   criteres?: Critere[];
   onPoser?: (critere: Critere) => void;
+  /**
+   * Ce que compte le nombre d'une ligne de critère.
+   *
+   * L'annuaire compte des MARQUES : « Denim, 22 marques ». La vitrine
+   * compte des PIÈCES : « Bas, 5 857 pièces ». Le même mot pour les deux
+   * ferait mentir l'un des deux écrans, et c'est le genre de chiffre
+   * qu'on ne vérifie jamais.
+   */
+  uniteCompte?: "marques" | "pièces";
+  /**
+   * Les titres de groupes.
+   *
+   * Sous le champ de l'annuaire ils ne servaient à rien : deux groupes,
+   * des badges qui disent déjà de quoi chaque ligne est faite, et une
+   * ligne de titre au-dessus de trois lignes de liste est du bruit. Le
+   * panneau de la vitrine en porte TROIS — poser un filtre, les
+   * marques, les pièces — et là ils deviennent la seule façon de voir
+   * d'un coup d'œil que le panneau répond à trois questions
+   * différentes.
+   */
+  intertitres?: boolean;
 }) {
   const marques = suggestions.marques;
   const mot = query.trim();
@@ -69,6 +92,7 @@ export default function Suggestions({
     <>
       {criteres.length > 0 && (
         <div className="flex flex-col">
+          {intertitres && <p className="eyebrow m-0 mb-2 text-white/45">Poser un filtre</p>}
           {criteres.map((c, i) => (
             <button
               key={c.cle}
@@ -85,7 +109,8 @@ export default function Suggestions({
 
               {c.compte !== undefined && (
                 <span className={classeContexte(feuille)}>
-                  {c.compte} marque{c.compte > 1 ? "s" : ""}
+                  {c.compte} {uniteCompte === "pièces" ? "pièce" : "marque"}
+                  {c.compte > 1 ? "s" : ""}
                 </span>
               )}
 
@@ -101,7 +126,7 @@ export default function Suggestions({
               disent déjà de quoi chaque ligne est faite, et une ligne de
               titre au-dessus de trois lignes de liste est du bruit. */}
           <p
-            className={`eyebrow m-0 mb-2 text-white/45 ${feuille ? "" : "hidden"} ${
+            className={`eyebrow m-0 mb-2 text-white/45 ${intertitres ? "" : "hidden"} ${
               criteres.length > 0 ? "mt-3" : ""
             }`}
           >
@@ -137,9 +162,13 @@ export default function Suggestions({
             Pièces · {suggestions.totalPieces} résultat
             {suggestions.totalPieces > 1 ? "s" : ""}
           </p>
+          {/* En bande qui défile dans la feuille : au doigt, six
+              vignettes enroulées prendraient trois rangs au-dessus d'un
+              clavier déjà monté. */}
           <BandePieces
             pieces={suggestions.pieces}
             total={suggestions.totalPieces}
+            disposition={feuille ? "bande" : "enroulee"}
             onOuvrir={() => onOuvrir(mot)}
           />
         </>

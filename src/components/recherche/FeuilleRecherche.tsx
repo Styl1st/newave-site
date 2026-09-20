@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Portal from "@/components/Portal";
 import { IconLoupe } from "@/components/Icons";
 import Suggestions from "./Suggestions";
+import type { Critere } from "./Jeton";
 import { MINIMUM, useRecherche } from "./useRecherche";
 import { lireHistorique, noterRecherche, oublierHistorique } from "./historique";
 
@@ -39,16 +40,33 @@ export default function FeuilleRecherche({
   query,
   onQuery,
   onFermer,
+  criteres = [],
+  onPoser,
+  uniteCompte,
 }: {
   ouverte: boolean;
   /** La saisie de l'annuaire, écrite ici et lue là-bas. */
   query: string;
   onQuery: (q: string) => void;
   onFermer: () => void;
+  /**
+   * LES CRITÈRES SONT ARRIVÉS AVEC LA VITRINE, et ils y passent devant.
+   *
+   * La feuille ne posait pas de jetons : l'annuaire ne lui en donnait
+   * pas, et elle se contentait d'ouvrir des fiches. Les pièces, elles,
+   * ont des rayons, et au doigt poser un filtre d'un geste vaut mieux
+   * que taper dix lettres — c'est même la raison d'être de cet écran.
+   * Ils restent facultatifs : sans eux, la feuille se comporte comme
+   * avant, à la ligne près.
+   */
+  criteres?: Critere[];
+  onPoser?: (critere: Critere) => void;
+  /** Ce que compte une ligne de critère : voir `Suggestions`. */
+  uniteCompte?: "marques" | "pièces";
 }) {
   const router = useRouter();
   const champ = useRef<HTMLInputElement>(null);
-  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(query);
+  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(query, criteres);
   const [historique, setHistorique] = useState<string[]>([]);
 
   /*
@@ -143,10 +161,14 @@ export default function FeuilleRecherche({
                   onFermer();
                   return;
                 }
-                auClavier(e, (slug, mot) => {
-                  noter(mot);
-                  router.push(`/marques/${slug}`);
-                });
+                auClavier(
+                  e,
+                  (slug, mot) => {
+                    noter(mot);
+                    router.push(`/marques/${slug}`);
+                  },
+                  onPoser
+                );
               }}
               placeholder="Chercher une marque, un style…"
               aria-label="Chercher une marque, une pièce"
@@ -200,6 +222,9 @@ export default function FeuilleRecherche({
               surligne={surligne}
               onSurligne={setSurligne}
               onOuvrir={noter}
+              criteres={criteres}
+              onPoser={onPoser}
+              uniteCompte={uniteCompte}
             />
           ) : query.trim().length >= MINIMUM ? (
             /* Deux lettres tapées et rien en face : on le dit, plutôt

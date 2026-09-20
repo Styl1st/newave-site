@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import CurseurPrix from "./CurseurPrix";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
 import ProductCard, { type RatioPiece } from "./ProductCard";
-import { IconCheck, IconFiltre } from "./Icons";
+import { IconCheck, IconFiltre, IconLoupe } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
 import { compterLesRayons, rayonDe } from "@/lib/rayons";
 import { declarerChampLocal } from "./recherche/champLocal";
+import FeuilleRecherche from "./recherche/FeuilleRecherche";
+import Suggestions from "./recherche/Suggestions";
+import type { Critere } from "./recherche/Jeton";
+import { MINIMUM, useRecherche } from "./recherche/useRecherche";
+import { noterRecherche } from "./recherche/historique";
 import { discountPercent, formatPrice } from "@/lib/types";
 import type { Product } from "@/lib/types";
 
@@ -39,6 +45,27 @@ import type { Product } from "@/lib/types";
 
 /** Combien de pièces d'un coup. Même raison que pour l'annuaire. */
 const LOT = 24;
+
+/**
+ * LE POINT DE BASCULE DE LA RECHERCHE, ET IL N'EST PAS CELUI DES
+ * FILTRES.
+ *
+ * La colonne de filtres devient une feuille sous 1 024 px, parce que
+ * c'est là qu'elle cesse de tenir à côté de la grille. La recherche,
+ * elle, bascule à 640 px : c'est la largeur en dessous de laquelle la
+ * ligne typographique se coupe en deux et où le clavier virtuel mange
+ * la moitié basse de l'écran. Deux seuils différents pour deux
+ * contraintes différentes, et c'est le même 640 que l'annuaire.
+ */
+const AU_DOIGT_RECHERCHE = "(max-width: 639px)";
+
+/** Sans accents ni casse : « Bas » doit répondre à « bas ». */
+function sansAccent(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 /**
  * La hauteur de l'en-tête collant, en pixels.
@@ -123,8 +150,19 @@ function crantDe(etendue: number): number {
 export default function PieceDirectory({
   pieces,
   rayonsDuCatalogue,
+  amorce,
 }: {
   pieces: Product[];
+  /**
+   * Ce que l'adresse a déposé dans le champ, `?q=veste`.
+   *
+   * LUE AU SERVEUR ET NON DANS UN EFFET, comme pour l'annuaire : il la
+   * faut au PREMIER rendu. Lue après coup, la grille complète
+   * s'afficherait puis se réduirait sous les yeux. C'est ce qui rend
+   * une recherche de la vitrine partageable, et ce qui permettra à un
+   * lien de pointer sur « les vestes » sans passer par le champ.
+   */
+  amorce?: string;
   /**
    * Les rayons du site entier, comptés par Postgres.
    *
@@ -147,7 +185,7 @@ export default function PieceDirectory({
    */
   const { densite, choisir: choisirDensite, offertes } = useDensite("vitrine", "pieces");
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(amorce ?? "");
   /*
    * DEUX FAMILLES DE FILTRES, ET ELLES NE SE COMBINENT PAS PAREIL.
    *
@@ -293,17 +331,57 @@ export default function PieceDirectory({
      La recherche
      ------------------------------------------------------------------ */
 
+  const router = useRouter();
   const champ = useRef<HTMLInputElement>(null);
+  const bloc = useRef<HTMLDivElement>(null);
+  const [panneau, setPanneau] = useState(false);
+  const [feuille, setFeuille] = useState(false);
+
+  /*
+   * La largeur est MESURÉE, et avant la peinture.
+   *
+   * Le champ ne prend pas la même forme de part et d'autre des 640 px :
+   * ligne typographique au-dessus, champ ordinaire en dessous. Mesurer
+   * dans un effet ordinaire ferait afficher la ligne une fraction de
+   * seconde sur un téléphone avant de la remplacer. `useEffetDePose`
+   * joue avant que le navigateur peigne, personne ne voit le change.
+   */
+  const [petit, setPetit] = useState(false);
+  useEffetDePose(() => {
+    const etroit = window.matchMedia(AU_DOIGT_RECHERCHE);
+    const mesurer = () => setPetit(etroit.matches);
+    mesurer();
+    etroit.addEventListener("change", mesurer);
+    return () => etroit.removeEventListener("change", mesurer);
+  }, []);
+
+  /* En repassant au grand écran, le panneau redevient lisible sous le
+     champ : laisser la feuille ouverte la ferait flotter en travers. */
+  useEffect(() => {
+    if (!petit) setFeuille(false);
+  }, [petit]);
+
+  /*
+   * Fermer en cliquant à côté, et pas au `blur` du champ : le `blur`
+   * part AVANT le clic sur une suggestion, et le lien visé n'existerait
+   * plus au moment où le clic arrive. L'annuaire a payé ce bug.
+   */
+  useEffect(() => {
+    if (!panneau) return;
+    const dehors = (e: MouseEvent) => {
+      if (!bloc.current?.contains(e.target as Node)) setPanneau(false);
+    };
+    document.addEventListener("mousedown", dehors);
+    return () => document.removeEventListener("mousedown", dehors);
+  }, [panneau]);
 
   /*
    * ⌘K, comme dans l'annuaire. Le geste doit être le même d'une page de
    * listing à l'autre, sinon il n'en devient le réflexe sur aucune.
    *
    * Ctrl aussi bien que ⌘ : le site n'a aucune raison de supposer un
-   * Mac. Pas de panneau de suggestions ici, contrairement à l'annuaire :
-   * les pièces sont déjà toutes dans le navigateur, la liste répond donc
-   * sous la frappe et une seconde liste par-dessus ne dirait rien de
-   * plus.
+   * Mac. Il déplie aussi le panneau, depuis que la vitrine en a un : le
+   * raccourci doit mener au même endroit que le clic.
    */
   /* La page porte son propre champ : le pop-up de la barre laisse donc
      ⌘K à celui-ci. Voir `champLocal`. */
@@ -315,6 +393,7 @@ export default function PieceDirectory({
         e.preventDefault();
         champ.current?.focus();
         champ.current?.select();
+        setPanneau(true);
       }
     };
     window.addEventListener("keydown", auClavier);
@@ -577,6 +656,138 @@ export default function PieceDirectory({
 
   const nomDeLaMarque = marquesDisponibles.find((m) => m.slug === marque)?.nom ?? null;
 
+  /* ------------------------------------------------------------------
+     Le panneau de suggestions
+
+     CE QU'IL AJOUTE, ET CE QU'IL NE REMPLACE PAS. La grille derrière
+     continue de se filtrer à la frappe : c'est elle qui répond « voilà
+     les pièces de la vitrine qui portent ce mot ». Le panneau dit les
+     trois choses qu'elle ne peut pas dire — quels RAYONS ce mot désigne
+     et qu'on peut poser d'une touche, quelles MARQUES le portent, et
+     combien de PIÈCES le catalogue entier en compte, vingt-six mille
+     contre les mille deux cents descendues avec la page.
+     ------------------------------------------------------------------ */
+
+  /*
+   * Ce que la frappe propose de poser.
+   *
+   * Les rayons viennent de la même liste que la colonne de filtres, donc
+   * avec les comptes du CATALOGUE quand la base les a donnés : « Bas,
+   * 5 857 pièces » et non « Bas, 38 ». Un rayon déjà coché n'est pas
+   * reproposé, il n'y aurait rien à poser.
+   *
+   * Les deux états ne rejoignent la liste que s'ils servent à quelque
+   * chose — même règle que leurs cases dans la colonne — et à partir de
+   * deux lettres, sinon « s » les ferait apparaître à chaque mot.
+   */
+  const criteresProposes = useMemo(() => {
+    const q = sansAccent(query.trim());
+    if (q.length === 0) return [];
+
+    const proposes: Critere[] = rayonsDisponibles
+      .filter((r) => !rayons.includes(r.rayon) && sansAccent(r.rayon).includes(q))
+      .map((r) => ({
+        famille: "Rayon",
+        valeur: r.rayon,
+        cle: `rayon:${sansAccent(r.rayon)}`,
+        compte: r.total,
+      }));
+
+    if (q.length >= 2) {
+      if (etatsUtiles.stock && !stock && "en stock".includes(q))
+        proposes.push({ famille: "État", valeur: "En stock", cle: "etat:stock" });
+      if (etatsUtiles.promo && !promo && "en promo".includes(q))
+        proposes.push({ famille: "État", valeur: "En promo", cle: "etat:promo" });
+    }
+
+    /* Six au plus : au-delà, la liste pousse les marques et les pièces
+       hors du panneau, qui sont l'autre moitié de la réponse. */
+    return proposes.slice(0, 6);
+  }, [rayonsDisponibles, rayons, etatsUtiles, stock, promo, query]);
+
+  /*
+   * Poser un critère COCHE UN FILTRE, il ne navigue pas. C'est toute la
+   * différence avec la ligne d'à côté, qui ouvre une fiche de marque, et
+   * c'est le badge de couleur qui l'annonce avant le clic.
+   *
+   * LE TEXTE RESTE DANS LE CHAMP, contrairement à l'annuaire où le jeton
+   * reprend le mot à son compte. Ici les deux ne disent pas la même
+   * chose : « denim » cherche dans les noms, « Bas » range dans un
+   * rayon, et l'on veut souvent les deux — les jeans en denim.
+   */
+  function poser(c: Critere) {
+    if (c.cle.startsWith("rayon:")) basculer(c.valeur);
+    else if (c.cle === "etat:stock") setStock(true);
+    else if (c.cle === "etat:promo") setPromo(true);
+
+    setPanneau(false);
+    setFeuille(false);
+    if (!petit) champ.current?.focus();
+  }
+
+  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(
+    query,
+    criteresProposes
+  );
+
+  /*
+   * LES DEUX NOMBRES DE LA LIGNE NE COMPTENT PAS LA MÊME CHOSE, et c'est
+   * exactement ce qu'elle est là pour dire. À gauche, ce que la grille
+   * montre vraiment : les pièces de la vitrine, marques confondues. À
+   * droite, ce que le catalogue porte, rapporté par la base. Sans cette
+   * ligne, « 38 résultats » se lit comme « ce site a trente-huit pièces
+   * en denim », ce qui est faux d'un facteur dix.
+   */
+  const marquesTrouvees = useMemo(
+    () => new Set(ordonnes.map((p) => p.brand?.slug).filter(Boolean)).size,
+    [ordonnes]
+  );
+  const auCatalogue = suggestions?.totalPieces ?? 0;
+
+  /*
+   * LE TRAIT EST UN ORNEMENT, PAS UNE JAUGE. Sa portion colorée dit
+   * seulement que la requête se remplit ; plafonnée à soixante pour
+   * cent, elle ne promet aucune fin — on peut toujours poser un filtre
+   * de plus. Même formule que l'annuaire, aux filtres près.
+   */
+  const remplissage = Math.min(60, actifs * 13 + Math.min(query.length, 18) * 1.1);
+
+  function toucheDansLeChamp(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setPanneau(false);
+      champ.current?.blur();
+      return;
+    }
+    if (!panneau) return;
+    auClavier(
+      e,
+      (slug, mot) => {
+        noterRecherche(mot);
+        router.push(`/marques/${slug}`);
+      },
+      poser
+    );
+  }
+
+  /*
+   * OUVRIR LA FEUILLE AVANT QUE LE CHAMP PRENNE LE CURSEUR.
+   *
+   * `preventDefault` sur le `pointerdown` empêche le focus, donc le
+   * clavier de monter derrière la page : sans lui, on verrait le clavier
+   * surgir sur la vitrine, puis la feuille arriver par-dessus, et le
+   * clavier redescendre et remonter. Trois mouvements pour un geste.
+   *
+   * Le `focus` reste couvert à part, pour la tabulation : on peut
+   * atteindre le champ au clavier sans jamais poser un doigt dessus.
+   */
+  function ouvrirAuDoigt(e: React.PointerEvent | React.FocusEvent): boolean {
+    if (!petit) return false;
+    if (e.type === "pointerdown") e.preventDefault();
+    else champ.current?.blur();
+    setFeuille(true);
+    return true;
+  }
+
   /* LA LIGNE « 1 220 PIÈCES DANS LA VITRINE · TOUTES MARQUES » A ÉTÉ
      RETIRÉE. Elle répétait en capitales ce que la colonne de filtres
      montre déjà — ce qui est coché s'y voit — et venait s'ajouter au
@@ -586,9 +797,17 @@ export default function PieceDirectory({
      de la grille : « 24 sur 312 affichées ». */
 
   /* Ces pastilles ne vivent que sur téléphone : elles sont donc taillées
-     pour le doigt, sans repli en version souris. */
+     pour le doigt, sans repli en version souris.
+
+     ELLES SONT PASSÉES DU BLANC À L'ACCENT, et c'est pour être du même
+     sang que le panneau. Un critère y porte un aplat d'accent qui dit
+     « ceci deviendra un filtre » (`badge-critere`) ; une fois posé, il
+     garde la même couleur dans la rangée. Le blanc, lui, reste réservé
+     à ce qui agit — le bouton de filtres, le « Voir les 38 pièces » —
+     et deux familles de blancs sur le même écran ne se distinguaient
+     plus l'une de l'autre. */
   const pastille =
-    "inline-flex min-h-[44px] items-center rounded-full bg-white px-3.5 text-[11px] font-extrabold uppercase tracking-[0.07em] text-[var(--color-ink)] transition active:scale-[.97]";
+    "inline-flex min-h-[44px] items-center rounded-full bg-[rgb(var(--accent-1))] px-3.5 text-[11px] font-extrabold uppercase tracking-[0.07em] text-[var(--color-ink)] transition active:scale-[.97]";
 
   /*
    * Le contenu des filtres, écrit une fois pour ses deux logements :
@@ -765,58 +984,138 @@ export default function PieceDirectory({
 
   return (
     <>
-      {/* ---------------- la recherche, pleine largeur ----------------
+      {/* ---------------- la requête ----------------
 
-          ELLE RESTE AU-DESSUS DES DEUX COLONNES et non dans celle des
-          filtres : sous `lg`, cette colonne devient un tiroir replié, et
-          la recherche y serait rangée derrière un bouton alors que c'est
-          le geste le plus direct de la page. */}
-      <div className="glass rise rise-1 mb-4 p-3.5 sm:p-4">
-        <div className="flex gap-2">
-          <div className="relative min-w-0 flex-1">
+          PLUS DE CAISSON, ET C'EST LE CŒUR DU CHANTIER.
+
+          Le champ vivait seul au milieu d'une plaque de verre pleine
+          largeur, avec un « ⌘ K » pour toute compagnie : beaucoup de
+          surface pour un objet. Il devient la ligne de requête de
+          l'annuaire — une loupe, du texte à la taille d'un titre, un
+          trait de deux pixels qui se colore à mesure qu'on écrit. Deux
+          pages de listing, un seul geste.
+
+          ET SURTOUT IL NE MENT PLUS SUR CE QU'IL CHERCHE. Il filtrait
+          la vitrine en silence : taper « denim » donnait trente-huit
+          pièces, et l'on en concluait que le site en avait
+          trente-huit. Le panneau dessous dit le catalogue entier, et la
+          ligne entre les deux dit lequel des deux nombres on regarde.
+
+          Au doigt, la ligne typographique ne survit pas à 402 px : le
+          champ reprend la forme d'un champ, et le panneau devient la
+          feuille plein écran. Voir `petit`. */}
+      <div ref={bloc} className="relative z-20 mb-4">
+        {petit ? (
+          /* Un champ, et le toucher ouvre la feuille : le panneau
+             « sous le champ » n'aurait que deux lignes utiles une fois
+             le clavier monté. */
+          <div className="relative">
+            {/* La loupe est dessinée, pas suggérée : `champ-loupe` ne
+                fait que réserver les quarante pixels à sa gauche. */}
+            <IconLoupe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55" />
             <input
               ref={champ}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Chercher une pièce, une marque…"
+              onPointerDown={ouvrirAuDoigt}
+              onFocus={ouvrirAuDoigt}
+              placeholder="Chercher une pièce…"
               aria-label="Chercher une pièce, une marque"
               autoComplete="off"
-              className="champ w-full pr-16"
+              className="champ champ-loupe w-full"
             />
-            {/* Le raccourci s'efface dès qu'on tape : il rappelle un
-                geste, il n'a plus rien à dire une fois le curseur
-                dedans. */}
-            {!query && (
-              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10.5px] font-extrabold tracking-[0.06em] text-white/40">
-                ⌘ K
-              </span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start gap-3">
+              <IconLoupe className="mt-[7px] h-[19px] w-[19px] shrink-0 text-white/85" />
+
+              <input
+                ref={champ}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPanneau(true);
+                }}
+                onFocus={() => setPanneau(true)}
+                onKeyDown={toucheDansLeChamp}
+                placeholder="Chercher une pièce, une marque…"
+                aria-label="Chercher une pièce, une marque"
+                autoComplete="off"
+                className="requete-champ"
+              />
+
+              {/* Le raccourci s'efface dès qu'on tape : il rappelle un
+                  geste, il n'a plus rien à dire une fois le curseur
+                  dedans. Il ne revient pas dans le panneau. */}
+              {!query && (
+                <span className="requete-touche mt-[7px] hidden shrink-0 sm:block">⌘ K</span>
+              )}
+            </div>
+
+            <div
+              className="requete-trait mt-2.5"
+              style={{ "--remplissage": `${remplissage}%` } as React.CSSProperties}
+            />
+          </>
+        )}
+
+        {/* ---------------- la ligne qui compte ----------------
+
+            À GAUCHE CE QU'ON VOIT, À DROITE CE QUI EXISTE. La vitrine
+            ne porte que dix pièces par marque ; le catalogue en compte
+            vingt fois plus. La page s'en excusait jusqu'ici dans son
+            état vide, c'est-à-dire trop tard et seulement quand elle ne
+            trouvait rien. Elle le dit maintenant dès la première
+            frappe, et elle le dit avec des nombres plutôt qu'avec une
+            phrase.
+
+            Le nombre de droite ne s'affiche que s'il dépasse celui de
+            gauche : autrement il ne dirait rien de plus, et deux
+            nombres qui se ressemblent laissent croire à une erreur. */}
+        {query.trim() !== "" && (
+          <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="m-0 min-w-0 text-[11px] font-bold uppercase tracking-[0.14em] text-white/70">
+              {enChiffres(ordonnes.length)} pièce{ordonnes.length > 1 ? "s" : ""} pour «&nbsp;
+              {query.trim()}&nbsp;»
+              {marquesTrouvees > 0 && (
+                <>
+                  {" · "}
+                  {enChiffres(marquesTrouvees)} marque{marquesTrouvees > 1 ? "s" : ""}
+                </>
+              )}
+            </p>
+
+            {auCatalogue > ordonnes.length && (
+              <p className="m-0 shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
+                Le catalogue en compte {enChiffres(auCatalogue)}
+                {" — "}
+                {/*
+                 * LA SORTIE MÈNE AUX MARQUES, ET LE MOT LE DIT.
+                 *
+                 * Elle ne peut pas mener à « toutes les pièces » : la
+                 * vitrine est la seule grille du site, et elle ne porte
+                 * que dix pièces par marque. Le catalogue entier, lui,
+                 * vit page par page chez les marques — c'est déjà ce que
+                 * répond l'état vide de la grille. Écrire « tout voir »
+                 * promettrait une liste de trois cent douze pièces qui
+                 * n'existe nulle part ; « voir les marques » dit où l'on
+                 * atterrit, et le mot cherché part avec.
+                 */}
+                <Link
+                  href={`/marques?q=${encodeURIComponent(query.trim())}`}
+                  onClick={() => noterRecherche(query.trim())}
+                  className="text-white/75 underline underline-offset-2 transition hover:text-white"
+                >
+                  voir les marques
+                </Link>
+              </p>
             )}
           </div>
+        )}
 
-          {/*
-           * LE BOUTON N'EXISTE QUE SOUS `lg`, puisque au-dessus la
-           * colonne est déjà là et n'a rien à ouvrir.
-           */}
-          {/* LE BOUTON DE FILTRES A QUITTÉ CETTE LIGNE.
-
-              Il vit maintenant en bas de l'écran, flottant, et il porte
-              le compte des filtres actifs (voir plus bas). En haut, il
-              fallait remonter pour l'atteindre — or l'envie d'affiner
-              arrive en fouillant, donc au milieu de la grille. En bas,
-              il est sous le pouce en permanence, et c'est le seul geste
-              de cette page qu'on refait dix fois. */}
-        </div>
-
-        {/*
-         * CE QUI EST COCHÉ REMONTE ICI, ET SEULEMENT SUR TÉLÉPHONE.
-         *
-         * Un filtre actif rangé derrière un tiroir replié rend la liste
-         * incomplète sans qu'on comprenne pourquoi — et c'est précisément
-         * ce qui arrive dès qu'on referme le tiroir. Sur grand écran la
-         * colonne est sous les yeux : répéter son contenu ne servirait
-         * qu'à le dire deux fois.
-         */}
         {actifs > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-2 lg:hidden">
             {rayons.map((r) => (
@@ -882,6 +1181,52 @@ export default function PieceDirectory({
             >
               Tout effacer
             </button>
+          </div>
+        )}
+
+        {/* ---------------- le panneau ----------------
+
+            IL FLOTTE AU-DESSUS DE LA GRILLE, contrairement à celui de
+            l'annuaire qui pousse le contenu vers le bas. Deux écrans,
+            deux raisons : l'annuaire déplie ses suggestions au-dessus
+            d'une liste de lignes, qu'on retrouve en refermant ; ici il
+            faudrait pousser une grille de photos de trois cents pixels
+            de haut, et la page entière sauterait à chaque frappe.
+
+            SON FOND EST OPAQUE, et ce n'est pas une préférence. Une
+            liste de résultats posée en verre sur une grille de pièces
+            qui transparaît ne se lit tout simplement pas.
+
+            Il ne porte PAS de champ : celui de la page est juste
+            au-dessus, et un second serait annoncé comme une deuxième
+            recherche par un lecteur d'écran. */}
+        {!petit && panneau && garni && suggestions && (
+          <div className="absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain rounded-[16px] border border-white/20 bg-[var(--color-ink)] p-3.5 shadow-[0_30px_70px_rgba(8,2,20,0.6)]">
+            <Suggestions
+              intertitres
+              suggestions={suggestions}
+              query={query}
+              surligne={surligne}
+              onSurligne={setSurligne}
+              onOuvrir={noterRecherche}
+              criteres={criteresProposes}
+              onPoser={poser}
+              uniteCompte="pièces"
+            />
+
+            {/* La même sortie qu'au-dessus, à portée de la main quand on
+                est descendu dans le panneau. */}
+            {query.trim().length >= MINIMUM && (
+              <div className="mt-3 flex justify-end border-t border-white/12 pt-2.5">
+                <Link
+                  href={`/marques?q=${encodeURIComponent(query.trim())}`}
+                  onClick={() => noterRecherche(query.trim())}
+                  className="text-[11.5px] font-bold text-[rgb(var(--accent-1))] underline underline-offset-4 transition hover:text-white"
+                >
+                  Voir les marques qui en ont
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1136,6 +1481,28 @@ export default function PieceDirectory({
           )}
         </button>
       )}
+
+      {/* ---------------- au doigt : la recherche prend l'écran ----------------
+
+          C'est la feuille de l'annuaire, réemployée telle quelle. Le
+          clavier virtuel mange la moitié basse de l'écran : un panneau
+          « sous le champ » n'aurait que deux lignes utiles, exactement
+          là où il faut de la place. Les rayons y passent en premier,
+          parce qu'au doigt poser un filtre en un geste vaut mieux que
+          taper dix lettres.
+
+          Elle se referme d'elle-même au-dessus de 640 px — une fenêtre
+          qu'on agrandit, une tablette qu'on tourne — et le panneau
+          reprend la main sous le champ. */}
+      <FeuilleRecherche
+        ouverte={petit && feuille}
+        query={query}
+        onQuery={setQuery}
+        onFermer={() => setFeuille(false)}
+        criteres={criteresProposes}
+        onPoser={poser}
+        uniteCompte="pièces"
+      />
 
       <FeuilleFiltres
         ouvert={auDoigt && ouvert}
