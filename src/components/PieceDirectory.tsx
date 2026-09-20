@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import CurseurPrix from "./CurseurPrix";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
@@ -39,6 +39,32 @@ import type { Product } from "@/lib/types";
 
 /** Combien de pièces d'un coup. Même raison que pour l'annuaire. */
 const LOT = 24;
+
+/**
+ * La hauteur de l'en-tête collant, en pixels.
+ *
+ * C'est le même nombre que le `top-[86px]` de la colonne de filtres :
+ * quand on repose la page sur le haut des résultats, il faut la poser
+ * SOUS la barre, pas dessous elle.
+ */
+const ENTETE = 86;
+
+/**
+ * Ce que la colonne de filtres a le droit d'occuper en hauteur.
+ *
+ * L'en-tête plus une marge de pied, comme dans la classe `max-h` qu'elle
+ * portait avant : au-delà, elle ne tient plus dans l'écran.
+ */
+const PLACE_COLONNE = 104;
+
+/**
+ * Corriger le défilement doit se faire AVANT que la page soit peinte,
+ * sinon on voit le saut puis sa correction. `useLayoutEffect` est fait
+ * pour ça, mais il n'existe pas au rendu serveur et y laisse un
+ * avertissement : côté serveur, l'effet ordinaire fait l'affaire
+ * puisqu'il ne s'exécute pas.
+ */
+const useEffetDePose = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Les cadres, et le décalage qui fait respirer la grille.
@@ -168,6 +194,47 @@ export default function PieceDirectory({
      laisser la feuille ouverte la ferait flotter en travers. */
   useEffect(() => {
     if (!auDoigt) setOuvert(false);
+  }, [auDoigt]);
+
+  /*
+   * LA COLONNE N'A PLUS D'ASCENSEUR À ELLE.
+   *
+   * Elle portait une hauteur maximale et son propre défilement. Sur un
+   * écran un peu bas — un portable, une fenêtre qui n'est pas en plein
+   * écran — cela faisait deux ascenseurs sur la même page, dont un que
+   * personne ne va chercher : les derniers filtres restaient cachés
+   * sous le bord de la colonne sans que rien ne le dise.
+   *
+   * On mesure donc ce qu'elle demande, et de deux choses l'une : ou
+   * bien elle tient dans l'écran et elle reste collée en place, ou bien
+   * elle n'y tient pas et elle redevient un bloc ordinaire qui défile
+   * AVEC la page. Dans les deux cas, plus rien à faire défiler dedans.
+   */
+  const colonne = useRef<HTMLElement>(null);
+  const [colonneTient, setColonneTient] = useState(true);
+
+  useEffect(() => {
+    if (auDoigt) return;
+    const el = colonne.current;
+    if (!el) return;
+
+    /* `scrollHeight` et non la hauteur mesurée : rien ne rogne plus la
+       colonne, les deux se valent, mais celle-ci reste juste même si un
+       jour on lui remettait une borne. */
+    const mesurer = () =>
+      setColonneTient(el.scrollHeight <= window.innerHeight - PLACE_COLONNE);
+
+    mesurer();
+
+    /* Le contenu bouge tout seul : les rayons et les marques
+       disponibles se réduisent à mesure qu'on filtre. */
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(el);
+    window.addEventListener("resize", mesurer);
+    return () => {
+      observateur.disconnect();
+      window.removeEventListener("resize", mesurer);
+    };
   }, [auDoigt]);
 
   /* Le glissement, la poignée, le voile et le verrou de défilement
@@ -384,35 +451,139 @@ export default function PieceDirectory({
   /* Changer de filtre repart du début, sinon on demanderait à la page
      d'afficher d'un coup tout ce qu'on avait déroulé avant. Changer de
      tri, en revanche, garde ce qu'on avait déplié : ce sont les mêmes
-     pièces, rangées autrement. */
-  useEffect(() => setCombien(LOT), [resultats]);
+     pièces, rangées autrement.
+
+     LA REMISE À ZÉRO SE FAIT PENDANT LE RENDU, PAS DANS UN EFFET. Dans
+     un effet, elle arrivait APRÈS la pose : la page était d'abord
+     redessinée avec les quatre-vingt-seize pièces qu'on avait
+     déroulées, puis raccourcie d'un coup. Deux hauteurs pour un seul
+     clic, donc deux occasions de faire sauter l'ascenseur. Ici, la page
+     n'est posée qu'une fois, à sa hauteur finale. */
+  const dernierResultat = useRef(resultats);
+  if (dernierResultat.current !== resultats) {
+    dernierResultat.current = resultats;
+    setCombien(LOT);
+  }
+
+  /*
+   * FILTRER REMONTE AUX PREMIÈRES PIÈCES, ET ÇA SE VOIT MONTER.
+   *
+   * Deux problèmes en un. Le premier : filtrer raccourcit la liste, donc
+   * la page ; quand on filtrait depuis le milieu de la grille — presque
+   * toujours, puisque l'envie d'affiner arrive en fouillant — la page
+   * raccourcie ne pouvait plus tenir la position où l'on était, et le
+   * navigateur rabattait l'ascenseur sur ce qu'il en restait, d'un coup
+   * sec, souvent jusqu'à l'en-tête. On cliquait « Chaussures » et on
+   * atterrissait n'importe où, sans avoir vu une chaussure.
+   *
+   * Le second : là où l'on veut atterrir n'est pas « n'importe où »,
+   * c'est la PREMIÈRE RANGÉE de la nouvelle liste. Et il faut le voir,
+   * sinon on ne sait pas si la page a filtré ou si elle a sauté.
+   *
+   * D'où la mécanique ci-dessous, dans l'ordre :
+   *
+   * 1. ON RÉSERVE LA HAUTEUR QUI VIENT DE DISPARAÎTRE. Sans elle, le
+   *    navigateur rabat l'ascenseur avant que l'animation commence, et
+   *    l'on verrait le saut PUIS la remontée. La grille garde donc une
+   *    hauteur minimale le temps du voyage.
+   * 2. ON REMET L'ASCENSEUR OÙ IL ÉTAIT s'il avait déjà été rabattu.
+   *    Nous sommes encore avant la peinture (voir `useEffetDePose`) :
+   *    personne ne voit ce va-et-vient.
+   * 3. ON REMONTE EN DOUCEUR jusqu'aux premières pièces.
+   * 4. LA HAUTEUR RÉSERVÉE EST RENDUE À L'ARRIVÉE, quand on est en haut
+   *    et que le vide du bas n'est plus dans l'écran.
+   *
+   * `behavior` est écrit explicitement à chaque fois : la feuille de
+   * style pose `scroll-behavior: smooth` sur toute la page, si bien
+   * qu'un déplacement qu'on veut instantané serait animé lui aussi — et
+   * c'est justement le cas du replacement de l'étape 2.
+   */
+  const zone = useRef<HTMLDivElement>(null);
+  const avant = useRef(0);
+  const liberer = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const suivre = () => {
+      avant.current = window.scrollY;
+    };
+    suivre();
+    window.addEventListener("scroll", suivre, { passive: true });
+    return () => window.removeEventListener("scroll", suivre);
+  }, []);
+
+  /* Une réservation qui traînerait après le démontage laisserait une
+     hauteur morte dans une page qui n'existe plus. */
+  useEffect(() => () => liberer.current?.(), []);
+
+  const recaler = useCallback(() => {
+    const bloc = zone.current;
+    if (!bloc) return;
+
+    /* Une remontée déjà en cours rend d'abord sa réservation : on
+       repart d'une grille à sa vraie hauteur. */
+    liberer.current?.();
+
+    const depart = avant.current;
+    const haut = Math.max(0, bloc.getBoundingClientRect().top + window.scrollY - ENTETE);
+
+    /* Déjà au-dessus des résultats : rien à remonter. Cliquer un filtre
+       ne doit pas déplacer une page qu'on regarde par le haut. */
+    if (depart <= haut + 4) return;
+
+    // 1. la hauteur qu'il manque pour que le départ tienne encore.
+    const manque = depart + window.innerHeight - document.documentElement.scrollHeight;
+    if (manque > 0) bloc.style.minHeight = `${bloc.offsetHeight + manque}px`;
+
+    // 2. le replacement, instantané et invisible.
+    if (Math.abs(window.scrollY - depart) > 1) {
+      window.scrollTo({ top: depart, behavior: "instant" as ScrollBehavior });
+    }
+
+    // 3. la remontée.
+    const brusque = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: haut, behavior: brusque ? "auto" : "smooth" });
+    avant.current = haut;
+
+    // 4. la restitution : à la fin du défilement, ou au bout d'une
+    //    seconde et demie si le navigateur ne sait pas le dire.
+    const fin = () => {
+      window.removeEventListener("scrollend", fin);
+      window.clearTimeout(minuteur);
+      bloc.style.minHeight = "";
+      liberer.current = null;
+    };
+    const minuteur = window.setTimeout(fin, 1500);
+    window.addEventListener("scrollend", fin, { once: true });
+    liberer.current = fin;
+  }, []);
+
+  useEffetDePose(() => {
+    /* La feuille verrouille le défilement du fond : mesurer là-dedans
+       ne donnerait que la hauteur de l'écran. On corrige à sa
+       fermeture, dans l'effet qui suit. */
+    if (ouvert) return;
+    recaler();
+  }, [resultats, ouvert, recaler]);
+
+  /* À la fermeture de la feuille, le verrou est levé par `FeuilleFiltres`
+     — un effet d'enfant, donc joué avant celui-ci. La page a retrouvé sa
+     hauteur : c'est le moment de la reposer. */
+  useEffect(() => {
+    if (!ouvert) recaler();
+  }, [ouvert, recaler]);
 
   const visibles = ordonnes.slice(0, combien);
   const reste = ordonnes.length - visibles.length;
 
   const nomDeLaMarque = marquesDisponibles.find((m) => m.slug === marque)?.nom ?? null;
 
-  /* « 214 PIÈCES DANS LA VITRINE · HAUTS, EN STOCK » : la phrase dit ce
-     qu'on regarde. Un compteur seul laisse croire à un catalogue entier
-     quand trois filtres sont posés plus haut, dans une colonne qu'on ne
-     relit pas.
-
-     ⚠️ « DANS LA VITRINE » N'EST PAS UN ORNEMENT. Depuis que l'en-tête
-     annonce le catalogue — « 26 507 pièces au catalogue » — il y a deux
-     nombres de pièces sur le même écran, à dix centimètres l'un de
-     l'autre. Sans un mot pour les distinguer, le plus petit se lit comme
-     une panne : c'est exactement ce qui a été rapporté. L'un compte le
-     site, l'autre ce que cette page a sous la main. */
-  const legende =
-    [
-      rayons.length > 0 ? rayons.join(", ") : null,
-      nomDeLaMarque,
-      prixActif ? `${euros(prix[0])} – ${euros(prix[1])}` : null,
-      stock ? "en stock" : null,
-      promo ? "en promo" : null,
-    ]
-      .filter(Boolean)
-      .join(" · ") || "toutes marques";
+  /* LA LIGNE « 1 220 PIÈCES DANS LA VITRINE · TOUTES MARQUES » A ÉTÉ
+     RETIRÉE. Elle répétait en capitales ce que la colonne de filtres
+     montre déjà — ce qui est coché s'y voit — et venait s'ajouter au
+     compte de l'en-tête deux centimètres plus haut : trois lignes de
+     petites capitales empilées, la page en paraissait chargée avant
+     même la première photo. Le compte reste dit là où il sert, au pied
+     de la grille : « 24 sur 312 affichées ». */
 
   /* Ces pastilles ne vivent que sur téléphone : elles sont donc taillées
      pour le doigt, sans repli en version souris. */
@@ -715,7 +886,10 @@ export default function PieceDirectory({
         )}
       </div>
 
-      <div className="grid items-start gap-4 pb-20 lg:grid-cols-[222px_minmax(0,1fr)] lg:gap-[26px] lg:pb-0">
+      <div
+        ref={zone}
+        className="grid items-start gap-4 pb-20 lg:grid-cols-[222px_minmax(0,1fr)] lg:gap-[26px] lg:pb-0"
+      >
         {/* ---------------- la colonne de filtres ----------------
 
             SOUS `lg`, ELLE DEVIENT UN TIROIR, PAS UNE RANGÉE DE
@@ -750,11 +924,12 @@ export default function PieceDirectory({
             et la moitié seraient invisibles. */}
         {!auDoigt && (
           <aside
-            /* Les tirets bas deviennent des espaces : `calc()` refuse un
-               moins collé à ses opérandes, et la règle serait jetée en
-               silence — la colonne dépasserait alors l'écran sans qu'on
-               sache pourquoi. */
-            className="glass sticky top-[86px] max-h-[calc(100vh_-_104px)] overflow-y-auto p-5"
+            ref={colonne}
+            /* Collée tant qu'elle tient dans l'écran, bloc ordinaire
+               sinon — voir `colonneTient`. Plus de hauteur maximale ni
+               d'`overflow` : c'est précisément ce qui lui donnait un
+               ascenseur à elle. */
+            className={`glass colonne-filtres p-5 ${colonneTient ? "sticky top-[86px]" : ""}`}
           >
             {contenuFiltres}
           </aside>
@@ -819,14 +994,8 @@ export default function PieceDirectory({
                   Sur grand écran ils restent ici : la colonne de filtres
                   y est déjà dépliée en permanence, et le tri n'a aucune
                   raison d'aller se cacher. */}
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
-                <p className="m-0 min-w-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
-                  {enChiffres(ordonnes.length)} pièce{ordonnes.length > 1 ? "s" : ""}
-                  {rayonsDuCatalogue && " dans la vitrine"} · {legende}
-                </p>
-
-                {!auDoigt && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {!auDoigt && (
+                <div className="mb-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                   {/*
                    * Le tri en texte souligné, pas en pastilles : la
                    * colonne de gauche en est déjà pleine, et deux
@@ -871,8 +1040,7 @@ export default function PieceDirectory({
                     offertes={offertes}
                   />
                 </div>
-                )}
-              </div>
+              )}
 
               <Grille
                 variante="pieces"
@@ -1008,7 +1176,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4 border-t border-white/15 pt-4">
+    <div className="section-filtre mt-4 border-t border-white/15 pt-4">
       <div className="mb-2.5 flex items-baseline justify-between gap-3">
         <p className="eyebrow m-0">{titre}</p>
         {apres}
@@ -1053,7 +1221,7 @@ function LigneRayon({
       aria-pressed={actif}
       /* La cible fait 44 px au doigt et se resserre à la souris : la
          feuille de téléphone est justement l'endroit où l'on vise mal. */
-      className={`flex min-h-[44px] w-full items-center justify-between gap-2 text-left transition lg:min-h-0 lg:py-2 ${
+      className={`ligne-filtre flex min-h-[44px] w-full items-center justify-between gap-2 text-left transition lg:min-h-0 lg:py-2 ${
         pastille ? "rounded-[13px] px-3.5" : "rounded-[11px] px-[11px]"
       } ${
         actif
@@ -1095,7 +1263,7 @@ function Case({
 }) {
   return (
     <label
-      className={`flex min-h-[44px] cursor-pointer items-center gap-2.5 transition lg:min-h-0 lg:py-2 ${
+      className={`ligne-filtre flex min-h-[44px] cursor-pointer items-center gap-2.5 transition lg:min-h-0 lg:py-2 ${
         pastille
           ? `rounded-[13px] px-3.5 ${coche ? "bg-white/14" : "bg-white/6 hover:bg-white/12"}`
           : "rounded-[11px] px-[11px] hover:bg-white/8"
