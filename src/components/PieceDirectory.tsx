@@ -10,6 +10,7 @@ import { IconCheck, IconFiltre } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
 import { compterLesRayons, rayonDe } from "@/lib/rayons";
+import { declarerChampLocal } from "./recherche/champLocal";
 import { discountPercent, formatPrice } from "@/lib/types";
 import type { Product } from "@/lib/types";
 
@@ -237,6 +238,10 @@ export default function PieceDirectory({
    * sous la frappe et une seconde liste par-dessus ne dirait rien de
    * plus.
    */
+  /* La page porte son propre champ : le pop-up de la barre laisse donc
+     ⌘K à celui-ci. Voir `champLocal`. */
+  useEffect(() => declarerChampLocal(), []);
+
   useEffect(() => {
     const auClavier = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {

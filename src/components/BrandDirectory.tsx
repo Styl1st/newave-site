@@ -10,6 +10,7 @@ import Jeton, { type Critere } from "./recherche/Jeton";
 import FeuilleRecherche from "./recherche/FeuilleRecherche";
 import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
+import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import type { Brand, PriceTier, Recherche } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
@@ -360,6 +361,10 @@ export default function BrandDirectory({
    * Ctrl aussi bien que ⌘ : le site n'a aucune raison de supposer un
    * Mac, et Ctrl+K n'est réservé nulle part dans un navigateur.
    */
+  /* La page porte son propre champ : le pop-up de la barre laisse donc
+     ⌘K à celui-ci. Voir `champLocal`. */
+  useEffect(() => declarerChampLocal(), []);
+
   useEffect(() => {
     const auClavier = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -374,12 +379,13 @@ export default function BrandDirectory({
   }, []);
 
   /*
-   * LA LOUPE DE LA BARRE ARRIVE ICI AVEC `?recherche=1`.
+   * `?recherche=1` OUVRE L'ANNUAIRE LE CURSEUR DÉJÀ DANS LE CHAMP.
    *
-   * On ne pense à chercher une marque qu'en étant ailleurs sur le site.
-   * Le raccourci de la barre emmène donc à l'annuaire, et il serait
-   * absurde d'y déposer quelqu'un devant un champ qu'il faut encore
-   * aller cliquer.
+   * La loupe de la barre n'y emmène plus : elle ouvre maintenant la
+   * recherche sur place, sans quitter la page qu'on lisait (voir
+   * `BarreDuHaut`). L'adresse, elle, reste valide et gardée — elle se
+   * partage, elle se met en favori, et c'est la seule façon d'arriver
+   * sur l'annuaire prêt à taper.
    *
    * On lit l'adresse directement plutôt que par `useSearchParams` : ce
    * hook fait basculer la page en rendu client tant qu'il n'est pas

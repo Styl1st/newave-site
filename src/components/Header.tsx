@@ -1,9 +1,11 @@
 import Link from "next/link";
+import BarreDuHaut from "./BarreDuHaut";
 import LienNav from "./LienNav";
 import MobileMenu from "./MobileMenu";
-import { IconCoeur, IconLoupe } from "./Icons";
+import { IconCoeur } from "./Icons";
 import { getProfile } from "@/lib/auth";
 import { getMesMarques } from "@/lib/brand-space";
+import { categoriesEnVue } from "@/lib/queries";
 
 const NAV = [
   { href: "/", label: "Accueil" },
@@ -35,6 +37,21 @@ export default async function Header() {
       : mesMarques.length > 1
         ? "/espace-marque"
         : null;
+
+  /*
+   * Ce que le pop-up de la loupe propose avant la première frappe.
+   *
+   * Un panneau qui s'ouvre vide est un panneau qu'on referme. On y pose
+   * donc ce que la personne a déjà cherché — lu sur son appareil, voir
+   * `historique` — et, à côté, quatre portes d'entrée du moment. Ce sont
+   * des CATÉGORIES et non des mots à taper : la recherche travaille sur
+   * les NOMS de marques et de pièces, où « Denim » ne se trouve presque
+   * jamais, alors que le filtre de l'annuaire, lui, répond à coup sûr.
+   */
+  const enCeMoment = (await categoriesEnVue()).map((categorie) => ({
+    label: categorie,
+    href: `/marques?cat=${encodeURIComponent(categorie)}`,
+  }));
 
   // Le menu déroulant reprend la navigation, plus tout ce qui dépend
   // de la session : inutile de l'empiler dans la barre du haut.
@@ -69,194 +86,171 @@ export default async function Header() {
      * du site. Cohérence, mais aussi lisibilité : sur un fond dont la
      * teinte dérive en permanence, une forme sans matière disparaît la
      * moitié du temps.
+     *
+     * LA BARRE ELLE-MÊME EST CLIENTE DEPUIS QUE LA LOUPE S'OUVRE SUR
+     * PLACE (voir `BarreDuHaut`). Ce fichier-ci reste serveur et garde
+     * ce qui le justifie : la session, les marques de la personne, son
+     * rôle. Il passe le reste en JSX déjà rendu, en deux morceaux, parce
+     * que la loupe se tient au milieu de la barre.
      */
     <header className="sticky top-2.5 z-40 w-full px-[var(--pad)] sm:top-4">
-      <div className="barre mx-auto flex w-full max-w-6xl items-center justify-between gap-3 py-2 pl-3 pr-2 sm:pl-4 sm:pr-2.5">
-        <Link href="/" aria-label="Accueil NEWAVE SPHERE" className="relative z-2 shrink-0 transition active:scale-95">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/logo-white.webp"
-            alt="NEWAVE SPHERE"
-            className="h-7 w-auto drop-shadow-[0_4px_14px_rgba(60,25,120,0.55)]"
-          />
-        </Link>
-
-        {/* ---------- ordinateur ---------- */}
-        <nav className="relative z-2 hidden items-center gap-0.5 md:flex">
-          {/* Les derniers n'apparaissent qu'en grand : entre 768 et
-              1024 px la barre serait trop chargée, et ce sont les liens
-              les moins utiles. Le seuil a bougé avec l'arrivée des
-              pièces, sinon « À propos » disparaissait de la barre sans
-              que personne l'ait décidé. */}
-          {NAV.slice(0, 6).map((item, i) => (
-            <LienNav
-              key={item.href}
-              href={item.href}
-              className={i >= 4 ? "hidden lg:inline-block" : ""}
-            >
-              {item.label}
-            </LienNav>
-          ))}
-
-          {profile?.role === "admin" && <LienNav href="/admin">Admin</LienNav>}
-
-          {/*
-           * DEUX RACCOURCIS RONDS, ET C'EST LEUR PLACE QUI COMPTE.
-           *
-           * La recherche vit dans l'annuaire, où elle répond à ⌘K. Mais
-           * on ne pense à chercher une marque qu'en étant ailleurs — sur
-           * un post, sur une fiche, au milieu des pièces — et il fallait
-           * alors revenir à l'annuaire, puis trouver le champ. Deux
-           * gestes pour un réflexe.
-           *
-           * La loupe emmène donc à l'annuaire AVEC le curseur déjà dans
-           * le champ (`?recherche=1`, lu par `BrandDirectory`). Ce n'est
-           * pas une seconde recherche : c'est la même, atteinte de
-           * partout.
-           *
-           * Le cœur ne s'affiche qu'à qui a un compte : une liste privée
-           * proposée à quelqu'un qui n'en a pas ne mène qu'à un mur de
-           * connexion.
-           */}
-          <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/18" />
-
+      <BarreDuHaut
+        enCeMoment={enCeMoment}
+        logo={
           <Link
-            href="/marques?recherche=1"
-            aria-label="Chercher une marque"
-            title="Chercher une marque"
-            className="puce-barre grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+            href="/"
+            aria-label="Accueil NEWAVE SPHERE"
+            className="relative z-2 shrink-0 transition active:scale-95"
           >
-            <IconLoupe className="h-[17px] w-[17px]" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/logo-white.webp"
+              alt="NEWAVE SPHERE"
+              className="h-7 w-auto drop-shadow-[0_4px_14px_rgba(60,25,120,0.55)]"
+            />
           </Link>
+        }
+        navDebut={
+          <>
+            {/* Les derniers n'apparaissent qu'en grand : entre 768 et
+                1024 px la barre serait trop chargée, et ce sont les liens
+                les moins utiles. Le seuil a bougé avec l'arrivée des
+                pièces, sinon « À propos » disparaissait de la barre sans
+                que personne l'ait décidé. */}
+            {NAV.slice(0, 6).map((item, i) => (
+              <LienNav
+                key={item.href}
+                href={item.href}
+                className={i >= 4 ? "hidden lg:inline-block" : ""}
+              >
+                {item.label}
+              </LienNav>
+            ))}
 
-          {profile && (
+            {profile?.role === "admin" && <LienNav href="/admin">Admin</LienNav>}
+
+            {/*
+             * DEUX RACCOURCIS RONDS, ET C'EST LEUR PLACE QUI COMPTE.
+             *
+             * La recherche vivait dans l'annuaire, où elle répond à ⌘K.
+             * Mais on ne pense à chercher une marque qu'en étant
+             * ailleurs — sur un post, sur une fiche, au milieu des
+             * pièces — et il fallait alors quitter la page pour y
+             * arriver. La loupe ouvre maintenant la recherche SUR PLACE
+             * (voir `BarreDuHaut`) : la page qu'on lisait reste
+             * derrière, refermer ne fait rien perdre.
+             *
+             * Le cœur ne s'affiche qu'à qui a un compte : une liste
+             * privée proposée à quelqu'un qui n'en a pas ne mène qu'à un
+             * mur de connexion.
+             */}
+            <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/18" />
+          </>
+        }
+        navFin={
+          <>
+            {profile && (
+              <Link
+                href="/favoris"
+                aria-label="Mes favoris"
+                title="Mes favoris"
+                className="puce-barre ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+              >
+                <IconCoeur className="h-[17px] w-[17px]" />
+              </Link>
+            )}
+
+            {/* Pour qui a déjà une marque, c'est le lien le plus utile de
+                la barre. On le donne donc en clair, à côté de l'appel à
+                candidature qui, lui, ne le concerne plus. */}
+            {maMarque && (
+              <Link
+                href={maMarque}
+                className="puce-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
+              >
+                {mesMarques.length === 1 ? "Ma marque" : "Mes marques"}
+              </Link>
+            )}
+
+            {/*
+             * L'APPEL À CANDIDATURE SE RACCOURCIT AVANT DE DÉBORDER.
+             *
+             * Sous 1280 pixels, la barre n'a pas la place du texte entier.
+             * À 1024 le pincement est même double : c'est là que « Coups de
+             * cœur » et « À propos » rejoignent la barre, et le CTA long au
+             * même palier poussait « Connexion » hors du cadre. Il tenait auparavant sur deux lignes,
+             * ce qui faisait gonfler la pilule blanche hors du rythme de la
+             * barre et écrasait la loupe en ovale ; en l'empêchant de se
+             * couper, c'est « Connexion » qui se faisait rogner au bord.
+             *
+             * On raccourcit donc le mot plutôt que de retirer le bouton.
+             * Le supprimer aurait fait disparaître l'entrée des marques
+             * exactement dans la fenêtre des tablettes, où le menu déroulant
+             * — qui le porte aussi — n'existe pas non plus.
+             *
+             * Deux `span` et non une chaîne calculée : en Tailwind v4 les
+             * classes s'écrivent en toutes lettres pour être trouvées à la
+             * compilation.
+             */}
             <Link
-              href="/favoris"
-              aria-label="Mes favoris"
-              title="Mes favoris"
-              className="puce-barre ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
+              href="/candidature"
+              title="Proposer une marque"
+              className="cta-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
             >
-              <IconCoeur className="h-[17px] w-[17px]" />
+              <span className="xl:hidden">Proposer</span>
+              <span className="hidden xl:inline">Proposer une marque</span>
             </Link>
-          )}
 
-          {/* Pour qui a déjà une marque, c'est le lien le plus utile de
-              la barre. On le donne donc en clair, à côté de l'appel à
-              candidature qui, lui, ne le concerne plus. */}
-          {maMarque && (
-            <Link
-              href={maMarque}
-              className="puce-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
-            >
-              {mesMarques.length === 1 ? "Ma marque" : "Mes marques"}
-            </Link>
-          )}
-
-          {/*
-           * L'APPEL À CANDIDATURE SE RACCOURCIT AVANT DE DÉBORDER.
-           *
-           * Sous 1280 pixels, la barre n'a pas la place du texte entier.
-           * À 1024 le pincement est même double : c'est là que « Coups de
-           * cœur » et « À propos » rejoignent la barre, et le CTA long au
-           * même palier poussait « Connexion » hors du cadre. Il tenait auparavant sur deux lignes,
-           * ce qui faisait gonfler la pilule blanche hors du rythme de la
-           * barre et écrasait la loupe en ovale ; en l'empêchant de se
-           * couper, c'est « Connexion » qui se faisait rogner au bord.
-           *
-           * On raccourcit donc le mot plutôt que de retirer le bouton.
-           * Le supprimer aurait fait disparaître l'entrée des marques
-           * exactement dans la fenêtre des tablettes, où le menu déroulant
-           * — qui le porte aussi — n'existe pas non plus.
-           *
-           * Deux `span` et non une chaîne calculée : en Tailwind v4 les
-           * classes s'écrivent en toutes lettres pour être trouvées à la
-           * compilation.
-           */}
-          <Link
-            href="/candidature"
-            title="Proposer une marque"
-            className="cta-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
-          >
-            <span className="xl:hidden">Proposer</span>
-            <span className="hidden xl:inline">Proposer une marque</span>
-          </Link>
-
-          {profile ? (
-            <Link
-              href="/compte"
-              aria-label="Mon compte"
-              title={profile.display_name ?? profile.email ?? "Mon compte"}
-              className="puce-barre ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
-            >
-              {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
-            </Link>
-          ) : (
-            <LienNav href="/connexion" className="ml-1">
-              Connexion
-            </LienNav>
-          )}
-        </nav>
-
-        {/* ---------- mobile et tablette ---------- */}
-        <div className="relative z-2 flex items-center gap-2 md:hidden">
-          {/*
-           * LA LOUPE EXISTE AUSSI AU DOIGT, DEPUIS QU'ELLE MÈNE QUELQUE
-           * PART.
-           *
-           * Elle était réservée à l'ordinateur, et pour une bonne raison :
-           * elle emmenait à l'annuaire avec le curseur dans le champ, ce
-           * qu'on ne faisait pas sur téléphone pour ne pas faire surgir un
-           * clavier par-dessus la liste. Le raccourci n'aurait donc rien
-           * fait de plus qu'un lien vers « Marques », déjà dans le menu.
-           *
-           * `?recherche=1` ouvre maintenant la feuille de recherche plein
-           * écran (voir `FeuilleRecherche`) : le geste tient enfin sa
-           * promesse, et c'est le seul endroit du site d'où l'on peut
-           * chercher une marque sans d'abord aller quelque part.
-           *
-           * Le bouton se voit à trente-six pixels comme ses voisins, mais
-           * s'attrape à quarante-quatre : c'est la cible minimale au
-           * doigt, et l'agrandir vraiment ferait grossir la pilule.
-           */}
-          <Link
-            href="/marques?recherche=1"
-            aria-label="Chercher une marque"
-            className="puce-barre relative grid h-9 w-9 place-items-center rounded-full text-white/85 transition before:absolute before:-inset-1 before:content-[''] active:scale-95"
-          >
-            <IconLoupe className="h-[17px] w-[17px]" />
-          </Link>
-
-          {profile ? (
-            <Link
-              href="/compte"
-              aria-label="Mon compte"
-              className="grid h-9 w-9 place-items-center rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] active:scale-95"
-            >
-              {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
-            </Link>
-          ) : (
-            /*
-             * Se connecter était rangé dans le menu déroulant, à côté
-             * des pages du site. Or ce n'est pas une page parmi
-             * d'autres : pour qui n'a pas de compte, c'est LE geste
-             * suivant, et le cacher derrière trois traits revient à ne
-             * pas le proposer. La barre était de toute façon presque
-             * vide à cet endroit.
-             */
-            <Link
-              href="/connexion"
-              className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(35,12,85,0.3)] active:scale-95"
-            >
-              Connexion
-            </Link>
-          )}
-          <MobileMenu
-            liens={NAV.slice(0, 6)}
-            compte={compte}
-            action={{ href: "/candidature", label: "Proposer une marque" }}
-          />
-        </div>
-      </div>
+            {profile ? (
+              <Link
+                href="/compte"
+                aria-label="Mon compte"
+                title={profile.display_name ?? profile.email ?? "Mon compte"}
+                className="puce-barre ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
+              >
+                {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+              </Link>
+            ) : (
+              <LienNav href="/connexion" className="ml-1">
+                Connexion
+              </LienNav>
+            )}
+          </>
+        }
+        mobileFin={
+          <>
+            {profile ? (
+              <Link
+                href="/compte"
+                aria-label="Mon compte"
+                className="grid h-9 w-9 place-items-center rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] active:scale-95"
+              >
+                {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+              </Link>
+            ) : (
+              /*
+               * Se connecter était rangé dans le menu déroulant, à côté
+               * des pages du site. Or ce n'est pas une page parmi
+               * d'autres : pour qui n'a pas de compte, c'est LE geste
+               * suivant, et le cacher derrière trois traits revient à ne
+               * pas le proposer. La barre était de toute façon presque
+               * vide à cet endroit.
+               */
+              <Link
+                href="/connexion"
+                className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(35,12,85,0.3)] active:scale-95"
+              >
+                Connexion
+              </Link>
+            )}
+            <MobileMenu
+              liens={NAV.slice(0, 6)}
+              compte={compte}
+              action={{ href: "/candidature", label: "Proposer une marque" }}
+            />
+          </>
+        }
+      />
     </header>
   );
 }

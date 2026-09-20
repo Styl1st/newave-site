@@ -70,9 +70,32 @@ export type PieceTrouvee = {
   image: string | null;
 };
 
+/**
+ * Un post trouvé, pour le groupe « dans le site » du pop-up de la barre.
+ *
+ * ON N'EN RENVOIE QUE LE TITRE ET L'ADRESSE. Le reste d'un post — le
+ * carrousel, la vidéo, la marque liée — ne sert qu'à sa page, et le
+ * faire voyager à chaque frappe reviendrait à télécharger un article
+ * pour écrire une ligne de liste.
+ */
+export type PostTrouve = {
+  slug: string;
+  title: string;
+};
+
 export type Recherche = {
   marques: MarqueTrouvee[];
   pieces: PieceTrouvee[];
+  /**
+   * Les posts qui portent le mot.
+   *
+   * FACULTATIF, ET C'EST LE CACHE QUI L'EXIGE. La réponse de
+   * `/api/recherche` est gardée deux minutes et resservie jusqu'à une
+   * heure pendant qu'elle se rafraîchit : le jour de la mise en ligne,
+   * des réponses écrites AVANT ce champ circulent encore. Un tableau
+   * obligatoire ferait alors planter la lecture pour une heure.
+   */
+  posts?: PostTrouve[];
   /** Combien de pièces au total, quand on n'en montre que quatre. */
   totalPieces: number;
 };

@@ -36,7 +36,7 @@ export async function GET(requete: Request) {
      * message rouge pour un service qui n'est qu'un raccourci.
      */
     return NextResponse.json(
-      { marques: [], pieces: [], totalPieces: 0 },
+      { marques: [], pieces: [], posts: [], totalPieces: 0 },
       { headers: { "Cache-Control": "no-store" } }
     );
   }

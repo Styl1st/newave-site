@@ -94,6 +94,40 @@ export async function getBrands(): Promise<Brand[]> {
   return (await lireLAnnuaire()) ?? DEMO_BRANDS;
 }
 
+/**
+ * Les quatre catégories les mieux fournies, pour « en ce moment ».
+ *
+ * LE POP-UP DE LA BARRE LES DEMANDE SUR CHAQUE PAGE, d'où ce cache
+ * séparé. L'annuaire entier est déjà gardé une minute, mais c'est une
+ * liste de cent trente-six fiches complètes : la relire à chaque en-tête
+ * pour en tirer quatre mots reviendrait à sortir un carton d'archives
+ * pour lire une étiquette. Celui-ci ne garde que les quatre mots.
+ *
+ * Cinq minutes, et le même marqueur que l'annuaire : une marque publiée
+ * vide les deux ensemble.
+ */
+const lireLesCategoriesEnVue = unstable_cache(
+  async (): Promise<string[]> => {
+    const marques = (await lireLAnnuaire()) ?? DEMO_BRANDS;
+
+    const comptes = new Map<string, number>();
+    for (const b of marques) {
+      for (const c of b.categories ?? []) comptes.set(c, (comptes.get(c) ?? 0) + 1);
+    }
+
+    return [...comptes.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([categorie]) => categorie);
+  },
+  ["categories-en-vue"],
+  { revalidate: 300, tags: ["marques"] }
+);
+
+export async function categoriesEnVue(): Promise<string[]> {
+  return lireLesCategoriesEnVue();
+}
+
 export async function getBrand(slug: string): Promise<Brand | null> {
   const supabase = await createClient();
   if (!supabase) return DEMO_BRANDS.find((b) => b.slug === slug) ?? null;
@@ -468,7 +502,29 @@ export async function getPostsByBrand(brandId: string): Promise<Post[]> {
 
 /* Les formes de la réponse sont dans `types.ts` : un composant client
    les importe, et il ne doit surtout pas importer ce fichier-ci. */
-const RIEN: Recherche = { marques: [], pieces: [], totalPieces: 0 };
+const RIEN: Recherche = { marques: [], pieces: [], posts: [], totalPieces: 0 };
+
+/**
+ * COMBIEN DE VIGNETTES DANS LA BANDE, ET POURQUOI HUIT.
+ *
+ * Elles étaient quatre, ce qui suffisait au panneau de l'annuaire où
+ * elles s'enroulent sous les marques. Le pop-up de la barre leur donne
+ * une colonne entière, en grille de quatre sur deux rangs : à quatre,
+ * la moitié de la colonne restait vide, et le « + 306 » arrivait dès la
+ * deuxième pièce. Huit remplissent la grille sans peser — ce sont huit
+ * lignes de titre et d'adresse, pas huit fiches.
+ */
+const PIECES_MONTREES = 8;
+
+/**
+ * Trois posts, et c'est un plafond de lecture, pas de base.
+ *
+ * Le groupe « dans le site » vit sous les marques, dans la colonne de
+ * gauche du pop-up. Au-delà de trois lignes il pousse la sortie vers
+ * l'annuaire hors du panneau, pour des résultats qui sont presque
+ * toujours les moins précis des trois groupes.
+ */
+const POSTS_MONTRES = 3;
 
 /**
  * CE QUE L'ON LAISSE PASSER DANS UNE RECHERCHE, ET POURQUOI SI PEU.
@@ -521,6 +577,7 @@ export async function rechercher(brut: string): Promise<Recherche> {
   if (!supabase) {
     const marques = DEMO_BRANDS.filter((b) => b.name.toLowerCase().includes(bas));
     const pieces = DEMO_PRODUCTS.filter((p) => p.name.toLowerCase().includes(bas));
+    const posts = DEMO_POSTS.filter((p) => p.title.toLowerCase().includes(bas));
     return {
       marques: marques.slice(0, 6).map((b) => ({
         slug: b.slug,
@@ -529,17 +586,18 @@ export async function rechercher(brut: string): Promise<Recherche> {
         categorie: b.categories[0] ?? null,
         visuel: b.logo_url ?? b.cover_url,
       })),
-      pieces: pieces.slice(0, 4).map((p) => ({
+      pieces: pieces.slice(0, PIECES_MONTREES).map((p) => ({
         id: p.id,
         adresse: `/marques/${p.brand?.slug ?? ""}/${p.slug ?? p.id}`,
         name: p.name,
         image: p.images?.[0] ?? p.image_url,
       })),
+      posts: posts.slice(0, POSTS_MONTRES).map((p) => ({ slug: p.slug, title: p.title })),
       totalPieces: pieces.length,
     };
   }
 
-  const [reponseMarques, reponsePieces] = await Promise.all([
+  const [reponseMarques, reponsePieces, reponsePosts] = await Promise.all([
     supabase
       .from("brands")
       .select("slug,name,city,country,categories,logo_url,cover_url")
@@ -552,11 +610,25 @@ export async function rechercher(brut: string): Promise<Recherche> {
       .eq("status", "published")
       .is("retired_at", null)
       .ilike("name", motif)
-      .limit(4),
+      .limit(PIECES_MONTREES),
+    /*
+     * LES POSTS NE SONT DEMANDÉS QUE POUR LE POP-UP DE LA BARRE, et ils
+     * ne coûtent presque rien : le journal compte quelques dizaines
+     * d'entrées et l'on n'en ramène que le titre et l'adresse. Les
+     * écrans qui ne s'en servent pas — l'annuaire, l'accueil — ignorent
+     * simplement le champ.
+     */
+    supabase
+      .from("posts")
+      .select("slug,title")
+      .eq("status", "published")
+      .ilike("title", motif)
+      .limit(POSTS_MONTRES),
   ]);
 
   report("recherche de marques", reponseMarques.error);
   report("recherche de pièces", reponsePieces.error);
+  report("recherche de posts", reponsePosts.error);
 
   type LigneMarque = {
     slug: string;
@@ -596,9 +668,15 @@ export async function rechercher(brut: string): Promise<Recherche> {
       image: p.images?.[0] ?? p.image_url,
     }));
 
+  const posts = ((reponsePosts.data ?? []) as { slug: string; title: string }[]).map((p) => ({
+    slug: p.slug,
+    title: p.title,
+  }));
+
   return {
     marques,
     pieces,
+    posts,
     totalPieces: reponsePieces.count ?? pieces.length,
   };
 }

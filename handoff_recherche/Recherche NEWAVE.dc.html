@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0f0526; font-family:Archivo, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#e86fd8; text-decoration:none; }
+  a:hover { color:#fff; }
+</style>
+</helmet>
+
+<section style="width:1560px;padding:52px 44px 64px;box-sizing:border-box;background:radial-gradient(900px 520px at 10% -8%, rgba(232,111,216,.2), transparent 60%), radial-gradient(900px 640px at 92% 4%, rgba(90,114,224,.24), transparent 58%), linear-gradient(168deg,#1d0b4a 0%,#170a33 48%,#0f0526 100%);color:#fff">
+
+  <div style="max-width:980px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 2 · LES DEUX RETENUES, AU DOIGT</div>
+    <h1 style="font:800 38px Archivo;letter-spacing:-.035em;margin:0 0 14px;text-wrap:pretty">1c et 1e sur téléphone</h1>
+    <p style="font:500 15px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0 0 10px;text-wrap:pretty">Une règle commune : dès que le clavier monte, il mange la moitié basse de l'écran. Un panneau de suggestions qui se déplie « sous le champ » se retrouve donc derrière le clavier, avec deux lignes utiles. Les deux propositions répondent différemment — et c'est ce qui les distingue vraiment au doigt.</p>
+    <p style="font:500 14px/1.6 Archivo;color:rgba(255,255,255,.6);margin:0;text-wrap:pretty"><strong style="color:#fff">2a</strong> (1c au doigt) : le champ se colle en haut et le panneau prend tout ce qui reste — c'est déjà le comportement de la feuille du site, on le réemploie. <strong style="color:#fff">2b</strong> (1e au doigt) : la barre reste une barre et le panneau pend dessous, à ses marges — la page ne disparaît pas.</p>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;margin:0 0 20px">
+    <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2a</span>
+    <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0">1c au doigt — le champ se colle, le panneau prend l'écran</h2>
+    <span style="flex:1;height:1px;background:rgba(255,255,255,.16)"></span>
+  </div>
+
+  <div id="2a" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045);margin-bottom:34px">
+    <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0 0 22px;max-width:1000px;text-wrap:pretty">La ligne typographique de l'ordinateur ne survit pas à 402 px : à 26 px, « Chercher une pièce, une marque… » se coupe en deux et le trait de remplissage devient un fil perdu. Elle redevient donc un <strong style="color:#fff">champ</strong> — celui du site, `champ champ-loupe` — et c'est lui qu'on touche. Le panneau, lui, monte en <strong style="color:#fff">feuille pleine et opaque</strong> : les rayons d'abord (ce sont eux qu'on veut au doigt, un filtre en un geste valant mieux que dix lettres tapées), puis les marques, puis les pièces du catalogue en bande qui défile. Le tri et les filtres quittent la ligne du champ pour une rangée de pastilles qui se colle sous la barre.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:34px;justify-content:center">
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">1 · AU REPOS</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:874px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif">
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at 18% 12%, rgba(232,111,216,.5) 0%, transparent 48%), radial-gradient(circle at 86% 62%, rgba(90,114,224,.55) 0%, transparent 46%), linear-gradient(166deg,#33217f 0%,#4e5bc0 42%,#7b4fd0 72%,#5a54c8 100%);pointer-events:none"></div>
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:999px;padding:5px 5px 5px 16px;background-color:rgba(8,2,30,.58);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.62),rgba(44,16,100,.4));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.62),inset 0 1px 0 rgba(255,255,255,.18)">
+                <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:22px;width:auto;filter:drop-shadow(0 4px 14px rgba(60,25,120,.55))">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg></span>
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
+                </div>
+              </div>
+
+              <div style="padding:22px 4px 0">
+                <div style="font:900 11px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);margin-bottom:7px">LA VITRINE</div>
+                <h4 style="font:800 30px Archivo;letter-spacing:-.035em;margin:0 0 8px;color:#fff">Les pièces</h4>
+                <div style="font:800 11px Archivo;letter-spacing:.11em;color:rgba(255,255,255,.72)">26 507 AU CATALOGUE · 141 MARQUES</div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;border-radius:14px;padding:12px 13px;background-color:rgba(10,3,34,.42);border:1px solid rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgba(255,255,255,.62)" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                <span style="flex:1;font:600 14.5px Archivo;color:rgba(255,255,255,.5)">Chercher une pièce…</span>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:8px;margin:12px 0 0">
+                <span style="font:800 11px Archivo;letter-spacing:.11em;color:#fff;white-space:nowrap">1 220 PIÈCES</span>
+                <span style="flex:1"></span>
+                <span style="display:inline-flex;align-items:center;gap:6px;font:700 12px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);border-radius:999px;padding:8px 12px;white-space:nowrap">Au hasard <svg width="8" height="5" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+                <span style="display:inline-flex;align-items:center;gap:6px;font:900 12px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:8px 12px;white-space:nowrap">Filtres <span style="font:900 10px Archivo;background:#170a33;color:#fff;border-radius:999px;padding:2px 5px 3px">2</span></span>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Jean large brut</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">129 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#f3e6e6,#e4d2d2)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Tee Essentials</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">45 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">ENGINEERED BY ARYES</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Chemise Kaze</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">180 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Veste denim</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">210 €</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">Le champ est un vrai champ, pas une ligne de titre. La rangée compte / tri / filtres tient sur un rang.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">2 · EN SAISIE — CLAVIER MONTÉ</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" keyboard="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:100%;min-height:430px;overflow:hidden;background:#170a33;font-family:Archivo,sans-serif">
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.34)">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgba(255,255,255,.82)" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                  <span style="flex:1;font:600 14.5px Archivo;color:#fff">denim<span style="display:inline-block;width:2px;height:14px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></span>
+                  <span style="display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:rgba(255,255,255,.16);font:900 11px Archivo;color:rgba(255,255,255,.75)">✕</span>
+                </div>
+                <span style="font:800 12.5px Archivo;color:rgba(255,255,255,.85);white-space:nowrap">Annuler</span>
+              </div>
+
+              <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5);margin:16px 0 8px 2px">POSER UN FILTRE</div>
+              <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:10px 11px;background:rgba(255,255,255,.13)">
+                <span style="display:inline-grid;place-items:center;border-radius:5px;padding:3px 6px 4px;font:900 10px Archivo;letter-spacing:.1em;background:#e86fd8;color:#170a33;flex:0 0 auto">RAYON</span>
+                <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bas · jeans et pantalons</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58);white-space:nowrap">5 857</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:10px 11px">
+                <span style="display:inline-grid;place-items:center;border-radius:5px;padding:3px 6px 4px;font:900 10px Archivo;letter-spacing:.1em;background:#e86fd8;color:#170a33;flex:0 0 auto">MATIÈRE</span>
+                <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Denim</span></span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58);white-space:nowrap">22 MARQUES</span>
+              </div>
+
+              <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5);margin:14px 0 8px 2px">MARQUES · 2</div>
+              <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:10px 11px">
+                <span style="display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.12);font:900 10px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">PF</span>
+                <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff">Pollen Fabrics</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55);white-space:nowrap">DENIM</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:10px 11px">
+                <span style="display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.12);font:900 10px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">NO</span>
+                <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff">NOCLOUT</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55);white-space:nowrap">LYON</span>
+              </div>
+
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px 2px 8px">
+                <span style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5)">PIÈCES · 312</span>
+                <span style="font:700 12px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:3px">Tout voir</span>
+              </div>
+              <div style="display:flex;gap:8px;padding:0 2px 6px;overflow:hidden">
+                <span style="width:64px;height:64px;border-radius:11px;background:linear-gradient(160deg,#e9edf3,#d8dde8);flex:0 0 auto"></span>
+                <span style="width:64px;height:64px;border-radius:11px;background:linear-gradient(160deg,#eceaf4,#dcd7ea);flex:0 0 auto"></span>
+                <span style="width:64px;height:64px;border-radius:11px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0);flex:0 0 auto"></span>
+                <span style="width:64px;height:64px;border-radius:11px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0);flex:0 0 auto"></span>
+                <span style="width:64px;height:64px;border-radius:11px;background:linear-gradient(160deg,#e9e9ec,#d5d5db);flex:0 0 auto"></span>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">Fond opaque, pas de poignée ni de voile : cette feuille remplace la page, elle ne flotte pas dessus. Les vignettes défilent du doigt.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">3 · LE FILTRE EST POSÉ</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:874px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif">
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at 18% 12%, rgba(232,111,216,.5) 0%, transparent 48%), radial-gradient(circle at 86% 62%, rgba(90,114,224,.55) 0%, transparent 46%), linear-gradient(166deg,#33217f 0%,#4e5bc0 42%,#7b4fd0 72%,#5a54c8 100%);pointer-events:none"></div>
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:999px;padding:5px 5px 5px 16px;background-color:rgba(8,2,30,.58);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.62),rgba(44,16,100,.4));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.62),inset 0 1px 0 rgba(255,255,255,.18)">
+                <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:22px;width:auto;filter:drop-shadow(0 4px 14px rgba(60,25,120,.55))">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg></span>
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;border-radius:14px;padding:11px 12px;background-color:rgba(10,3,34,.48);border:1px solid rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgba(255,255,255,.82)" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                <span style="flex:1;font:600 14.5px Archivo;color:#fff">denim</span>
+                <span style="display:grid;place-items:center;width:28px;height:28px;border-radius:999px;background:rgba(255,255,255,.16);font:900 11px Archivo;color:rgba(255,255,255,.75)">✕</span>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:8px;margin:11px 0 0">
+                <span style="display:inline-flex;align-items:center;gap:8px;font:800 11.5px Archivo;color:#170a33;background:#e86fd8;border-radius:999px;padding:8px 12px;white-space:nowrap">Bas · jeans <span style="font:900 11px Archivo;opacity:.7">✕</span></span>
+                <span style="font:800 11px Archivo;letter-spacing:.11em;color:#fff;white-space:nowrap">38 PIÈCES</span>
+                <span style="flex:1"></span>
+                <span style="display:inline-flex;align-items:center;gap:6px;font:900 12px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:8px 12px;white-space:nowrap">Filtres <span style="font:900 10px Archivo;background:#170a33;color:#fff;border-radius:999px;padding:2px 5px 3px">3</span></span>
+              </div>
+
+              <div style="font:700 11.5px/1.5 Archivo;color:rgba(255,255,255,.82);margin:12px 2px 0">Le catalogue en compte <strong style="color:#fff">312</strong> — <span style="color:#fff;text-decoration:underline;text-underline-offset:3px">tout voir</span></div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Jean large brut</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">129 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Veste denim</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">210 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#e4e9f0,#ccd3df)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Short brut</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">75 €</div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14)">
+                  <div style="height:164px;background:linear-gradient(160deg,#efe9f4,#dcd2e6)"></div>
+                  <div style="padding:9px 11px 12px"><div style="font:900 10px Archivo;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12px Archivo;color:#fff;margin-bottom:4px">Jupe denim</div><div style="font:800 11.5px Archivo;color:rgba(255,255,255,.82)">98 €</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">Le rayon choisi devient une pastille d'accent, retirable d'un doigt. La sortie vers le catalogue reste sous la main.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;margin:0 0 20px">
+    <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2b</span>
+    <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0">1e au doigt — la barre se déploie, la page reste</h2>
+    <span style="flex:1;height:1px;background:rgba(255,255,255,.16)"></span>
+  </div>
+
+  <div id="2b" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+    <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0 0 22px;max-width:1000px;text-wrap:pretty">Même idée qu'en grand, à l'échelle du pouce : le logo se réduit à son sigle, la loupe et le menu s'effacent, <strong style="color:#fff">la pastille de la barre devient le champ</strong>, et le panneau pend juste dessous — mêmes marges, même verre, même rayon. La page reste visible sous un voile léger : c'est la promesse « je ne quitte pas ma page », tenue jusque sur téléphone. Le panneau s'arrête au-dessus du clavier et défile à l'intérieur ; il est court par construction — trois marques, une bande de pièces, et la sortie vers l'annuaire.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:34px;justify-content:center">
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">1 · AU REPOS</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:874px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif">
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at 18% 12%, rgba(232,111,216,.5) 0%, transparent 48%), radial-gradient(circle at 86% 62%, rgba(90,114,224,.55) 0%, transparent 46%), linear-gradient(166deg,#33217f 0%,#4e5bc0 42%,#7b4fd0 72%,#5a54c8 100%);pointer-events:none"></div>
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:999px;padding:5px 5px 5px 16px;background-color:rgba(8,2,30,.58);background-image:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.62),rgba(44,16,100,.4));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.62),inset 0 1px 0 rgba(255,255,255,.18)">
+                <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:22px;width:auto;filter:drop-shadow(0 4px 14px rgba(60,25,120,.55))">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:linear-gradient(160deg, rgba(232,111,216,.5), rgba(90,114,224,.42));color:#fff;box-shadow:0 0 0 3px rgba(232,111,216,.22)"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg></span>
+                  <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
+                </div>
+              </div>
+
+              <div style="padding:26px 4px 0">
+                <div style="font:900 11px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);margin-bottom:7px">LE JOURNAL</div>
+                <h4 style="font:800 29px Archivo;letter-spacing:-.035em;margin:0 0 10px;color:#fff;text-wrap:pretty">La sélection Aryes</h4>
+                <p style="font:500 13.5px/1.7 Archivo;color:rgba(255,255,255,.84);margin:0">Trois pièces qui résument la démarche : une coupe, une matière, aucun logo. On lit ce post — et c'est ici qu'on a envie de chercher une marque.</p>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
+                <span style="height:196px;border-radius:14px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+                <span style="height:196px;border-radius:14px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">La loupe garde sa pastille d'accent : c'est elle qu'on touche, et elle ne quitte pas la barre.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">2 · DÉPLOYÉE — CLAVIER MONTÉ</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" keyboard="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:100%;min-height:430px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif">
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at 18% 12%, rgba(232,111,216,.5) 0%, transparent 48%), radial-gradient(circle at 86% 62%, rgba(90,114,224,.55) 0%, transparent 46%), linear-gradient(166deg,#33217f 0%,#4e5bc0 42%,#7b4fd0 72%,#5a54c8 100%);pointer-events:none"></div>
+            <div style="position:absolute;inset:0;background:rgba(9,3,26,.44)"></div>
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;gap:9px;border-radius:999px;padding:5px 5px 5px 16px;background-color:rgba(8,2,30,.72);background-image:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.66),rgba(44,16,100,.46));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.66),inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 4px rgba(232,111,216,.2)">
+                <span style="font:900 12px Archivo;letter-spacing:.04em;color:#fff;flex:0 0 auto">NW</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                <span style="flex:1;min-width:0;font:500 15px Archivo;color:#fff">aryes<span style="display:inline-block;width:2px;height:14px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></span>
+                <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.16);font:900 13px Archivo;color:#fff;flex:0 0 auto">✕</span>
+              </div>
+
+              <div style="margin-top:9px;border-radius:20px;background:#170a33;border:1px solid rgba(255,255,255,.2);box-shadow:0 28px 60px rgba(6,1,18,.62);padding:12px 10px 14px">
+                <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.48);margin:2px 0 7px 4px">MARQUES · 2</div>
+                <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.13)">
+                  <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);font:900 10px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">EA</span>
+                  <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Engineered By <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                  <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58);white-space:nowrap">PARIS</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:9px 10px">
+                  <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);font:900 10px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">AR</span>
+                  <span style="flex:1;min-width:0;font:800 13.5px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span> Atelier</span>
+                  <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58);white-space:nowrap">LYON</span>
+                </div>
+
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:12px 4px 7px">
+                  <span style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.48)">PIÈCES · 14</span>
+                  <span style="font:700 12px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:3px">Tout voir</span>
+                </div>
+                <div style="display:flex;gap:8px;padding:0 4px;overflow:hidden">
+                  <span style="width:62px;height:62px;border-radius:11px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0);flex:0 0 auto"></span>
+                  <span style="width:62px;height:62px;border-radius:11px;background:linear-gradient(160deg,#eceaf4,#dcd7ea);flex:0 0 auto"></span>
+                  <span style="width:62px;height:62px;border-radius:11px;background:linear-gradient(160deg,#e9edf3,#d8dde8);flex:0 0 auto"></span>
+                  <span style="width:62px;height:62px;border-radius:11px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0);flex:0 0 auto"></span>
+                  <span style="width:62px;height:62px;border-radius:11px;background:linear-gradient(160deg,#e9e9ec,#d5d5db);flex:0 0 auto"></span>
+                </div>
+
+                <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.48);margin:13px 0 7px 4px">DANS LE SITE</div>
+                <div style="display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 10px">
+                  <span style="display:inline-grid;place-items:center;border-radius:5px;padding:3px 6px 4px;font:900 10px Archivo;letter-spacing:.1em;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.72);flex:0 0 auto">POST</span>
+                  <span style="flex:1;min-width:0;font:800 13px Archivo;color:#fff">La sélection <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                </div>
+              </div>
+
+              <div style="padding:16px 4px 0;opacity:.5">
+                <h4 style="font:800 24px Archivo;letter-spacing:-.035em;margin:0 0 8px;color:#fff">La sélection Aryes</h4>
+                <p style="font:500 13px/1.6 Archivo;color:rgba(255,255,255,.8);margin:0">La page est toujours là, à peine reculée : refermer ne fait rien perdre.</p>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">Le panneau garde les marges de la barre. Voile léger, pas de flou : on doit reconnaître la page qu'on n'a pas quittée.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="font:900 10px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55)">3 · CHAMP VIDE — L'HISTORIQUE</div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" keyboard="{{ true }}" hint-size="402px,874px">
+          <div style="position:relative;height:100%;min-height:430px;overflow:hidden;background:#31217c;font-family:Archivo,sans-serif">
+            <div style="position:absolute;inset:0;background:radial-gradient(circle at 18% 12%, rgba(232,111,216,.5) 0%, transparent 48%), radial-gradient(circle at 86% 62%, rgba(90,114,224,.55) 0%, transparent 46%), linear-gradient(166deg,#33217f 0%,#4e5bc0 42%,#7b4fd0 72%,#5a54c8 100%);pointer-events:none"></div>
+            <div style="position:absolute;inset:0;background:rgba(9,3,26,.44)"></div>
+            <div style="position:relative;padding:56px 16px 0">
+              <div style="display:flex;align-items:center;gap:9px;border-radius:999px;padding:5px 5px 5px 16px;background-color:rgba(8,2,30,.72);background-image:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 52%),linear-gradient(180deg,rgba(44,16,100,.66),rgba(44,16,100,.46));backdrop-filter:blur(28px) saturate(1.6);box-shadow:0 16px 42px -12px rgba(44,16,100,.66),inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 4px rgba(232,111,216,.2)">
+                <span style="font:900 12px Archivo;letter-spacing:.04em;color:#fff;flex:0 0 auto">NW</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                <span style="flex:1;min-width:0;font:500 15px Archivo;color:rgba(255,255,255,.55)">Chercher une marque…<span style="display:inline-block;width:2px;height:14px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></span>
+                <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.16);font:900 13px Archivo;color:#fff;flex:0 0 auto">✕</span>
+              </div>
+
+              <div style="margin-top:9px;border-radius:20px;background:#170a33;border:1px solid rgba(255,255,255,.2);box-shadow:0 28px 60px rgba(6,1,18,.62);padding:12px 10px 14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 4px 7px">
+                  <span style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.48)">TU CHERCHAIS</span>
+                  <span style="font:700 11.5px Archivo;color:rgba(255,255,255,.62);text-decoration:underline;text-underline-offset:3px">Effacer</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:11px;border-radius:12px;padding:10px 10px">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                  <span style="flex:1;min-width:0;font:700 13.5px Archivo;color:rgba(255,255,255,.88)">pollen fabrics</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:11px;border-radius:12px;padding:10px 10px">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2.2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+                  <span style="flex:1;min-width:0;font:700 13.5px Archivo;color:rgba(255,255,255,.88)">maille lyon</span>
+                </div>
+
+                <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.48);margin:13px 0 8px 4px">EN CE MOMENT</div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px;padding:0 4px">
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);border-radius:999px;padding:8px 12px">Denim</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);border-radius:999px;padding:8px 12px">Bijoux</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);border-radius:999px;padding:8px 12px">Made in France</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);border-radius:999px;padding:8px 12px">Maille</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </x-import>
+        <div style="font:500 12px/1.5 Archivo;color:rgba(255,255,255,.58);max-width:402px;text-align:center">À vide, le panneau se réduit à ce qu'on a déjà tapé et à quatre entrées du moment — jamais une carte creuse.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.14);padding-top:18px;max-width:1000px">
+      <div style="font:900 11px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.5);margin-bottom:9px">LE POINT DE BASCULE</div>
+      <p style="font:500 13.5px/1.65 Archivo;color:rgba(255,255,255,.76);margin:0;text-wrap:pretty">Un seuil, à 640 px, et le même dans les deux sens : au-dessus, le panneau sous le champ (1c) ou sous la barre (1e) ; en dessous, ces écrans. Une fenêtre qu'on agrandit ou une tablette qu'on tourne referme donc proprement au lieu de laisser un panneau de téléphone en travers de mille pixels.</p>
+    </div>
+  </div>
+</section>
+
+<section style="width:1560px;padding:52px 44px 72px;box-sizing:border-box;background:radial-gradient(900px 520px at 10% -8%, rgba(232,111,216,.22), transparent 60%), radial-gradient(900px 640px at 92% 4%, rgba(90,114,224,.26), transparent 58%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff">
+
+  <div style="max-width:980px;margin-bottom:38px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 1 · LA RECHERCHE, AUX DEUX ENDROITS OÙ ELLE VIT</div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 14px;text-wrap:pretty">Chercher dans les pièces, chercher de partout</h1>
+    <p style="font:500 15.5px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0 0 10px;text-wrap:pretty">Deux chantiers distincts. <strong style="color:#fff">A —</strong> la barre des <em>Pièces</em> : aujourd'hui un champ seul au milieu d'un grand panneau de verre, qui filtre en silence les 1 220 pièces de la vitrine et ne dit jamais qu'il en existe 26 507 au catalogue. <strong style="color:#fff">B —</strong> la loupe de la barre du haut : elle emmène sur <em>Marques</em> avec le curseur dans le champ — on quitte la page qu'on lisait pour chercher. Elle doit ouvrir un pop-up et rien d'autre.</p>
+    <p style="font:500 14px/1.6 Archivo;color:rgba(255,255,255,.6);margin:0;text-wrap:pretty">Trois propositions par chantier. Les maquettes reprennent le verre, le champ, le liseré et l'accent du site — rien de nouveau n'est introduit. Les pop-ups de <strong style="color:#fff">B</strong> s'ouvrent et se ferment : clique la loupe dans la maquette.</p>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;margin:0 0 22px">
+    <span style="font:900 13px Archivo;letter-spacing:.06em;background:#fff;color:#170a33;border-radius:8px;padding:7px 11px 8px">A</span>
+    <h2 style="font:800 27px Archivo;letter-spacing:-.03em;margin:0">La barre de recherche des Pièces</h2>
+    <span style="flex:1;height:1px;background:rgba(255,255,255,.16)"></span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:26px;margin-bottom:64px">
+
+    <!-- ============ 1a — LA LIGNE ============ -->
+    <div id="1a" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1a</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">La ligne</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Le panneau de verre disparaît : la recherche devient une <strong style="color:#fff">ligne typographique</strong> posée sous le titre, exactement comme dans l'annuaire — loupe, texte à 26 px, ⌘ K, et le trait de deux pixels qui se remplit d'accent à mesure qu'on tape. On gagne le caisson vide de la capture, et les deux pages du site qui cherchent se cherchent pareil. Le compte de résultats prend la place du trait de droite : c'est lui qui répond.</p>
+        </div>
+      </div>
+
+      <div style="background:radial-gradient(circle at 26% 22%, rgba(232,111,216,.42) 0%, transparent 46%), radial-gradient(circle at 78% 66%, rgba(90,114,224,.46) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);border-radius:18px;padding:22px 30px 30px;max-width:1180px;margin:0 auto;box-sizing:border-box;overflow:hidden">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28);margin-bottom:34px">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+            <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Pièces</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Posts</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">À propos</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+            <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.42), rgba(90,114,224,.34));border:1px solid rgba(255,255,255,.22)"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+            <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+          </div>
+        </div>
+
+        <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.72);margin-bottom:8px">LA VITRINE</div>
+        <h4 style="font:800 42px Archivo;letter-spacing:-.035em;margin:0 0 10px">Les pièces</h4>
+        <p style="font:500 14px/1.6 Archivo;color:rgba(255,255,255,.82);margin:0 0 6px;max-width:640px">Jusqu'à dix pièces par marque, dans un ordre qui change à chaque visite.</p>
+        <div style="font:800 10.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.72)">26 507 PIÈCES AU CATALOGUE · 141 MARQUES</div>
+
+        <div style="display:flex;align-items:center;gap:14px;padding:26px 0 13px">
+          <svg width="20" height="20" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.88)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.88)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+          <div style="flex:1;font:500 26px Archivo;letter-spacing:-.02em;color:rgba(255,255,255,.58)">Chercher une pièce, une marque…</div>
+          <div style="font:800 10px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 8px 6px">⌘ K</div>
+        </div>
+        <div style="height:2px;border-radius:999px;background:rgba(255,255,255,.22)"></div>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:26px;padding-top:15px">
+          <div style="font:800 11px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.82)">1 220 PIÈCES · TOUTES MARQUES</div>
+          <div style="display:flex;align-items:center;gap:20px">
+            <span style="font:800 13.5px Archivo;color:#fff;border-bottom:2px solid #fff;padding-bottom:3px">Au hasard</span>
+            <span style="font:600 13.5px Archivo;color:rgba(255,255,255,.7)">Prix croissant</span>
+            <span style="font:600 13.5px Archivo;color:rgba(255,255,255,.7)">Prix décroissant</span>
+            <span style="width:1px;height:16px;background:rgba(255,255,255,.18)"></span>
+            <span style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.7)">AFFICHAGE</span>
+            <span style="display:flex;align-items:flex-end;gap:10px">
+              <span style="padding-bottom:4px;border-bottom:2px solid #fff"><svg width="15" height="15" viewBox="0 0 16 16"><rect x="0" y="0" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="9" y="0" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="0" y="9" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="9" y="9" width="7" height="7" rx="1.6" fill="#fff"></rect></svg></span>
+              <span style="padding-bottom:4px;border-bottom:2px solid transparent"><svg width="15" height="15" viewBox="0 0 16 16"><rect x="0" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="6" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="12" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="0" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="6" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="12" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="0" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="6" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect><rect x="12" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.6)"></rect></svg></span>
+            </span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:22px">
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:172px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Jean large brut</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">129 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:172px;background:linear-gradient(160deg,#f3e6e6,#e4d2d2)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Tee Essentials</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">45 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:172px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">ENGINEERED BY ARYES</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Chemise Kaze</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">180 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:172px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Veste denim</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">210 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:172px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Jupe plissée</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">95 €</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:22px auto 0">
+        <div style="font:900 9.5px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-bottom:10px">EN SAISIE — LE TRAIT SE REMPLIT, LE COMPTE RÉPOND</div>
+        <div style="background:linear-gradient(160deg,#2a1560 0%,#1d0f45 100%);border-radius:16px;padding:22px 28px 24px;border:1px solid rgba(255,255,255,.12)">
+          <div style="display:flex;align-items:center;gap:14px;padding-bottom:13px">
+            <svg width="20" height="20" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.88)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.88)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+            <div style="flex:1;font:500 26px Archivo;letter-spacing:-.02em;color:#fff">denim<span style="display:inline-block;width:2px;height:24px;background:#e86fd8;vertical-align:-3px;margin-left:2px"></span></div>
+            <span style="font:800 10px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 8px 6px">EFFACER ✕</span>
+          </div>
+          <div style="height:2px;border-radius:999px;background:linear-gradient(90deg,#e86fd8 0%,#e86fd8 38%,rgba(255,255,255,.22) 38%,rgba(255,255,255,.22) 100%)"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding-top:15px">
+            <div style="font:800 11px Archivo;letter-spacing:.14em;color:#fff">38 PIÈCES POUR « DENIM » · 4 MARQUES</div>
+            <div style="font:700 12px Archivo;color:rgba(255,255,255,.72)">Le catalogue entier en compte <strong style="color:#fff">312</strong> — <span style="color:#e86fd8;text-decoration:underline;text-underline-offset:4px">tout voir</span></div>
+          </div>
+        </div>
+        <p style="font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.6);margin:12px 0 0;max-width:900px">La ligne de droite est la seule vraie nouveauté : elle avoue que la vitrine ne montre que dix pièces par marque, et offre la sortie vers le reste. Sans elle, une recherche qui ne donne rien laisse croire que le catalogue est vide.</p>
+      </div>
+    </div>
+
+    <!-- ============ 1b — LA BARRE-OUTIL ============ -->
+    <div id="1b" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1b</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">La barre-outil collante</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Le champ, le compte, le tri, l'affichage et les filtres tiennent sur <strong style="color:#fff">une seule barre</strong>, qui remplace à la fois le panneau de verre et la rangée au-dessus de la grille : cent quarante pixels de haut récupérés. Et comme elle se colle sous la barre du site pendant qu'on descend, le geste d'affiner reste sous la main au milieu de la grille — là où l'envie arrive — au lieu d'obliger à remonter.</p>
+        </div>
+      </div>
+
+      <div style="background:radial-gradient(circle at 26% 22%, rgba(232,111,216,.42) 0%, transparent 46%), radial-gradient(circle at 78% 66%, rgba(90,114,224,.46) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);border-radius:18px;padding:22px 30px 30px;max-width:1180px;margin:0 auto;box-sizing:border-box;overflow:hidden">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28);margin-bottom:26px">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+            <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Pièces</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Posts</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+            <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.42), rgba(90,114,224,.34));border:1px solid rgba(255,255,255,.22)"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+            <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:18px">
+          <div>
+            <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.72);margin-bottom:8px">LA VITRINE</div>
+            <h4 style="font:800 38px Archivo;letter-spacing:-.035em;margin:0">Les pièces</h4>
+          </div>
+          <div style="font:800 10.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.74);padding-bottom:7px">26 507 AU CATALOGUE · 141 MARQUES</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;border-radius:16px;padding:9px 10px 9px 14px;background-color:rgba(10,3,34,.42);background-image:linear-gradient(150deg, rgba(44,16,100,.5), rgba(44,16,100,.3));border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.3), inset 0 1px 0 rgba(255,255,255,.26)">
+          <svg width="17" height="17" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round"></path></svg>
+          <div style="flex:1;min-width:0;font:600 15px Archivo;color:rgba(255,255,255,.52)">Chercher une pièce, une marque…</div>
+          <span style="font:800 10px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.26);border-radius:6px;padding:4px 7px 5px">⌘ K</span>
+          <span style="width:1px;height:26px;background:rgba(255,255,255,.18);margin:0 4px"></span>
+          <span style="font:800 10.5px Archivo;letter-spacing:.12em;color:#fff;white-space:nowrap">1 220 PIÈCES</span>
+          <span style="width:1px;height:26px;background:rgba(255,255,255,.18);margin:0 4px"></span>
+          <span style="display:inline-flex;align-items:center;gap:7px;font:700 12.5px Archivo;color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border-radius:10px;padding:8px 11px;white-space:nowrap">Au hasard <svg width="9" height="6" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+          <span style="display:flex;align-items:center;gap:9px;padding:0 4px">
+            <svg width="15" height="15" viewBox="0 0 16 16"><rect x="0" y="0" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="9" y="0" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="0" y="9" width="7" height="7" rx="1.6" fill="#fff"></rect><rect x="9" y="9" width="7" height="7" rx="1.6" fill="#fff"></rect></svg>
+            <svg width="15" height="15" viewBox="0 0 16 16"><rect x="0" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="6" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="12" y="0" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="0" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="6" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="12" y="6" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="0" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="6" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect><rect x="12" y="12" width="4" height="4" rx="1" fill="rgba(255,255,255,.55)"></rect></svg>
+          </span>
+          <span style="display:inline-flex;align-items:center;gap:8px;font:900 12px Archivo;color:#170a33;background:#fff;border-radius:11px;padding:9px 13px;white-space:nowrap">Filtres <span style="font:900 10px Archivo;background:#170a33;color:#fff;border-radius:999px;padding:3px 6px 4px">2</span></span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:20px">
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:160px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Jean large brut</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">129 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:160px;background:linear-gradient(160deg,#f3e6e6,#e4d2d2)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Tee Essentials</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">45 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:160px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">ENGINEERED BY ARYES</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Chemise Kaze</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">180 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:160px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">POLLEN FABRICS</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Veste denim</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">210 €</div></div>
+          </div>
+          <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)">
+            <div style="height:160px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></div>
+            <div style="padding:10px 12px 13px"><div style="font:900 8.5px Archivo;letter-spacing:.14em;color:rgba(255,255,255,.62);margin-bottom:4px">NOCLOUT</div><div style="font:800 12.5px Archivo;color:#fff;margin-bottom:5px">Jupe plissée</div><div style="font:800 12px Archivo;color:rgba(255,255,255,.82)">95 €</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:22px auto 0">
+        <div style="font:900 9.5px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.55);margin-bottom:10px">APRÈS DEUX ÉCRANS DE DÉFILEMENT — ELLE SE COLLE ET SE RESSERRE</div>
+        <div style="background:linear-gradient(160deg,#2a1560 0%,#1d0f45 100%);border-radius:16px;padding:20px 24px 22px;border:1px solid rgba(255,255,255,.12)">
+          <div style="display:flex;align-items:center;gap:10px;border-radius:999px;padding:7px 8px 7px 14px;background-color:rgba(10,3,34,.62);border:1px solid rgba(255,255,255,.26);box-shadow:0 14px 34px rgba(8,2,20,.5);max-width:860px">
+            <svg width="16" height="16" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round"></path></svg>
+            <div style="flex:1;min-width:0;font:600 13.5px Archivo;color:#fff">denim</div>
+            <span style="font:800 10px Archivo;letter-spacing:.12em;color:#fff;white-space:nowrap">38 PIÈCES</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18)"></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font:700 11.5px Archivo;color:rgba(255,255,255,.88);background:rgba(255,255,255,.1);border-radius:999px;padding:6px 10px;white-space:nowrap">Au hasard <svg width="8" height="5" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+            <span style="display:inline-flex;align-items:center;gap:7px;font:900 11.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap">Filtres <span style="font:900 9.5px Archivo;background:#170a33;color:#fff;border-radius:999px;padding:3px 6px 4px">2</span></span>
+          </div>
+          <p style="font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.62);margin:14px 0 0;max-width:860px">En se collant, elle perd l'affichage et le ⌘ K — deux réglages qu'on ne change pas en plein défilement — et garde ce qui sert : ce qu'on a tapé, combien il en reste, l'ordre, les filtres.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c — LA RECHERCHE À APERÇU ============ -->
+    <div id="1c" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1c</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">La recherche à aperçu</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Le champ devient une vraie recherche : taper déplie un panneau sous la ligne, avec les <strong style="color:#fff">rayons</strong> (qui se posent en filtre), les <strong style="color:#fff">marques</strong> (qui ouvrent une fiche) et les <strong style="color:#fff">pièces du catalogue entier</strong> — pas seulement celles de la vitrine. La grille derrière se filtre quand même en direct : le panneau ne remplace pas le filtre, il ajoute ce que le filtre ne peut pas atteindre. C'est le vocabulaire déjà dessiné pour l'annuaire, réemployé tel quel.</p>
+        </div>
+      </div>
+
+      <div style="background:radial-gradient(circle at 26% 22%, rgba(232,111,216,.42) 0%, transparent 46%), radial-gradient(circle at 78% 66%, rgba(90,114,224,.46) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);border-radius:18px;padding:22px 30px 30px;max-width:1180px;margin:0 auto;box-sizing:border-box;overflow:hidden">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28);margin-bottom:26px">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+            <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Pièces</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Posts</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+            <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.42), rgba(90,114,224,.34));border:1px solid rgba(255,255,255,.22)"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+            <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+          </div>
+        </div>
+
+        <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.72);margin-bottom:8px">LA VITRINE</div>
+        <h4 style="font:800 38px Archivo;letter-spacing:-.035em;margin:0 0 18px">Les pièces</h4>
+
+        <div style="position:relative">
+          <div style="display:flex;align-items:center;gap:14px;padding-bottom:13px">
+            <svg width="20" height="20" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.88)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.88)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+            <div style="flex:1;font:500 26px Archivo;letter-spacing:-.02em;color:#fff">denim<span style="display:inline-block;width:2px;height:24px;background:#e86fd8;vertical-align:-3px;margin-left:2px"></span></div>
+            <span style="font:800 10px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 8px 6px">ÉCHAP</span>
+          </div>
+          <div style="height:2px;border-radius:999px;background:linear-gradient(90deg,#e86fd8 0%,#e86fd8 38%,rgba(255,255,255,.22) 38%,rgba(255,255,255,.22) 100%)"></div>
+
+          <div style="margin-top:14px;border-radius:16px;background:#170a33;border:1px solid rgba(255,255,255,.2);box-shadow:0 30px 70px rgba(8,2,20,.6);padding:14px 14px 16px">
+            <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.5);margin:2px 0 8px 4px">POSER UN FILTRE</div>
+            <div style="display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 10px;background:rgba(255,255,255,.12)">
+              <span style="display:inline-grid;place-items:center;border-radius:5px;padding:4px 6px 5px;font:900 8.5px Archivo;letter-spacing:.1em;background:#e86fd8;color:#170a33">RAYON</span>
+              <span style="flex:1;font:800 14px Archivo;color:#fff">Bas · jeans et pantalons</span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55)">5 857 PIÈCES</span>
+              <span style="font:800 10px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:3px 7px 4px">ENTRÉE</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 10px">
+              <span style="display:inline-grid;place-items:center;border-radius:5px;padding:4px 6px 5px;font:900 8.5px Archivo;letter-spacing:.1em;background:#e86fd8;color:#170a33">MATIÈRE</span>
+              <span style="flex:1;font:800 14px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Denim</span></span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55)">22 MARQUES</span>
+            </div>
+
+            <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.5);margin:14px 0 8px 4px">MARQUES · 2 RÉSULTATS</div>
+            <div style="display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 10px">
+              <span style="display:inline-grid;place-items:center;border-radius:5px;padding:4px 6px 5px;font:900 8.5px Archivo;letter-spacing:.1em;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.72)">MARQUE</span>
+              <span style="flex:1;font:800 14px Archivo;color:#fff">Pollen Fabrics</span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55)">DENIM · STREETWEAR</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 10px">
+              <span style="display:inline-grid;place-items:center;border-radius:5px;padding:4px 6px 5px;font:900 8.5px Archivo;letter-spacing:.1em;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.72)">MARQUE</span>
+              <span style="flex:1;font:800 14px Archivo;color:#fff">NOCLOUT</span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.55)">STREETWEAR · LYON</span>
+            </div>
+
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:14px 4px 8px">
+              <span style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.5)">PIÈCES · 312 AU CATALOGUE</span>
+              <span style="font:700 11.5px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:4px">Tout ouvrir dans la grille</span>
+            </div>
+            <div style="display:flex;gap:9px;padding:0 4px">
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0)"></span>
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></span>
+              <span style="width:58px;height:58px;border-radius:10px;background:linear-gradient(160deg,#e4e9f0,#ccd3df)"></span>
+              <span style="display:grid;place-items:center;width:58px;height:58px;border-radius:10px;background:rgba(255,255,255,.12);font:800 12px Archivo;color:rgba(255,255,255,.85)">+306</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:16px;opacity:.42">
+            <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)"><div style="height:120px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></div></div>
+            <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)"><div style="height:120px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></div></div>
+            <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)"><div style="height:120px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></div></div>
+            <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)"><div style="height:120px;background:linear-gradient(160deg,#f3e6e6,#e4d2d2)"></div></div>
+            <div style="border-radius:14px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)"><div style="height:120px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <p style="font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.6);margin:16px auto 0;max-width:1180px">Coût : c'est la seule des trois qui demande du code neuf côté serveur — la recherche de pièces au-delà de la vitrine. Les deux autres se font avec ce qui existe déjà.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:16px;margin:0 0 22px">
+    <span style="font:900 13px Archivo;letter-spacing:.06em;background:#fff;color:#170a33;border-radius:8px;padding:7px 11px 8px">B</span>
+    <h2 style="font:800 27px Archivo;letter-spacing:-.03em;margin:0">Le pop-up de la loupe</h2>
+    <span style="flex:1;height:1px;background:rgba(255,255,255,.16)"></span>
+    <span style="font:700 12px Archivo;color:rgba(255,255,255,.6)">Les maquettes sont cliquables — la loupe ouvre, la croix et le voile ferment.</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:26px">
+
+    <!-- ============ 1d — PALETTE CENTRÉE ============ -->
+    <div id="1d" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1d</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Palette centrée</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Une carte de 620 px au centre, la page voilée derrière. Le champ en haut, les résultats groupés dessous — rayons, marques, pièces — et au pied les touches. Fond <strong style="color:#fff">opaque</strong> et non dépoli : une liste de résultats posée sur une grille de pièces qui transparaît ne se lit pas. C'est le geste que tout le monde connaît de ⌘ K, et le plus rapide à faire.</p>
+        </div>
+      </div>
+      <div style="position:relative;border-radius:18px;overflow:hidden;max-width:1180px;margin:0 auto;background:radial-gradient(circle at 22% 18%, rgba(232,111,216,.45) 0%, transparent 46%), radial-gradient(circle at 80% 70%, rgba(90,114,224,.5) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);min-height:600px;padding:22px 30px 30px;box-sizing:border-box">
+
+        <div style="position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28)">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Pièces</span>
+            <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Posts</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+            <span onClick="{{ bascule1d }}" style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.55), rgba(90,114,224,.45));border:1px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 0 0 3px rgba(232,111,216,.3)" style-hover="background:linear-gradient(160deg, rgba(232,111,216,.7), rgba(90,114,224,.6))"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+            <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+          </div>
+        </div>
+
+        <div style="padding:34px 4px 0;max-width:760px">
+          <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.7);margin-bottom:8px">LE JOURNAL</div>
+          <h4 style="font:800 36px Archivo;letter-spacing:-.035em;margin:0 0 12px;color:#fff">La sélection Aryes</h4>
+          <p style="font:500 14px/1.7 Archivo;color:rgba(255,255,255,.8);margin:0 0 10px">Trois pièces qui résument la démarche : une coupe, une matière, aucun logo. On lisait ce post, on a voulu chercher une marque — et jusqu'ici, il fallait quitter la page.</p>
+          <div style="display:flex;gap:12px;margin-top:18px">
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+          </div>
+        </div>
+
+        <sc-if value="{{ ouvert1d }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ bascule1d }}" style="position:absolute;inset:0;z-index:5;background:rgba(9,3,26,.62);backdrop-filter:blur(3px)"></div>
+          <div style="position:absolute;z-index:6;top:96px;left:50%;transform:translateX(-50%);width:620px;border-radius:18px;background:#170a33;border:1px solid rgba(255,255,255,.22);box-shadow:0 40px 90px rgba(6,1,18,.72);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.12)">
+              <svg width="19" height="19" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.85)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+              <div style="flex:1;font:500 21px Archivo;letter-spacing:-.02em;color:#fff">{{ motRecherche }}<span style="display:inline-block;width:2px;height:20px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></div>
+              <span onClick="{{ bascule1d }}" style="display:grid;place-items:center;width:30px;height:30px;border-radius:999px;font:900 14px Archivo;color:rgba(255,255,255,.6);cursor:pointer" style-hover="color:#fff;background:rgba(255,255,255,.1)">✕</span>
+            </div>
+
+            <div style="padding:12px 12px 6px">
+              <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:2px 0 8px 4px">MARQUES · 2 RÉSULTATS</div>
+              <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.13)">
+                <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">EA</span>
+                <span style="flex:1;min-width:0;font:800 14.5px Archivo;color:#fff">Engineered By <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58)">MINIMALISME · PARIS</span>
+                <span style="font:800 10px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:3px 7px 4px">ENTRÉE</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">AR</span>
+                <span style="flex:1;min-width:0;font:800 14.5px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span> Atelier</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58)">BIJOUX · LYON</span>
+              </div>
+
+              <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:14px 0 8px 4px">PIÈCES · 14 RÉSULTATS</div>
+              <div style="display:flex;gap:9px;padding:0 4px 4px">
+                <span style="width:56px;height:56px;border-radius:10px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+                <span style="width:56px;height:56px;border-radius:10px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+                <span style="width:56px;height:56px;border-radius:10px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+                <span style="width:56px;height:56px;border-radius:10px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0)"></span>
+                <span style="width:56px;height:56px;border-radius:10px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></span>
+                <span style="display:grid;place-items:center;width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,.12);font:800 12px Archivo;color:rgba(255,255,255,.85)">+9</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px 12px;border-top:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)">
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">↑ ↓ NAVIGUER</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">↵ OUVRIR</span>
+                <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">ÉCHAP FERMER</span>
+              </div>
+              <span style="font:700 11.5px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:4px">Tout voir dans l'annuaire</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;max-width:1180px;margin:16px auto 0">
+        <span onClick="{{ bascule1d }}" style="font:800 12px Archivo;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 14px;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">{{ etiquette1d }}</span>
+        <span style="font:500 12.5px/1.55 Archivo;color:rgba(255,255,255,.6);flex:1">À vide, la palette montre l'historique (« Tu cherchais ») plutôt qu'une carte creuse. Au doigt, la même palette monte en feuille plein écran — ce qui existe déjà sur le site.</span>
+      </div>
+    </div>
+
+    <!-- ============ 1e — LA BARRE SE DÉPLOIE ============ -->
+    <div id="1e" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1e</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">La barre se déploie</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">Rien ne s'ouvre ailleurs : <strong style="color:#fff">la pastille du haut devient le champ</strong>. Les liens s'effacent, le champ prend leur largeur, et le panneau de résultats pend sous la barre, même largeur, même verre. La page reste lisible derrière, à peine assombrie — on n'a pas changé d'endroit, on a ouvert un tiroir dans l'objet qu'on vient de toucher. C'est la proposition la plus discrète et celle qui respecte le mieux l'idée « je ne quitte pas ma page ».</p>
+        </div>
+      </div>
+      <div style="position:relative;border-radius:18px;overflow:hidden;max-width:1180px;margin:0 auto;background:radial-gradient(circle at 22% 18%, rgba(232,111,216,.45) 0%, transparent 46%), radial-gradient(circle at 80% 70%, rgba(90,114,224,.5) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);min-height:600px;padding:22px 30px 30px;box-sizing:border-box">
+
+        <sc-if value="{{ ferme1e }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28)">
+            <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+            <div style="display:flex;align-items:center;gap:2px">
+              <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+              <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+              <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Pièces</span>
+              <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Posts</span>
+              <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+              <span onClick="{{ bascule1e }}" style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.55), rgba(90,114,224,.45));border:1px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 0 0 3px rgba(232,111,216,.3)" style-hover="background:linear-gradient(160deg, rgba(232,111,216,.7), rgba(90,114,224,.6))"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+              <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+              <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ ouvert1e }}" hint-placeholder-val="{{ true }}">
+          <div style="position:relative;z-index:6">
+            <div style="display:flex;align-items:center;gap:14px;border-radius:999px;padding:8px 10px 8px 16px;background-color:rgba(10,3,34,.72);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.3) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.28) 0%, transparent 58%);border:1px solid rgba(255,255,255,.44);box-shadow:0 14px 40px rgba(20,4,60,.5), inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 4px rgba(232,111,216,.22)">
+              <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+              <svg width="18" height="18" viewBox="0 0 20 20" style="flex:0 0 auto;margin-left:6px"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.9)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+              <div style="flex:1;min-width:0;font:500 19px Archivo;letter-spacing:-.02em;color:#fff">{{ motRecherche }}<span style="display:inline-block;width:2px;height:18px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></div>
+              <span style="font:800 10px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.26);border-radius:7px;padding:4px 8px 5px">ÉCHAP</span>
+              <span onClick="{{ bascule1e }}" style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.14);font:900 14px Archivo;color:#fff;cursor:pointer" style-hover="background:rgba(255,255,255,.26)">✕</span>
+            </div>
+
+            <div style="margin:10px 0 0;border-radius:22px;background:#170a33;border:1px solid rgba(255,255,255,.2);box-shadow:0 34px 80px rgba(6,1,18,.62);padding:16px 14px;display:grid;grid-template-columns:1.25fr 1fr;gap:18px">
+              <div>
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:2px 0 8px 4px">MARQUES · 2 RÉSULTATS</div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.13)">
+                  <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">EA</span>
+                  <span style="flex:1;min-width:0;font:800 14.5px Archivo;color:#fff">Engineered By <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                  <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58)">PARIS</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">AR</span>
+                  <span style="flex:1;min-width:0;font:800 14.5px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span> Atelier</span>
+                  <span style="font:700 10.5px Archivo;letter-spacing:.06em;color:rgba(255,255,255,.58)">LYON</span>
+                </div>
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:14px 0 8px 4px">DANS LE SITE</div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="display:inline-grid;place-items:center;border-radius:5px;padding:4px 6px 5px;font:900 8.5px Archivo;letter-spacing:.1em;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.72)">POST</span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff">La sélection <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                </div>
+              </div>
+              <div>
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:2px 0 8px 4px">PIÈCES · 14 RÉSULTATS</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 4px">
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#e9e9ec,#d5d5db)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#e4e9f0,#ccd3df)"></span>
+                  <span style="aspect-ratio:1;border-radius:10px;background:linear-gradient(160deg,#efe9f4,#dcd2e6)"></span>
+                  <span style="display:grid;place-items:center;aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.12);font:800 12px Archivo;color:rgba(255,255,255,.85)">+7</span>
+                </div>
+                <div style="font:700 11.5px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:4px;margin:12px 0 0 4px">Tout voir dans l'annuaire</div>
+              </div>
+            </div>
+          </div>
+          <div onClick="{{ bascule1e }}" style="position:absolute;inset:0;z-index:4;background:rgba(9,3,26,.34)"></div>
+        </sc-if>
+
+        <div style="position:relative;z-index:1;padding:34px 4px 0;max-width:760px">
+          <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.7);margin-bottom:8px">LE JOURNAL</div>
+          <h4 style="font:800 36px Archivo;letter-spacing:-.035em;margin:0 0 12px;color:#fff">La sélection Aryes</h4>
+          <p style="font:500 14px/1.7 Archivo;color:rgba(255,255,255,.8);margin:0 0 10px">La page reste là, entière : on voit encore ce qu'on lisait, et refermer ne fait rien perdre. Le voile est léger, juste de quoi faire reculer le fond derrière le panneau.</p>
+          <div style="display:flex;gap:12px;margin-top:18px">
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+            <span style="width:150px;height:110px;border-radius:12px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;max-width:1180px;margin:16px auto 0">
+        <span onClick="{{ bascule1e }}" style="font:800 12px Archivo;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 14px;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">{{ etiquette1e }}</span>
+        <span style="font:500 12.5px/1.55 Archivo;color:rgba(255,255,255,.6);flex:1">Limite honnête : sous 1 024 px la barre n'a pas la largeur d'un champ confortable. Au doigt, cette proposition retombe donc sur la feuille plein écran existante.</span>
+      </div>
+    </div>
+
+    <!-- ============ 1f — PALETTE À APERÇU ============ -->
+    <div id="1f" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1f</span>
+        <div>
+          <h3 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Palette à aperçu</h3>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:900px;text-wrap:pretty">La même palette, en 880 px et sur deux colonnes : la liste à gauche, et à droite <strong style="color:#fff">l'aperçu de la ligne surlignée</strong> — logo, ville, année, catégories, quatre pièces, et le bouton qui ouvre la fiche. On ne cherche plus seulement pour aller quelque part, on regarde depuis le pop-up : les flèches font défiler les marques et l'aperçu suit. Plus lourde à ouvrir, mais c'est la seule qui laisse <em>découvrir</em> sans quitter la page.</p>
+        </div>
+      </div>
+      <div style="position:relative;border-radius:18px;overflow:hidden;max-width:1180px;margin:0 auto;background:radial-gradient(circle at 22% 18%, rgba(232,111,216,.45) 0%, transparent 46%), radial-gradient(circle at 80% 70%, rgba(90,114,224,.5) 0%, transparent 46%), linear-gradient(162deg,#33217f 0%,#4e5bc0 38%,#7b4fd0 68%,#5a54c8 100%);min-height:640px;padding:22px 30px 30px;box-sizing:border-box">
+
+        <div style="position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:999px;padding:8px 10px 8px 14px;background-color:rgba(10,3,34,.5);background-image:radial-gradient(130% 240% at 2% 50%, rgba(232,111,216,.28) 0%, transparent 58%),radial-gradient(130% 240% at 98% 50%, rgba(90,114,224,.26) 0%, transparent 58%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(45,15,100,.35), inset 0 1px 0 rgba(255,255,255,.28)">
+          <img src="assets/logo-white.webp" alt="NEWAVE SPHERE" style="height:24px;width:auto;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Accueil</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Marques</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Pièces</span>
+            <span style="font:800 12.5px Archivo;color:#fff;background:rgba(255,255,255,.16);border-radius:999px;padding:8px 13px">Posts</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.82);padding:8px 11px">Coups de cœur</span>
+            <span style="width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 6px"></span>
+            <span onClick="{{ bascule1f }}" style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:linear-gradient(160deg, rgba(180,122,234,.55), rgba(90,114,224,.45));border:1px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 0 0 3px rgba(232,111,216,.3)" style-hover="background:linear-gradient(160deg, rgba(232,111,216,.7), rgba(90,114,224,.6))"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#fff" stroke-width="2"></circle><path d="M13.2 13.2 L18 18" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg></span>
+            <span style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:9px 15px;margin-left:8px">Proposer</span>
+            <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.86);padding:8px 11px">Connexion</span>
+          </div>
+        </div>
+
+        <div style="padding:34px 4px 0;max-width:760px">
+          <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.7);margin-bottom:8px">LE JOURNAL</div>
+          <h4 style="font:800 36px Archivo;letter-spacing:-.035em;margin:0 0 12px;color:#fff">La sélection Aryes</h4>
+          <p style="font:500 14px/1.7 Archivo;color:rgba(255,255,255,.8);margin:0">Trois pièces qui résument la démarche : une coupe, une matière, aucun logo.</p>
+        </div>
+
+        <sc-if value="{{ ouvert1f }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ bascule1f }}" style="position:absolute;inset:0;z-index:5;background:rgba(9,3,26,.66);backdrop-filter:blur(3px)"></div>
+          <div style="position:absolute;z-index:6;top:92px;left:50%;transform:translateX(-50%);width:880px;border-radius:20px;background:#170a33;border:1px solid rgba(255,255,255,.22);box-shadow:0 44px 96px rgba(6,1,18,.74);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.12)">
+              <svg width="19" height="19" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.85)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+              <div style="flex:1;font:500 21px Archivo;letter-spacing:-.02em;color:#fff">{{ motRecherche }}<span style="display:inline-block;width:2px;height:20px;background:#e86fd8;vertical-align:-2px;margin-left:2px"></span></div>
+              <span style="font:800 10px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.26);border-radius:7px;padding:4px 8px 5px">ÉCHAP</span>
+              <span onClick="{{ bascule1f }}" style="display:grid;place-items:center;width:30px;height:30px;border-radius:999px;font:900 14px Archivo;color:rgba(255,255,255,.6);cursor:pointer" style-hover="color:#fff;background:rgba(255,255,255,.1)">✕</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 340px">
+              <div style="padding:12px 12px 14px;border-right:1px solid rgba(255,255,255,.12)">
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:2px 0 8px 4px">MARQUES · 2</div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px;background:rgba(255,255,255,.13)">
+                  <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">EA</span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff">Engineered By <span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span></span>
+                  <span style="font:800 10px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:3px 7px 4px">↵</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.12);font:900 11px Archivo;color:rgba(255,255,255,.7);flex:0 0 auto">AR</span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff"><span style="box-shadow:inset 0 -2px 0 #e86fd8">Aryes</span> Atelier</span>
+                </div>
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.48);margin:14px 0 8px 4px">PIÈCES · 14</div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0);flex:0 0 auto"></span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff">Chemise Kaze</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.7)">180 €</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(160deg,#eceaf4,#dcd7ea);flex:0 0 auto"></span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff">Maille Hoshi</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.7)">145 €</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;border-radius:12px;padding:9px 10px">
+                  <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(160deg,#e9edf3,#d8dde8);flex:0 0 auto"></span>
+                  <span style="flex:1;min-width:0;font:800 14px Archivo;color:#fff">Bague Kumo</span>
+                  <span style="font:800 12px Archivo;color:rgba(255,255,255,.7)">60 €</span>
+                </div>
+                <div style="font:700 11.5px Archivo;color:#e86fd8;text-decoration:underline;text-underline-offset:4px;margin:10px 0 0 14px">Les 11 autres dans l'annuaire</div>
+              </div>
+
+              <div style="padding:14px 16px 18px;background:rgba(255,255,255,.04)">
+                <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.45);margin-bottom:12px">APERÇU</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                  <span style="display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);font:900 14px Archivo;color:rgba(255,255,255,.8);flex:0 0 auto">EA</span>
+                  <div style="min-width:0">
+                    <div style="font:800 16px Archivo;letter-spacing:-.02em;color:#fff;margin-bottom:3px">Engineered By Aryes</div>
+                    <div style="font:700 10.5px Archivo;letter-spacing:.1em;color:rgba(255,255,255,.62)">PARIS · DEPUIS 2022</div>
+                  </div>
+                </div>
+                <p style="font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.76);margin:0 0 12px">Minimalisme français, séries limitées. Chemises, pantalons, mailles et bijoux en argent.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                  <span style="font:800 10.5px Archivo;color:rgba(255,255,255,.88);background:rgba(255,255,255,.12);border-radius:999px;padding:5px 10px 6px">Minimalisme</span>
+                  <span style="font:800 10.5px Archivo;color:rgba(255,255,255,.88);background:rgba(255,255,255,.12);border-radius:999px;padding:5px 10px 6px">Maille</span>
+                  <span style="font:800 10.5px Archivo;color:rgba(255,255,255,.88);background:rgba(255,255,255,.12);border-radius:999px;padding:5px 10px 6px">Bijoux</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px">
+                  <span style="aspect-ratio:1;border-radius:9px;background:linear-gradient(160deg,#e6e8ee,#cfd4e0)"></span>
+                  <span style="aspect-ratio:1;border-radius:9px;background:linear-gradient(160deg,#eceaf4,#dcd7ea)"></span>
+                  <span style="aspect-ratio:1;border-radius:9px;background:linear-gradient(160deg,#e9edf3,#d8dde8)"></span>
+                  <span style="aspect-ratio:1;border-radius:9px;background:linear-gradient(160deg,#f1e8e8,#ddd0d0)"></span>
+                </div>
+                <div style="font:900 12.5px Archivo;color:#170a33;background:#fff;border-radius:12px;padding:11px 14px;text-align:center">Ouvrir la fiche ↵</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 16px 12px;border-top:1px solid rgba(255,255,255,.12)">
+              <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">↑ ↓ CHANGER D'APERÇU</span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">↵ OUVRIR</span>
+              <span style="font:700 10.5px Archivo;letter-spacing:.08em;color:rgba(255,255,255,.55)">ÉCHAP FERMER</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;max-width:1180px;margin:16px auto 0">
+        <span onClick="{{ bascule1f }}" style="font:800 12px Archivo;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 14px;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">{{ etiquette1f }}</span>
+        <span style="font:500 12.5px/1.55 Archivo;color:rgba(255,255,255,.6);flex:1">L'aperçu demande les visuels de la marque à l'ouverture de chaque ligne : un appel de plus à chaque flèche, à mettre en cache sinon la colonne clignote.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:44px;border-top:1px solid rgba(255,255,255,.16);padding-top:26px;max-width:1180px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.55);margin-bottom:12px">CE QUE JE RECOMMANDE</div>
+    <p style="font:500 14.5px/1.7 Archivo;color:rgba(255,255,255,.82);margin:0;text-wrap:pretty"><a href="#1a">1a</a> pour les pièces — elle supprime le caisson vide, aligne la page sur l'annuaire et ne coûte presque rien ; la ligne « le catalogue en compte 312 » de <a href="#1a">1a</a> est la vraie trouvaille, à garder quelle que soit l'option. Puis <a href="#1d">1d</a> pour la loupe : le pop-up le plus rapide, celui qui se ferme sans réfléchir, et le seul dont le mobile a déjà l'équivalent. <a href="#1f">1f</a> vaut le coup si tu veux que la loupe devienne un outil de découverte plutôt qu'un raccourci ; <a href="#1b">1b</a> si tu juges que la page Pièces souffre surtout de sa hauteur.</p>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motRecherche&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;aryes&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Démo&quot;}}">
+class Component extends DCLogic {
+  state = { ouvert: { "1d": true, "1e": true, "1f": true } };
+
+  bascule(id) {
+    return () => this.setState((s) => ({ ouvert: { ...s.ouvert, [id]: !s.ouvert[id] } }));
+  }
+
+  renderVals() {
+    const o = this.state.ouvert;
+    const mot = (this.props.motRecherche ?? "aryes").trim() || "aryes";
+    const etiquette = (id) => (o[id] ? "Fermer le pop-up" : "Ouvrir le pop-up");
+    return {
+      motRecherche: mot,
+      ouvert1d: o["1d"],
+      ouvert1e: o["1e"],
+      ferme1e: !o["1e"],
+      ouvert1f: o["1f"],
+      bascule1d: this.bascule("1d"),
+      bascule1e: this.bascule("1e"),
+      bascule1f: this.bascule("1f"),
+      etiquette1d: etiquette("1d"),
+      etiquette1e: etiquette("1e"),
+      etiquette1f: etiquette("1f"),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

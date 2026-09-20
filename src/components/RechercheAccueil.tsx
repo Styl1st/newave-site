@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { IconLoupe } from "./Icons";
+import { declarerChampLocal } from "./recherche/champLocal";
 import { vignette } from "@/lib/vignette";
 import type { Recherche } from "@/lib/types";
 
@@ -54,6 +55,10 @@ export default function RechercheAccueil() {
    *
    * Ctrl aussi bien que ⌘ : rien n'oblige à supposer un Mac.
    */
+  /* La page porte son propre champ : le pop-up de la barre laisse donc
+     ⌘K à celui-ci. Voir `champLocal`. */
+  useEffect(() => declarerChampLocal(), []);
+
   useEffect(() => {
     const auClavier = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
