@@ -58,7 +58,7 @@ export default function FormulaireImport({
           type="button"
           onClick={lancer}
           disabled={enCours || !adresse.trim()}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[13px] bg-white px-6 py-3 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.42)] active:scale-[.97] disabled:opacity-55"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[13px] bg-white px-6 py-3 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] transition hover:shadow-[0_8px_22px_rgba(var(--voile),0.42)] active:scale-[.97] disabled:opacity-55"
         >
           {enCours ? (
             <>

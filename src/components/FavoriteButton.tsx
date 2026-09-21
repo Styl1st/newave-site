@@ -115,7 +115,7 @@ export default function FavoriteButton({
               : "bg-[rgba(20,8,50,0.1)] text-[var(--color-ink)] hover:bg-[rgba(20,8,50,0.18)]"
             : favorited
               ? "bg-white text-[var(--color-ink)] backdrop-blur-sm"
-              : "bg-[rgba(20,8,50,0.62)] text-white backdrop-blur-sm hover:bg-[rgba(20,8,50,0.92)]"
+              : "bg-[rgba(var(--voile),0.62)] text-white backdrop-blur-sm hover:bg-[rgba(var(--voile),0.92)]"
         }`}
       >
         <Coeur plein={favorited} />
@@ -131,7 +131,7 @@ export default function FavoriteButton({
         aria-pressed={favorited}
         className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-extrabold uppercase tracking-[0.08em] transition disabled:opacity-60 ${
           favorited
-            ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)]"
+            ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)]"
             : "border border-white/40 text-white hover:bg-white/12"
         }`}
       >

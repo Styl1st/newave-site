@@ -351,7 +351,7 @@ export default function LigneMarque({
                      * pour un chiffre qui tient dans un coin.
                      */
                     <span
-                      className={`absolute inset-0 grid place-items-center bg-[rgba(23,10,51,0.62)] text-[11px] font-extrabold text-white ${
+                      className={`absolute inset-0 grid place-items-center bg-[rgba(var(--voile),0.66)] text-[11px] font-extrabold text-white ${
                         enBouton ? "hidden sm:grid" : ""
                       }`}
                     >

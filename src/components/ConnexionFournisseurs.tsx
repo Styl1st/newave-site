@@ -97,7 +97,7 @@ export default function ConnexionFournisseurs({ suite }: { suite: string }) {
             type="button"
             onClick={() => entrer(f.id)}
             disabled={enCours !== null}
-            className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-5 py-3 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.28)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.42)] active:scale-[.97] disabled:opacity-55"
+            className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-5 py-3 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.28)] transition hover:shadow-[0_8px_22px_rgba(var(--voile),0.42)] active:scale-[.97] disabled:opacity-55"
           >
             {enCours === f.id ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(23,10,51,0.25)] border-t-[var(--color-ink)]" />

@@ -691,7 +691,7 @@ export default function ThemePicker({
                       onClick={() => poser({ ...prefs, mouvement: p.mouvement })}
                       className={`${chip} ${
                         actif
-                          ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)]"
+                          ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)]"
                           : "border border-white/30 bg-white/8 text-white/85 hover:border-white/60 hover:bg-white/18"
                       } ${perso ? "pr-8" : ""}`}
                     >

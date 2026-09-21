@@ -249,7 +249,7 @@ export default function MobileMenu({
                   se range donc pas dans la liste. */}
               <Link
                 href={action.href}
-                className="entree-menu mt-6 block rounded-full bg-white px-6 py-3.5 text-center text-[13.5px] font-black text-[var(--color-ink)] shadow-[0_6px_20px_rgba(35,12,85,0.4)] active:scale-[.98]"
+                className="entree-menu mt-6 block rounded-full bg-white px-6 py-3.5 text-center text-[13.5px] font-black text-[var(--color-ink)] shadow-[0_6px_20px_rgba(var(--voile),0.4)] active:scale-[.98]"
                 style={{ animationDelay: `${140 + liens.length * 45}ms` }}
               >
                 {action.label}

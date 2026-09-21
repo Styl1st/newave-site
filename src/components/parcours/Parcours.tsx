@@ -35,7 +35,7 @@ export type Etape = "choix" | "source" | "relecture" | "fin";
 export const CHAMP = "champ";
 export const LABEL = "eyebrow mb-2 block";
 export const PRINCIPAL =
-  "rounded-full bg-white px-7 py-3.5 text-[14px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-55";
+  "rounded-full bg-white px-7 py-3.5 text-[14px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] transition hover:shadow-[0_8px_22px_rgba(var(--voile),0.45)] active:scale-[.97] disabled:opacity-55";
 export const SECONDAIRE =
   "rounded-full border border-white/40 bg-white/8 px-5 py-3 text-[13.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/18 active:scale-[.97] disabled:opacity-55";
 

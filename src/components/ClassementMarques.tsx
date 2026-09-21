@@ -345,7 +345,7 @@ function Marche({
            * mauve sur une ambiance verte ou graphite.
            */}
           <span
-            className={`absolute left-3 top-3 z-4 grid place-items-center font-black text-white shadow-[0_4px_14px_rgba(35,12,85,0.45)] ${
+            className={`absolute left-3 top-3 z-4 grid place-items-center font-black text-white shadow-[0_4px_14px_rgba(var(--voile),0.45)] ${
               premier
                 ? "h-[46px] w-[46px] rounded-[14px] text-[17px]"
                 : "h-[38px] w-[38px] rounded-[12px] bg-[var(--color-ink)] text-[15px]"
@@ -375,7 +375,7 @@ function Marche({
               regard. */}
           <span
             title={elan ? `${enChiffres(elan.fenetre)} sur ${enChiffres(elan.total)} cœurs` : undefined}
-            className="absolute bottom-2.5 right-2.5 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(14,5,38,0.75)] px-2.5 py-1 text-[12px] font-black text-white backdrop-blur-sm sm:text-[13px]"
+            className="absolute bottom-2.5 right-2.5 z-4 inline-flex items-center gap-1.5 rounded-full bg-[rgba(var(--voile),0.78)] px-2.5 py-1 text-[12px] font-black text-white backdrop-blur-sm sm:text-[13px]"
           >
             {/* Pas de cœur devant une part : « ♥ 18 » se lit dix-huit
                 cœurs, et c'est dix-huit pour cent. */}

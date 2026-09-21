@@ -105,7 +105,7 @@ export default function ProductBulkList({
             type="button"
             disabled={selected.size === 0 || pending}
             onClick={() => run("publish")}
-            className={`${barBtn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] hover:shadow-[0_8px_20px_rgba(35,12,85,0.4)]`}
+            className={`${barBtn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] hover:shadow-[0_8px_20px_rgba(var(--voile),0.4)]`}
           >
             {pending ? "…" : "Publier"}
           </button>

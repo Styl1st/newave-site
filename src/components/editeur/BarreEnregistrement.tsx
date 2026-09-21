@@ -101,7 +101,7 @@ export default function BarreEnregistrement({
             type="button"
             onClick={onEnregistrer}
             disabled={enCours}
-            className="rounded-full bg-white px-5 py-2 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-60"
+            className="rounded-full bg-white px-5 py-2 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] transition hover:shadow-[0_8px_22px_rgba(var(--voile),0.45)] active:scale-[.97] disabled:opacity-60"
           >
             {enCours ? "Enregistrement…" : "Enregistrer"}
           </button>

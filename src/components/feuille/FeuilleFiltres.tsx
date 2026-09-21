@@ -293,7 +293,7 @@ export default function FeuilleFiltres({
           type="button"
           aria-label="Fermer les filtres"
           onClick={onFermer}
-          className="absolute inset-0 bg-[rgba(12,4,32,0.58)]"
+          className="absolute inset-0 bg-[rgba(var(--voile),0.62)]"
           style={{ opacity: 1 - Math.min(glisse / 420, 0.55) }}
         />
 

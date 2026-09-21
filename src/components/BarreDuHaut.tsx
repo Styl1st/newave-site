@@ -37,7 +37,12 @@ import { lireHistorique, noterRecherche, oublierHistorique } from "./recherche/h
  * dedans prendrait la taille de la barre au lieu de celle de l'écran.
  */
 
-const VOILE = "rgba(9,3,26,.34)";
+/* Le voile derrière la recherche ouverte suit le thème : c'était un
+   violet écrit en dur, donc une ombre mauve posée sur un fond vert ou
+   ambré. `--voile` est la plus sombre des six teintes du dégradé
+   courant, c'est-à-dire exactement la couleur qu'un fond assombri doit
+   prendre — la même variable que le décor et les panneaux. */
+const VOILE = "rgba(var(--voile), .38)";
 
 /**
  * LE POINT DE BASCULE, ET IL VAUT DANS LES DEUX SENS.

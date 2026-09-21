@@ -75,7 +75,7 @@ export default function PanneauRecherche({
   return (
     <div
       id={id}
-      className="max-h-[56vh] overflow-y-auto overscroll-contain rounded-[22px] border border-white/20 bg-[var(--color-ink)] p-3.5 shadow-[0_34px_80px_rgba(6,1,18,0.62)] sm:max-h-[min(70vh,540px)] sm:p-4"
+      className="max-h-[56vh] overflow-y-auto overscroll-contain rounded-[22px] border border-white/20 bg-[var(--surface-sombre)] p-3.5 shadow-[0_34px_80px_rgba(6,1,18,0.62)] sm:max-h-[min(70vh,540px)] sm:p-4"
     >
       {garni && suggestions ? (
         <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[1.25fr_1fr] sm:items-start sm:gap-5">

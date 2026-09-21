@@ -238,7 +238,7 @@ export default async function Header() {
                */
               <Link
                 href="/connexion"
-                className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(35,12,85,0.3)] active:scale-95"
+                className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(var(--voile),0.3)] active:scale-95"
               >
                 Connexion
               </Link>

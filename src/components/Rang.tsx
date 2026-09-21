@@ -26,7 +26,7 @@ export default function Rang({ place }: { place: number }) {
   return (
     <span
       aria-label={`${ordinal(place)} du classement`}
-      className={`absolute -left-1.5 -top-1.5 z-20 inline-flex min-w-7 items-center justify-center rounded-full px-2 py-1 text-[11px] font-black shadow-[0_4px_14px_rgba(35,12,85,0.45)] ${
+      className={`absolute -left-1.5 -top-1.5 z-20 inline-flex min-w-7 items-center justify-center rounded-full px-2 py-1 text-[11px] font-black shadow-[0_4px_14px_rgba(var(--voile),0.45)] ${
         medaille ? "" : "bg-[rgba(20,8,50,0.82)] text-white backdrop-blur-sm"
       }`}
       style={medaille ? { background: medaille.fond, color: medaille.texte } : undefined}

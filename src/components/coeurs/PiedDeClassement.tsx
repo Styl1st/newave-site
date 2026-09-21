@@ -43,7 +43,7 @@ export default function PiedDeClassement({
   const reste = total - affichees;
 
   return (
-    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-[26px] border border-white/20 bg-[rgba(8,2,30,0.44)] px-5 py-4 backdrop-blur-[20px] sm:flex-row sm:justify-center sm:gap-5 sm:rounded-full">
+    <div className="mt-6 flex flex-col items-center gap-2.5 rounded-[26px] border border-white/20 bg-[rgba(var(--voile),0.5)] px-5 py-4 backdrop-blur-[20px] sm:flex-row sm:justify-center sm:gap-5 sm:rounded-full">
       {/* « affichées » convient aux deux classements sans se conjuguer
           deux fois : une marque et une pièce sont l'une comme l'autre
           féminines. Une seule phrase, donc, plutôt qu'un mot passé en

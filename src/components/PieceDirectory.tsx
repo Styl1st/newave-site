@@ -688,17 +688,22 @@ export default function PieceDirectory({
    * cochée puis vue disparaître avec la liste restreinte, sans plus
    * aucun moyen de revenir en arrière.
    */
-  const etatsUtiles = {
-    stock: etatsDuCatalogue?.ruptures ?? false,
-    promo: etatsDuCatalogue?.promos ?? false,
-  };
+  const etatsUtiles = useMemo(
+    () => ({
+      stock: etatsDuCatalogue?.ruptures ?? false,
+      promo: etatsDuCatalogue?.promos ?? false,
+    }),
+    [etatsDuCatalogue]
+  );
 
   /* Les rayons et les marques du site entier. Ils ne se restreignent
      pas à mesure qu'on filtre, et c'est le parti pris de cette colonne :
      elle annonce le catalogue, pas ce qui reste. Le prix en est que
      « Bas 5 857 » reste 5 857 même après « moins de 30 € » ; le gain est
      que ces nombres tombent sur ceux de l'en-tête. */
-  const rayonsDisponibles = rayonsDuCatalogue ?? [];
+  /* `?? []` dans le corps donnerait un tableau neuf à chaque rendu, donc
+     un `useMemo` qui se recalcule pour rien un peu plus bas. */
+  const rayonsDisponibles = useMemo(() => rayonsDuCatalogue ?? [], [rayonsDuCatalogue]);
 
   const marquesDisponibles = useMemo(
     () => (marquesDuCatalogue ?? []).slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
@@ -1364,7 +1369,7 @@ export default function PieceDirectory({
             au-dessus, et un second serait annoncé comme une deuxième
             recherche par un lecteur d'écran. */}
         {!petit && panneau && garni && suggestions && (
-          <div className="absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain rounded-[16px] border border-white/20 bg-[var(--color-ink)] p-3.5 shadow-[0_30px_70px_rgba(8,2,20,0.6)]">
+          <div className="absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain rounded-[16px] border border-white/20 bg-[var(--surface-sombre)] p-3.5 shadow-[0_30px_70px_rgba(8,2,20,0.6)]">
             <Suggestions
               intertitres
               suggestions={suggestions}

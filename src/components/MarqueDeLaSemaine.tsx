@@ -100,7 +100,7 @@ export default function MarqueDeLaSemaine({
                intérieure hors des couches Tailwind, donc une ombre
                portée écrite à côté d'elle serait ignorée. Elle est
                portée par le parent. */
-            <span className="absolute bottom-4 left-4 rounded-[18px] shadow-[0_8px_22px_rgba(52,18,110,0.28)]">
+            <span className="absolute bottom-4 left-4 rounded-[18px] shadow-[0_8px_22px_rgba(var(--voile),0.28)]">
               <span className="plaque-logo grid h-[62px] w-[62px] place-items-center overflow-hidden rounded-[18px] p-2 sm:h-[74px] sm:w-[74px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

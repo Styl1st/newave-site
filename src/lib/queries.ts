@@ -469,11 +469,24 @@ export async function lireUnePageDeVitrine(
 
   return {
     total,
-    pieces: lignes.map(({ total: _t, rang, brand_slug, brand_name, ...piece }) => ({
-      ...piece,
-      position: rang,
-      brand: { id: piece.brand_id, slug: brand_slug, name: brand_name },
-    })) as Product[],
+    pieces: lignes.map((ligne) => {
+      const { rang, brand_slug, brand_name, ...piece } = ligne;
+
+      /* `total` voyage sur CHAQUE ligne — c'est la nature d'un
+         `count(*) over ()` — et il est déjà lu au-dessus. Le laisser
+         dans l'objet enverrait le même nombre vingt-quatre fois dans la
+         réponse et donnerait une pièce qui porte un champ qui ne lui
+         appartient pas. Un `_t` inutilisé dans la déstructuration
+         aurait fait la même chose en apparence, et aurait surtout fait
+         échouer le `build` sur `no-unused-vars` — ce qu'il a fait. */
+      delete (piece as { total?: number }).total;
+
+      return {
+        ...piece,
+        position: rang,
+        brand: { id: piece.brand_id, slug: brand_slug, name: brand_name },
+      };
+    }) as Product[],
   };
 }
 

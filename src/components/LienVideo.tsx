@@ -65,7 +65,7 @@ export default function LienVideo({
       href={lien}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2.5 rounded-full bg-white px-5 py-3 text-[13.5px] font-black text-[var(--color-ink)] shadow-[0_6px_20px_rgba(35,12,85,0.35)] transition hover:shadow-[0_10px_28px_rgba(35,12,85,0.5)] active:scale-[.97] ${className}`}
+      className={`inline-flex items-center gap-2.5 rounded-full bg-white px-5 py-3 text-[13.5px] font-black text-[var(--color-ink)] shadow-[0_6px_20px_rgba(var(--voile),0.35)] transition hover:shadow-[0_10px_28px_rgba(var(--voile),0.5)] active:scale-[.97] ${className}`}
     >
       {/* Le triangle de lecture dit « vidéo » avant même qu'on lise. */}
       <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--color-ink)]">

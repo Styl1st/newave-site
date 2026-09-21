@@ -66,7 +66,7 @@ export default function PublishToggle({
       : "inline-flex items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-4 py-2 text-[11.5px] font-black text-white transition hover:opacity-85 active:scale-[.97] disabled:opacity-50"
     : published
       ? "inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97] disabled:opacity-50"
-      : "inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] transition hover:shadow-[0_8px_22px_rgba(35,12,85,0.45)] active:scale-[.97] disabled:opacity-50"
+      : "inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-[12.5px] font-black text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] transition hover:shadow-[0_8px_22px_rgba(var(--voile),0.45)] active:scale-[.97] disabled:opacity-50"
 
   const libelle = arme
     ? compacte

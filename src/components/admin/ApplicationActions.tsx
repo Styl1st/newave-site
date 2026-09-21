@@ -83,7 +83,7 @@ export default function ApplicationActions({
             disabled={pending}
             onClick={() => run("accepter")}
             onBlur={desarmer}
-            className={`${btn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(35,12,85,0.3)] hover:shadow-[0_8px_20px_rgba(35,12,85,0.42)] ${
+            className={`${btn} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] hover:shadow-[0_8px_20px_rgba(var(--voile),0.42)] ${
               cle === "accepter" ? "ring-2 ring-white/70" : ""
             }`}
           >
