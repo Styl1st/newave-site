@@ -4297,85 +4297,103 @@ html[data-clair="1"] .bouton-index {
 }
 
 /* ---------- la colonne de filtres des pièces, sur écran bas ----------
-   ELLE N'A PLUS D'ASCENSEUR À ELLE (voir `PieceDirectory`), donc il faut
-   qu'elle TIENNE. Sur un portable de treize pouces, ou dans une fenêtre
-   qui n'est pas en plein écran, les quatre familles de filtres
-   dépassaient d'une centaine de pixels : on ne voyait ni le prix ni la
-   marque, et rien ne disait qu'ils existaient.
 
-   LE REMÈDE N'EST PAS DE COUPER, C'EST DE SERRER. Les traits de
-   séparation se rapprochent, les lignes de rayon perdent leurs quelques
-   pixels de confort, la colonne ses bords. Rien ne disparaît, rien ne
-   change de place, et l'on récupère de quoi tout loger.
+   ON NE L'ÉCRASE PLUS, ON LUI REND SON ASCENSEUR.
 
-   TROIS PALIERS, PARCE QU'IL Y A TROIS ÉCRANS. Un grand moniteur n'a
-   aucun problème ; un portable rétina (1440 × 900, soit 760 de fenêtre)
-   en a un petit ; un portable ordinaire (1366 × 768, soit 650 de
-   fenêtre) en a un vrai — et c'est celui-là qui décide des valeurs du
-   dernier palier, calées pour que l'ensemble passe au pixel près.
+   Elle a longtemps été serrée à mesure que l'écran baissait : trois
+   paliers de rembourrage, jusqu'à dix pixels de marge et deux pixels
+   entre deux lignes de rayon. Elle tenait, au pixel près, et elle avait
+   l'air écrasée — sur un portable ordinaire, les filtres ressemblaient
+   à une liste tassée contre le bord de la page pendant que la grille
+   d'à côté respirait.
 
-   En dessous encore, la colonne renonce à rester collée et redevient un
-   bloc qui défile avec la page : c'est `colonneTient` qui s'en charge,
-   parce que cela ne se décide qu'en mesurant.
+   Elle garde donc partout le même rembourrage, elle reste COLLÉE
+   partout (voir `PieceDirectory`), et quand son contenu dépasse la
+   hauteur de l'écran, elle défile dedans.
 
-   Rien sous `lg` : là, la colonne n'existe pas. C'est la feuille qui
-   monte, et son défilement à elle est légitime. */
-@media (min-width: 1024px) and (max-height: 900px) {
-  .colonne-filtres {
-    padding: 15px;
+   LE DÉFAUT DE LA PREMIÈRE VERSION ÉTAIT L'ASCENSEUR INVISIBLE, pas
+   l'ascenseur. Les derniers filtres se cachaient sous le bord sans que
+   rien ne le dise. D'où les deux ajouts d'ici : une barre de défilement
+   fine mais TOUJOURS visible — styler `::-webkit-scrollbar` suffit à
+   faire renoncer macOS à ses barres fantômes — et un dégradé posé en
+   pied de colonne, qui dit qu'il reste quelque chose dessous.
+
+   `--deborde` n'est posée que lorsque c'est vrai : sur un grand écran,
+   la colonne n'a ni l'un ni l'autre.
+
+   `100dvh` et non `100vh` : sur un navigateur dont la barre d'adresse
+   se rétracte, `vh` garde la hauteur d'avant et pousse le bas de la
+   colonne hors de l'écran.
+
+   Rien sous `lg` : là, la colonne n'existe pas, c'est la feuille qui
+   monte et son défilement à elle est légitime. */
+@media (min-width: 1024px) {
+  .colonne-filtres--deborde {
+    /* 86 px d'en-tête collant + 18 px de respiration en pied : c'est le
+       `PLACE_COLONNE` de `PieceDirectory`, et les deux doivent bouger
+       ensemble. */
+    max-height: calc(100dvh - 104px);
+    overflow-y: auto;
+    /* Arrivé au bout de la colonne, la molette ne se reporte pas sur la
+       page : on filtre, on ne voyage pas. */
+    overscroll-behavior: contain;
+    /* Firefox ; Chrome et Safari passent par `::-webkit-scrollbar`. */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .3) transparent;
   }
 
-  .colonne-filtres .section-filtre {
-    margin-top: 11px;
-    padding-top: 11px;
+  .colonne-filtres--deborde::-webkit-scrollbar {
+    width: 6px;
   }
 
-  .colonne-filtres .section-filtre > div:first-child {
-    margin-bottom: 7px;
+  .colonne-filtres--deborde::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  .colonne-filtres .ligne-filtre {
-    padding-top: 5px;
-    padding-bottom: 5px;
+  .colonne-filtres--deborde::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .26);
+    border-radius: 999px;
+  }
+
+  .colonne-filtres--deborde:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .44);
+  }
+
+  /*
+     LE DÉGRADÉ DE PIED, ET POURQUOI IL EST COLLANT PLUTÔT QU'UN MASQUE.
+     Un `mask-image` sur la colonne effacerait aussi son filet blanc et
+     le bas de son verre : le panneau paraîtrait cassé, pas continué.
+     Ce pseudo-élément-ci vit DANS l'ascenseur, collé à son bord bas ; il
+     assombrit le texte qui passe dessous et laisse la bordure
+     tranquille.
+
+     Marges négatives en haut : il ne pousse rien, il se superpose aux
+     dernières lignes. Rien d'horizontal, en revanche — un débordement
+     latéral rendrait une seconde barre de défilement, celle-là parfaitement
+     inutile. */
+  .colonne-filtres--deborde::after {
+    content: "";
+    position: sticky;
+    bottom: -20px;
+    z-index: 2;
+    display: block;
+    height: 34px;
+    margin: -34px 0 -20px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(8, 2, 30, 0), rgba(8, 2, 30, .5));
   }
 }
 
-@media (min-width: 1024px) and (max-height: 780px) {
-  .colonne-filtres {
-    padding: 12px;
-  }
-
-  .colonne-filtres .section-filtre {
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-
-  .colonne-filtres .section-filtre > div:first-child {
-    margin-bottom: 5px;
-  }
-
-  .colonne-filtres .ligne-filtre {
-    padding-top: 3px;
-    padding-bottom: 3px;
-  }
+/* En clair, un pouce blanc sur fond clair ne se voit plus, et un dégradé
+   vers le violet sombre ferait une ombre au lieu d'une continuation. */
+html[data-clair="1"] .colonne-filtres--deborde {
+  scrollbar-color: rgba(34, 16, 70, .32) transparent;
 }
 
-@media (min-width: 1024px) and (max-height: 700px) {
-  .colonne-filtres {
-    padding: 10px;
-  }
+html[data-clair="1"] .colonne-filtres--deborde::-webkit-scrollbar-thumb {
+  background: rgba(34, 16, 70, .3);
+}
 
-  .colonne-filtres .section-filtre {
-    margin-top: 6px;
-    padding-top: 6px;
-  }
-
-  .colonne-filtres .section-filtre > div:first-child {
-    margin-bottom: 4px;
-  }
-
-  .colonne-filtres .ligne-filtre {
-    padding-top: 2px;
-    padding-bottom: 2px;
-  }
+html[data-clair="1"] .colonne-filtres--deborde::after {
+  background: linear-gradient(to bottom, rgba(245, 242, 255, 0), rgba(245, 242, 255, .62));
 }

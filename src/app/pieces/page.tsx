@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { randomUUID } from "node:crypto";
 import PieceDirectory from "@/components/PieceDirectory";
 import { enChiffres } from "@/components/chiffres";
-import { compterLeCatalogue, getVitrine } from "@/lib/queries";
+import { compterLeCatalogue, getVitrine, lireUnePageDeVitrine } from "@/lib/queries";
 import { repartirParMarque } from "@/lib/melange";
 import { aUneIllustration } from "@/lib/medias";
+import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Les pièces",
   description:
-    "Un choix de pièces chez toutes les marques de NEWAVE SPHERE, par rayon et par prix : hauts, bas, vestes, chaussures, bijoux et accessoires.",
+    "Toutes les pièces des marques de NEWAVE SPHERE, par rayon et par prix : hauts, bas, vestes, chaussures, bijoux et accessoires.",
 };
 
 /**
@@ -20,16 +22,72 @@ export const metadata: Metadata = {
  * passage. Une page de plus, donc, mais pas un contenu de plus : les
  * mêmes pièces, rangées selon l'autre entrée.
  *
- * L'ordre change à chaque visite, et il ALTERNE LES MARQUES. C'est le
- * point qui compte pour un annuaire de marques émergentes : au hasard
- * pur, celle qui a cent quarante pièces occuperait la moitié du premier
- * écran et celle qui en a six n'apparaîtrait jamais. Voir
- * `repartirParMarque`.
+ * ┌─ CE QUI A CHANGÉ, ET C'EST TOUT LE SUJET DE CETTE PAGE ────────────┐
+ *
+ * Elle descendait un ÉCHANTILLON : dix pièces par marque, plafonné à
+ * mille cinq cents lignes, soit douze cent trente pièces sur les
+ * vingt-six mille du site. Le navigateur recevait ces douze cent trente
+ * et faisait tout le reste — filtres, recherche, tri, pagination — en
+ * JavaScript.
+ *
+ * Trois défauts, et aucun n'était réparable de ce côté-ci :
+ *
+ *   — le pied annonçait « 24 sur 1 230 » sur une page intitulée « Les
+ *     pièces », donc le site paraissait vingt fois plus petit ;
+ *   — « moins de 30 € » ne cherchait pas moins de 30 € au catalogue,
+ *     mais dans l'échantillon ;
+ *   — les vingt-cinq mille autres pièces n'étaient atteignables qu'en
+ *     ouvrant les marques une par une.
+ *
+ * Maintenant, c'est Postgres qui filtre, trie, compte et découpe (voir
+ * `vitrine`, migration 33), et cette page ne rend que les VINGT-QUATRE
+ * PREMIÈRES pièces. Les suivantes arrivent par `/api/pieces`, à la
+ * demande. Le site est entièrement parcourable, et la page est plus
+ * légère qu'elle ne l'a jamais été.
+ *
+ * └────────────────────────────────────────────────────────────────────┘
+ *
+ * L'ordre change toujours à chaque visite et il ALTERNE TOUJOURS LES
+ * MARQUES — au hasard pur, celle qui a quatorze cents pièces occuperait
+ * les dix premiers écrans et celle qui en a six n'apparaîtrait jamais.
+ * Simplement, ce n'est plus `repartirParMarque` qui s'en charge : ce
+ * tour de table a besoin de la liste entière, et la liste entière ne
+ * descend plus. C'est l'ordre `position` + graine de la fonction SQL.
  */
 export const dynamic = "force-dynamic";
 
+/** Le même premier lot que « Charger 24 de plus ». */
+const LOT = 24;
+
 /** `?q=veste` ouvre la vitrine déjà filtrée. Voir `amorce`. */
 type Props = { searchParams: Promise<{ q?: string | string[] }> };
+
+/**
+ * LE JOUR OÙ LA FONCTION SQL N'EST PAS LÀ.
+ *
+ * Le code part en ligne avant la migration, et il tourne en
+ * démonstration sans base du tout. Dans les deux cas
+ * `lireUnePageDeVitrine` rend `null`, et une page des pièces vide
+ * serait un désastre pour un défaut d'installation. On retombe donc
+ * sur l'ancienne lecture — l'échantillon, mélangé ici — le temps que la
+ * migration passe. Le bouton « Charger de plus » se plaindra, lui, et
+ * c'est tant mieux : ça se voit et ça se corrige.
+ */
+async function repli(amorce: string): Promise<{ pieces: Product[]; total: number }> {
+  const vitrine = repartirParMarque((await getVitrine()).filter(aUneIllustration));
+
+  const q = amorce.trim().toLowerCase();
+  const retenues = q
+    ? vitrine.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.brand?.name ?? "").toLowerCase().includes(q) ||
+          p.categories.some((c) => c.toLowerCase().includes(q))
+      )
+    : vitrine;
+
+  return { pieces: retenues.slice(0, LOT), total: retenues.length };
+}
 
 export default async function PiecesPage({ searchParams }: Props) {
   const { q } = await searchParams;
@@ -38,38 +96,44 @@ export default async function PiecesPage({ searchParams }: Props) {
      main, et quelques milliers de caractères collés dans le champ ne
      cherchent rien et débordent la ligne de requête. */
   const amorce = (Array.isArray(q) ? q[0] : q)?.slice(0, 80) ?? "";
-  /*
-   * Une pièce sans photo n'a rien à faire dans une vitrine. Voir
-   * `aUneIllustration` : ce n'est pas une suppression, sa fiche reste
-   * accessible.
-   */
-  const [vitrine, catalogue] = await Promise.all([getVitrine(), compterLeCatalogue()]);
-  const pieces = repartirParMarque(vitrine.filter(aUneIllustration));
 
   /*
-   * LES DEUX CHIFFRES DE L'EN-TÊTE DISENT LE CATALOGUE, PAS LA PAGE.
+   * LA GRAINE EST TIRÉE ICI, UNE SEULE FOIS, ET ELLE DESCEND AVEC LA
+   * PAGE. Elle fixe l'ordre « au hasard » pour toute la visite : les
+   * appels suivants la redonnent, donc la page 2 continue la page 1 au
+   * lieu d'être rebattue. C'est ce qui empêche une pièce de sortir deux
+   * fois pendant qu'une autre ne sort jamais.
+   */
+  const graine = randomUUID();
+
+  const [premiere, catalogue] = await Promise.all([
+    lireUnePageDeVitrine(graine, { q: amorce }, 0, LOT),
+    compterLeCatalogue(),
+  ]);
+
+  const page = premiere ?? (await repli(amorce));
+
+  /*
+   * LES DEUX CHIFFRES DE L'EN-TÊTE DISENT LE CATALOGUE.
    *
    * Ils comptaient ce que la page avait sous la main, c'est-à-dire la
    * vitrine — dix pièces par marque au plus. « 983 pièces » sur un site
    * qui en porte des milliers : le chiffre était exact et il se lisait
-   * quand même comme une panne. Ils viennent maintenant de Postgres,
-   * qui compte la table entière sans en descendre une ligne (voir
-   * `compterLeCatalogue`), et le mot « au catalogue » dit lequel des
-   * deux ensembles on annonce. Celui de la page, lui, est écrit
-   * au-dessus de la grille : « 983 pièces · au hasard ».
+   * quand même comme une panne. Ils viennent de Postgres, qui compte la
+   * table entière sans en descendre une ligne.
+   *
+   * `marques` sort de la MÊME liste que le filtre « Marque » de la
+   * colonne de gauche — voir `compter_les_marques`, migration 32. Les
+   * deux se comptaient séparément et ne tombaient pas juste : l'en-tête
+   * annonçait 141 marques et le filtre « Toutes (133) », deux
+   * centimètres plus bas.
    *
    * Le repli garde l'ancien calcul : sans base, on compte ce qu'on a,
    * ce qui vaut toujours mieux qu'un zéro.
-   *
-   * Le gabarit affiche « 1 284 pièces · 136 marques » : ce sont des
-   * ordres de grandeur de maquette. Un chiffre figé dans le code
-   * devient faux le jour où une marque publie, et personne ne s'en
-   * aperçoit — c'est le genre d'erreur qui décrédibilise le reste de la
-   * page, puisqu'elle est invérifiable à l'œil.
    */
-  const total = catalogue?.pieces ?? pieces.length;
+  const total = catalogue?.pieces ?? page.total;
   const marques =
-    catalogue?.marques ?? new Set(pieces.map((p) => p.brand?.slug).filter(Boolean)).size;
+    catalogue?.marques ?? new Set(page.pieces.map((p) => p.brand?.slug).filter(Boolean)).size;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -83,19 +147,18 @@ export default async function PiecesPage({ searchParams }: Props) {
             Les pièces
           </h1>
           {/*
-            LA PHRASE DIT LA RÈGLE, PARCE QUE LE COMPTE NE PEUT PAS LA
-            DIRE. « Toutes marques confondues » se lisait comme « tout le
-            catalogue », et le compte à droite comme le nombre de pièces
-            du site. Ce n'en est pas un : la vitrine prend au plus dix
-            pièces par marque, sans quoi une boutique de mille pièces
-            occuperait la page à elle seule (voir `getVitrine`). Une
-            marque dont on voit dix pièces ici peut en avoir onze cents
-            sur sa page, et c'est ce que la phrase annonce maintenant.
+            LA PHRASE A CHANGÉ PARCE QUE LA PAGE A CHANGÉ. Elle
+            annonçait « jusqu'à dix pièces par marque » et renvoyait
+            chez la marque pour voir son catalogue entier : c'était la
+            vérité tant que la page ne descendait qu'un échantillon. Ce
+            n'en est plus une. Laisser la phrase reviendrait à
+            s'excuser d'une limite qui n'existe plus, et à envoyer
+            ailleurs quelqu'un qui est déjà au bon endroit.
           */}
           <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
-            Jusqu&apos;à dix pièces par marque, dans un ordre qui change à chaque visite.
-            Filtre par rayon et par prix, et clique pour arriver chez la marque : son
-            catalogue entier est sur sa page.
+            Tout le catalogue, toutes marques confondues, dans un ordre qui change à
+            chaque visite. Filtre par rayon et par prix, et clique pour arriver chez la
+            marque.
           </p>
         </div>
 
@@ -106,9 +169,20 @@ export default async function PiecesPage({ searchParams }: Props) {
         </p>
       </header>
 
-      {/* Les rayons du catalogue entier, pour que la colonne de filtres
-          annonce le site et non l'échantillon. */}
-      <PieceDirectory pieces={pieces} rayonsDuCatalogue={catalogue?.rayons} amorce={amorce} />
+      {/* Tout ce qui suit vient de la base : les rayons, les marques, les
+          bornes du rail de prix, et les vingt-quatre premières pièces.
+          La colonne de filtres annonce ainsi le SITE et non ce que la
+          page a sous la main. */}
+      <PieceDirectory
+        premierLot={page.pieces}
+        totalDuPremierLot={page.total}
+        graine={graine}
+        rayonsDuCatalogue={catalogue?.rayons}
+        marquesDuCatalogue={catalogue?.marquesListe}
+        bornesDuCatalogue={catalogue?.prix}
+        etatsDuCatalogue={catalogue?.etats}
+        amorce={amorce}
+      />
     </div>
   );
 }

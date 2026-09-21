@@ -15,6 +15,38 @@ import type { Brand, Post, Product, Recherche } from "./types";
 const BRAND_REF = "brand:brands(id,slug,name)";
 
 /**
+ * CE QUE LA VITRINE AFFICHE VRAIMENT, ET RIEN DE PLUS.
+ *
+ * `select("*")` ramenait chaque piece entiere : la description, l'url
+ * de la boutique, les tailles, l'identifiant Shopify d'origine. Sur
+ * treize cents pieces, cela fait quelques megaoctets de JSON que le
+ * serveur lit, que Next recopie dans le HTML pour hydrater la grille,
+ * et que le navigateur doit relire avant de peindre la moindre ligne.
+ * La page paraissait alors longue a afficher ses compteurs : ils sont
+ * pourtant ecrits dans le HTML des le depart, mais ils arrivaient
+ * derriere deux megaoctets de texte que personne ne lit.
+ *
+ * La liste ci-dessous est exactement celle que `ProductCard`, `rayonDe`,
+ * `discountPercent` et `repartirParMarque` consultent. Y ajouter une
+ * colonne est sans danger ; en retirer une casse une tuile, donc on la
+ * laisse lisible plutot que courte.
+ */
+const CHAMPS_VITRINE =
+  "id,brand_id,slug,name,price_cents,compare_at_cents,price_eur_cents," +
+  "compare_at_eur_cents,currency,image_url,images,categories,available," +
+  "retired_at,position";
+
+/**
+ * Combien de photos une tuile de vitrine a besoin de connaitre.
+ *
+ * `VignetteDefilante` feuillette au survol ; personne ne depasse trois
+ * ou quatre vues avant de cliquer, et une piece importee en porte
+ * parfois quinze. Les suivantes ne seraient jamais regardees, mais
+ * elles voyagent quand meme dans le HTML de la page.
+ */
+const PHOTOS_VITRINE = 4;
+
+/**
  * Une requete qui echoue ne doit pas se transformer en "il n'y a rien".
  * On retombe sur une liste vide pour ne pas casser la page, mais on
  * ecrit la raison dans la console du serveur.
@@ -254,61 +286,203 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
  * consultable parce qu'elle porte des coups de cœur, mais une vitrine
  * qui propose ce qui ne se vend plus n'a aucun intérêt.
  */
-export async function getVitrine(parMarque = 10): Promise<Product[]> {
-  const supabase = await createClient();
-  if (!supabase) return DEMO_PRODUCTS;
+const lireLaVitrine = unstable_cache(
+  async (parMarque: number): Promise<Product[] | null> => {
+    /* Le client PUBLIC, et non le client habituel : ce dernier lit les
+       cookies, ce que Next interdit dans un cache. Même raison que pour
+       l'annuaire et pour les comptes du catalogue. Et c'est sans perte
+       ici : la vitrine ne montre que des pièces publiées, qui sont
+       publiques au sens des règles de la base. */
+    const supabase = createPublicClient();
+    if (!supabase) return null;
+
+    /*
+     * ⚠️ `.limit(1500)` NE SUFFISAIT PAS, ET IL ÉTAIT MÊME TROMPEUR.
+     *
+     * PostgREST s'arrête à mille lignes quoi qu'on demande (le plafond
+     * `max-rows`, décrit en long dans `stats.ts`) : une limite écrite à
+     * mille cinq cents n'a jamais rendu plus de mille. Avec cent trente-
+     * six marques et dix pièces chacune, la vitrine en visait treize cent
+     * soixante et en recevait mille — et surtout, sans `order`, ces mille
+     * lignes sont celles que la base a sous la main, donc les plus
+     * ANCIENNES. Les marques importées en dernier n'apparaissaient plus
+     * du tout : très exactement le défaut que `position` était venue
+     * corriger, revenu par une autre porte.
+     *
+     * On demande donc par tranches jusqu'au plafond, qui reste ce qu'il
+     * était : une sécurité, pas un critère de choix. Personne ne descend
+     * dix mille vignettes, et les envoyer coûterait à chaque visite ce
+     * qu'on met des semaines à économiser ailleurs.
+     *
+     * L'ordre sert au découpage, pas à l'affichage : `repartirParMarque`
+     * rebat tout de suite après. Il doit être TOTAL — `brand_id` et
+     * `position` se répètent, `id` tranche — sinon deux tranches se
+     * recouvrent et une pièce sort en double pendant qu'une autre
+     * disparaît.
+     */
+    const PLAFOND = 1500;
+    const TRANCHE = 1000;
+    const tout: Product[] = [];
+
+    for (let de = 0; de < PLAFOND; de += TRANCHE) {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`${CHAMPS_VITRINE}, ${BRAND_REF}`)
+        .eq("status", "published")
+        .is("retired_at", null)
+        .lt("position", parMarque)
+        .order("brand_id", { ascending: true })
+        .order("position", { ascending: true })
+        .order("id", { ascending: true })
+        .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
+
+      report("vitrine", error);
+      if (error) return null;
+      if (!data?.length) break;
+
+      tout.push(...(data as unknown as Product[]));
+      if (data.length < TRANCHE) break;
+    }
+
+    /* Les photos au-delà de la quatrième ne seront jamais regardées et
+       pèsent pourtant dans le HTML de la page. Voir `PHOTOS_VITRINE`. */
+    for (const piece of tout) {
+      if (piece.images?.length > PHOTOS_VITRINE) {
+        piece.images = piece.images.slice(0, PHOTOS_VITRINE);
+      }
+    }
+
+    return tout;
+  },
+  ["vitrine"],
+  /*
+   * LA VITRINE EST LA MÊME POUR TOUT LE MONDE, ELLE N'A DONC AUCUNE
+   * RAISON D'ÊTRE RELUE À CHAQUE VISITE.
+   *
+   * La page reste rendue à la demande — l'ordre est retiré au sort à
+   * chaque fois, et c'est `repartirParMarque` qui s'en charge, APRÈS ce
+   * cache. Ce qu'on garde, c'est la lecture : treize cents lignes
+   * ramenées de Supabase, soit l'essentiel du temps d'attente avant que
+   * la page ne commence à s'écrire. La première visite la paie, les
+   * suivantes sont servies aussitôt, et l'ordre change quand même.
+   *
+   * Cinq minutes, et la même étiquette `pieces` que les comptes : une
+   * publication vide les deux d'un coup.
+   */
+  { revalidate: 300, tags: ["pieces"] }
+);
+
+/* ---------------- la vitrine, page par page ---------------- */
+
+/** Ce que la colonne de filtres et le champ ont posé. */
+export type FiltresVitrine = {
+  q?: string;
+  rayons?: string[];
+  marque?: string | null;
+  /** En centimes d'euro. `null` de chaque côté tant qu'on n'a rien bougé. */
+  prixMin?: number | null;
+  prixMax?: number | null;
+  stock?: boolean;
+  promo?: boolean;
+  tri?: "hasard" | "croissant" | "decroissant";
+};
+
+export type PageDeVitrine = {
+  pieces: Product[];
+  /** Ce que les filtres retiennent EN TOUT, avant le découpage. */
+  total: number;
+};
+
+/**
+ * UNE PAGE DE LA VITRINE, FILTRÉE ET TRIÉE PAR POSTGRES.
+ *
+ * C'est le renversement de la page des pièces. Elle descendait un
+ * échantillon — dix pièces par marque, plafonné à mille cinq cents
+ * lignes, douze cent trente sur les vingt-six mille du site — et
+ * filtrait, triait, comptait et découpait cet échantillon en
+ * JavaScript. Le pied annonçait donc « 24 sur 1 230 » et les
+ * vingt-cinq mille autres pièces n'étaient atteignables que marque par
+ * marque.
+ *
+ * Ici, la base fait tout et la page ne reçoit que les vingt-quatre
+ * pièces qu'elle affiche. Le site devient entièrement parcourable, et
+ * la page est plus légère qu'avant.
+ *
+ * LA GRAINE EST LE POINT DÉLICAT. L'ordre « au hasard » alterne les
+ * marques et doit rester le MÊME d'une page à la suivante, sinon une
+ * pièce sort deux fois et une autre jamais. Elle est donc tirée une
+ * fois par visite, côté page, et redonnée à chaque appel. Voir
+ * `vitrine`, migration 33.
+ *
+ * Aucun cache : la graine change à chaque visite, une entrée par
+ * visiteur ne servirait jamais deux fois. C'est la base qui travaille,
+ * sur un tri de vingt-six mille lignes, ce qu'elle fait en quelques
+ * dizaines de millisecondes.
+ */
+export async function lireUnePageDeVitrine(
+  graine: string,
+  filtres: FiltresVitrine = {},
+  depuis = 0,
+  combien = 24
+): Promise<PageDeVitrine | null> {
+  const supabase = createPublicClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("vitrine", {
+    p_graine: graine,
+    p_taxonomie: [...PRODUCT_CATEGORIES],
+    p_rayons: filtres.rayons?.length ? filtres.rayons : null,
+    p_marque: filtres.marque ?? null,
+    p_prix_min: filtres.prixMin ?? null,
+    p_prix_max: filtres.prixMax ?? null,
+    p_stock: Boolean(filtres.stock),
+    p_promo: Boolean(filtres.promo),
+    p_q: filtres.q?.trim() || null,
+    p_tri: filtres.tri ?? "hasard",
+    p_depuis: depuis,
+    p_combien: combien,
+  });
+
+  report("une page de vitrine", error);
+  if (error || !data) return null;
 
   /*
-   * ⚠️ `.limit(1500)` NE SUFFISAIT PAS, ET IL ÉTAIT MÊME TROMPEUR.
-   *
-   * PostgREST s'arrête à mille lignes quoi qu'on demande (le plafond
-   * `max-rows`, décrit en long dans `stats.ts`) : une limite écrite à
-   * mille cinq cents n'a jamais rendu plus de mille. Avec cent trente-
-   * six marques et dix pièces chacune, la vitrine en visait treize cent
-   * soixante et en recevait mille — et surtout, sans `order`, ces mille
-   * lignes sont celles que la base a sous la main, donc les plus
-   * ANCIENNES. Les marques importées en dernier n'apparaissaient plus
-   * du tout : très exactement le défaut que `position` était venue
-   * corriger, revenu par une autre porte.
-   *
-   * On demande donc par tranches jusqu'au plafond, qui reste ce qu'il
-   * était : une sécurité, pas un critère de choix. Personne ne descend
-   * dix mille vignettes, et les envoyer coûterait à chaque visite ce
-   * qu'on met des semaines à économiser ailleurs.
-   *
-   * L'ordre sert au découpage, pas à l'affichage : `repartirParMarque`
-   * rebat tout de suite après. Il doit être TOTAL — `brand_id` et
-   * `position` se répètent, `id` tranche — sinon deux tranches se
-   * recouvrent et une pièce sort en double pendant qu'une autre
-   * disparaît.
+   * `rang` ET NON `position`, et ce n'est pas un caprice de nommage.
+   * `POSITION` est un mot-clé de Postgres — `position(sous_chaine in
+   * chaine)` — et `returns table` déclare ses colonnes comme des
+   * paramètres de sortie, où le mot est refusé. La fonction rend donc
+   * `rang`, et c'est ici qu'il redevient le `position` de la pièce.
    */
-  const PLAFOND = 1500;
-  const TRANCHE = 1000;
-  const tout: Product[] = [];
+  type Ligne = Omit<Product, "brand" | "position"> & {
+    total: number;
+    rang: number;
+    brand_slug: string;
+    brand_name: string;
+  };
+  const lignes = data as unknown as Ligne[];
 
-  for (let de = 0; de < PLAFOND; de += TRANCHE) {
-    const { data, error } = await supabase
-      .from("products")
-      .select(`*, ${BRAND_REF}`)
-      .eq("status", "published")
-      .is("retired_at", null)
-      .lt("position", parMarque)
-      .order("brand_id", { ascending: true })
-      .order("position", { ascending: true })
-      .order("id", { ascending: true })
-      .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
+  /* `total` est répété sur chaque ligne par le `count(*) over ()` de la
+     fonction. Aucune ligne, aucun total : c'est bien zéro, et non une
+     panne — la fonction ne rend rien quand les filtres ne retiennent
+     rien. */
+  const total = lignes[0]?.total ?? 0;
 
-    if (error) return DEMO_PRODUCTS;
-    if (!data?.length) break;
+  return {
+    total,
+    pieces: lignes.map(({ total: _t, rang, brand_slug, brand_name, ...piece }) => ({
+      ...piece,
+      position: rang,
+      brand: { id: piece.brand_id, slug: brand_slug, name: brand_name },
+    })) as Product[],
+  };
+}
 
-    tout.push(...(data as unknown as Product[]));
-    if (data.length < TRANCHE) break;
-  }
-
-  /* Un catalogue vide n'est pas une panne : on rend une liste vide, et
-     la page dit qu'il n'y a rien. Le repli sur les données de
-     démonstration est réservé à l'erreur, traitée dans la boucle. */
-  return tout;
+export async function getVitrine(parMarque = 10): Promise<Product[]> {
+  /* Le repli sur les données de démonstration reste réservé à l'absence
+     de base et à l'erreur de lecture — `null`. Un catalogue vide n'est
+     pas une panne : on rend une liste vide, et la page dit qu'il n'y a
+     rien. */
+  return (await lireLaVitrine(parMarque)) ?? DEMO_PRODUCTS;
 }
 
 /** Ce que le catalogue contient, sans qu'aucune pièce ne descende. */
@@ -318,6 +492,31 @@ export type CompteDuCatalogue = {
   marques: number;
   /** Par rayon, dans l'ordre de la taxonomie, « Autres » en dernier. */
   rayons: { rayon: string; total: number }[];
+  /**
+   * Chaque marque publiée et son compte de pièces, zéro compris.
+   *
+   * C'est la liste qui nourrit le filtre « Marque » de la vitrine, et
+   * c'est la RAISON pour laquelle elle existe : ce filtre comptait les
+   * marques présentes dans la vitrine — 133 — pendant que l'en-tête
+   * annonçait les marques publiées — 141. Les deux nombres étaient
+   * justes et la page avait l'air de se contredire. `marques`, juste
+   * au-dessus, est maintenant la longueur de cette liste : les deux ne
+   * peuvent plus diverger.
+   *
+   * Absente si la migration 32 n'est pas passée : voir plus bas, la
+   * lecture retombe alors sur l'ancien comptage.
+   */
+  marquesListe?: { slug: string; nom: string; total: number }[];
+  /**
+   * De quoi graduer le rail de prix et décider des deux cases d'état.
+   *
+   * Ils se calculaient sur les pièces descendues avec la page. Depuis
+   * que la page n'en descend plus que vingt-quatre, il n'y a plus rien
+   * à calculer sur place : un rail gradué sur vingt-quatre prix ne
+   * couvre pas le catalogue. Voir `vitrine_bornes`, migration 33.
+   */
+  prix?: { min: number; max: number };
+  etats?: { ruptures: boolean; promos: boolean };
 };
 
 /**
@@ -350,16 +549,48 @@ const lireLesComptes = unstable_cache(
     const supabase = createPublicClient();
     if (!supabase) return null;
 
-    const [rayons, marques] = await Promise.all([
+    const [rayons, marques, parMarque, bornes] = await Promise.all([
       supabase.rpc("compter_les_rayons", { p_rayons: [...PRODUCT_CATEGORIES] }),
       supabase
         .from("brands")
         .select("id", { count: "exact", head: true })
         .eq("status", "published"),
+      supabase.rpc("compter_les_marques"),
+      supabase.rpc("vitrine_bornes"),
     ]);
 
     report("comptes du catalogue", rayons.error);
     if (rayons.error || !rayons.data) return null;
+
+    /*
+     * LA LISTE PAR MARQUE EST FACULTATIVE, ET C'EST VOLONTAIRE.
+     *
+     * Le code part en ligne avant la migration : entre les deux, la
+     * fonction `compter_les_marques` n'existe pas encore et l'appel
+     * répond « fonction inconnue ». Faire tomber toute la page pour
+     * cela serait absurde — on n'y perd que le compte détaillé, et le
+     * site sait très bien s'en passer : il retombe sur le comptage
+     * qu'il faisait avant, à partir de la vitrine. L'erreur est dite
+     * dans la console du serveur, pas à la figure du visiteur.
+     */
+    /* Facultatives au même titre que la liste par marque : tant que la
+       migration 33 n'est pas passée, la fonction n'existe pas, le rail
+       de prix reste masqué et le reste de la page fonctionne. */
+    report("bornes de la vitrine", bornes.error);
+    const brut = (bornes.data as
+      | {
+          prix_min: number | null;
+          prix_max: number | null;
+          a_des_ruptures: boolean | null;
+          a_des_promos: boolean | null;
+        }[]
+      | null)?.[0];
+
+    report("comptes par marque", parMarque.error);
+    const marquesListe =
+      !parMarque.error && parMarque.data
+        ? (parMarque.data as { slug: string; nom: string; total: number }[])
+        : undefined;
 
     const lignes = rayons.data as { rayon: string | null; total: number }[];
 
@@ -376,10 +607,23 @@ const lireLesComptes = unstable_cache(
 
     return {
       pieces: lignes.reduce((n, l) => n + l.total, 0),
-      marques: marques.count ?? 0,
+      /* La longueur de la liste QUAND ON L'A, et le comptage direct
+         sinon. Les deux donnent le même nombre — `compter_les_marques`
+         rend toutes les marques publiées, zéro pièce compris — mais
+         passer par la liste garantit que l'en-tête et le filtre disent
+         exactement la même chose, sans qu'on ait à s'en souvenir. */
+      marques: marquesListe?.length ?? marques.count ?? 0,
       rayons: ordre
         .filter((r) => parRayon.has(r))
         .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
+      marquesListe,
+      prix:
+        brut && brut.prix_min !== null && brut.prix_max !== null && brut.prix_max > brut.prix_min
+          ? { min: brut.prix_min, max: brut.prix_max }
+          : undefined,
+      etats: brut
+        ? { ruptures: Boolean(brut.a_des_ruptures), promos: Boolean(brut.a_des_promos) }
+        : undefined,
     };
   },
   ["comptes-catalogue"],

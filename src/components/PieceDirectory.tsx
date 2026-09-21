@@ -10,14 +10,13 @@ import ProductCard, { type RatioPiece } from "./ProductCard";
 import { IconCheck, IconFiltre, IconLoupe } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
-import { compterLesRayons, rayonDe } from "@/lib/rayons";
 import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleRecherche from "./recherche/FeuilleRecherche";
 import Suggestions from "./recherche/Suggestions";
 import type { Critere } from "./recherche/Jeton";
 import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
-import { discountPercent, formatPrice } from "@/lib/types";
+import { formatPrice } from "@/lib/types";
 import type { Product } from "@/lib/types";
 
 /**
@@ -45,6 +44,32 @@ import type { Product } from "@/lib/types";
 
 /** Combien de pièces d'un coup. Même raison que pour l'annuaire. */
 const LOT = 24;
+
+/**
+ * Le repos qu'on laisse aux doigts avant d'aller redemander une page.
+ *
+ * Filtrer passe maintenant par la base : taper « veste » ferait cinq
+ * requêtes dont quatre jetées. Le même nombre que le panneau de
+ * suggestions, pour que la grille et lui se mettent à jour ensemble
+ * plutôt que l'un après l'autre.
+ */
+const REPOS_FRAPPE = 180;
+
+/**
+ * Le même repos, pour le rail de prix, et il est un peu plus long.
+ *
+ * Un `input[type=range]` prévient à CHAQUE cran : traverser le rail au
+ * doigt émet quelques dizaines de changements, donc quelques dizaines
+ * de requêtes si on les suit toutes. Un geste de glissement dure aussi
+ * plus longtemps qu'une frappe — on cherche la bonne valeur, on
+ * dépasse, on revient — d'où les quatre-vingts millisecondes de plus.
+ *
+ * ⚠️ L'AFFICHAGE, LUI, NE LAMBINE PAS. Les deux nombres au-dessus du
+ * rail et la pastille de filtre suivent `prix`, la valeur immédiate ;
+ * seule la REQUÊTE suit `prixDiffere`. Faire traîner la main sur le
+ * rail donnerait l'impression d'une page cassée.
+ */
+const REPOS_RAIL = 260;
 
 /**
  * LE POINT DE BASCULE DE LA RECHERCHE, ET IL N'EST PAS CELUI DES
@@ -79,8 +104,13 @@ const ENTETE = 86;
 /**
  * Ce que la colonne de filtres a le droit d'occuper en hauteur.
  *
- * L'en-tête plus une marge de pied, comme dans la classe `max-h` qu'elle
- * portait avant : au-delà, elle ne tient plus dans l'écran.
+ * Les 86 px de l'en-tête collant, plus 18 px de respiration en pied.
+ * C'est LE MÊME NOMBRE que le `calc(100dvh - 104px)` de
+ * `.colonne-filtres--deborde` dans `globals.css` : au-delà, la colonne
+ * ne tient plus dans l'écran et on lui rend son ascenseur. Les deux
+ * valeurs doivent bouger ensemble, sinon la mesure et la borne se
+ * contredisent — la colonne se croirait à l'aise dans une hauteur
+ * qu'elle dépasse, ou l'inverse.
  */
 const PLACE_COLONNE = 104;
 
@@ -127,9 +157,6 @@ const DECALAGES = [
 ];
 
 /** Le prix qui sert à comparer : en euros quand on a su convertir. */
-function enCentimes(p: Product): number | null {
-  return p.price_eur_cents ?? p.price_cents ?? null;
-}
 
 const euros = (centimes: number) => formatPrice(centimes, "EUR") ?? "";
 
@@ -148,11 +175,40 @@ function crantDe(etendue: number): number {
 }
 
 export default function PieceDirectory({
-  pieces,
+  premierLot,
+  totalDuPremierLot,
+  graine,
   rayonsDuCatalogue,
+  marquesDuCatalogue,
+  bornesDuCatalogue,
+  etatsDuCatalogue,
   amorce,
 }: {
-  pieces: Product[];
+  /**
+   * LES VINGT-QUATRE PREMIÈRES PIÈCES, RENDUES PAR LE SERVEUR.
+   *
+   * La page en descendait douze cent trente et faisait tout le travail
+   * ici. Elle n'en descend plus que vingt-quatre, et c'est la base qui
+   * filtre, trie, compte et découpe (voir `lireUnePageDeVitrine`). Ce
+   * premier lot est rendu avec la page pour deux raisons qui valent
+   * chacune la peine : la grille est là au premier coup d'œil, sans
+   * aller-retour, et un robot qui ne joue pas le JavaScript voit
+   * quand même des pièces.
+   */
+  premierLot: Product[];
+  /** Ce que les filtres de départ retiennent EN TOUT, avant découpage. */
+  totalDuPremierLot: number;
+  /**
+   * LA GRAINE DE L'ORDRE « AU HASARD », TIRÉE UNE FOIS PAR VISITE.
+   *
+   * L'ordre alterne les marques et se poursuit page après page. S'il
+   * était retiré au sort à chaque appel, la page 2 serait rangée
+   * autrement que la page 1 : une pièce sortirait deux fois, une autre
+   * jamais. La page en tire une, la redonne à chaque requête, et l'on
+   * obtient un ordre qui change d'une visite à l'autre sans bouger à
+   * l'intérieur d'une visite.
+   */
+  graine: string;
   /**
    * Ce que l'adresse a déposé dans le champ, `?q=veste`.
    *
@@ -175,6 +231,38 @@ export default function PieceDirectory({
    * le comptage de ce qui est chargé, qui est ce qu'on faisait avant.
    */
   rayonsDuCatalogue?: { rayon: string; total: number }[];
+  /**
+   * LES MARQUES DU SITE, ET NON CELLES DE L'ÉCHANTILLON.
+   *
+   * Même correction que pour les rayons, un cran plus loin. Le filtre
+   * « Marque » listait les marques PRÉSENTES DANS LA VITRINE : celle-ci
+   * prend dix pièces par marque et n'en garde que les photographiées,
+   * si bien qu'une marque dont les dix premières pièces n'ont pas de
+   * visuel en disparaissait. Le filtre annonçait « Toutes (133) » sous
+   * un en-tête qui disait « 141 marques ». Les deux nombres venaient de
+   * deux comptages différents, et la page paraissait se contredire.
+   *
+   * Ils viennent maintenant du même endroit — `compter_les_marques`,
+   * migration 32 — donc ils ne peuvent plus diverger. Une marque sans
+   * pièce dans la vitrine reste choisissable et la grille explique
+   * pourquoi elle est vide, plutôt que de faire disparaître la marque.
+   *
+   * Absent en démonstration, ou si la migration n'est pas passée : on
+   * retombe sur le comptage de ce qui est chargé, qui est ce qu'on
+   * faisait avant.
+   */
+  marquesDuCatalogue?: { slug: string; nom: string; total: number }[];
+  /**
+   * De quoi graduer le rail de prix, et de quoi décider des deux cases
+   * d'état.
+   *
+   * Ils se mesuraient sur les pièces chargées. Il n'y en a plus que
+   * vingt-quatre : un rail gradué là-dessus ne couvrirait pas le
+   * catalogue, et « En stock » disparaîtrait dès que les vingt-quatre
+   * premières sont toutes disponibles. Voir `vitrine_bornes`.
+   */
+  bornesDuCatalogue?: { min: number; max: number };
+  etatsDuCatalogue?: { ruptures: boolean; promos: boolean };
 }) {
   /*
    * LA DENSITÉ EST TENUE ICI ET NON DANS LA GRILLE, parce que son rail
@@ -204,7 +292,6 @@ export default function PieceDirectory({
   const [promo, setPromo] = useState(false);
   const [tri, setTri] = useState<"hasard" | "croissant" | "decroissant">("hasard");
   const [ouvert, setOuvert] = useState(false);
-  const [combien, setCombien] = useState(LOT);
 
   /*
    * SOUS `lg`, LA COLONNE DEVIENT UNE FEUILLE QUI MONTE.
@@ -235,32 +322,47 @@ export default function PieceDirectory({
   }, [auDoigt]);
 
   /*
-   * LA COLONNE N'A PLUS D'ASCENSEUR À ELLE.
+   * LA COLONNE RESTE COLLÉE, TOUJOURS. C'EST CE QUI CHANGE ICI.
    *
-   * Elle portait une hauteur maximale et son propre défilement. Sur un
-   * écran un peu bas — un portable, une fenêtre qui n'est pas en plein
-   * écran — cela faisait deux ascenseurs sur la même page, dont un que
-   * personne ne va chercher : les derniers filtres restaient cachés
-   * sous le bord de la colonne sans que rien ne le dise.
+   * Elle ne l'était que tant qu'elle tenait dans l'écran : au-delà, on
+   * la rendait à la page, et elle partait vers le haut au premier
+   * défilement. Sur un portable ordinaire — 1366 × 768, donc six cent
+   * cinquante pixels de fenêtre — c'était le cas par défaut : on
+   * descendait de trois rangées et il n'y avait plus de filtres nulle
+   * part. Or l'envie d'affiner arrive au milieu de la grille, jamais en
+   * haut. Une colonne de filtres qu'il faut aller rechercher en
+   * remontant est une colonne qu'on n'utilise pas.
    *
-   * On mesure donc ce qu'elle demande, et de deux choses l'une : ou
-   * bien elle tient dans l'écran et elle reste collée en place, ou bien
-   * elle n'y tient pas et elle redevient un bloc ordinaire qui défile
-   * AVEC la page. Dans les deux cas, plus rien à faire défiler dedans.
+   * L'autre remède qu'on s'était donné était de SERRER la colonne à
+   * mesure que l'écran baissait — les paliers de `globals.css`. Trois
+   * pixels de rembourrage et des lignes collées les unes aux autres :
+   * elle tenait, mais elle avait l'air écrasée, et c'est le reproche
+   * qu'on lui fait.
+   *
+   * On revient donc à l'ascenseur intérieur, avec ce qui lui manquait la
+   * première fois : un dégradé au bas de la colonne qui DIT qu'il reste
+   * quelque chose dessous. Le défaut d'alors n'était pas l'ascenseur,
+   * c'était qu'il était invisible.
+   *
+   * On mesure quand même, parce que la barre de défilement et le
+   * dégradé n'ont aucune raison d'exister quand tout tient : ils ne
+   * s'allument que lorsque le contenu dépasse.
    */
   const colonne = useRef<HTMLElement>(null);
-  const [colonneTient, setColonneTient] = useState(true);
+  const [colonneDeborde, setColonneDeborde] = useState(false);
 
   useEffect(() => {
     if (auDoigt) return;
     const el = colonne.current;
     if (!el) return;
 
-    /* `scrollHeight` et non la hauteur mesurée : rien ne rogne plus la
-       colonne, les deux se valent, mais celle-ci reste juste même si un
-       jour on lui remettait une borne. */
+    /* `scrollHeight` : la hauteur que la colonne DEMANDE, y compris la
+       part qui passe sous son propre bord une fois l'ascenseur posé.
+       `offsetHeight` ne dirait plus que la hauteur permise, et la mesure
+       se mordrait la queue — déborde, donc on borne, donc ça ne déborde
+       plus, donc on débourne. */
     const mesurer = () =>
-      setColonneTient(el.scrollHeight <= window.innerHeight - PLACE_COLONNE);
+      setColonneDeborde(el.scrollHeight > window.innerHeight - PLACE_COLONNE + 1);
 
     mesurer();
 
@@ -286,20 +388,20 @@ export default function PieceDirectory({
    * la même poignée, au même endroit, dit maintenant 30.
    */
   const bornes = useMemo(() => {
-    const prix = pieces.map(enCentimes).filter((c): c is number => c !== null);
-    if (prix.length === 0) return null;
+    if (!bornesDuCatalogue) return null;
 
-    const bas = Math.min(...prix);
-    const haut = Math.max(...prix);
-    if (haut === bas) return null;
+    const { min: bas, max: haut } = bornesDuCatalogue;
+    if (haut <= bas) return null;
 
+    /* Arrondi au cran, pour que les deux extrémités du rail tombent sur
+       des nombres ronds et que la poignée ait de quoi s'arrêter. */
     const pas = crantDe(haut - bas);
     return {
       min: Math.floor(bas / pas) * pas,
       max: Math.ceil(haut / pas) * pas,
       pas,
     };
-  }, [pieces]);
+  }, [bornesDuCatalogue]);
 
   const [prix, setPrix] = useState<[number, number]>(() =>
     bornes ? [bornes.min, bornes.max] : [0, 0]
@@ -400,149 +502,209 @@ export default function PieceDirectory({
     return () => window.removeEventListener("keydown", auClavier);
   }, []);
 
-  /*
-   * Comme dans l'annuaire : la recherche d'abord, puis on établit les
-   * filtres sur ce qu'il en reste. Une ligne affichée ramène donc
-   * toujours quelque chose.
-   *
-   * La recherche porte aussi sur le NOM DE LA MARQUE, et c'est
-   * volontaire : quelqu'un qui tape « twojeys » ici cherche les pièces
-   * de cette marque, pas sa fiche. Le renvoyer sur l'annuaire serait un
-   * détour de plus.
-   */
-  const parRecherche = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return pieces;
-    return pieces.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.brand?.name ?? "").toLowerCase().includes(q) ||
-        p.categories.some((c) => c.toLowerCase().includes(q))
-    );
-  }, [pieces, query]);
-
   /* ------------------------------------------------------------------
-     Les filtres
+     LES FILTRES NE TRAVAILLENT PLUS ICI. ILS TRAVAILLENT DANS POSTGRES.
+     ------------------------------------------------------------------
+
+     C'est le renversement de cette page, et il vaut la peine d'être dit
+     en entier, parce que tout le reste du fichier en découle.
+
+     AVANT : la page descendait un ÉCHANTILLON — dix pièces par marque,
+     plafonné à mille cinq cents lignes, soit douze cent trente sur les
+     vingt-six mille du site — et ce fichier filtrait, cherchait, triait
+     et découpait cet échantillon en JavaScript. C'était instantané, et
+     c'était faux : le pied annonçait « 24 sur 1 230 » sur une page
+     intitulée « Les pièces », « moins de 30 € » ne cherchait pas moins
+     de 30 € au catalogue mais dans l'échantillon, et les vingt-cinq
+     mille autres pièces n'étaient atteignables que marque par marque.
+
+     MAINTENANT : la base filtre, trie, compte et découpe, et la page ne
+     reçoit que les vingt-quatre pièces qu'elle affiche. Le site est
+     entièrement parcourable, et la page pèse moins qu'avant.
+
+     CE QUE ÇA COÛTE, ET C'EST ASSUMÉ : filtrer n'est plus instantané,
+     il y a un aller-retour. D'où la frappe DIFFÉRÉE juste en dessous,
+     et d'où le fait qu'on garde les pièces précédentes à l'écran
+     pendant le chargement plutôt que de vider la grille — une grille
+     qui clignote à chaque lettre est pire qu'une grille qui met deux
+     cents millisecondes à se mettre à jour.
      ------------------------------------------------------------------ */
 
-  const bonPrix = (p: Product) => {
-    if (!prixActif) return true;
-    const centimes = enCentimes(p);
-    return centimes !== null && centimes >= prix[0] && centimes <= prix[1];
-  };
+  /*
+   * LA FRAPPE EST DIFFÉRÉE, LE RESTE NON.
+   *
+   * Cocher un rayon est un geste unique : il part tout de suite. Taper
+   * « veste » en fait cinq, et cinq requêtes dont quatre sont jetées.
+   * Le même repos que le panneau de suggestions, pour que les deux
+   * arrivent ensemble.
+   */
+  const [qDifferee, setQDifferee] = useState(amorce ?? "");
+  useEffect(() => {
+    const minuteur = setTimeout(() => setQDifferee(query), REPOS_FRAPPE);
+    return () => clearTimeout(minuteur);
+  }, [query]);
 
-  const bonRayon = (p: Product) => rayons.length === 0 || rayons.includes(rayonDe(p));
-  const bonneMarque = (p: Product) => !marque || p.brand?.slug === marque;
-  const bonEtat = (p: Product) =>
-    (!stock || p.available) && (!promo || discountPercent(p) !== null);
+  /* Le rail de prix, même mécanique. Voir `REPOS_RAIL`. */
+  const [prixDiffere, setPrixDiffere] = useState<[number, number]>(prix);
+  useEffect(() => {
+    const minuteur = setTimeout(() => setPrixDiffere(prix), REPOS_RAIL);
+    return () => clearTimeout(minuteur);
+  }, [prix]);
+
+  /* `prixActif` dit ce que la COLONNE affiche, celui-ci ce que la
+     REQUÊTE demande. Les deux se rejoignent au repos ; entre les deux,
+     la pastille est déjà posée et la grille n'a pas encore bougé. */
+  const prixDemande =
+    bornes !== null && (prixDiffere[0] > bornes.min || prixDiffere[1] < bornes.max);
 
   /*
-   * UNE CASE QUI NE RETIRE RIEN NE S'AFFICHE PAS, exactement comme une
-   * pastille de rayon vide. Sur un catalogue où tout est en stock,
-   * « En stock » occupe une ligne, ne change aucun résultat, et laisse
-   * pourtant croire qu'on vient de filtrer quelque chose.
+   * CE QUI, EN CHANGEANT, REDEMANDE UNE PAGE.
+   *
+   * Une chaîne plutôt qu'un objet : deux tableaux de rayons identiques
+   * ne sont pas le même objet, et un effet qui en dépend se relancerait
+   * à chaque rendu. Les rayons sont triés avant d'être écrits, sinon
+   * cocher « Hauts » puis « Bas » et l'inverse donneraient deux
+   * signatures pour un même filtre, donc une requête pour rien.
+   */
+  const signature = JSON.stringify({
+    q: qDifferee.trim(),
+    rayons: [...rayons].sort(),
+    marque,
+    prix: prixDemande ? prixDiffere : null,
+    stock,
+    promo,
+    tri,
+  });
+
+  const adresse = useCallback(
+    (depuis: number) => {
+      const p = new URLSearchParams();
+      p.set("graine", graine);
+      p.set("depuis", String(depuis));
+      p.set("combien", String(LOT));
+      if (qDifferee.trim()) p.set("q", qDifferee.trim());
+      for (const r of rayons) p.append("rayon", r);
+      if (marque) p.set("marque", marque);
+      if (prixDemande) {
+        p.set("prixMin", String(prixDiffere[0]));
+        p.set("prixMax", String(prixDiffere[1]));
+      }
+      if (stock) p.set("stock", "1");
+      if (promo) p.set("promo", "1");
+      if (tri !== "hasard") p.set("tri", tri);
+      return `/api/pieces?${p}`;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [graine, signature]
+  );
+
+  const [lot, setLot] = useState<Product[]>(premierLot);
+  const [total, setTotal] = useState(totalDuPremierLot);
+  const [enCours, setEnCours] = useState(false);
+  const [panne, setPanne] = useState(false);
+
+  /*
+   * LE PREMIER LOT VIENT DU SERVEUR, ON NE LE REDEMANDE PAS.
+   *
+   * La page a déjà rendu ses vingt-quatre premières pièces avec ces
+   * filtres-là — c'est ce qui fait qu'elle est à l'écran au premier
+   * coup d'œil et qu'un robot la lit. Sans ce garde, l'effet partirait
+   * au montage et referait aussitôt la requête que le serveur vient de
+   * faire, pour un résultat identique.
+   */
+  const premierRendu = useRef(true);
+
+  useEffect(() => {
+    if (premierRendu.current) {
+      premierRendu.current = false;
+      return;
+    }
+
+    const halte = new AbortController();
+    setEnCours(true);
+
+    fetch(adresse(0), { signal: halte.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((page: { pieces: Product[]; total: number }) => {
+        setLot(page.pieces);
+        setTotal(page.total);
+        setPanne(false);
+      })
+      .catch((e) => {
+        /* Une requête annulée n'est pas une panne : c'est la lettre
+           suivante qui est arrivée, et sa réponse va remplacer
+           celle-ci. L'annoncer ferait clignoter un message d'erreur à
+           chaque frappe. */
+        if ((e as Error)?.name === "AbortError") return;
+        setPanne(true);
+      })
+      .finally(() => {
+        if (!halte.signal.aborted) setEnCours(false);
+      });
+
+    return () => halte.abort();
+  }, [adresse]);
+
+  /*
+   * « CHARGER 24 DE PLUS » AJOUTE, IL NE REMPLACE PAS.
+   *
+   * `depuis` se compte sur ce qu'on a déjà, pas sur un numéro de page :
+   * c'est ce qui rend l'appel juste même si un lot précédent est
+   * revenu court. Et l'ordre ne bouge pas entre deux appels puisque la
+   * graine ne bouge pas — c'est précisément à quoi elle sert.
+   */
+  const charger = useCallback(() => {
+    if (enCours) return;
+    setEnCours(true);
+    fetch(adresse(lot.length))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((page: { pieces: Product[]; total: number }) => {
+        setLot((deja) => {
+          /* Ceinture et bretelles : si deux clics passaient malgré le
+             garde, une pièce reçue deux fois ferait une clé React en
+             double et un trou dans la grille. */
+          const vus = new Set(deja.map((p) => p.id));
+          return [...deja, ...page.pieces.filter((p) => !vus.has(p.id))];
+        });
+        setTotal(page.total);
+        setPanne(false);
+      })
+      .catch(() => setPanne(true))
+      .finally(() => setEnCours(false));
+  }, [adresse, enCours, lot.length]);
+
+  /*
+   * LES DEUX CASES D'ÉTAT DISENT LE CATALOGUE.
+   *
+   * Une case qui ne retire rien ne s'affiche pas : sur un catalogue où
+   * tout est en stock, « En stock » occupe une ligne, ne change aucun
+   * résultat, et laisse pourtant croire qu'on vient de filtrer quelque
+   * chose. Elle se mesurait sur les pièces chargées ; depuis qu'il n'y
+   * en a que vingt-quatre, il n'y a plus rien à mesurer — elle
+   * disparaîtrait dès que les vingt-quatre premières sont toutes
+   * disponibles. Elle vient donc de la base (voir `vitrine_bornes`).
    *
    * Elle reste affichée tant qu'elle est cochée, sinon on l'aurait
    * cochée puis vue disparaître avec la liste restreinte, sans plus
    * aucun moyen de revenir en arrière.
    */
-  const etatsUtiles = useMemo(
-    () => ({
-      stock: parRecherche.some((p) => !p.available),
-      promo: parRecherche.some((p) => discountPercent(p) !== null),
-    }),
-    [parRecherche]
+  const etatsUtiles = {
+    stock: etatsDuCatalogue?.ruptures ?? false,
+    promo: etatsDuCatalogue?.promos ?? false,
+  };
+
+  /* Les rayons et les marques du site entier. Ils ne se restreignent
+     pas à mesure qu'on filtre, et c'est le parti pris de cette colonne :
+     elle annonce le catalogue, pas ce qui reste. Le prix en est que
+     « Bas 5 857 » reste 5 857 même après « moins de 30 € » ; le gain est
+     que ces nombres tombent sur ceux de l'en-tête. */
+  const rayonsDisponibles = rayonsDuCatalogue ?? [];
+
+  const marquesDisponibles = useMemo(
+    () => (marquesDuCatalogue ?? []).slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
+    [marquesDuCatalogue]
   );
 
-  /*
-   * Chaque famille se compte SANS ELLE-MÊME.
-   *
-   * Les rayons proposés tiennent compte du prix, de l'état et de la
-   * marque, jamais des rayons déjà cochés : sinon en choisir un ferait
-   * disparaître tous les autres, et l'on ne pourrait plus en ajouter un
-   * second ni changer d'avis sans tout effacer. Même règle pour la liste
-   * des marques.
-   */
-  const rayonsDisponibles = useMemo(
-    () =>
-      rayonsDuCatalogue ??
-      compterLesRayons(parRecherche.filter((p) => bonPrix(p) && bonEtat(p) && bonneMarque(p))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rayonsDuCatalogue, parRecherche, prix, prixActif, stock, promo, marque]
-  );
-
-  const marquesDisponibles = useMemo(() => {
-    const compte = new Map<string, { nom: string; total: number }>();
-    for (const p of parRecherche) {
-      if (!p.brand || !bonPrix(p) || !bonEtat(p) || !bonRayon(p)) continue;
-      const vu = compte.get(p.brand.slug);
-      if (vu) vu.total += 1;
-      else compte.set(p.brand.slug, { nom: p.brand.name, total: 1 });
-    }
-    return [...compte.entries()]
-      .map(([slug, { nom, total }]) => ({ slug, nom, total }))
-      .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parRecherche, prix, prixActif, stock, promo, rayons]);
-
-  /* Un filtre devenu sans objet s'efface tout seul. Pas de boucle
-     possible : ces listes se calculent sans le filtre qu'elles
-     vérifient. */
-  useEffect(() => {
-    const dispo = new Set(rayonsDisponibles.map((r) => r.rayon));
-    setRayons((liste) =>
-      liste.every((r) => dispo.has(r)) ? liste : liste.filter((r) => dispo.has(r))
-    );
-  }, [rayonsDisponibles]);
-
-  useEffect(() => {
-    if (marque && !marquesDisponibles.some((m) => m.slug === marque)) setMarque(null);
-  }, [marquesDisponibles, marque]);
-
-  const resultats = useMemo(
-    () => parRecherche.filter((p) => bonPrix(p) && bonRayon(p) && bonneMarque(p) && bonEtat(p)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [parRecherche, rayons, prix, prixActif, marque, stock, promo]
-  );
-
-  /*
-   * LE TRI NE MÉLANGE RIEN LUI-MÊME. « Au hasard », c'est l'ordre dans
-   * lequel la page a livré les pièces — déjà tiré au sort ET alterné
-   * entre les marques sur le serveur. Un `Math.random()` joué ici
-   * donnerait un ordre au serveur et un autre dans le navigateur, donc
-   * un clignotement et un avertissement d'hydratation, pour un résultat
-   * moins bon : le hasard pur remet quarante pièces de la même marque
-   * d'affilée.
-   */
-  const ordonnes = useMemo(() => {
-    if (tri === "hasard") return resultats;
-    const sens = tri === "croissant" ? 1 : -1;
-    return [...resultats].sort((a, b) => {
-      const pa = enCentimes(a);
-      const pb = enCentimes(b);
-      // Sans prix connu, la pièce va au bout — dans les deux sens.
-      if (pa === null) return pb === null ? 0 : 1;
-      if (pb === null) return -1;
-      return (pa - pb) * sens;
-    });
-  }, [resultats, tri]);
-
-  /* Changer de filtre repart du début, sinon on demanderait à la page
-     d'afficher d'un coup tout ce qu'on avait déroulé avant. Changer de
-     tri, en revanche, garde ce qu'on avait déplié : ce sont les mêmes
-     pièces, rangées autrement.
-
-     LA REMISE À ZÉRO SE FAIT PENDANT LE RENDU, PAS DANS UN EFFET. Dans
-     un effet, elle arrivait APRÈS la pose : la page était d'abord
-     redessinée avec les quatre-vingt-seize pièces qu'on avait
-     déroulées, puis raccourcie d'un coup. Deux hauteurs pour un seul
-     clic, donc deux occasions de faire sauter l'ascenseur. Ici, la page
-     n'est posée qu'une fois, à sa hauteur finale. */
-  const dernierResultat = useRef(resultats);
-  if (dernierResultat.current !== resultats) {
-    dernierResultat.current = resultats;
-    setCombien(LOT);
-  }
 
   /*
    * FILTRER REMONTE AUX PREMIÈRES PIÈCES, ET ÇA SE VOIT MONTER.
@@ -642,7 +804,7 @@ export default function PieceDirectory({
        fermeture, dans l'effet qui suit. */
     if (ouvert) return;
     recaler();
-  }, [resultats, ouvert, recaler]);
+  }, [signature, ouvert, recaler]);
 
   /* À la fermeture de la feuille, le verrou est levé par `FeuilleFiltres`
      — un effet d'enfant, donc joué avant celui-ci. La page a retrouvé sa
@@ -651,8 +813,24 @@ export default function PieceDirectory({
     if (!ouvert) recaler();
   }, [ouvert, recaler]);
 
-  const visibles = ordonnes.slice(0, combien);
-  const reste = ordonnes.length - visibles.length;
+  /* Ce qu'on a sous la main, et ce que la base dit qu'il reste. `reste`
+     ne se déduit plus d'une liste complète tenue en mémoire : il est la
+     différence entre le total que la base a compté et ce qu'on a déjà
+     demandé. */
+  const visibles = lot;
+  const reste = Math.max(total - visibles.length, 0);
+
+  /*
+   * LE PIED N'A PLUS QU'UN NOMBRE, ET C'EST LE BON.
+   *
+   * Il en a porté deux pendant le temps d'une correction : « 24 sur
+   * 1 230 en vitrine · 26 507 au catalogue », parce que la grille ne
+   * connaissait qu'un échantillon et qu'il fallait bien dire la taille
+   * réelle du site à côté. Depuis que la base filtre et compte, `total`
+   * EST le compte du catalogue — ou, si un filtre est posé, le compte
+   * exact de ce que ce filtre retient dans le catalogue entier. Le
+   * second nombre serait le même, écrit deux fois.
+   */
 
   const nomDeLaMarque = marquesDisponibles.find((m) => m.slug === marque)?.nom ?? null;
 
@@ -731,18 +909,19 @@ export default function PieceDirectory({
   );
 
   /*
-   * LES DEUX NOMBRES DE LA LIGNE NE COMPTENT PAS LA MÊME CHOSE, et c'est
-   * exactement ce qu'elle est là pour dire. À gauche, ce que la grille
-   * montre vraiment : les pièces de la vitrine, marques confondues. À
-   * droite, ce que le catalogue porte, rapporté par la base. Sans cette
-   * ligne, « 38 résultats » se lit comme « ce site a trente-huit pièces
-   * en denim », ce qui est faux d'un facteur dix.
+   * LA LIGNE N'A PLUS DEUX NOMBRES, ET C'EST UN PROGRÈS.
+   *
+   * Elle en portait deux : « 38 pièces pour "denim" » d'un côté, « le
+   * catalogue en compte 312 » de l'autre, parce que la grille ne
+   * cherchait que dans l'échantillon descendu avec la page. Depuis que
+   * la recherche va dans la base, `total` EST le compte du catalogue :
+   * les deux nombres seraient le même, écrit deux fois.
+   *
+   * Le compte de marques est parti avec, pour la raison inverse : on ne
+   * peut plus le déduire des pièces sous la main, il n'y en a que
+   * vingt-quatre. Le panneau de suggestions le dit déjà, et lui
+   * l'interroge.
    */
-  const marquesTrouvees = useMemo(
-    () => new Set(ordonnes.map((p) => p.brand?.slug).filter(Boolean)).size,
-    [ordonnes]
-  );
-  const auCatalogue = suggestions?.totalPieces ?? 0;
 
   /*
    * LE TRAIT EST UN ORNEMENT, PAS UNE JAUGE. Sa portion colorée dit
@@ -1078,38 +1257,22 @@ export default function PieceDirectory({
         {query.trim() !== "" && (
           <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <p className="m-0 min-w-0 text-[11px] font-bold uppercase tracking-[0.14em] text-white/70">
-              {enChiffres(ordonnes.length)} pièce{ordonnes.length > 1 ? "s" : ""} pour «&nbsp;
-              {query.trim()}&nbsp;»
-              {marquesTrouvees > 0 && (
-                <>
-                  {" · "}
-                  {enChiffres(marquesTrouvees)} marque{marquesTrouvees > 1 ? "s" : ""}
-                </>
-              )}
+              {enChiffres(total)} pièce{total > 1 ? "s" : ""} pour «&nbsp;
+              {query.trim()}&nbsp;» au catalogue
             </p>
 
-            {auCatalogue > ordonnes.length && (
+            {/* LA SORTIE VERS LES MARQUES RESTE, mais elle ne
+                s'excuse plus d'un compte trop petit : elle propose
+                l'autre entrée, pour qui cherche une maison plutôt
+                qu'une pièce. */}
+            {total > 0 && (
               <p className="m-0 shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
-                Le catalogue en compte {enChiffres(auCatalogue)}
-                {" — "}
-                {/*
-                 * LA SORTIE MÈNE AUX MARQUES, ET LE MOT LE DIT.
-                 *
-                 * Elle ne peut pas mener à « toutes les pièces » : la
-                 * vitrine est la seule grille du site, et elle ne porte
-                 * que dix pièces par marque. Le catalogue entier, lui,
-                 * vit page par page chez les marques — c'est déjà ce que
-                 * répond l'état vide de la grille. Écrire « tout voir »
-                 * promettrait une liste de trois cent douze pièces qui
-                 * n'existe nulle part ; « voir les marques » dit où l'on
-                 * atterrit, et le mot cherché part avec.
-                 */}
                 <Link
                   href={`/marques?q=${encodeURIComponent(query.trim())}`}
                   onClick={() => noterRecherche(query.trim())}
                   className="text-white/75 underline underline-offset-2 transition hover:text-white"
                 >
-                  voir les marques
+                  voir les marques qui en ont
                 </Link>
               </p>
             )}
@@ -1270,11 +1433,13 @@ export default function PieceDirectory({
         {!auDoigt && (
           <aside
             ref={colonne}
-            /* Collée tant qu'elle tient dans l'écran, bloc ordinaire
-               sinon — voir `colonneTient`. Plus de hauteur maximale ni
-               d'`overflow` : c'est précisément ce qui lui donnait un
-               ascenseur à elle. */
-            className={`glass colonne-filtres p-5 ${colonneTient ? "sticky top-[86px]" : ""}`}
+            /* Collée en toutes circonstances. Quand le contenu dépasse
+               la hauteur de l'écran, `colonne-filtres--deborde` lui rend
+               son ascenseur ET le dégradé qui l'annonce — voir
+               `colonneDeborde` et `globals.css`. */
+            className={`glass colonne-filtres p-5 sticky top-[86px] ${
+              colonneDeborde ? "colonne-filtres--deborde" : ""
+            }`}
           >
             {contenuFiltres}
           </aside>
@@ -1282,7 +1447,7 @@ export default function PieceDirectory({
 
         {/* ---------------- la grille ---------------- */}
         <div className="min-w-0">
-          {ordonnes.length === 0 ? (
+          {total === 0 && !enCours ? (
             <div className="glass p-8 text-center">
               {/*
                * DEUX RAISONS DE NE RIEN TROUVER, ET ELLES NE SE
@@ -1298,7 +1463,26 @@ export default function PieceDirectory({
                * une erreur qui n'existe pas.
                */}
               <p className="m-0 text-[15px] leading-relaxed text-white/90">
-                {rayonsDuCatalogue && rayons.length > 0 ? (
+                {marquesDuCatalogue && marque ? (
+                  /* LA MARQUE, D'ABORD : c'est le filtre le plus précis
+                     des deux, et celui dont la sortie est la plus utile
+                     — sa page porte son catalogue entier. Depuis que le
+                     menu liste les marques du SITE, en choisir une dont
+                     aucune pièce n'est dans la vitrine est un cas
+                     ordinaire, pas une erreur de manipulation. */
+                  <>
+                    {marquesDisponibles.find((m) => m.slug === marque)?.total
+                      ? "Les pièces de cette marque ne sont pas dans la vitrine : elle en montre dix par marque, et seulement celles qui ont une photo."
+                      : "Cette marque n'a pas encore de pièces au catalogue."}{" "}
+                    <Link
+                      href={`/marques/${marque}`}
+                      className="font-bold text-white underline underline-offset-2"
+                    >
+                      Va voir sa page
+                    </Link>
+                    .
+                  </>
+                ) : rayonsDuCatalogue && rayons.length > 0 ? (
                   <>
                     Ce rayon existe au catalogue, mais aucune de ses pièces n&apos;est dans
                     la vitrine : elle en montre dix par marque.{" "}
@@ -1429,28 +1613,75 @@ export default function PieceDirectory({
                 ))}
               </Grille>
 
-              {reste > 0 && (
-                /* Le pied reprend la pilule de la ligne de filtres de
-                   l'annuaire : c'est le même objet, à l'autre bout de la
-                   page. */
+              {/* Le pied reprend la pilule de la ligne de filtres de
+                  l'annuaire : c'est le même objet, à l'autre bout de la
+                  page.
+
+                  LE NOMBRE DE DROITE EST CELUI DU CATALOGUE, et non plus
+                  celui de l'échantillon descendu avec la page. C'est
+                  toute la différence : « 24 sur 1 230 » disait la taille
+                  d'un extrait sur une page intitulée « Les pièces », et
+                  le site paraissait vingt fois plus petit qu'il n'est.
+                  Un filtre posé, il devient le compte exact de ce que ce
+                  filtre retient DANS LE CATALOGUE ENTIER. */}
+              {reste > 0 ? (
                 <div className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
                   <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                    {enChiffres(visibles.length)} sur {enChiffres(ordonnes.length)} affichées
+                    {enChiffres(visibles.length)} sur {enChiffres(total)} affichées
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => setCombien((n) => n + LOT)}
-                    className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97]"
+                    onClick={charger}
+                    /* Deux clics pendant qu'une page voyage
+                       demanderaient deux fois la même tranche. */
+                    disabled={enCours}
+                    className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97] disabled:opacity-60"
                   >
-                    Charger {Math.min(reste, LOT)} pièce{Math.min(reste, LOT) > 1 ? "s" : ""} de
-                    plus
+                    {enCours
+                      ? "Chargement…"
+                      : `Charger ${Math.min(reste, LOT)} pièce${
+                          Math.min(reste, LOT) > 1 ? "s" : ""
+                        } de plus`}
                   </button>
 
-                  <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
-                    ou tape ⌘K pour chercher directement
+                  {/* LA PANNE SE DIT LÀ OÙ ELLE SE PRODUIT. Le réseau
+                      peut refuser une tranche : sans rien, le bouton
+                      semblerait simplement ne pas marcher. */}
+                  <p
+                    className={`m-0 hidden text-[11.5px] font-semibold lg:block ${
+                      panne ? "text-[rgb(var(--accent-1))]" : "text-white/50"
+                    }`}
+                  >
+                    {panne
+                      ? "la suite n'a pas répondu, reclique pour réessayer"
+                      : "ou tape ⌘K pour chercher directement"}
                   </p>
                 </div>
+              ) : (
+                total > LOT && (
+                  /* AU BOUT DE LA LISTE, LA PAGE NE DISAIT PLUS RIEN.
+                     Le pied disparaissait avec son bouton : on tombait
+                     sur du vide après la dernière rangée, sans savoir si
+                     on avait tout vu ou si le chargement s'était arrêté
+                     tout seul. */
+                  <div className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
+                    <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
+                      {enChiffres(total)} pièce{total > 1 ? "s" : ""} · tu as tout vu
+                    </p>
+
+                    <Link
+                      href="/marques"
+                      className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97]"
+                    >
+                      Parcourir les marques
+                    </Link>
+
+                    <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
+                      ou tape ⌘K pour chercher directement
+                    </p>
+                  </div>
+                )
               )}
             </>
           )}
@@ -1464,7 +1695,7 @@ export default function PieceDirectory({
           être là où le pouce se trouve déjà, pas en haut d'un défilement
           de six rangées. Il porte son compte, donc il dit aussi combien
           de filtres sont posés — ce qu'un tiroir refermé ne disait plus. */}
-      {auDoigt && !ouvert && ordonnes.length > 0 && (
+      {auDoigt && !ouvert && total > 0 && (
         <button
           type="button"
           onClick={() => setOuvert(true)}
@@ -1514,8 +1745,8 @@ export default function PieceDirectory({
             onClick={() => setOuvert(false)}
             className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
           >
-            Voir {ordonnes.length > 1 ? "les" : "la"} {enChiffres(ordonnes.length)} pièce
-            {ordonnes.length > 1 ? "s" : ""}
+            Voir {total > 1 ? "les" : "la"} {enChiffres(total)} pièce
+            {total > 1 ? "s" : ""}
           </button>
         }
       >
