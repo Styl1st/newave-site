@@ -8,26 +8,27 @@ import {
   MOUVEMENT_DEFAUT,
   PREFERENCES_DEFAUT,
   PRESETS,
-  PRESETS_MOUVEMENT,
   THEME_DEFAUT,
   appliquerClarte,
   appliquerFond,
   appliquerMouvement,
   appliquerTheme,
-  decrire,
   decrireApparence,
   ecrire,
   lire,
+  PALIERS_MOUVEMENT,
+  barreDepuisMouvement,
   memeTheme,
+  mouvementDepuisBarre,
+  nomDuMouvement,
+  sixDepuisTrois,
+  troisDepuisSix,
   type Ambiance,
-  type Fond,
-  type Mouvement,
   type Preferences,
-  type PresetMouvement,
   type Theme,
+  type TroisTeintes,
 } from "@/lib/theme";
 
-const LABELS = ["Départ", "Transition", "Cœur", "Pic", "Retour", "Fin"];
 
 
 function Vignette({ theme }: { theme: Theme }) {
@@ -50,31 +51,13 @@ export default function ThemePicker({
   const [prefs, setPrefs] = useState<Preferences>(duCompte ?? PREFERENCES_DEFAUT);
   const [charge, setCharge] = useState(false);
   const [nomEnCours, setNomEnCours] = useState<string | null>(null);
-  const [nomMouvement, setNomMouvement] = useState<string | null>(null);
+  /* Pourquoi un enregistrement n'a pas eu lieu. Se tait dès qu'on
+     touche à une couleur : le refus ne vaut que pour le thème qui l'a
+     provoqué. */
+  const [refus, setRefus] = useState<string | null>(null);
   const [systemeReduit, setSystemeReduit] = useState(false);
-  const [etat, setEtat] = useState<"repos" | "envoi" | "garde">("repos");
+  const [etat, setEtat] = useState<"repos" | "envoi" | "garde" | "panne">("repos");
 
-  /*
-   * LE CURSEUR N'APPLIQUE RIEN TANT QU'ON LE TIENT.
-   *
-   * `--vit` et `--amp` entrent dans la durée et l'amplitude de toutes
-   * les animations du décor. Les changer pendant qu'on fait glisser le
-   * curseur obligeait le navigateur à recalculer, dix fois par seconde,
-   * la position courante de chaque animation : chacune sautait, et
-   * l'ensemble donnait un clignotement franc — sur le fond, sur les
-   * boutons, sur le liseré de la barre du haut.
-   *
-   * Ce n'est pas qu'une question de confort. Un clignotement rapide et
-   * répété est exactement ce qu'il faut éviter sur un écran : c'est un
-   * risque réel pour les personnes photosensibles, et ça ne se discute
-   * pas.
-   *
-   * On garde donc la valeur en cours ICI, pour que le curseur et le
-   * chiffre suivent le doigt, et on ne la pose sur la page qu'au
-   * relâchement. Le décor est mis en pause pendant ce temps : figé, il
-   * ne peut pas sauter.
-   */
-  const [reglage, setReglage] = useState<Mouvement | null>(null);
   const differe = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /*
@@ -94,6 +77,27 @@ export default function ThemePicker({
    */
   const [composer, setComposer] = useState(false);
 
+  /* Le repli des six teintes calculées. Fermé par défaut : c'est une
+     vérification, pas une étape du réglage. */
+  const [sixOuvertes, setSixOuvertes] = useState(false);
+
+  /*
+   * ON NE RÉÉCRIT JAMAIS UN THÈME QUE LA PERSONNE N'A PAS TOUCHÉ.
+   *
+   * Un thème composé avec l'ancien écran a six couleurs libres, qui ne
+   * sont pas forcément l'interpolation de trois d'entre elles. À
+   * `null`, cet état veut dire « les six enregistrées font foi » : on
+   * montre leurs rangs 0, 2 et 5 dans les trois sélecteurs, et la page
+   * continue d'afficher le dégradé d'origine, au pixel près.
+   *
+   * ⚠️ SEULE UNE DES TROIS TEINTES LE REMPLIT. Changer un Halo, le
+   * mouvement ou le mode clair écrit aussi dans `prefs`, et ne doit
+   * surtout pas recalculer le dégradé : la personne n'y a pas touché.
+   * C'est pour ça que le déclencheur est ici, dans `poserTeinte`, et
+   * pas dans `poser`.
+   */
+  const [troisTeintes, setTroisTeintes] = useState<TroisTeintes | null>(null);
+
   useEffect(() => {
     // Le compte fait foi : c'est le réglage de la personne, pas celui
     // de la machine sur laquelle elle se trouve. Le stockage local ne
@@ -105,8 +109,22 @@ export default function ThemePicker({
 
   useEffect(() => () => { if (differe.current) clearTimeout(differe.current); }, []);
 
-  /** Enregistre et applique d'un même geste : l'aperçu doit être immédiat. */
-  function poser(next: Preferences) {
+  /**
+   * Enregistre et applique d'un même geste : l'aperçu doit être
+   * immédiat.
+   *
+   * `immediat` SAUTE LE DIFFÉRÉ, et ce n'est pas un raccourci de
+   * confort. Les sept cents millisecondes existent pour les rails : un
+   * curseur envoie une douzaine de valeurs par seconde, et sans elles
+   * chaque frémissement du doigt deviendrait une écriture en base.
+   * Enregistrer une ambiance ou en supprimer une n'est pas ça : c'est
+   * un geste unique, décidé, qu'on ne refait pas deux fois de suite. Le
+   * différer ouvrait une fenêtre de sept cents millisecondes pendant
+   * laquelle un rechargement, une fermeture d'onglet ou une navigation
+   * perdait l'enregistrement — et comme le compte fait foi au
+   * chargement suivant, l'ambiance disparaissait sans rien dire.
+   */
+  function poser(next: Preferences, immediat = false) {
     setPrefs(next);
     appliquerTheme(next.theme, document.documentElement);
     appliquerMouvement(next.mouvement, document.documentElement, true);
@@ -136,67 +154,130 @@ export default function ThemePicker({
      */
     if (differe.current) clearTimeout(differe.current);
     setEtat("envoi");
-    differe.current = setTimeout(async () => {
-      const res = await enregistrerApparence(next);
-      setEtat(res.ok ? "garde" : "repos");
-    }, 700);
+
+    const envoyer = async () => {
+      /*
+       * L'APPEL PEUT ÉCHOUER AVANT MÊME D'ARRIVER, et il faut le
+       * rattraper ici.
+       *
+       * `enregistrerApparence` est une action serveur : le navigateur
+       * la joint par le réseau. Une coupure, un onglet qui s'endort, un
+       * serveur de développement qui recompile pendant que la requête
+       * vole, et `fetch` rejette — `TypeError: Failed to fetch`. Dans
+       * un `setTimeout` asynchrone, personne n'attend cette promesse :
+       * le rejet remontait donc en erreur non rattrapée, et Next
+       * l'affichait en plein écran pour un réglage de couleur.
+       *
+       * CE QU'ON PERD EST PETIT, ET IL FAUT LE DIRE QUAND MÊME. La
+       * copie locale est déjà écrite quelques lignes plus haut, donc
+       * l'apparence tient sur cet appareil et survit au rechargement.
+       * C'est la synchronisation vers le compte qui n'a pas eu lieu, et
+       * se taire laisserait croire que le réglage suivra sur le
+       * téléphone alors qu'il ne suivra pas.
+       */
+      try {
+        const res = await enregistrerApparence(next);
+        setEtat(res.ok ? "garde" : "panne");
+      } catch {
+        setEtat("panne");
+      }
+    };
+
+    /* `void` et non `await` : `poser` n'est pas asynchrone, et
+       `envoyer` rattrape déjà tout ce qui peut échouer. */
+    if (immediat) void envoyer();
+    else differe.current = setTimeout(envoyer, 700);
   }
 
-  /** Pendant le glissement : rien ne bouge, on retient seulement. */
-  function ajuster(m: Mouvement) {
-    setReglage(m);
-    document.documentElement.dataset.reglage = "1";
+
+  /** Les trois teintes à montrer : celles qu'on a posées, ou les rangs
+      0, 2 et 5 du thème enregistré tant qu'on n'a touché à rien. */
+  const teintes = troisTeintes ?? troisDepuisSix(prefs.theme.bg);
+
+  /** Poser une des trois, et recalculer les six à partir de là. */
+  function poserTeinte(cle: keyof TroisTeintes, valeur: string) {
+    /* Le refus ne valait que pour le thème qui l'a provoqué. */
+    setRefus(null);
+    const suite = { ...teintes, [cle]: valeur };
+    setTroisTeintes(suite);
+    poser({ ...prefs, theme: { ...prefs.theme, bg: sixDepuisTrois(suite) } });
   }
 
-  /** Au relâchement : on applique, on enregistre, le décor repart. */
-  function relacher() {
-    delete document.documentElement.dataset.reglage;
-    if (!reglage) return;
-    poser({ ...prefs, mouvement: reglage });
-    setReglage(null);
+  /*
+   * LA BARRE LIT LE FOND D'ABORD.
+   *
+   * Un compte neuf a `fond: "fixe"` — par défaut, pour tout le monde,
+   * voir le type `Fond` — et un mouvement à ses valeurs de départ. Sans
+   * cette lecture dans cet ordre, la barre s'ouvrirait sur « Animé »
+   * alors que le décor ne bouge pas, ce qui est le genre de
+   * contradiction qu'on est justement venu supprimer.
+   *
+   * `reglage` a disparu avec les deux curseurs : la barre n'applique
+   * qu'au `change`, et un `input[type=range]` n'en émet un qu'à chaque
+   * cran, pas à chaque pixel. Le thème n'est donc pas recomposé pendant
+   * le glissement, ce qui était la raison d'être de l'ancien différé.
+   */
+  const barre = barreDepuisMouvement(connecte ? prefs.fond : FOND_DEFAUT, prefs.mouvement);
+
+  function reglerBarre(v: number) {
+    const { fond, mouvement } = mouvementDepuisBarre(v, prefs.mouvement);
+    poser({ ...prefs, fond, mouvement });
   }
 
   function enregistrerAmbiance(nom: string) {
     const propre = nom.trim().slice(0, 30);
     if (!propre) return;
+
+    const existantes = [...PRESETS, ...prefs.ambiances];
+
     // Deux ambiances du même nom ne se distinguent plus dans la liste :
     // on refuse plutôt que de laisser créer un doublon inutilisable.
-    if ([...PRESETS, ...prefs.ambiances].some((a) => a.nom.toLowerCase() === propre.toLowerCase())) {
+    if (existantes.some((a) => a.nom.toLowerCase() === propre.toLowerCase())) {
+      setRefus(`« ${propre} » existe déjà.`);
       setNomEnCours(null);
       return;
     }
+
+    /*
+     * DEUX AMBIANCES AUX MÊMES COULEURS, C'EST LE MÊME PROBLÈME QU'AUX
+     * MÊMES NOMS, et il se refusait moins bien.
+     *
+     * On tombe dessus en enregistrant sans avoir rien changé depuis le
+     * dernier choix : on clique « Forêt », on clique « Enregistrer ces
+     * couleurs », et l'on obtient une vignette identique à Forêt, au
+     * même dégradé, avec deux coches allumées puisque les deux
+     * correspondent. Ça se lit comme un bug d'affichage, et le nom
+     * qu'on vient de taper n'aide pas : il désigne des couleurs qui
+     * portent déjà un nom.
+     *
+     * On le dit donc avant de créer quoi que ce soit, en nommant
+     * l'ambiance qui les porte déjà.
+     */
+    const jumelle = existantes.find((a) => memeTheme(a.theme, prefs.theme));
+    if (jumelle) {
+      setRefus(`Ces couleurs sont déjà enregistrées sous « ${jumelle.nom} ».`);
+      setNomEnCours(null);
+      return;
+    }
+
     const ambiance: Ambiance = {
       id: `perso-${Date.now()}`,
       nom: propre,
       theme: prefs.theme,
     };
-    poser({ ...prefs, ambiances: [...prefs.ambiances, ambiance] });
+    setRefus(null);
+    /* Un geste décidé : il part tout de suite. Voir `poser`. */
+    poser({ ...prefs, ambiances: [...prefs.ambiances, ambiance] }, true);
     setNomEnCours(null);
-  }
-
-  function enregistrerMouvement(nom: string) {
-    const propre = nom.trim().slice(0, 24);
-    if (!propre) return;
-    if (
-      [...PRESETS_MOUVEMENT, ...prefs.mouvements].some(
-        (m) => m.nom.toLowerCase() === propre.toLowerCase()
-      )
-    ) {
-      setNomMouvement(null);
-      return;
-    }
-    const preset: PresetMouvement = {
-      id: `mvt-${Date.now()}`,
-      nom: propre,
-      mouvement: prefs.mouvement,
-    };
-    poser({ ...prefs, mouvements: [...prefs.mouvements, preset] });
-    setNomMouvement(null);
   }
 
   if (!charge) return <div className="skeleton h-64 w-full" />;
 
   const toutes = [...PRESETS, ...prefs.ambiances];
+
+  /* Le rang de la PREMIÈRE ambiance qui porte les couleurs en cours,
+     ou -1 quand elles ont été composées à la main. */
+  const rangActif = toutes.findIndex((a) => memeTheme(a.theme, prefs.theme));
 
   // `min-h-11` seulement au doigt : ces pastilles font trente-quatre
   // pixels de haut, et une cible tactile en fait quarante-quatre.
@@ -243,6 +324,15 @@ export default function ThemePicker({
             Enregistrement…
           </span>
         )}
+        {connecte && etat === "panne" && (
+          <span className="flex shrink-0 items-center gap-2 text-[11.5px] font-extrabold text-white">
+            <span
+              aria-hidden
+              className="h-[7px] w-[7px] rounded-full bg-[rgb(var(--accent-1))] shadow-[0_0_0_3px_rgba(var(--accent-1),0.22)]"
+            />
+            Gardé ici, pas sur ton compte
+          </span>
+        )}
         {connecte && etat === "garde" && (
           <span className="flex shrink-0 items-center gap-2 text-[11.5px] font-extrabold text-white">
             <span
@@ -282,108 +372,42 @@ export default function ThemePicker({
       <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         {/* ================= les réglages ================= */}
         <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-5">
-          {/* ---- clair ou sombre ---- */}
-          <section className={`glass p-4 sm:p-5 ${niveau1}`}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="eyebrow m-0">Fond</p>
-              <div className="flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
-                {[
-                  { clair: false, label: "Sombre" },
-                  { clair: true, label: "Clair" },
-                ].map((o) => {
-                  const actif = Boolean(prefs.clair) === o.clair;
-                  return (
-                    <button
-                      key={o.label}
-                      type="button"
-                      aria-pressed={actif}
-                      onClick={() => poser({ ...prefs, clair: o.clair })}
-                      className={`${chip} ${
-                        actif
-                          ? "bg-white text-[var(--color-ink)]"
-                          : "text-white/80 hover:bg-white/12 hover:text-white"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
-              En clair, la palette est simplement diluée.
-            </p>
-
-            {/* ---- le décor bouge, ou pas ----
-
-                IL EST ICI, AU PREMIER NIVEAU, ET C'EST TOUT LE POINT.
-
-                Il était rangé avec la vitesse et l'ampleur, dans
-                « Composer ». Au doigt, ce second niveau est derrière un
-                bouton et trois écrans de défilement : le seul réglage qui
-                décide si le site consomme en permanence était donc le plus
-                difficile à atteindre, et sur téléphone, c'est-à-dire
-                précisément là où la batterie compte.
-
-                Il rejoint clair/sombre, parce que c'est la même nature de
-                choix : deux états, aucun réglage, on tranche et on repart.
-                La vitesse et l'ampleur restent au second niveau, elles. */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-              <p className="eyebrow m-0">Mouvement</p>
-              <div className="flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
-                {(
-                  [
-                    ["fixe", "Fixe"],
-                    ["anime", "Animé"],
-                  ] as const
-                ).map(([valeur, libelle]) => {
-                  const actif = connecte
-                    ? (prefs.fond ?? FOND_DEFAUT) === valeur
-                    : valeur === FOND_DEFAUT;
-                  return (
-                    <button
-                      key={valeur}
-                      type="button"
-                      disabled={!connecte}
-                      aria-pressed={actif}
-                      onClick={() => poser({ ...prefs, fond: valeur as Fond })}
-                      className={`${chip} ${
-                        connecte ? "" : "cursor-not-allowed opacity-45"
-                      } ${
-                        actif
-                          ? "bg-white text-[var(--color-ink)]"
-                          : "text-white/80" +
-                            (connecte ? " hover:bg-white/12 hover:text-white" : "")
-                      }`}
-                    >
-                      {libelle}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
-              Le décor est <strong className="font-bold text-white/80">fixe par défaut</strong>,
-              pour tout le monde. C&apos;est la seule chose du site qui tourne en
-              permanence, même sur une page où personne ne touche à rien, et elle
-              se paie en batterie.{" "}
-              {!connecte && "Le mouvement se rallume depuis un compte."}
-            </p>
-          </section>
 
           {/* ---- ambiances ---- */}
           <section className={`glass p-4 sm:p-5 ${niveau1}`}>
             <p className="eyebrow m-0 mb-3">Ambiances</p>
+            {/*
+             * UNE SEULE COCHE, ET C'EST LE PREMIER QUI CORRESPOND.
+             *
+             * `memeTheme` compare des couleurs, pas des identités : deux
+             * ambiances aux mêmes six teintes se reconnaissent toutes
+             * les deux dans le thème courant, et s'allumaient donc
+             * ensemble. On croit à un bug d'affichage, et c'en est un.
+             * C'est exactement la correction qu'avaient reçue les
+             * réglages de mouvement avant qu'ils ne disparaissent.
+             *
+             * Enregistrer une ambiance identique à une autre est
+             * maintenant refusé (voir `enregistrerAmbiance`), donc le
+             * cas ne devrait plus se créer. Mais les doublons déjà
+             * enregistrés, eux, existent encore.
+             */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {toutes.map((a) => {
-                const actif = memeTheme(a.theme, prefs.theme);
+              {toutes.map((a, rang) => {
+                const actif = rang === rangActif;
                 const perso = a.id.startsWith("perso-");
                 return (
                   <div key={a.id} className="relative">
                     <button
                       type="button"
-                      onClick={() => poser({ ...prefs, theme: a.theme })}
+                      onClick={() => {
+                        /* Une ambiance toute prête a ses six teintes,
+                           choisies à la main et pas interpolées. On
+                           repasse donc à `null` : ce sont ses valeurs
+                           qui font foi, et les trois sélecteurs
+                           montreront ses rangs 0, 2 et 5. */
+                        setTroisTeintes(null);
+                        poser({ ...prefs, theme: a.theme });
+                      }}
                       className={`w-full overflow-hidden rounded-[14px] border transition active:scale-[.97] ${
                         actif
                           ? "border-white shadow-[0_0_0_3px_rgba(255,255,255,0.34)]"
@@ -401,10 +425,13 @@ export default function ThemePicker({
                       <button
                         type="button"
                         onClick={() =>
-                          poser({
-                            ...prefs,
-                            ambiances: prefs.ambiances.filter((x) => x.id !== a.id),
-                          })
+                          poser(
+                            {
+                              ...prefs,
+                              ambiances: prefs.ambiances.filter((x) => x.id !== a.id),
+                            },
+                            true
+                          )
                         }
                         aria-label={`Supprimer l'ambiance ${a.nom}`}
                         className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[#c2273f]"
@@ -480,6 +507,15 @@ export default function ThemePicker({
               </strong>
               , puis enregistre-les sous un nom.
             </p>
+
+            {/* Pourquoi le dernier enregistrement n'a pas eu lieu. En
+                accent plutôt qu'en rouge : ce n'est pas une panne, c'est
+                un doublon qu'on refuse. */}
+            {refus && (
+              <p className="m-0 mt-1.5 text-[12.5px] font-bold leading-relaxed text-[rgb(var(--accent-1))]">
+                {refus}
+              </p>
+            )}
           </section>
 
           {/* ---- l'entrée du second niveau ----
@@ -519,44 +555,122 @@ export default function ThemePicker({
             </button>
 
             <p className="eyebrow m-0 mb-1">Composer</p>
+            {/*
+             * TROIS TEINTES, NOMMÉES PAR LEUR PLACE DANS LA PAGE.
+             *
+             * L'écran en demandait six, appelées Départ, Transition,
+             * Cœur, Pic, Retour, Fin. Personne ne savait ce que voulait
+             * dire « Pic », ni où il tombait : on les poussait au hasard
+             * jusqu'à ce que la bande disparaisse. Haut, Cœur et Bas
+             * disent où la couleur se pose, et les trois intermédiaires
+             * se calculent — voir `sixDepuisTrois`.
+             */}
             <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/60">
-              Six teintes de fond, trois accents.
+              Trois teintes suffisent : le reste du dégradé se calcule.
             </p>
 
-            <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-6">
-              {prefs.theme.bg.map((couleur, i) => (
-                <label key={i} className="flex flex-col items-center gap-1.5">
+            <div className="grid grid-cols-3 gap-[11px]">
+              {(
+                [
+                  ["haut", "Haut"],
+                  ["coeur", "Cœur"],
+                  ["bas", "Bas"],
+                ] as const
+              ).map(([cle, libelle]) => (
+                <label key={cle} className="flex flex-col items-center gap-1.5">
                   <input
                     type="color"
-                    value={couleur}
-                    onChange={(e) => {
-                      const bg = [...prefs.theme.bg] as Theme["bg"];
-                      bg[i] = e.target.value;
-                      poser({ ...prefs, theme: { ...prefs.theme, bg } });
-                    }}
-                    className="h-11 w-full cursor-pointer rounded-[11px] border border-white/25 bg-transparent"
+                    value={teintes[cle]}
+                    onChange={(e) => poserTeinte(cle, e.target.value)}
+                    /* `data-doigt` : c'est ce qu'on CHOISIT du doigt, et
+                       le curseur le dit. Les boutons et les liens
+                       gardent la flèche — voir `Curseur`. */
+                    data-doigt
+                    className="pastille-teinte h-[62px] w-full cursor-pointer rounded-[15px] border border-white/25"
                   />
-                  <span className={etiquette}>{LABELS[i]}</span>
+                  <span className={etiquette}>{libelle}</span>
                 </label>
               ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2.5">
-              {prefs.theme.accents.map((couleur, i) => (
-                <label key={i} className="flex flex-col items-center gap-1.5">
-                  <input
-                    type="color"
-                    value={couleur}
-                    onChange={(e) => {
-                      const accents = [...prefs.theme.accents] as Theme["accents"];
-                      accents[i] = e.target.value;
-                      poser({ ...prefs, theme: { ...prefs.theme, accents } });
-                    }}
-                    className="h-11 w-full cursor-pointer rounded-[11px] border border-white/25 bg-transparent"
-                  />
-                  <span className={etiquette}>Nappe {i + 1}</span>
-                </label>
-              ))}
+            {/*
+             * LE REPLI EST LÀ POUR LA CONFIANCE, PAS POUR LE RÉGLAGE.
+             *
+             * Il montre qu'on n'a rien caché : voilà les six teintes
+             * réellement appliquées. Il affiche `prefs.theme.bg`, donc
+             * ce que la page porte vraiment — et non ce que
+             * l'interpolation produirait. La nuance compte pour un thème
+             * composé avec l'ancien écran : tant qu'on n'a pas touché
+             * une teinte, ses six valeurs d'origine sont intactes, et
+             * les montrer telles quelles est la seule façon de ne pas
+             * mentir sur l'état de la page.
+             *
+             * En lecture seule. Les rendre modifiables reviendrait à
+             * remettre l'ancien écran à côté du neuf, et les deux se
+             * contrediraient au premier clic.
+             */}
+            <button
+              type="button"
+              onClick={() => setSixOuvertes((v) => !v)}
+              aria-expanded={sixOuvertes}
+              className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-[12px] font-bold text-white/70 transition hover:text-white"
+            >
+              <IconChevron
+                className={`h-3.5 w-3.5 transition-transform ${sixOuvertes ? "rotate-90" : ""}`}
+              />
+              Voir les six teintes
+            </button>
+
+            {sixOuvertes && (
+              <div className="mt-1">
+                <div className="flex flex-wrap gap-2">
+                  {prefs.theme.bg.map((couleur, i) => (
+                    <span
+                      key={i}
+                      title={couleur}
+                      className="h-[34px] w-[34px] rounded-[10px] border border-white/25"
+                      style={{ background: couleur }}
+                    />
+                  ))}
+                </div>
+                <p className="m-0 mt-2 text-[11.5px] leading-relaxed text-white/50">
+                  Calculées depuis les trois teintes, du haut vers le bas.
+                </p>
+              </div>
+            )}
+
+            {/*
+             * LES HALOS GARDENT LEURS TROIS PASTILLES, et c'est un choix
+             * assumé. On a essayé de les dériver eux aussi : c'était
+             * pire. Ce sont les lumières qu'on remarque en premier sur
+             * la page ; les retirer du contrôle direct donne
+             * l'impression que le thème décide à ta place.
+             */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+              <div className="min-w-0">
+                <p className="eyebrow m-0">Halos</p>
+                <p className="m-0 mt-1 text-[12.5px] leading-relaxed text-white/60">
+                  Les lumières qui dérivent.
+                </p>
+              </div>
+              <div className="flex gap-2.5">
+                {prefs.theme.accents.map((couleur, i) => (
+                  <label key={i} className="block">
+                    <span className="sr-only">Halo {i + 1}</span>
+                    <input
+                      type="color"
+                      value={couleur}
+                      onChange={(e) => {
+                        const accents = [...prefs.theme.accents] as Theme["accents"];
+                        accents[i] = e.target.value;
+                        poser({ ...prefs, theme: { ...prefs.theme, accents } });
+                      }}
+                      data-doigt
+                      className="pastille-teinte h-11 w-11 cursor-pointer rounded-full border border-white/25"
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
         </div>
@@ -566,17 +680,27 @@ export default function ThemePicker({
           {/*
            * L'APERÇU MONTRE LA PAGE, PAS LE CURSEUR QU'ON TIENT.
            *
-           * Il peint les variables réelles du document. Elles ne bougent
-           * qu'au relâchement : pendant le glissement, ce cadre reste
-           * donc aussi immobile que le fond, et pour la même raison. Le
-           * `animationPlayState` ci-dessous le gèle en plus, exactement
-           * comme `data-reglage` gèle le décor — sans quoi on aurait
-           * remplacé un grand scintillement par un petit.
+           * Il peint les variables réelles du document, et il dérive à
+           * la vitesse choisie — `calc(13s / var(--vit))`, la même
+           * horloge que le décor.
+           *
+           * IL N'Y A PLUS DE GEL PENDANT LE GLISSEMENT, et il n'y en a
+           * plus besoin. Les deux curseurs d'avant prévenaient à chaque
+           * pixel, d'où le différé et le `data-reglage` qui figeait tout
+           * le temps du geste. La barre unique n'applique qu'au `change`
+           * d'un `input[type=range]`, c'est-à-dire une fois par cran :
+           * le thème n'est plus recomposé en continu, et l'invariant
+           * « ne pas appliquer pendant le glissement » tient tout seul.
+           *
+           * `animationPlayState` ne sert donc plus qu'à une chose, et
+           * c'est la bonne : à zéro, le fond est fixe, et un aperçu qui
+           * continuerait de dériver mentirait sur ce qu'on vient de
+           * choisir.
            */}
           {/*
            * L'APERÇU PASSE EN TÊTE AU DOIGT, ET IL Y RESTE.
            *
-           * `-order-1` le remonte avant les réglages alors qu'il
+           * `-order-3` le remonte avant les réglages alors qu'il
            * appartient, dans le document, à la colonne de droite — ce
            * qui évite de le rendre deux fois. Collé sous la barre du
            * haut, il reste sous les yeux pendant qu'on choisit : on juge
@@ -585,9 +709,9 @@ export default function ThemePicker({
            * À `xl`, la colonne de droite existe pour de bon : il reprend
            * sa place et son ordre, et ne colle plus à rien.
            */}
-          <div className="-order-1 sticky top-[70px] z-20 xl:static xl:order-none">
+          <div className="-order-3 sticky top-[70px] z-20 xl:static xl:order-none">
             <div
-              className="relative h-[150px] overflow-hidden rounded-[22px] border border-white/20 shadow-[0_14px_34px_-10px_rgba(45,15,100,0.55)] xl:h-[210px] xl:rounded-[20px] xl:shadow-[0_10px_30px_rgba(45,15,100,0.26)]"
+              className="relative h-[168px] overflow-hidden rounded-[22px] border border-white/20 shadow-[0_14px_34px_-10px_rgba(45,15,100,0.55)] xl:h-[210px] xl:rounded-[20px] xl:shadow-[0_10px_30px_rgba(45,15,100,0.26)]"
               style={{
                 background:
                   "linear-gradient(168deg, var(--bg-1) 0%, var(--bg-2) 22%, var(--bg-3) 44%, var(--bg-4) 62%, var(--bg-5) 82%, var(--bg-6) 100%)",
@@ -603,7 +727,7 @@ export default function ThemePicker({
                     "radial-gradient(circle at 48% 94%, rgba(var(--accent-3), .75) 0%, transparent 40%)",
                   backgroundRepeat: "no-repeat",
                   animation: "nappe1 calc(13s / var(--vit)) ease-in-out infinite alternate",
-                  animationPlayState: reglage ? "paused" : "running",
+                  animationPlayState: barre === 0 ? "paused" : "running",
                 }}
               />
               <span
@@ -616,7 +740,7 @@ export default function ThemePicker({
                     "radial-gradient(circle at 86% 86%, rgba(var(--accent-3), .78) 0%, transparent 40%)",
                   backgroundRepeat: "no-repeat",
                   animation: "nappe2 calc(17s / var(--vit)) ease-in-out infinite alternate",
-                  animationPlayState: reglage ? "paused" : "running",
+                  animationPlayState: barre === 0 ? "paused" : "running",
                 }}
               />
 
@@ -646,181 +770,140 @@ export default function ThemePicker({
 
           </div>
 
-          {/* Elle décrit le mouvement : elle appartient donc au second
-              niveau, et reste collée à l'aperçu par le même `order`. */}
-          <p
-            className={`${niveau2} -order-1 m-0 rounded-[13px] bg-[rgba(8,2,30,0.42)] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-white/70 xl:-mt-2 xl:order-none`}
-          >
-            {decrire(prefs.mouvement)}
-          </p>
+          {/* ---- clair ou sombre, et le mouvement ----
 
-          {/* ---- mouvement ---- */}
-          <section className={`glass p-4 sm:p-5 ${niveau2}`}>
-            <p className="eyebrow m-0 mb-3">Mouvement du fond</p>
+              IL VIT DANS LA COLONNE DE DROITE, SOUS L'APERÇU, et c'est
+              une question de place autant que de sens.
 
-            {/* L'interrupteur fixe/animé n'est PAS ici : il est au premier
-                niveau, avec clair/sombre. Ce qui suit ne décrit que la
-                manière dont le décor dérive quand il est animé, et n'a
-                donc aucun effet tant qu'il est fixe. */}
-            <p className="m-0 mb-3 text-[12.5px] leading-relaxed text-white/55">
-              Ces réglages ne s&apos;appliquent qu&apos;au{" "}
-              <strong className="font-bold text-white/75">fond animé</strong>.
-            </p>
+              De place : à `xl`, la colonne de droite ne portait que
+              l'aperçu, la note du système et un bouton. Elle s'arrêtait
+              à mi-hauteur pendant que celle de gauche empilait trois
+              panneaux, et le trou se voyait d'autant plus que le fond
+              est clair à cet endroit.
 
-            {/* `items-start` : sans lui, les pastilles d'une même ligne
-                s'étirent à la hauteur de la plus haute, et une ligne
-                contenant un nom long laissait des trous sous les autres. */}
-            <div className="flex flex-wrap items-start gap-2">
-              {(() => {
-                const liste = [...PRESETS_MOUVEMENT, ...prefs.mouvements];
-                // On ne marque QUE LE PREMIER réglage qui correspond. Deux
-                // enregistrements identiques s'allumaient tous les deux, et
-                // l'on croyait à un bug d'affichage — c'en était un.
-                const rangActif = liste.findIndex(
-                  (p) =>
-                    Math.abs(p.mouvement.vitesse - prefs.mouvement.vitesse) < 0.02 &&
-                    Math.abs(p.mouvement.amplitude - prefs.mouvement.amplitude) < 0.02
-                );
-                return liste.map((p, rang) => {
-                const actif = rang === rangActif;
-                const perso = p.id.startsWith("mvt-");
-                return (
-                  <span key={p.id} className="relative">
+              De sens : ce bloc et l'aperçu parlent de la même chose. On
+              règle le mouvement, on le voit dériver juste au-dessus. Les
+              ambiances et les teintes, elles, se choisissent à gauche, où
+              la grille a la largeur de leurs pastilles.
+
+              `-order-2` LE GARDE JUSTE SOUS L'APERÇU EN PILE. Sous `xl`,
+              les deux colonnes sont en `contents` : tout est sœur dans
+              une seule pile, et l'ordre du document mettrait ce bloc
+              après les ambiances et les teintes. L'aperçu porte
+              `-order-3`, celui-ci `-order-2` : ils restent en tête, dans
+              cet ordre, quelle que soit la largeur. */}
+          <section className={`glass -order-2 p-4 sm:p-5 xl:order-none ${niveau1}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="eyebrow m-0">Fond</p>
+              <div className="flex gap-1 rounded-full border border-white/20 bg-white/8 p-1">
+                {[
+                  { clair: false, label: "Sombre" },
+                  { clair: true, label: "Clair" },
+                ].map((o) => {
+                  const actif = Boolean(prefs.clair) === o.clair;
+                  return (
                     <button
+                      key={o.label}
                       type="button"
-                      onClick={() => poser({ ...prefs, mouvement: p.mouvement })}
+                      aria-pressed={actif}
+                      onClick={() => poser({ ...prefs, clair: o.clair })}
                       className={`${chip} ${
                         actif
-                          ? "bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)]"
-                          : "border border-white/30 bg-white/8 text-white/85 hover:border-white/60 hover:bg-white/18"
-                      } ${perso ? "pr-8" : ""}`}
+                          ? "bg-white text-[var(--color-ink)]"
+                          : "text-white/80 hover:bg-white/12 hover:text-white"
+                      }`}
                     >
-                      {p.nom}
+                      {o.label}
                     </button>
-                    {perso && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          poser({ ...prefs, mouvements: prefs.mouvements.filter((x) => x.id !== p.id) })
-                        }
-                        aria-label={`Supprimer le réglage ${p.nom}`}
-                        className="absolute right-1.5 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-black/25 text-white transition hover:bg-[#c2273f]"
-                      >
-                        <IconTrash className="h-3 w-3" />
-                      </button>
-                    )}
-                  </span>
-                );
-                });
-              })()}
+                  );
+                })}
+              </div>
             </div>
-
-            {/* ---- réglage fin du mouvement ---- */}
-            <div className="mt-5 flex flex-col gap-4">
-              <label className="flex flex-col gap-2">
-                <span className="flex items-baseline justify-between text-[12.5px] font-bold text-white/85">
-                  Vitesse
-                  <span className="text-[11.5px] font-semibold text-white/50">
-                    ×{(reglage ?? prefs.mouvement).vitesse.toFixed(2)}
-                  </span>
-                </span>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={3}
-                  step={0.05}
-                  value={(reglage ?? prefs.mouvement).vitesse}
-                  onPointerUp={relacher}
-                  onPointerCancel={relacher}
-                  onKeyUp={relacher}
-                  onBlur={relacher}
-                  onChange={(e) =>
-                    ajuster({
-                      ...(reglage ?? prefs.mouvement),
-                      vitesse: Number(e.target.value),
-                    })
-                  }
-                  className="curseur-doigt w-full accent-white"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2">
-                <span className="flex items-baseline justify-between text-[12.5px] font-bold text-white/85">
-                  Ampleur
-                  <span className="text-[11.5px] font-semibold text-white/50">
-                    ×{(reglage ?? prefs.mouvement).amplitude.toFixed(2)}
-                  </span>
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={2}
-                  step={0.05}
-                  value={(reglage ?? prefs.mouvement).amplitude}
-                  onPointerUp={relacher}
-                  onPointerCancel={relacher}
-                  onKeyUp={relacher}
-                  onBlur={relacher}
-                  onChange={(e) =>
-                    ajuster({
-                      ...(reglage ?? prefs.mouvement),
-                      amplitude: Number(e.target.value),
-                    })
-                  }
-                  className="curseur-doigt w-full accent-white"
-                />
-              </label>
-            </div>
-
-            {/* Vitesse et ampleur ne se comprennent pas seules : plusieurs
-                personnes ont réglé la vitesse au maximum sans rien voir
-                bouger, parce que l'ampleur était à zéro. */}
-            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/55">
-              Une <strong className="font-bold text-white/75">ampleur</strong> à zéro fige
-              tout, quelle que soit la vitesse.
+            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
+              En clair, la palette est simplement diluée.
             </p>
 
-            <div className="mt-3">
-              {nomMouvement === null ? (
-                <button
-                  type="button"
-                  onClick={() => setNomMouvement("")}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-dashed border-white/35 px-3.5 py-1.5 text-[11.5px] font-bold text-white/75 transition hover:border-white/70 hover:text-white active:scale-[.97] sm:min-h-0"
-                >
-                  <IconPlus className="h-3.5 w-3.5" /> Enregistrer ce réglage
-                </button>
-              ) : (
-                <span className="flex flex-wrap items-center gap-1.5">
-                  <input
-                    autoFocus
-                    value={nomMouvement}
-                    onChange={(e) => setNomMouvement(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") enregistrerMouvement(nomMouvement);
-                      if (e.key === "Escape") setNomMouvement(null);
-                    }}
-                    placeholder="Son nom…"
-                    maxLength={24}
-                    className="champ champ-petit w-36"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => enregistrerMouvement(nomMouvement)}
-                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-black text-[var(--color-ink)]"
-                  >
-                    Enregistrer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNomMouvement(null)}
-                    className="rounded-full border border-white/40 px-3 py-1.5 text-[11px] font-bold text-white/80"
-                  >
-                    Annuler
-                  </button>
+            {/* ---- le mouvement du décor, sur une seule barre ----
+
+                ELLE EST ICI, AU PREMIER NIVEAU, ET C'EST TOUT LE POINT.
+
+                L'interrupteur Fixe/Animé était rangé avec la vitesse et
+                l'ampleur, dans « Composer ». Au doigt, ce second niveau
+                est derrière un bouton et trois écrans de défilement : le
+                seul réglage qui décide si le site consomme en permanence
+                était donc le plus difficile à atteindre, et sur
+                téléphone, c'est-à-dire précisément là où la batterie
+                compte. Il en est sorti, et la barre qui le remplace
+                reste à sa place.
+
+                ONZE COMMANDES SONT DEVENUES UNE. L'interrupteur, les
+                quatre pastilles de mode, le curseur de vitesse et celui
+                d'ampleur disaient tous la même chose sous quatre formes.
+                « Figé » à gauche coupe le décor pour de bon — c'est
+                `fond: "fixe"`, pas une ampleur à zéro — et tout le reste
+                de la barre en dérive la vitesse et l'ampleur ensemble.
+                Voir `mouvementDepuisBarre`. */}
+            <div className="mt-4 border-t border-white/10 pt-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="eyebrow m-0">Mouvement</p>
+                {/* Le nom de l'état courant, en gras : c'est le retour de
+                    lecture d'une barre qui n'a pas de graduation. */}
+                <span className="text-[12.5px] font-extrabold text-white">
+                  {nomDuMouvement(barre)}
                 </span>
-              )}
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={barre}
+                disabled={!connecte}
+                aria-label="Mouvement du décor"
+                onChange={(e) => reglerBarre(Number(e.target.value))}
+                className={`rail-tactile mt-3 w-full accent-white ${
+                  connecte ? "" : "cursor-not-allowed opacity-45"
+                }`}
+              />
+
+              {/* Les quatre mots sont cliquables et la poignée les
+                  rejoint : on choisit un mot, ou l'on glisse entre eux
+                  si l'on veut affiner. */}
+              <div className="mt-1 flex items-center justify-between">
+                {PALIERS_MOUVEMENT.map((palier) => {
+                  const actif = nomDuMouvement(barre) === palier.nom;
+                  return (
+                    <button
+                      key={palier.nom}
+                      type="button"
+                      disabled={!connecte}
+                      aria-pressed={actif}
+                      onClick={() => reglerBarre(palier.valeur)}
+                      className={`min-h-8 px-1 text-[10.5px] font-extrabold uppercase tracking-[0.12em] transition ${
+                        connecte ? "" : "cursor-not-allowed opacity-45"
+                      } ${actif ? "text-white" : "text-white/[.68] hover:text-white"}`}
+                    >
+                      {palier.nom}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="m-0 mt-1.5 text-[12px] leading-relaxed text-white/55">
+                Tout à gauche, le fond ne bouge plus.
+              </p>
             </div>
+
+            <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/60">
+              Le décor est <strong className="font-bold text-white/80">fixe par défaut</strong>,
+              pour tout le monde. C&apos;est la seule chose du site qui tourne en
+              permanence, même sur une page où personne ne touche à rien, et elle
+              se paie en batterie.{" "}
+              {!connecte && "Le mouvement se rallume depuis un compte."}
+            </p>
           </section>
+
 
           {systemeReduit && (
             <p className={`${niveau2} m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[12.5px] leading-relaxed text-white`}>
@@ -832,7 +915,10 @@ export default function ThemePicker({
 
           <button
             type="button"
-            onClick={() => poser({ ...prefs, theme: THEME_DEFAUT, mouvement: MOUVEMENT_DEFAUT })}
+            onClick={() => {
+              setTroisTeintes(null);
+              poser({ ...prefs, theme: THEME_DEFAUT, mouvement: MOUVEMENT_DEFAUT });
+            }}
             className={`${niveau2} min-h-[44px] w-full rounded-full border border-white/30 bg-white/8 px-5 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97] sm:min-h-0`}
           >
             Revenir aux réglages par défaut

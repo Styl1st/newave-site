@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0a1a12;font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#bff3d4;text-decoration:none}
+  a:hover{color:#fff}
+  @keyframes nappe1{0%{transform:translate3d(-4%,-3%,0) scale(1.05)}100%{transform:translate3d(5%,4%,0) scale(1.18)}}
+  @keyframes nappe2{0%{transform:translate3d(4%,3%,0) scale(1.12)}100%{transform:translate3d(-5%,-4%,0) scale(1.02)}}
+  input.pastille{-webkit-appearance:none;appearance:none}
+  input.pastille::-webkit-color-swatch-wrapper{padding:0}
+  input.pastille::-webkit-color-swatch{border:none;border-radius:inherit}
+  input.pastille::-moz-color-swatch{border:none;border-radius:inherit}
+  input.cur{-webkit-appearance:none;appearance:none;height:26px;background:transparent;cursor:pointer}
+  input.cur::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:rgba(255,255,255,.22)}
+  input.cur::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-9px;border-radius:999px;background:#fff;box-shadow:0 3px 10px rgba(4,18,12,.6)}
+  input.cur::-moz-range-track{height:6px;border-radius:999px;background:rgba(255,255,255,.22)}
+  input.cur::-moz-range-thumb{width:24px;height:24px;border:none;border-radius:999px;background:#fff}
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:22px;padding:34px 30px 46px;background:linear-gradient(168deg,#0b1f16,#123a2a 40%,#1c5b40 100%);box-sizing:border-box">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <span style="font:900 10.5px/1 Archivo;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.55)">Tour 2 — Compte · Apparence</span>
+    <h1 style="margin:0;font:800 27px/1.15 Archivo;letter-spacing:-.03em;color:#fff">Trois teintes, une vitesse</h1>
+    <p style="margin:0;max-width:62ch;font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.62);text-wrap:pretty">Le bloc Fond de <a href="#1b">1b</a> — <strong style="font-weight:800;color:#fff">Haut, Cœur, Bas</strong> plus les halos, les six teintes repliées — posé sous un aperçu plein format, avec la barre de mouvement de <a href="#1a">1a</a>. Le curseur NEWAVE est actif dans le panneau : la flèche s'ouvre sur ce qui se clique, la double flèche apparaît sur ce qui se règle.</p>
+  </header>
+
+  <div id="2a" ref="{{ refZone }}" style="position:relative;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;cursor:none">
+    <div style="display:flex;flex-direction:column;gap:12px;width:430px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 9px;border-radius:999px;background:#fff;color:#0c2b1e;font:900 11.5px/1 Archivo">2a</span>
+        <span style="font:800 13px/1 Archivo;color:#fff">Trois teintes, une barre</span>
+      </div>
+
+      <div style="border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 34px -14px rgba(4,20,12,.9)">
+        <div style="position:relative;height:168px;overflow:hidden;background:{{ apercuC }}">
+          <div style="position:absolute;inset:-26%;filter:blur(26px);background:{{ nappeC }};animation-name:nappe1;animation-duration:{{ dureeC }};animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;animation-play-state:{{ etatC }}"></div>
+          <span style="position:absolute;left:14px;top:12px;padding:4px 9px;border-radius:999px;background:rgba(6,20,14,.45);font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.85)">Ton site</span>
+          <span style="position:absolute;left:14px;right:14px;bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:999px;background:rgba(6,20,14,.5);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)">
+            <span style="font:900 11px/1 Archivo;letter-spacing:.14em;color:rgba(255,255,255,.9)">NEWAVE</span>
+            <span style="padding:6px 12px;border-radius:999px;background:#fff;color:#12241c;font:900 10px/1 Archivo">Bouton</span>
+          </span>
+        </div>
+      </div>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Fond</h3>
+        <p style="margin:6px 0 0;font:500 12px/1.55 Archivo;color:rgba(255,255,255,.58)">Trois teintes suffisent : le reste du dégradé se calcule.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:15px">
+          <sc-for list="{{ trioC }}" as="c" hint-placeholder-count="3">
+            <label style="display:flex;flex-direction:column;gap:8px;cursor:pointer">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" data-doigt="1" style="width:100%;height:62px;padding:0;border:none;border-radius:15px;background:transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.32),0 0 0 1px rgba(255,255,255,.18)">
+              <span style="font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">{{ c.nom }}</span>
+            </label>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.14)">
+          <div style="min-width:0">
+            <p style="margin:0;font:800 13.5px/1.2 Archivo;color:#fff">Halos</p>
+            <p style="margin:4px 0 0;font:500 11.5px/1.45 Archivo;color:rgba(255,255,255,.58)">Les lumières qui dérivent.</p>
+          </div>
+          <div style="display:flex;gap:9px;flex:0 0 auto">
+            <sc-for list="{{ halosC }}" as="c" hint-placeholder-count="3">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" data-doigt="1" aria-label="Halo" style="width:44px;height:44px;padding:0;border:none;border-radius:999px;background:transparent;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.55)">
+            </sc-for>
+          </div>
+        </div>
+
+        <button type="button" onClick="{{ toggleSixC }}" style="display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:14px;padding:0;border:none;background:none;cursor:pointer;font:800 11.5px/1 Archivo;color:rgba(255,255,255,.7);text-align:left">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>{{ libSixC }}
+        </button>
+        <sc-if value="{{ sixOuvert }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:13px;border-radius:14px;background:rgba(6,22,14,.32)">
+            <sc-for list="{{ sixC }}" as="c" hint-placeholder-count="6">
+              <span style="display:block;height:34px;border-radius:9px;background:{{ c.v }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)"></span>
+            </sc-for>
+            <p style="grid-column:1/-1;margin:2px 0 0;font:500 11px/1.45 Archivo;color:rgba(255,255,255,.58)">Calculées depuis les trois teintes, du haut vers le bas.</p>
+          </div>
+        </sc-if>
+      </section>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Mouvement</h3>
+          <span style="font:800 12px/1 Archivo;color:#fff">{{ nomC }}</span>
+        </div>
+        <input class="cur" type="range" min="0" max="100" step="1" value="{{ vC }}" onChange="{{ setVC }}" data-regler="1" aria-label="Mouvement du fond" style="width:100%;margin:14px 0 0">
+        <div style="display:flex;justify-content:space-between;gap:6px;margin-top:2px">
+          <sc-for list="{{ cransC }}" as="k" hint-placeholder-count="4">
+            <button type="button" onClick="{{ k.set }}" style="border:none;background:none;padding:6px 2px;min-height:32px;cursor:pointer;font:800 11px/1 Archivo;letter-spacing:.08em;text-transform:uppercase;color:{{ k.col }}">{{ k.nom }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:12px 0 0;font:500 11.5px/1.5 Archivo;color:rgba(255,255,255,.55);text-wrap:pretty">Tout à gauche, le fond ne bouge plus.</p>
+      </section>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:330px;max-width:100%;padding-top:34px">
+      <p style="margin:0;padding:15px 17px;border-radius:16px;border:1px dashed rgba(255,255,255,.26);font:500 12px/1.6 Archivo;color:rgba(255,255,255,.66);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Ce qui disparaît —</strong> les six teintes nommées Départ / Transition / Cœur / Pic / Retour / Fin deviennent trois mots lisibles, le curseur Ampleur et les quatre pastilles de mouvement deviennent une barre, le bouton « Enregistrer ce réglage » part. Neuf sélecteurs et six commandes deviennent six sélecteurs et une barre.</p>
+      <p style="margin:0;padding:15px 17px;border-radius:16px;border:1px dashed rgba(255,255,255,.26);font:500 12px/1.6 Archivo;color:rgba(255,255,255,.66);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Dev —</strong> <code>theme.bg</code> reste un tableau de 6 : les positions 2, 4 et 5 sont interpolées entre Haut / Cœur / Bas à l'enregistrement, la 4<sup>e</sup> recevant un léger éclaircissement (l'ancien « pic »). <code>theme.accents</code> (3) est inchangé, derrière le mot Halos. Un seul curseur 0→100 pour le mouvement : 0 ⇒ <code>amplitude 0</code>, sinon <code>vitesse = 0,35 + v/100 × 2,2</code> et <code>amplitude = 0,4 + v/100 × 1,1</code>.</p>
+      <p style="margin:0;padding:15px 17px;border-radius:16px;border:1px dashed rgba(255,255,255,.26);font:500 12px/1.6 Archivo;color:rgba(255,255,255,.66);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Le doigt —</strong> il ne remplace pas la flèche sur tout ce qui se clique, sinon il ne dit plus rien. Il ne paraît que sur ce qu’on <em>choisit</em> du doigt : ici les trois teintes et les halos. Les boutons, les liens et les replis gardent la flèche, qui grossit. Dessiné comme la main et le poing de <code>Curseur.tsx</code> — mêmes rectangles arrondis, même encre, même contour blanc — index tendu, la pointe sur le point visé.</p>
+      <p style="margin:0;padding:15px 17px;border-radius:16px;border:1px dashed rgba(255,255,255,.26);font:500 12px/1.6 Archivo;color:rgba(255,255,255,.66);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Curseur —</strong> la flèche 11×15 de <code>Curseur.tsx</code>, telle qu’en place : remplissage <code>--color-ink</code>, contour blanc, <code>paint-order:stroke</code>. Sur un élément cliquable elle prend la teinte de l’ambiance assombrie — ici <code>color-mix(accent-3 45%, ink)</code> recalculé en direct depuis la couleur choisie, donc la flèche change avec le fond. Elle cède la place à la double flèche <code>regler</code> sur la barre de mouvement, et au <code>doigt</code> sur les seules zones qui portent <code>data-doigt</code> — un glyphe de plus dans la famille existante, à ajouter à côté de <code>main</code> et <code>poing</code>, teinté comme la flèche active.</p>
+    </div>
+
+    <div ref="{{ refFleche }}" aria-hidden="true" style="position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:60;opacity:0;transition:opacity .12s">
+      <span ref="{{ refG1 }}" style="position:absolute;left:0;top:0;display:block;color:#170a33;filter:drop-shadow(0 2px 5px rgba(4,18,12,.5))">
+        <svg viewBox="0 0 12 16" width="15" height="20" style="display:block;overflow:visible"><path d="M1 1.2 L1 13.6 L4.35 10.35 L6.5 15 L8.75 13.9 L6.6 9.4 L11 9.4 Z" fill="currentColor" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke"></path></svg>
+      </span>
+      <span ref="{{ refG3 }}" style="position:absolute;left:-7px;top:-1.5px;display:none;color:#170a33;filter:drop-shadow(0 2px 5px rgba(4,18,12,.5))">
+        <svg viewBox="0 0 24 24" width="21" height="21" style="display:block;overflow:visible"><g fill="currentColor" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" paint-order="stroke"><rect x="5.2" y="10.4" width="13.2" height="9.6" rx="4.8"></rect><rect x="6.6" y="2.1" width="3" height="10" rx="1.5"></rect><rect x="10.4" y="8.4" width="2.7" height="4" rx="1.35"></rect><rect x="13.9" y="8.4" width="2.7" height="4" rx="1.35"></rect><rect x="16.6" y="11.4" width="2.6" height="5" rx="1.3" transform="rotate(20 17.9 13.9)"></rect></g></svg>
+      </span>
+      <span ref="{{ refG2 }}" style="position:absolute;left:-11px;top:-6px;display:none;color:#170a33;filter:drop-shadow(0 2px 5px rgba(4,18,12,.5))">
+        <svg viewBox="0 0 22 12" width="27" height="15" style="display:block;overflow:visible"><path d="M1 6 L5.4 2.2 L5.4 4.6 L16.6 4.6 L16.6 2.2 L21 6 L16.6 9.8 L16.6 7.4 L5.4 7.4 L5.4 9.8 Z" fill="currentColor" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke"></path></svg>
+      </span>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:22px;padding:34px 30px 46px;background:linear-gradient(168deg,#0b1f16,#123a2a 40%,#1c5b40 100%);box-sizing:border-box">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <span style="font:900 10.5px/1 Archivo;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.55)">Tour 1 — Compte · Apparence</span>
+    <h1 style="margin:0;font:800 27px/1.15 Archivo;letter-spacing:-.03em;color:#fff">Composer &amp; Mouvement, condensés</h1>
+    <p style="margin:0;max-width:62ch;font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.62);text-wrap:pretty">Deux directions pour les deux blocs. Dans les deux cas : l'ampleur disparaît (elle est dérivée de la vitesse), les libellés obscurs disparaissent, et le réglage se lit d'un coup d'œil. Réglages vivants — touchez-y. <a href="#1a">1a</a> manipule directement, <a href="#1b">1b</a> nomme et cache le reste.</p>
+  </header>
+
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+
+    <!-- ================= 1a ================= -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px;width:430px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 9px;border-radius:999px;background:#fff;color:#0c2b1e;font:900 11.5px/1 Archivo">1a</span>
+        <span style="font:800 13px/1 Archivo;color:#fff">Le dégradé qu'on touche</span>
+      </div>
+
+      <div style="border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 34px -14px rgba(4,20,12,.9)">
+        <div style="position:relative;height:118px;overflow:hidden;background:{{ apercuA }}">
+          <div style="position:absolute;inset:-26%;filter:blur(24px);background:{{ nappeA }};animation-name:nappe1;animation-duration:{{ dureeA }};animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;animation-play-state:{{ etatA }}"></div>
+          <span style="position:absolute;left:13px;top:11px;padding:4px 9px;border-radius:999px;background:rgba(6,20,14,.45);font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.85)">Aperçu</span>
+          <span style="position:absolute;right:13px;top:11px;padding:4px 9px;border-radius:999px;background:rgba(6,20,14,.45);font:800 10px/1 Archivo;letter-spacing:.06em;color:rgba(255,255,255,.85)">{{ nomA }}</span>
+        </div>
+      </div>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Fond</h3>
+          <span style="font:600 11.5px/1 Archivo;color:rgba(255,255,255,.5)">6 points sur le dégradé</span>
+        </div>
+
+        <div style="position:relative;margin-top:14px">
+          <div style="height:60px;border-radius:16px;background:{{ barreA }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 8px">
+            <sc-for list="{{ fondA }}" as="c" hint-placeholder-count="6">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" aria-label="Teinte de fond" style="width:38px;height:38px;padding:0;border:none;border-radius:999px;background:transparent;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.92),0 3px 10px rgba(4,20,12,.45)">
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:9px;font:700 10.5px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68)">
+          <span>Haut de page</span>
+          <span>Bas de page</span>
+        </div>
+
+        <div style="height:1px;margin:18px 0;background:rgba(255,255,255,.14)"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px">
+          <div style="min-width:0">
+            <p style="margin:0;font:800 13.5px/1.2 Archivo;color:#fff">Halos</p>
+            <p style="margin:4px 0 0;font:500 11.5px/1.45 Archivo;color:rgba(255,255,255,.55)">Trois taches de lumière qui dérivent par-dessus.</p>
+          </div>
+          <div style="display:flex;gap:9px;flex:0 0 auto">
+            <sc-for list="{{ halosA }}" as="c" hint-placeholder-count="3">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" aria-label="Halo" style="width:44px;height:44px;padding:0;border:none;border-radius:999px;background:transparent;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.55)">
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Mouvement</h3>
+          <span style="font:800 12px/1 Archivo;color:#fff">{{ nomA }}</span>
+        </div>
+        <input class="cur" type="range" min="0" max="100" step="1" value="{{ vA }}" onChange="{{ setVA }}" aria-label="Mouvement du fond" style="width:100%;margin:14px 0 0">
+        <div style="display:flex;justify-content:space-between;gap:6px;margin-top:2px">
+          <sc-for list="{{ crans }}" as="k" hint-placeholder-count="4">
+            <button type="button" onClick="{{ k.set }}" style="border:none;background:none;padding:6px 2px;min-height:32px;cursor:pointer;font:800 11px/1 Archivo;letter-spacing:.08em;text-transform:uppercase;color:{{ k.col }}">{{ k.nom }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:12px 0 0;font:500 11.5px/1.5 Archivo;color:rgba(255,255,255,.55);text-wrap:pretty">Tout à gauche, le fond ne bouge plus.</p>
+      </section>
+
+      <p style="margin:0;padding:13px 15px;border-radius:14px;border:1px dashed rgba(255,255,255,.26);font:500 11.5px/1.55 Archivo;color:rgba(255,255,255,.62);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Dev —</strong> un seul curseur 0→100 : 0 ⇒ <code>amplitude 0</code> (figé), sinon <code>vitesse = 0,35 + v/100 × 2,2</code> et <code>amplitude = 0,4 + v/100 × 1,1</code>. Les 4 noms restent des presets, ils ne sont plus des boutons séparés. Les 6 <code>theme.bg</code> et 3 <code>theme.accents</code> sont inchangés côté données.</p>
+    </div>
+
+    <!-- ================= 1b ================= -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px;width:430px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 9px;border-radius:999px;background:#fff;color:#0c2b1e;font:900 11.5px/1 Archivo">1b</span>
+        <span style="font:800 13px/1 Archivo;color:#fff">Trois teintes, quatre mots</span>
+      </div>
+
+      <div style="border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.28);box-shadow:0 14px 34px -14px rgba(4,20,12,.9)">
+        <div style="position:relative;height:118px;overflow:hidden;background:{{ apercuB }}">
+          <div style="position:absolute;inset:-26%;filter:blur(24px);background:{{ nappeB }};animation-name:nappe2;animation-duration:{{ dureeB }};animation-timing-function:ease-in-out;animation-iteration-count:infinite;animation-direction:alternate;animation-play-state:{{ etatB }}"></div>
+          <span style="position:absolute;left:13px;top:11px;padding:4px 9px;border-radius:999px;background:rgba(6,20,14,.45);font:900 9.5px/1 Archivo;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.85)">Aperçu</span>
+          <span style="position:absolute;right:13px;top:11px;padding:4px 9px;border-radius:999px;background:rgba(6,20,14,.45);font:800 10px/1 Archivo;letter-spacing:.06em;color:rgba(255,255,255,.85)">{{ nomB }}</span>
+        </div>
+      </div>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Fond</h3>
+        <p style="margin:6px 0 0;font:500 12px/1.55 Archivo;color:rgba(255,255,255,.58)">Trois teintes suffisent : le reste du dégradé se calcule.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:15px">
+          <sc-for list="{{ trioB }}" as="c" hint-placeholder-count="3">
+            <label style="display:flex;flex-direction:column;gap:8px;cursor:pointer">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" style="width:100%;height:62px;padding:0;border:none;border-radius:15px;background:transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.32),0 0 0 1px rgba(255,255,255,.18)">
+              <span style="font:800 11px/1 Archivo;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.62)">{{ c.nom }}</span>
+            </label>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.14)">
+          <div style="min-width:0">
+            <p style="margin:0;font:800 13.5px/1.2 Archivo;color:#fff">Halos</p>
+            <p style="margin:4px 0 0;font:500 11.5px/1.45 Archivo;color:rgba(255,255,255,.55)">Les lumières qui dérivent.</p>
+          </div>
+          <div style="display:flex;gap:9px;flex:0 0 auto">
+            <sc-for list="{{ halosB }}" as="c" hint-placeholder-count="3">
+              <input class="pastille" type="color" value="{{ c.v }}" onChange="{{ c.set }}" aria-label="Halo" style="width:44px;height:44px;padding:0;border:none;border-radius:999px;background:transparent;cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,.55)">
+            </sc-for>
+          </div>
+        </div>
+
+        <button type="button" onClick="{{ toggleSix }}" style="display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:14px;padding:0;border:none;background:none;cursor:pointer;font:800 11.5px/1 Archivo;color:rgba(255,255,255,.7);text-align:left">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>{{ libSix }}
+        </button>
+        <sc-if value="{{ six }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:13px;border-radius:14px;background:rgba(6,22,14,.32)">
+            <sc-for list="{{ sixB }}" as="c" hint-placeholder-count="6">
+              <span style="display:block;height:34px;border-radius:9px;background:{{ c.v }};box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)"></span>
+            </sc-for>
+            <p style="grid-column:1/-1;margin:2px 0 0;font:500 11px/1.45 Archivo;color:rgba(255,255,255,.55)">Calculées depuis les trois teintes, du haut vers le bas.</p>
+          </div>
+        </sc-if>
+      </section>
+
+      <section style="border-radius:22px;background-color:rgba(6,22,14,.3);background-image:linear-gradient(150deg,rgba(18,58,42,.5),rgba(18,58,42,.24));backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.28);box-shadow:0 10px 30px rgba(4,20,12,.3),inset 0 1px 0 rgba(255,255,255,.28);padding:20px">
+        <h3 style="margin:0;font:800 16px/1.2 Archivo;letter-spacing:-.02em;color:#fff">Mouvement</h3>
+        <div style="display:flex;gap:6px;margin-top:14px;padding:5px;border-radius:999px;background:rgba(6,22,14,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)">
+          <sc-for list="{{ modesB }}" as="m" hint-placeholder-count="4">
+            <button type="button" onClick="{{ m.set }}" style="flex:1;min-height:40px;border:none;border-radius:999px;cursor:pointer;background:{{ m.bg }};color:{{ m.col }};font:800 12px/1 Archivo">{{ m.nom }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:13px 0 0;font:500 11.5px/1.55 Archivo;color:rgba(255,255,255,.58);text-wrap:pretty">{{ phraseB }}</p>
+        <button type="button" onClick="{{ toggleFin }}" style="display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:6px;padding:0;border:none;background:none;cursor:pointer;font:800 11.5px/1 Archivo;color:rgba(255,255,255,.7);text-align:left">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>{{ libFin }}
+        </button>
+        <sc-if value="{{ fin }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 14px 8px;border-radius:14px;background:rgba(6,22,14,.32)">
+            <span style="display:flex;align-items:baseline;justify-content:space-between;font:800 12px/1 Archivo;color:rgba(255,255,255,.88)">Vitesse<span style="font:600 11.5px/1 Archivo;color:rgba(255,255,255,.55)">{{ multB }}</span></span>
+            <input class="cur" type="range" min="0" max="100" step="1" value="{{ vB }}" onChange="{{ setVB }}" aria-label="Vitesse" style="width:100%;margin:6px 0 0">
+          </div>
+        </sc-if>
+      </section>
+
+      <p style="margin:0;padding:13px 15px;border-radius:14px;border:1px dashed rgba(255,255,255,.26);font:500 11.5px/1.55 Archivo;color:rgba(255,255,255,.62);text-wrap:pretty"><strong style="font-weight:800;color:#fff">Dev —</strong> <code>theme.bg</code> reste un tableau de 6 : les positions 2, 4 et 5 sont interpolées entre Haut / Cœur / Bas à l'enregistrement. Les 4 modes écrivent directement <code>{vitesse, amplitude}</code> ; « Réglage fin » n'expose que la vitesse, l'amplitude suit. Rien n'est appliqué pendant le glissement, comme aujourd'hui.</p>
+    </div>
+  </div>
+
+  <p style="margin:0;max-width:70ch;font:500 12.5px/1.6 Archivo;color:rgba(255,255,255,.52);text-wrap:pretty">Supprimés dans les deux : le curseur Ampleur, la phrase « Une ampleur à zéro fige tout », les libellés Départ/Transition/Cœur/Pic/Retour/Fin, le bouton « Enregistrer ce réglage » (le mouvement se garde tout seul, comme le reste de l'apparence).</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ambiance&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Forêt&quot;,&quot;NEWAVE&quot;,&quot;Nuit&quot;],&quot;default&quot;:&quot;Forêt&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contexte&quot;}}">
+const PALETTES = {
+  "Forêt": { bg: ["#0c2119", "#14402f", "#1f6b4a", "#3f8f5c", "#175139", "#091a13"], ac: ["#7ee6ab", "#46a883", "#d9de63"] },
+  "NEWAVE": { bg: ["#33217f", "#4e5bc0", "#9e63d6", "#c255c4", "#5a54c8", "#31217c"], ac: ["#e86fd8", "#5a72e0", "#b47aea"] },
+  "Nuit": { bg: ["#0d1030", "#182a5c", "#1f4b7a", "#2d6f8f", "#1a3560", "#0b0e2a"], ac: ["#5ad0f0", "#3f6ae0", "#8fd6ff"] }
+};
+const CRANS = [
+  { nom: "Figé", v: 0 },
+  { nom: "Doux", v: 22 },
+  { nom: "Animé", v: 55 },
+  { nom: "Vif", v: 88 }
+];
+
+function hx(c) { const n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function mix(a, b, t) {
+  const x = hx(a), y = hx(b);
+  const v = x.map((n, i) => Math.round(n + (y[i] - n) * t));
+  return "#" + v.map((n) => n.toString(16).padStart(2, "0")).join("");
+}
+function rgb(c) { return hx(c).join(","); }
+
+class Component extends DCLogic {
+  state = { pals: {}, trios: {}, vA: 55, vB: 55, six: false, fin: false, vC: 55, trioC: { haut: "#0c2119", coeur: "#1f6b4a", bas: "#091a13" }, acC: ["#7ee6ab", "#46a883", "#d9de63"], sixOuvert: false };
+
+  componentDidMount() {
+    const zone = this.zone;
+    if (!zone || !window.matchMedia("(pointer: fine)").matches) return;
+    const bouge = (e) => {
+      const r = zone.getBoundingClientRect();
+      const k = r.width ? zone.offsetWidth / r.width : 1;
+      const x = (e.clientX - r.left) * k, y = (e.clientY - r.top) * k;
+      const cible = e.target;
+      const regle = cible.closest && cible.closest("[data-regler],input[type=range]");
+      const clic = cible.closest && cible.closest("button,label,input[type=color],a");
+      const doigt = !regle && cible.closest && !!cible.closest("[data-doigt]");
+      this.g1.style.color = clic && !regle ? (this._actif || "#170a33") : "#170a33";
+      this.g3.style.color = this._actif || "#170a33";
+      this.g1.style.display = regle || doigt ? "none" : "block";
+      this.g2.style.display = regle ? "block" : "none";
+      this.g3.style.display = doigt ? "block" : "none";
+      this.fl.style.opacity = "1";
+      this.fl.style.transform = "translate3d(" + x + "px," + y + "px,0) scale(" + (clic && !regle && !doigt ? 1.2 : 1) + ")";
+    };
+    zone.addEventListener("pointermove", bouge);
+    zone.addEventListener("pointerleave", () => { this.fl.style.opacity = "0"; });
+    this._off = () => zone.removeEventListener("pointermove", bouge);
+  }
+  componentWillUnmount() { if (this._off) this._off(); }
+
+  amb() { return this.props.ambiance ?? "Forêt"; }
+  pal() { const a = this.amb(); return this.state.pals[a] || PALETTES[a] || PALETTES["Forêt"]; }
+  trio() {
+    const a = this.amb();
+    if (this.state.trios[a]) return this.state.trios[a];
+    const b = (PALETTES[a] || PALETTES["Forêt"]).bg;
+    return { haut: b[0], coeur: b[2], bas: b[5] };
+  }
+
+  setCol(cle, i, val) {
+    const a = this.amb(), p = this.pal();
+    const next = { bg: p.bg.slice(), ac: p.ac.slice() };
+    next[cle][i] = val;
+    this.setState((s) => ({ pals: { ...s.pals, [a]: next } }));
+  }
+  setTrioC(k, val) {
+    this.setState((s) => ({ trioC: { ...s.trioC, [k]: val } }));
+  }
+  setTrio(k, val) {
+    const a = this.amb(), t = this.trio();
+    this.setState((s) => ({ trios: { ...s.trios, [a]: { ...t, [k]: val } } }));
+  }
+
+  six(t) {
+    return [t.haut, mix(t.haut, t.coeur, .55), t.coeur, mix(t.coeur, "#ffffff", .16), mix(t.coeur, t.bas, .55), t.bas];
+  }
+  nom(v) { return v === 0 ? "Figé" : v < 34 ? "Doux" : v < 71 ? "Animé" : "Vif"; }
+  mult(v) { return 0.35 + (v / 100) * 2.2; }
+  fondCss(b) {
+    return "linear-gradient(168deg," + b[0] + " 0%," + b[1] + " 22%," + b[2] + " 44%," + b[3] + " 62%," + b[4] + " 82%," + b[5] + " 100%)";
+  }
+  nappeCss(ac) {
+    return "radial-gradient(circle at 30% 26%,rgba(" + rgb(ac[0]) + ",.8) 0%,transparent 42%)," +
+      "radial-gradient(circle at 74% 62%,rgba(" + rgb(ac[1]) + ",.85) 0%,transparent 42%)," +
+      "radial-gradient(circle at 48% 94%,rgba(" + rgb(ac[2]) + ",.72) 0%,transparent 40%)";
+  }
+
+  renderVals() {
+    const p = this.pal(), t = this.trio(), s = this.state;
+    const sixB = this.six(t);
+    const dur = (v) => (13 / this.mult(v)).toFixed(1) + "s";
+    const fondC = this.six(s.trioC);
+    const lumC = s.acC;
+    this._actif = mix(lumC[2], "#170a33", .55);
+
+    return {
+      fondA: p.bg.map((v, i) => ({ v, set: (e) => this.setCol("bg", i, e.target.value) })),
+      halosA: p.ac.map((v, i) => ({ v, set: (e) => this.setCol("ac", i, e.target.value) })),
+      barreA: "linear-gradient(90deg," + p.bg.join(",") + ")",
+      apercuA: this.fondCss(p.bg),
+      nappeA: this.nappeCss(p.ac),
+      dureeA: dur(s.vA),
+      etatA: s.vA === 0 ? "paused" : "running",
+      nomA: this.nom(s.vA),
+      vA: s.vA,
+      setVA: (e) => this.setState({ vA: Number(e.target.value) }),
+      crans: CRANS.map((c) => ({
+        nom: c.nom,
+        col: this.nom(s.vA) === c.nom ? "#fff" : "rgba(255,255,255,.68)",
+        set: () => this.setState({ vA: c.v })
+      })),
+
+      trioB: [
+        { nom: "Haut", v: t.haut, set: (e) => this.setTrio("haut", e.target.value) },
+        { nom: "Cœur", v: t.coeur, set: (e) => this.setTrio("coeur", e.target.value) },
+        { nom: "Bas", v: t.bas, set: (e) => this.setTrio("bas", e.target.value) }
+      ],
+      halosB: p.ac.map((v, i) => ({ v, set: (e) => this.setCol("ac", i, e.target.value) })),
+      sixB: sixB.map((v) => ({ v })),
+      apercuB: this.fondCss(sixB),
+      nappeB: this.nappeCss(p.ac),
+      dureeB: dur(s.vB),
+      etatB: s.vB === 0 ? "paused" : "running",
+      nomB: this.nom(s.vB),
+      vB: s.vB,
+      multB: "×" + this.mult(s.vB).toFixed(2).replace(".", ","),
+      setVB: (e) => this.setState({ vB: Number(e.target.value) }),
+      modesB: CRANS.map((c) => {
+        const actif = this.nom(s.vB) === c.nom;
+        return {
+          nom: c.nom,
+          bg: actif ? "#fff" : "transparent",
+          col: actif ? "#0c2b1e" : "rgba(255,255,255,.8)",
+          set: () => this.setState({ vB: c.v })
+        };
+      }),
+      phraseB: s.vB === 0 ? "Le fond ne bouge pas." : s.vB < 34 ? "Le fond dérive lentement, on le remarque à peine." : s.vB < 71 ? "Le fond dérive à rythme normal." : "Le fond dérive vite et largement.",
+      six: s.six,
+      libSix: s.six ? "Masquer les six teintes" : "Voir les six teintes",
+      toggleSix: () => this.setState((x) => ({ six: !x.six })),
+      fin: s.fin,
+      libFin: s.fin ? "Masquer le réglage fin" : "Réglage fin",
+      toggleFin: () => this.setState((x) => ({ fin: !x.fin })),
+
+      refZone: (el) => { this.zone = el; },
+      refFleche: (el) => { this.fl = el; },
+      refG1: (el) => { this.g1 = el; },
+      refG2: (el) => { this.g2 = el; },
+      refG3: (el) => { this.g3 = el; },
+
+      trioC: [
+        { nom: "Haut", v: s.trioC.haut, set: (e) => this.setTrioC("haut", e.target.value) },
+        { nom: "Cœur", v: s.trioC.coeur, set: (e) => this.setTrioC("coeur", e.target.value) },
+        { nom: "Bas", v: s.trioC.bas, set: (e) => this.setTrioC("bas", e.target.value) }
+      ],
+      halosC: s.acC.map((v, i) => ({ v, set: (e) => this.setState((x) => { const a = x.acC.slice(); a[i] = e.target.value; return { acC: a }; }) })),
+      sixOuvert: s.sixOuvert,
+      libSixC: s.sixOuvert ? "Masquer les six teintes" : "Voir les six teintes",
+      toggleSixC: () => this.setState((x) => ({ sixOuvert: !x.sixOuvert })),
+      apercuC: this.fondCss(fondC),
+      nappeC: this.nappeCss(lumC),
+      sixC: fondC.map((v) => ({ v })),
+      vC: s.vC,
+      setVC: (e) => this.setState({ vC: Number(e.target.value) }),
+      nomC: this.nom(s.vC),
+      dureeC: dur(s.vC),
+      etatC: s.vC === 0 ? "paused" : "running",
+      cransC: CRANS.map((c) => ({
+        nom: c.nom,
+        col: this.nom(s.vC) === c.nom ? "#fff" : "rgba(255,255,255,.68)",
+        set: () => this.setState({ vC: c.v })
+      }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

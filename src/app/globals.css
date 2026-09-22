@@ -2891,6 +2891,9 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
 .curseur-point > [data-glyphe="zoom"] { top: -10px; left: -10px; }
 .curseur-point > [data-glyphe="main"],
 .curseur-point > [data-glyphe="poing"] { top: -10px; left: -10px; }
+/* La pointe de l'index tombe sur le pixel visé, pas le milieu de la
+   main : c'est tout l'intérêt de ce glyphe-là. */
+.curseur-point > [data-glyphe="doigt"] { top: -2px; left: -8px; }
 .curseur-point > [data-glyphe="regler"] { top: -7px; left: -12px; }
 .curseur-point > [data-glyphe="inactif"] { top: -9px; left: -9px; }
 
@@ -3565,15 +3568,15 @@ input[type="range"]::-moz-range-thumb {
      compte un sélecteur d'attribut, qui pèse autant qu'une classe. À
      poids égal la dernière règle l'emporte, et la nôtre est en dessous ;
      avec la classe nue, elle perdait en silence. */
-  input.curseur-doigt {
+  input.rail-tactile {
     height: 44px;
   }
-  input.curseur-doigt::-webkit-slider-thumb {
+  input.rail-tactile::-webkit-slider-thumb {
     width: 26px;
     height: 26px;
     margin-top: -10px;
   }
-  input.curseur-doigt::-moz-range-thumb {
+  input.rail-tactile::-moz-range-thumb {
     width: 26px;
     height: 26px;
   }
@@ -4344,6 +4347,49 @@ html[data-menu="1"] .bouton-index {
 html[data-clair="1"] .bouton-index {
   border: 1px solid rgba(34, 16, 70, .12);
   box-shadow: 0 14px 30px -12px rgba(34, 16, 70, .28);
+}
+
+/* ---------- les pastilles de couleur ----------
+
+   UN RECTANGLE DANS UN RECTANGLE, ET C'ÉTAIT LE NAVIGATEUR.
+
+   `input[type=color]` ne se peint pas comme une case ordinaire : le
+   navigateur dessine la couleur dans un ENFANT, avec son propre
+   rembourrage et son propre filet, à l'intérieur du cadre qu'on a
+   stylé. On posait donc des coins à quinze pixels sur le cadre, et la
+   couleur arrivait en rectangle droit au milieu, avec une marge tout
+   autour. Ça ne se remarque que sur les teintes sombres, où l'écart
+   entre la couleur et le fond du panneau est faible, mais ça se voit.
+
+   Les trois pseudo-éléments ci-dessous sont les trois façons dont les
+   navigateurs nomment cet enfant. On leur retire leur rembourrage et
+   leur filet, et on leur fait hériter le rayon du cadre : la couleur
+   remplit alors la pastille jusqu'au bord, carrée pour les teintes,
+   ronde pour les halos, selon ce que la classe utilitaire a demandé.
+
+   Le filet blanc visible reste celui de l'élément lui-même, posé en
+   Tailwind. C'est lui qui détache la pastille du verre quand la
+   couleur choisie est proche du fond. */
+input[type="color"].pastille-teinte {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  overflow: hidden;
+  background-color: transparent;
+}
+
+input[type="color"].pastille-teinte::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"].pastille-teinte::-webkit-color-swatch {
+  border: none;
+  border-radius: inherit;
+}
+
+input[type="color"].pastille-teinte::-moz-color-swatch {
+  border: none;
+  border-radius: inherit;
 }
 
 /* ---------- la colonne de filtres des pièces, sur écran bas ----------

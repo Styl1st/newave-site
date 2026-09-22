@@ -55,6 +55,28 @@ const ZONES = "[data-curseur-zone]";
 /** Ce qui s'attrape et se déplace : la flèche devient une main. */
 const SAISISSABLE = "[data-saisissable]";
 
+/**
+ * Ce qu'on CHOISIT du doigt, et pas seulement ce qui se clique.
+ *
+ * La flèche reste la règle partout ailleurs : un bouton, un lien, un
+ * repli se cliquent, et y poser un doigt tendu ne dirait rien de plus.
+ * Ce qui mérite le doigt, c'est ce qu'on DÉSIGNE — les pastilles de
+ * couleur de l'apparence, où l'on vise une teinte parmi d'autres et où
+ * la pointe indique laquelle.
+ */
+const DOIGT = "[data-doigt]";
+
+/**
+ * Les rails, tous les rails.
+ *
+ * `regler` existait déjà, mais il fallait le demander à la main, zone
+ * par zone — seul le double curseur de prix le faisait. Un
+ * `input[type=range]` se règle par définition : il n'y a aucune raison
+ * de le déclarer. La règle est donc posée ici une fois pour toutes,
+ * avant le `CLIQUABLE` qui les attrapait et leur donnait la flèche.
+ */
+const RAIL = "input[type='range']";
+
 /** Ce qui est là mais ne répond pas. */
 const ETEINT = '[disabled], [aria-disabled="true"]';
 
@@ -73,7 +95,7 @@ const MOT = "[data-curseur-mot]";
  * un attribut ferait autrement disparaître le curseur, sans rien dans
  * la console pour le dire.
  */
-const ETATS = new Set(["piece", "zoom", "regler", "danger", "saisir", "actif", "inactif"]);
+const ETATS = new Set(["piece", "zoom", "doigt", "regler", "danger", "saisir", "actif", "inactif"]);
 
 /**
  * Le temps d'arrêt avant que l'étiquette paraisse.
@@ -289,6 +311,11 @@ export default function Curseur() {
 
       if (cible.closest(SAISISSABLE)) return "saisir";
       if (cible.closest(ETEINT)) return "inactif";
+      /* Avant `CLIQUABLE` : une pastille de couleur et un rail sont
+         aussi des éléments qui répondent au clic, et le premier qui
+         répond gagne. Passés après, ils recevraient la flèche. */
+      if (cible.closest(DOIGT)) return "doigt";
+      if (cible.closest(RAIL)) return "regler";
       if (cible.closest(CLIQUABLE)) return "actif";
       return "";
     };
@@ -511,6 +538,25 @@ export default function Curseur() {
 
       {/* La double flèche des poignées : ça se pousse à gauche et à
           droite, et ça ne s'ouvre pas. */}
+      {/* L'index tendu : la pointe tombe sur ce qu'on vise. Il ne
+          remplace pas la flèche sur tout ce qui se clique — voir
+          `DOIGT` — il ne paraît que sur ce qu'on choisit du doigt. */}
+      <span data-glyphe="doigt">
+        <svg viewBox="0 0 18 20" width="17" height="19">
+          <path
+            className="curseur-trait"
+            strokeWidth="2.4"
+            d="M6.4 10.5 V3.1 a1.5 1.5 0 0 1 3 0 v6.4
+               a1.4 1.4 0 0 1 2.8 0 v0.9
+               a1.4 1.4 0 0 1 2.8 0 v0.9
+               a1.35 1.35 0 0 1 2.6 0 v3
+               a4.5 4.5 0 0 1 -4.5 4.5 h-2.4
+               a4.5 4.5 0 0 1 -3.6 -1.8 L2.4 13.2
+               a1.5 1.5 0 0 1 2.2 -2 z"
+          />
+        </svg>
+      </span>
+
       <span data-glyphe="regler">
         <svg viewBox="0 0 22 12" width="23" height="13">
           <path

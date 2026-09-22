@@ -169,6 +169,173 @@ export function versRgb(hex: string): string {
   return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
 }
 
+/* ==================================================================
+   TROIS TEINTES PLUTÔT QUE SIX, UNE BARRE PLUTÔT QUE DEUX CURSEURS
+
+   L'écran demandait neuf couleurs — Départ, Transition, Cœur, Pic,
+   Retour, Fin, plus trois nappes — et deux curseurs. Onze commandes
+   pour un réglage qu'on fait une fois, et des mots dont personne ne
+   pouvait deviner où ils tombaient dans la page : « Pic », c'est où ?
+
+   LES DONNÉES NE CHANGENT PAS. `Theme.bg` reste six couleurs,
+   `Mouvement` reste { vitesse, amplitude }. Ce qui change est
+   entièrement au-dessus : ce que l'interface DEMANDE, et ce qu'elle en
+   déduit. Un thème enregistré par l'ancien écran s'affiche donc
+   exactement pareil, et rien n'est à migrer.
+   ================================================================== */
+
+/** "#4e5bc0" ou "#4e5" -> [78, 91, 192]. */
+function enComposantes(hex: string): [number, number, number] {
+  const propre = hex.replace("#", "");
+  const n = parseInt(
+    propre.length === 3 ? propre.split("").map((c) => c + c).join("") : propre,
+    16
+  );
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+const enHex = (c: number) =>
+  `#${Math.round(Math.min(255, Math.max(0, c)))
+    .toString(16)
+    .padStart(2, "0")}`;
+
+/**
+ * Interpolation linéaire entre deux couleurs, composante par
+ * composante, en sRGB.
+ *
+ * Pas d'OKLCH ici, et c'est délibéré : on interpole entre deux teintes
+ * VOISINES d'un même dégradé, jamais entre deux couleurs opposées. À
+ * cette distance, l'écart entre les deux espaces ne se voit pas, et
+ * l'on garde une formule que n'importe qui peut relire.
+ */
+export function melanger(a: string, b: string, t: number): string {
+  const [ar, ag, ab] = enComposantes(a);
+  const [br, bg, bb] = enComposantes(b);
+  return (
+    enHex(ar + (br - ar) * t) + enHex(ag + (bg - ag) * t).slice(1) + enHex(ab + (bb - ab) * t).slice(1)
+  );
+}
+
+/** Les trois teintes qu'on demande, nommées par leur place réelle. */
+export type TroisTeintes = { haut: string; coeur: string; bas: string };
+
+/**
+ * LES SIX TEINTES DU DÉGRADÉ, DÉDUITES DES TROIS.
+ *
+ * Haut, Cœur et Bas disent OÙ la couleur tombe dans la page, ce que
+ * Départ / Transition / Pic ne disaient pas. Les trois autres arrêts
+ * sont des intermédiaires : personne ne les réglait pour eux-mêmes, on
+ * les poussait jusqu'à ce que la transition cesse de faire une bande.
+ *
+ * `bg[3]` est l'ancien « pic », éclairci de seize pour cent vers le
+ * blanc : c'est lui qui donne au dégradé sa zone lumineuse aux deux
+ * tiers de la page, et sans cet éclaircissement le fond s'aplatit.
+ */
+export function sixDepuisTrois({ haut, coeur, bas }: TroisTeintes): Theme["bg"] {
+  return [
+    haut,
+    melanger(haut, coeur, 0.55),
+    coeur,
+    melanger(coeur, "#ffffff", 0.16),
+    melanger(coeur, bas, 0.55),
+    bas,
+  ];
+}
+
+/**
+ * Les trois teintes à MONTRER pour un thème déjà enregistré.
+ *
+ * ⚠️ ON LIT, ON NE RÉÉCRIT PAS. Un thème composé avec l'ancien écran a
+ * six couleurs libres, qui ne sont pas forcément l'interpolation de
+ * trois d'entre elles. Les rangs 0, 2 et 5 sont fidèles pour
+ * l'écrasante majorité — ils ont été posés à la souris en suivant une
+ * progression — mais tant que la personne ne touche à aucune des trois,
+ * son thème doit rester affiché avec ses six valeurs d'origine. C'est
+ * `ThemePicker` qui tient cette règle : il ne recalcule qu'au premier
+ * changement d'une teinte.
+ */
+export function troisDepuisSix(bg: Theme["bg"]): TroisTeintes {
+  return { haut: bg[0], coeur: bg[2], bas: bg[5] };
+}
+
+/* ---------------- le mouvement, sur une seule barre ---------------- */
+
+/**
+ * Les quatre paliers nommés, et leur position sur la barre.
+ *
+ * Ils sont cliquables et la poignée les rejoint : on choisit un mot, ou
+ * l'on glisse entre eux si l'on veut affiner.
+ */
+export const PALIERS_MOUVEMENT = [
+  { valeur: 0, nom: "Figé" },
+  { valeur: 22, nom: "Doux" },
+  { valeur: 55, nom: "Animé" },
+  { valeur: 88, nom: "Vif" },
+] as const;
+
+/** Le mot qui correspond à une position, pour le retour de lecture. */
+export function nomDuMouvement(v: number): string {
+  if (v === 0) return "Figé";
+  if (v < 34) return "Doux";
+  if (v < 71) return "Animé";
+  return "Vif";
+}
+
+/**
+ * CE QUE LA BARRE ÉCRIT, ET POURQUOI ELLE ÉCRIT AUSSI `fond`.
+ *
+ * La barre porte les deux réglages d'hier — vitesse et ampleur — plus
+ * l'interrupteur Fixe/Animé, qui vivait à part. Un seul objet à régler,
+ * donc, et « Figé » veut dire la même chose partout.
+ *
+ * ⚠️ À ZÉRO, ON POSE `fond: "fixe"` ET ON NE TOUCHE PAS AU MOUVEMENT.
+ * Écrire `vitesse: 0` serait sans effet — `appliquerMouvement` remonte
+ * toute vitesse à 0.1 — et zéroter l'ampleur reviendrait à effacer le
+ * réglage de quelqu'un pour dire une chose que `data-fond="fixe"` dit
+ * déjà, et mieux : il coupe le décor entier, pas seulement sa dérive.
+ * En repartant de zéro, la barre redonne de toute façon des valeurs
+ * dérivées, donc rien n'est perdu.
+ *
+ * L'AMPLEUR SUIT LA VITESSE, et c'est le pari de ce chantier :
+ * personne ne veut un fond qui file en bougeant à peine, ni qui rampe
+ * en traversant l'écran. Les deux curseurs décrivaient une seule
+ * sensation. La donnée reste séparée dans le modèle, donc un réglage
+ * fin reste rouvrable le jour où un cas le demande.
+ */
+export function mouvementDepuisBarre(
+  v: number,
+  actuel: Mouvement
+): { fond: Fond; mouvement: Mouvement } {
+  if (v <= 0) return { fond: "fixe", mouvement: actuel };
+  return {
+    fond: "anime",
+    mouvement: {
+      vitesse: 0.35 + (v / 100) * 2.2,
+      amplitude: 0.4 + (v / 100) * 1.1,
+    },
+  };
+}
+
+/**
+ * La position de la barre pour des préférences existantes.
+ *
+ * Le fond décide d'abord : fixe, la barre est à zéro, quelles que
+ * soient les valeurs enregistrées derrière. C'est ce qui fait qu'un
+ * compte neuf — `fond` vaut « fixe » par défaut, pour tout le monde,
+ * voir le type `Fond` — ouvre la barre sur « Figé » plutôt que sur un
+ * « Animé » qui ne s'appliquerait pas.
+ *
+ * Sinon on inverse la formule de la vitesse. Un thème réglé à l'ancien
+ * écran peut tomber entre deux paliers, et c'est très bien : la barre
+ * est continue, elle montrera la position réelle et le mot le plus
+ * proche.
+ */
+export function barreDepuisMouvement(fond: Fond | undefined, m: Mouvement): number {
+  if (fond !== "anime") return 0;
+  const v = Math.round(((m.vitesse - 0.35) / 2.2) * 100);
+  return Math.min(100, Math.max(1, v));
+}
+
 export function appliquerTheme(theme: Theme, cible: HTMLElement) {
   theme.bg.forEach((c, i) => cible.style.setProperty(`--bg-${i + 1}`, c));
   theme.accents.forEach((c, i) => cible.style.setProperty(`--accent-${i + 1}`, versRgb(c)));
