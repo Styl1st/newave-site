@@ -1609,6 +1609,9 @@ export default function PieceDirectory({
                       brandSlug={p.brand?.slug}
                       nue
                       ratio={densite === "serre" ? "1/1" : RATIOS[i % 3]}
+                      // Les huit premières sont dans le premier écran,
+                      // sur ordinateur comme sur téléphone.
+                      prioritaire={i < 8}
                       // Le nom de la marque sous la pièce : ici, c'est la
                       // moitié de l'information. Sur la fiche d'une marque
                       // il serait répété quarante fois pour rien.

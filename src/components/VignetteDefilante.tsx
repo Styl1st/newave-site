@@ -34,11 +34,21 @@ export default function VignetteDefilante({
   images,
   alt,
   className = "",
+  prioritaire = false,
 }: {
   images: string[];
   alt: string;
   /** Les états de la pièce : retirée, épuisée. */
   className?: string;
+  /**
+   * La vignette est dans le premier écran.
+   *
+   * Une image `lazy` n'est demandée qu'une fois la page mise en page, et
+   * donc après le JavaScript : sur la vitrine, les premières photos
+   * partaient une seconde après l'arrivée du HTML. Celles qu'on voit
+   * sans défiler doivent partir tout de suite, et en priorité.
+   */
+  prioritaire?: boolean;
 }) {
   const [rang, setRang] = useState(0);
   const annoncees = useRef(new Set<number>());
@@ -86,7 +96,8 @@ export default function VignetteDefilante({
         srcSet={jeuDeVignettes(source, 400)}
         sizes="(max-width: 640px) 45vw, 300px"
         alt={alt}
-        loading="lazy"
+        loading={prioritaire ? "eager" : "lazy"}
+        fetchPriority={prioritaire ? "high" : "auto"}
         decoding="async"
         onMouseEnter={() => preparer(1)}
         className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${className}`}

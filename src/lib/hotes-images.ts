@@ -70,14 +70,31 @@ async function relire(): Promise<void> {
   const liste = new Set<string>();
 
   /*
-   * Les marques d'abord : c'est peu de lignes et beaucoup d'hôtes.
+   * Les marques et les pièces EN MÊME TEMPS.
+   *
+   * Cette lecture tombe sur la première image demandée à une instance
+   * qui vient de démarrer, et cette image attend qu'elle finisse. Les
+   * deux requêtes étaient faites l'une après l'autre alors qu'elles ne
+   * dépendent en rien l'une de l'autre : c'était un aller-retour vers la
+   * base de payé pour rien, sur chaque démarrage à froid.
+   *
    * `shop_url` et `website_url` comptent aussi, parce qu'une boutique
-   * sert très souvent ses images depuis son propre nom de domaine.
+   * sert très souvent ses images depuis son propre nom de domaine. Côté
+   * pièces, on ne lit que la vignette et non le carrousel entier : les
+   * photos d'une même pièce viennent du même hôte.
    */
-  const marques = await supabase
-    .from("brands")
-    .select("logo_url, cover_url, shop_url, website_url")
-    .eq("status", "published");
+  const [marques, pieces] = await Promise.all([
+    supabase
+      .from("brands")
+      .select("logo_url, cover_url, shop_url, website_url")
+      .eq("status", "published"),
+    supabase
+      .from("products")
+      .select("image_url")
+      .eq("status", "published")
+      .not("image_url", "is", null)
+      .limit(5000),
+  ]);
 
   for (const m of marques.data ?? []) {
     ajouter(liste, m.logo_url);
@@ -85,20 +102,6 @@ async function relire(): Promise<void> {
     ajouter(liste, m.shop_url);
     ajouter(liste, m.website_url);
   }
-
-  /*
-   * Puis les pièces. On ne lit que la vignette et non le carrousel
-   * entier : les photos d'une même pièce viennent de la même boutique,
-   * donc du même hôte, et ramener tous les tableaux d'images
-   * multiplierait le poids de cette lecture sans rien ajouter à la
-   * liste.
-   */
-  const pieces = await supabase
-    .from("products")
-    .select("image_url")
-    .eq("status", "published")
-    .not("image_url", "is", null)
-    .limit(5000);
 
   for (const p of pieces.data ?? []) ajouter(liste, p.image_url);
 
@@ -110,13 +113,39 @@ async function relire(): Promise<void> {
   }
 }
 
+let enCours: Promise<void> | null = null;
+
+/** `relire`, mais partagée entre toutes les demandes qui arrivent pendant qu'elle tourne. */
+function relireUneFois(): Promise<void> {
+  if (!enCours) {
+    enCours = relire().finally(() => {
+      enCours = null;
+    });
+  }
+  return enCours;
+}
+
 /** Cet hébergeur apparaît-il quelque part dans la base ? */
 export async function hoteConnu(hote: string): Promise<boolean> {
   const nom = hote.toLowerCase();
   const maintenant = Date.now();
 
   try {
-    if (!hotes || maintenant > expire) await relire();
+    /*
+     * UNE SEULE LECTURE À LA FOIS, ET ON N'ATTEND QUE SI L'ON N'A RIEN.
+     *
+     * Une page d'annuaire demande une vingtaine d'images d'un coup. Sur
+     * une instance neuve, chacune lançait sa propre relecture de la base
+     * et l'attendait : vingt fois le même travail, en parallèle. Elles
+     * partagent maintenant la même.
+     *
+     * Et une liste expirée reste bonne à consulter pendant qu'on la
+     * rafraîchit en arrière-plan : les hôtes ne disparaissent pas en dix
+     * minutes, et la personne qui charge la page n'a pas à attendre la
+     * base pour ça.
+     */
+    if (!hotes) await relireUneFois();
+    else if (maintenant > expire) void relireUneFois().catch(() => {});
     if (hotes?.has(nom)) return true;
 
     /*
@@ -125,7 +154,7 @@ export async function hoteConnu(hote: string): Promise<boolean> {
      * les trente secondes.
      */
     if (maintenant - derniereLecture > REPOS) {
-      await relire();
+      await relireUneFois();
       return hotes?.has(nom) ?? false;
     }
 

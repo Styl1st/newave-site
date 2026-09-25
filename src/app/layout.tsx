@@ -122,6 +122,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <head>
+        {/*
+          LA CONNEXION AU CDN DE SHOPIFY S'OUVRE TOUT DE SUITE.
+
+          La grande majorité des photos de pièces viennent de là. Sans
+          cette ligne, le navigateur attend d'avoir lu la page pour
+          découvrir le domaine, puis paie la résolution DNS et la poignée
+          de main TLS avant le premier octet d'image : deux à trois
+          allers-retours perdus, et c'est sur mobile que ça se voit.
+          Deux entrées : les balises `img` ordinaires passent sans mode
+          croisé, les sondes de `Teinte` en mode croisé, et le navigateur
+          ne partage pas la connexion entre les deux.
+        */}
+        <link rel="preconnect" href="https://cdn.shopify.com" />
+        <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.shopify.com" />
         {/* Sans compte, on relit ce que ce navigateur avait retenu. */}
         {!apparence && <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />}
       </head>

@@ -116,6 +116,7 @@ export default function ProductCard({
   note,
   nue = false,
   ratio = "4/5",
+  prioritaire = false,
 }: {
   product: Product;
   /** Slug de la marque, pour construire le lien vers la fiche. */
@@ -153,6 +154,8 @@ export default function ProductCard({
   nue?: boolean;
   /** Le cadre de la photo. N'a d'effet qu'en variante nue. */
   ratio?: RatioPiece;
+  /** Dans le premier écran : la photo part tout de suite. Voir `VignetteDefilante`. */
+  prioritaire?: boolean;
 }) {
   const prix = prixAffiche(product);
   const was = formatPrice(product.compare_at_cents, product.currency);
@@ -213,6 +216,7 @@ export default function ProductCard({
             <VignetteDefilante
               images={visuels}
               alt={product.name}
+              prioritaire={prioritaire}
               className={product.retired_at ? "opacity-70 grayscale-[.35]" : ""}
             />
           ) : (
@@ -323,6 +327,7 @@ export default function ProductCard({
               <VignetteDefilante
                 images={visuels}
                 alt={product.name}
+                prioritaire={prioritaire}
                 className={product.retired_at ? "opacity-70 grayscale-[.35]" : ""}
               />
             ) : (

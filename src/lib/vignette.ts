@@ -251,6 +251,17 @@ export function enSonde(adresse: string): string {
  * Sans lui, un téléphone récent afficherait une image prévue pour la
  * moitié de sa finesse réelle. Avec, il choisit lui-même — et sur un
  * écran ordinaire il prend la plus légère.
+ *
+ * EN LARGEURS (`400w`) ET NON PLUS EN DENSITÉS (`2x`). Avec `1x, 2x`, le
+ * navigateur ignore `sizes` et ne regarde que la densité de l'écran :
+ * un téléphone prenait donc TOUJOURS la version double, 800 pixels pour
+ * une tuile qui en affiche 175. Annoncer les largeurs lui permet de
+ * croiser `sizes` et la densité, et de prendre la plus petite qui
+ * suffit : 400 sur la plupart des téléphones au lieu de 800, soit
+ * environ trois fois moins d'octets par photo.
+ *
+ * Tous les appelants passent un `sizes` : c'est obligatoire avec ce
+ * format, sans quoi le navigateur suppose une image pleine largeur.
  */
 export function jeuDeVignettes(
   url: string | null | undefined,
@@ -259,11 +270,17 @@ export function jeuDeVignettes(
 ): string | undefined {
   if (!url) return undefined;
 
-  const simple = vignette(url, largeur, options);
-  const double = vignette(url, largeur * 2, options);
-  // Rien n'a changé : l'hébergeur ne sait pas redimensionner, et
-  // proposer deux fois la même adresse n'apporterait rien.
-  if (!simple || !double || simple === double) return undefined;
+  const vues = new Set<string>();
+  const jeu: string[] = [];
+  for (const facteur of [1, 1.5, 2]) {
+    const l = Math.round(largeur * facteur);
+    const adresse = vignette(url, l, options);
+    if (!adresse || vues.has(adresse)) continue;
+    vues.add(adresse);
+    jeu.push(`${adresse} ${l}w`);
+  }
 
-  return `${simple} 1x, ${double} 2x`;
+  // Une seule adresse : l'hébergeur ne sait pas redimensionner, et
+  // proposer plusieurs fois la même n'apporterait rien.
+  return jeu.length > 1 ? jeu.join(", ") : undefined;
 }
