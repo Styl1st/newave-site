@@ -394,6 +394,16 @@ export default function PieceDirectory({
    */
   const colonne = useRef<HTMLElement>(null);
   const [colonneDeborde, setColonneDeborde] = useState(false);
+  /*
+   * ARRIVÉ EN BAS, LE DÉGRADÉ DE PIED S'EFFACE.
+   *
+   * Il annonce « il reste quelque chose dessous ». Il restait posé une
+   * fois tout en bas, sur le dernier champ : le sélecteur de marque en
+   * paraissait carré, ses coins arrondis noyés sous une bande sombre,
+   * et son texte assombri. Il n'a plus rien à dire quand il n'y a plus
+   * rien dessous.
+   */
+  const [colonneAuBout, setColonneAuBout] = useState(false);
 
   useEffect(() => {
     if (auDoigt) return;
@@ -405,10 +415,16 @@ export default function PieceDirectory({
        `offsetHeight` ne dirait plus que la hauteur permise, et la mesure
        se mordrait la queue — déborde, donc on borne, donc ça ne déborde
        plus, donc on débourne. */
-    const mesurer = () =>
+    const auBout = () =>
+      setColonneAuBout(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
+
+    const mesurer = () => {
       setColonneDeborde(el.scrollHeight > window.innerHeight - PLACE_COLONNE + 1);
+      auBout();
+    };
 
     mesurer();
+    el.addEventListener("scroll", auBout, { passive: true });
 
     /* Le contenu bouge tout seul : les rayons et les marques
        disponibles se réduisent à mesure qu'on filtre. */
@@ -418,8 +434,18 @@ export default function PieceDirectory({
     return () => {
       observateur.disconnect();
       window.removeEventListener("resize", mesurer);
+      el.removeEventListener("scroll", auBout);
     };
   }, [auDoigt]);
+
+  /* Déplier un rayon allonge la colonne sans forcément changer sa taille
+     (elle est déjà bornée à l'écran) : on remesure le bas à chaque
+     changement de ce qui est déroulé. */
+  useEffect(() => {
+    const el = colonne.current;
+    if (!el) return;
+    setColonneAuBout(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
+  }, [rayon, section]);
 
   /* Le glissement, la poignée, le voile et le verrou de défilement
      vivent dans `FeuilleFiltres`, partagée avec l'annuaire. */
@@ -1135,21 +1161,18 @@ export default function PieceDirectory({
      même la première photo. Le compte reste dit là où il sert, au pied
      de la grille : « 24 sur 312 affichées ». */
 
-  /* Ces pastilles sont taillées pour le doigt, et se resserrent à la
-     souris. Elles vivaient seulement sur téléphone ; elles s'affichent
-     maintenant partout, au-dessus de la grille : c'est là qu'on lit
-     « Hauts · Chemises » et qu'on le retire d'un clic, sans rouvrir le
-     menu.
-
-     ELLES SONT PASSÉES DU BLANC À L'ACCENT, et c'est pour être du même
-     sang que le panneau. Un critère y porte un aplat d'accent qui dit
-     « ceci deviendra un filtre » (`badge-critere`) ; une fois posé, il
-     garde la même couleur dans la rangée. Le blanc, lui, reste réservé
-     à ce qui agit — le bouton de filtres, le « Voir les 38 pièces » —
-     et deux familles de blancs sur le même écran ne se distinguaient
-     plus l'une de l'autre. */
-  const pastille =
-    "inline-flex min-h-[44px] items-center rounded-full bg-[rgb(var(--accent-1))] px-3.5 text-[11px] font-extrabold uppercase tracking-[0.07em] text-[var(--color-ink)] transition active:scale-[.97] lg:min-h-[32px] lg:px-3";
+  /*
+   * LES FILTRES POSÉS, AU-DESSUS DE LA GRILLE.
+   *
+   * ILS ÉTAIENT SUR L'ACCENT, ET C'ÉTAIT ILLISIBLE DANS CERTAINES
+   * AMBIANCES. Un aplat d'accent avec l'encre dessus : sur l'accent rose
+   * par défaut, ça passait ; sur une ambiance dont l'accent est sombre,
+   * c'était du bleu nuit sur du noir. Ils prennent donc le dessin du
+   * jeton de l'annuaire (`.jeton-filtre`, voir `globals.css`) : fond
+   * blanc, encre, croix violette. Lisible quelle que soit l'ambiance,
+   * et c'est le même objet d'une page à l'autre.
+   */
+  const pastille = "jeton-filtre";
 
   /*
    * Le contenu des filtres, écrit une fois pour ses deux logements :
@@ -1425,19 +1448,6 @@ export default function PieceDirectory({
                 </button>
               ))}
             </div>
-
-            {/* La densité suit le tri : ce sont les deux réglages
-                d'affichage, et ils n'ont plus d'autre logement depuis que
-                la pilule a disparu. */}
-            {/* `flex` sur l'enveloppe : le rail est un bloc, il prendrait
-                sinon toute la largeur de la feuille pour trois icônes. */}
-            <div className="mt-3 flex">
-              <SelecteurDensite
-                densite={densite}
-                choisir={choisirDensite}
-                offertes={offertes}
-              />
-            </div>
           </Section>
         )}
     </>
@@ -1561,96 +1571,120 @@ export default function PieceDirectory({
           </div>
         )}
 
-        {actifs > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {/* Le rayon seul tant qu'aucun type n'est coché ; ensuite un
-                jeton par type, « Hauts · Chemises », et celui du rayon
-                seul disparaît. Retirer le dernier type le fait revenir. */}
-            {rayon && tags.length === 0 && (
-              <button
-                type="button"
-                onClick={() => basculer(rayon)}
-                aria-label={`Retirer le filtre ${rayon}`}
-                className={pastille}
-              >
-                {rayon}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
+        {/*
+          SOUS LA RECHERCHE : LES FILTRES POSÉS À GAUCHE, L'AFFICHAGE À DROITE.
+
+          Au doigt, le rail de densité vivait dans la feuille de filtres,
+          sous le tri : pour passer d'une colonne à deux, il fallait ouvrir
+          les filtres. C'est pourtant un réglage de la GRILLE, pas de ce
+          qu'on cherche. Il remonte donc ici, à droite, sous le champ, à
+          portée de pouce et visible d'un coup d'œil. Sur grand écran, il
+          reste dans la ligne du tri, au-dessus de la grille.
+        */}
+        {(actifs > 0 || auDoigt) && (
+          <div className="mt-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              {actifs > 0 && (
+                <>
+                  {/* Le rayon seul tant qu'aucun type n'est coché ; ensuite un
+                      jeton par type, « Hauts · Chemises », et celui du rayon
+                      seul disparaît. Retirer le dernier type le fait revenir. */}
+                  {rayon && tags.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => basculer(rayon)}
+                      aria-label={`Retirer le filtre ${rayon}`}
+                      className={pastille}
+                    >
+                      {rayon}
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  {tags.map((t) => (
+                    <button
+                      key={`type-${t}`}
+                      type="button"
+                      onClick={() => basculerTag(t)}
+                      aria-label={`Retirer le filtre ${t}`}
+                      className={pastille}
+                    >
+                      {rayon ? `${rayon} · ${t}` : t}
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  ))}
+                  {taille && (
+                    <button
+                      type="button"
+                      onClick={() => setTaille(null)}
+                      aria-label="Retirer le filtre de taille"
+                      className={pastille}
+                    >
+                      Taille {taille}
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  {marque && nomDeLaMarque && (
+                    <button
+                      type="button"
+                      onClick={() => setMarque(null)}
+                      aria-label="Retirer le filtre de marque"
+                      className={pastille}
+                    >
+                      {nomDeLaMarque}
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  {prixActif && bornes && (
+                    <button
+                      type="button"
+                      onClick={() => setPrix([bornes.min, bornes.max])}
+                      aria-label="Retirer le filtre de prix"
+                      className={pastille}
+                    >
+                      {euros(prix[0])} – {euros(prix[1])}
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  {stock && (
+                    <button
+                      type="button"
+                      onClick={() => setStock(false)}
+                      aria-label="Retirer le filtre en stock"
+                      className={pastille}
+                    >
+                      En stock
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  {promo && (
+                    <button
+                      type="button"
+                      onClick={() => setPromo(false)}
+                      aria-label="Retirer le filtre en promo"
+                      className={pastille}
+                    >
+                      En promo
+                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={reinitialiser}
+                    className="text-[12px] font-bold text-white/70 underline underline-offset-2 hover:text-white"
+                  >
+                    Tout effacer
+                  </button>
+                </>
+              )}
+            </div>
+            {auDoigt && (
+              <SelecteurDensite
+                densite={densite}
+                choisir={choisirDensite}
+                offertes={offertes}
+                className="min-h-[40px]"
+              />
             )}
-            {tags.map((t) => (
-              <button
-                key={`type-${t}`}
-                type="button"
-                onClick={() => basculerTag(t)}
-                aria-label={`Retirer le filtre ${t}`}
-                className={pastille}
-              >
-                {rayon ? `${rayon} · ${t}` : t}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            ))}
-            {taille && (
-              <button
-                type="button"
-                onClick={() => setTaille(null)}
-                aria-label="Retirer le filtre de taille"
-                className={pastille}
-              >
-                Taille {taille}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            )}
-            {marque && nomDeLaMarque && (
-              <button
-                type="button"
-                onClick={() => setMarque(null)}
-                aria-label="Retirer le filtre de marque"
-                className={pastille}
-              >
-                {nomDeLaMarque}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            )}
-            {prixActif && bornes && (
-              <button
-                type="button"
-                onClick={() => setPrix([bornes.min, bornes.max])}
-                aria-label="Retirer le filtre de prix"
-                className={pastille}
-              >
-                {euros(prix[0])} – {euros(prix[1])}
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            )}
-            {stock && (
-              <button
-                type="button"
-                onClick={() => setStock(false)}
-                aria-label="Retirer le filtre en stock"
-                className={pastille}
-              >
-                En stock
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            )}
-            {promo && (
-              <button
-                type="button"
-                onClick={() => setPromo(false)}
-                aria-label="Retirer le filtre en promo"
-                className={pastille}
-              >
-                En promo
-                <span className="ml-1.5 opacity-45">×</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={reinitialiser}
-              className="text-[12px] font-bold text-white/70 underline underline-offset-2 hover:text-white"
-            >
-              Tout effacer
-            </button>
           </div>
         )}
 
@@ -1746,7 +1780,7 @@ export default function PieceDirectory({
                `colonneDeborde` et `globals.css`. */
             className={`glass colonne-filtres p-5 sticky top-[86px] ${
               colonneDeborde ? "colonne-filtres--deborde" : ""
-            }`}
+            } ${colonneAuBout ? "colonne-filtres--au-bout" : ""}`}
           >
             {contenuFiltres}
           </aside>
@@ -1823,9 +1857,8 @@ export default function PieceDirectory({
                   faisait cent pixels de haut pour trois mots : elle
                   mangeait le premier tiers de l'écran, et le tri
                   s'utilise deux fois par visite, pas deux fois par
-                  rangée. Les deux réglages ont rejoint la feuille de
-                  filtres — c'est le même geste, au même endroit, et l'on
-                  y règle tout d'un coup avant de revenir à la grille.
+                  rangée. Le tri a rejoint la feuille de filtres, et la
+                  densité la ligne sous la recherche, à droite.
 
                   Sur grand écran ils restent ici : la colonne de filtres
                   y est déjà dépliée en permanence, et le tri n'a aucune

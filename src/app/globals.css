@@ -4305,6 +4305,44 @@ html[data-clair="1"] .jeton {
   border-color: var(--color-ink);
 }
 
+/* ---------- les filtres posés de la vitrine ----------
+   Le même objet que le jeton, en une ligne et plus petit : au-dessus de
+   la grille des pièces, « Hauts · Chemises × ». Fond blanc et encre,
+   jamais l'accent : certaines ambiances ont un accent sombre, et l'encre
+   posée dessus ne se lisait plus. Toute la pastille est le bouton qui
+   retire le filtre ; 40 px de haut au doigt, où l'on vise mal. */
+.jeton-filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 11px 1px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+  transition: transform .15s ease;
+}
+.jeton-filtre:active { transform: scale(.97); }
+.jeton-filtre-x {
+  font-weight: 900;
+  font-size: 14px;
+  color: #6a5a92;
+}
+.jeton-filtre:hover .jeton-filtre-x { color: var(--color-ink); }
+@media (min-width: 1024px) {
+  .jeton-filtre { min-height: 30px; }
+}
+html[data-clair="1"] .jeton-filtre {
+  background: rgba(23, 10, 51, .06);
+  border-color: var(--color-ink);
+}
+
 /* ---------- le menu d'un mot réglable ----------
    La phrase de `/populaires` se règle en trois mots soulignés ; ce qui
    s'ouvre dessous doit être OPAQUE. Le verre dépoli du site laisse voir
@@ -4477,6 +4515,13 @@ input[type="color"].pastille-teinte::-moz-color-swatch {
     margin: -34px 0 -20px;
     pointer-events: none;
     background: linear-gradient(to bottom, rgba(var(--voile), 0), rgba(var(--voile), .72));
+    transition: opacity .2s ease;
+  }
+
+  /* Tout en bas, il n'y a plus rien à annoncer : le dégradé s'efface et
+     laisse le dernier champ entier (voir `colonneAuBout`). */
+  .colonne-filtres--au-bout::after {
+    opacity: 0;
   }
 }
 
