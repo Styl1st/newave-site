@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 /**
  * Le double curseur de prix de la vitrine.
  *
@@ -25,6 +27,11 @@
  * curseur posé sur l'autre capterait seul tous les clics ; les deux
  * éléments sont donc transparents au pointeur, et seules leurs poignées
  * le reprennent.
+ *
+ * DEUX CHAMPS SOUS LE RAIL, POUR LE PRIX EXACT. Le rail avance par
+ * crans (10 € sur un catalogue qui va jusqu'à 900 €) : parfait pour
+ * dégrossir, impossible pour demander « jusqu'à 45 € ». Les champs
+ * prennent l'euro près, centimes compris, et le rail suit.
  */
 
 /** Ce que le navigateur dessine comme poignée. Sert au calcul ci-dessous. */
@@ -37,7 +44,7 @@ export default function CurseurPrix({
   valeur,
   onChange,
   format,
-  bornesVisibles = true,
+  tactile = false,
 }: {
   min: number;
   max: number;
@@ -48,15 +55,8 @@ export default function CurseurPrix({
   onChange: (v: [number, number]) => void;
   /** Comment écrire une borne. La vitrine y met des euros. */
   format: (v: number) => string;
-  /**
-   * Les deux prix, écrits au-dessus du rail.
-   *
-   * On peut les éteindre quand l'appelant les affiche lui-même ailleurs —
-   * la feuille de filtres du téléphone les remonte sur la ligne du titre,
-   * pour tenir sur une hauteur au lieu de deux. Le rail garde alors ses
-   * `aria-valuetext` : la valeur reste annoncée même sans être écrite.
-   */
-  bornesVisibles?: boolean;
+  /** Au doigt : champs plus hauts, et en 16 px pour qu'iOS ne zoome pas. */
+  tactile?: boolean;
 }) {
   const [bas, haut] = valeur;
   const etendue = max - min || 1;
@@ -83,21 +83,17 @@ export default function CurseurPrix({
   const bougerBas = (v: number) => onChange([Math.min(v, haut - pas), haut]);
   const bougerHaut = (v: number) => onChange([bas, Math.max(v, bas + pas)]);
 
+  /* Tapé à la main : ramené dans le rail, et jamais au-delà de l'autre
+     borne. Égales, elles restent permises : « exactement 50 € ». */
+  const saisirBas = (v: number) => onChange([Math.max(min, Math.min(v, haut)), haut]);
+  const saisirHaut = (v: number) => onChange([bas, Math.min(max, Math.max(v, bas))]);
+
   const curseur =
     "pointer-events-none absolute inset-x-0 top-0 m-0 h-[22px] w-full " +
     "[&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto";
 
   return (
     <div>
-      {/* Les bornes au-dessus du rail : sans elles, on déplace une
-          poignée sans savoir vers quoi. */}
-      {bornesVisibles && (
-        <div className="mb-2.5 flex items-center justify-between text-[13px] font-extrabold tabular-nums text-white">
-          <span>{format(bas)}</span>
-          <span>{format(haut)}</span>
-        </div>
-      )}
-
       <div className="relative h-[22px]">
         <input
           type="range"
@@ -137,6 +133,83 @@ export default function CurseurPrix({
           }}
         />
       </div>
+
+      {/* Les deux prix, lisibles ET modifiables : sans eux, on déplace
+          une poignée sans savoir vers quoi. */}
+      <div className="mt-3 flex items-center gap-2">
+        <ChampPrix libelle="Prix minimum, en euros" valeur={bas} onValider={saisirBas} tactile={tactile} />
+        <span aria-hidden="true" className="text-[13px] font-bold text-white/50">
+          —
+        </span>
+        <ChampPrix libelle="Prix maximum, en euros" valeur={haut} onValider={saisirHaut} tactile={tactile} />
+      </div>
     </div>
+  );
+}
+
+/** Des centimes aux euros tels qu'on les tape : « 45 », « 49,90 ». */
+const enEuros = (centimes: number) =>
+  centimes % 100 === 0 ? String(centimes / 100) : (centimes / 100).toFixed(2).replace(".", ",");
+
+/**
+ * Un prix tapé à la main.
+ *
+ * Il ne s'applique qu'en sortant du champ ou sur Entrée, pas à chaque
+ * chiffre : taper « 120 » passerait sinon par « 1 € », et la borne
+ * haute irait se coller à la basse avant qu'on ait fini d'écrire.
+ * Tant qu'on n'y touche pas, il suit le rail.
+ */
+function ChampPrix({
+  libelle,
+  valeur,
+  onValider,
+  tactile,
+}: {
+  libelle: string;
+  /** En centimes. */
+  valeur: number;
+  onValider: (centimes: number) => void;
+  tactile: boolean;
+}) {
+  const [brouillon, setBrouillon] = useState<string | null>(null);
+  const affiche = brouillon ?? enEuros(valeur);
+
+  const valider = () => {
+    if (brouillon === null) return;
+    const n = Number(brouillon.replace(",", ".").replace(/[^\d.]/g, ""));
+    setBrouillon(null);
+    /* Vide ou illisible : on garde le prix d'avant. */
+    if (brouillon.trim() !== "" && Number.isFinite(n)) onValider(Math.round(n * 100));
+  };
+
+  return (
+    <label
+      className={`flex min-w-0 flex-1 cursor-text items-center gap-1 rounded-full bg-white/10 px-3 transition focus-within:bg-white/16 focus-within:ring-2 focus-within:ring-white/55 ${
+        tactile ? "h-11" : "h-9"
+      }`}
+    >
+      <input
+        type="text"
+        aria-label={libelle}
+        inputMode="decimal"
+        autoComplete="off"
+        value={affiche}
+        onFocus={(e) => {
+          setBrouillon(affiche);
+          e.currentTarget.select();
+        }}
+        onChange={(e) => setBrouillon(e.target.value)}
+        onBlur={valider}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        className={`champ-prix w-full min-w-0 bg-transparent font-extrabold tabular-nums text-white outline-none ${
+          tactile ? "text-[16px]" : "text-[13px]"
+        }`}
+      />
+      <span aria-hidden="true" className="text-[12.5px] font-bold text-white/55">
+        €
+      </span>
+    </label>
   );
 }

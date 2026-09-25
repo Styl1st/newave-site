@@ -3589,6 +3589,14 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 4px rgba(var(--accent-1), .3);
 }
 
+/* Les deux champs de prix sous le rail. Leur contour vient de la
+   pastille qui les entoure (`focus-within`, dans `CurseurPrix`) : le
+   contour général du site dessinait un carré blanc dans une pastille
+   ronde. */
+.champ-prix:focus-visible {
+  outline: none;
+}
+
 /* ---------- feuilleter une pièce depuis la grille ----------
 
    Les flèches posées sur la vignette d'une pièce, et les points qui

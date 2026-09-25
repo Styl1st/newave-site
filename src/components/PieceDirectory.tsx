@@ -328,9 +328,9 @@ export default function PieceDirectory({
    * `RAYONS_HABILLES`. « Bijoux + M » ne voudrait rien dire.
    */
   const [taille, setTaille] = useState<string | null>(null);
-  /* Taille et prix se replient ; une seule des deux ouverte à la fois. */
-  const [section, setSection] = useState<"taille" | "prix" | null>(null);
-  const basculerSection = (s: "taille" | "prix") => setSection((v) => (v === s ? null : s));
+  /* Taille, prix et disponibilité se replient ; une seule ouverte à la fois. */
+  const [section, setSection] = useState<"taille" | "prix" | "dispo" | null>(null);
+  const basculerSection = (s: "taille" | "prix" | "dispo") => setSection((v) => (v === s ? null : s));
   const [marque, setMarque] = useState<string | null>(null);
   const [stock, setStock] = useState(false);
   const [promo, setPromo] = useState(false);
@@ -1321,7 +1321,7 @@ export default function PieceDirectory({
         )}
 
         {/*
-          TAILLE ET PRIX, REPLIÉS.
+          TAILLE, PRIX ET DISPONIBILITÉ, REPLIÉS.
 
           Ils prenaient leur hauteur en permanence, même quand on ne s'en
           servait pas. Ils se replient maintenant sur leur titre, une seule
@@ -1363,13 +1363,10 @@ export default function PieceDirectory({
             titre="Prix"
             ouverte={section === "prix"}
             onBasculer={() => basculerSection("prix")}
-            /* Fermée, la plage posée remonte sur la ligne du titre. Au
-               doigt, elle y reste aussi une fois ouverte : le rail tient
-               alors sur une seule hauteur, sans bornes en dessous. */
+            /* Fermée, la plage posée remonte sur la ligne du titre.
+               Ouverte, les deux champs sous le rail la disent déjà. */
             valeur={
-              prixActif || (auDoigt && section === "prix")
-                ? `${euros(prix[0])} — ${euros(prix[1])}`
-                : null
+              prixActif && section !== "prix" ? `${euros(prix[0])} — ${euros(prix[1])}` : null
             }
           >
             <CurseurPrix
@@ -1379,13 +1376,18 @@ export default function PieceDirectory({
               valeur={prix}
               onChange={setPrix}
               format={euros}
-              bornesVisibles={!auDoigt}
+              tactile={auDoigt}
             />
           </Section>
         )}
 
         {(etatsUtiles.stock || stock || etatsUtiles.promo || promo) && (
-          <Section titre="Disponibilité">
+          <Section
+            titre="Disponibilité"
+            ouverte={section === "dispo"}
+            onBasculer={() => basculerSection("dispo")}
+            valeur={[stock && "En stock", promo && "En promo"].filter(Boolean).join(" · ") || null}
+          >
             <div className={auDoigt ? "flex flex-wrap gap-2" : "flex flex-col gap-0.5"}>
               {(etatsUtiles.stock || stock) && (
                 <Case libelle="En stock" coche={stock} onChange={setStock} pastille={auDoigt} />
