@@ -30,6 +30,7 @@ export default function IllustrationMarque({
   estUnLogo,
   slug,
   nom,
+  prioritaire = false,
 }: {
   /** L'illustration, quand la marque en a une. Sinon, ses pièces seules. */
   source?: string | null;
@@ -37,6 +38,11 @@ export default function IllustrationMarque({
   estUnLogo: boolean;
   slug: string;
   nom: string;
+  /**
+   * Dans le premier écran : le visuel part tout de suite et en priorité,
+   * au lieu d'attendre la mise en page comme une image `lazy`.
+   */
+  prioritaire?: boolean;
 }) {
   const [rien, setRien] = useState(false);
 
@@ -57,6 +63,7 @@ export default function IllustrationMarque({
 
   return (
     <VitrineMarque
+      prioritaire={prioritaire}
       slug={slug}
       nom={nom}
       couverture={source}

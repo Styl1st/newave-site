@@ -56,6 +56,7 @@ export default function VitrineMarque({
   couverture,
   estUnLogo = false,
   onVide,
+  prioritaire = false,
 }: {
   slug: string;
   nom: string;
@@ -68,6 +69,11 @@ export default function VitrineMarque({
    * lisible, ni pièce. L'appelant affiche alors le nom de la marque.
    */
   onVide?: () => void;
+  /**
+   * Dans le premier écran : le visuel part tout de suite et en priorité,
+   * au lieu d'attendre la mise en page comme une image `lazy`.
+   */
+  prioritaire?: boolean;
 }) {
   const ancre = useRef<HTMLDivElement>(null);
   const [pieces, setPieces] = useState<string[]>([]);
@@ -333,6 +339,7 @@ export default function VitrineMarque({
                * toutes d'un coup.
                */
               loading={i === 0 ? "eager" : "lazy"}
+              fetchPriority={prioritaire && i === 0 ? "high" : "auto"}
               decoding="async"
               /* Une photo de marque a le droit de remplir le cadre ; un
                  logo, jamais : on lui couperait le nom. */

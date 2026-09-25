@@ -82,6 +82,7 @@ export default function LigneMarque({
   coeurs,
   elan,
   note,
+  prioritaire = false,
 }: {
   brand: Brand;
   /** Présent = on affiche le cœur, avec son état de départ. */
@@ -107,6 +108,11 @@ export default function LigneMarque({
    * « use server » — le même arbitrage que `ProductCard`.
    */
   note?: { moyenne: number; avis: number };
+  /**
+   * Dans le premier écran : le visuel part tout de suite et en priorité,
+   * au lieu d'attendre la mise en page comme une image `lazy`.
+   */
+  prioritaire?: boolean;
 }) {
   const ancre = useRef<HTMLDivElement>(null);
   const [pieces, setPieces] = useState<string[]>([]);
@@ -263,7 +269,8 @@ export default function LigneMarque({
           <img
             src={vignette(visuel, 160, { logo: estUnLogo })}
             alt=""
-            loading="lazy"
+            loading={prioritaire ? "eager" : "lazy"}
+            fetchPriority={prioritaire ? "high" : "auto"}
             decoding="async"
             className={`h-full w-full ${estUnLogo ? "object-contain p-1.5" : "object-cover"}`}
           />

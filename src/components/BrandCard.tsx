@@ -13,6 +13,7 @@ export default function BrandCard({
   favori,
   apercu,
   note,
+  prioritaire = false,
 }: {
   brand: Brand;
   /** Présent = on affiche le cœur, avec son état de départ. */
@@ -21,6 +22,11 @@ export default function BrandCard({
   apercu?: React.ReactNode;
   /** La moyenne des avis. Absente ou vide = rien ne s'affiche. */
   note?: { moyenne: number; avis: number };
+  /**
+   * Dans le premier écran : le visuel part tout de suite et en priorité,
+   * au lieu d'attendre la mise en page comme une image `lazy`.
+   */
+  prioritaire?: boolean;
 }) {
   /*
    * LE LOGO PASSE DEVANT LA COUVERTURE.
@@ -150,6 +156,7 @@ export default function BrandCard({
               estUnLogo={estUnLogo}
               slug={brand.slug}
               nom={brand.name}
+              prioritaire={prioritaire}
             />
           )}
 

@@ -342,6 +342,7 @@ export default function BrandGrid({
                         brand={b}
                         favori={favoris ? { initial: suivies.has(b.id) } : undefined}
                         onApercu={() => setOpen(b.slug)}
+                        prioritaire={i < 10}
                       />
                     </div>
                   </Fragment>
@@ -359,7 +360,7 @@ export default function BrandGrid({
               {auDoigt && <div aria-hidden className="h-24" />}
             </>
           ) : (
-            visiblesMelangees.map((b) => (
+            visiblesMelangees.map((b, i) => (
               /* `data-reveal` déplace l'animation de défilement sur
                  l'ensemble carte + bouton. Quand seule la carte bougeait,
                  le bouton restait en place et venait flotter au-dessus de
@@ -370,6 +371,8 @@ export default function BrandGrid({
                   note={notes?.[b.id]}
                   favori={favoris ? { initial: suivies.has(b.id) } : undefined}
                   apercu={boutonApercu(b)}
+                  // Les six premières sont dans le premier écran.
+                  prioritaire={i < 6}
                 />
               </div>
             ))
