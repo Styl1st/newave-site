@@ -77,6 +77,24 @@ function report(where: string, error: { message: string } | null) {
   console.error(`[newave] ${where} : ${error.message}`);
 }
 
+/**
+ * UNE PANNE NE SE MET PAS EN CACHE.
+ *
+ * `unstable_cache` garde ce que la fonction RENVOIE, y compris un `null`
+ * rendu parce que la base a mal répondu. Une seule lecture ratée (une
+ * migration en cours, une coupure d'une seconde) laissait donc la
+ * vitrine sans filtres et l'annuaire sur les marques de démonstration
+ * pendant toute la durée du cache, et même une visite de plus : c'est
+ * ce qu'on a vu juste après la migration 34, où la colonne de filtres
+ * de `/pieces` est restée vide alors que la base répondait déjà.
+ *
+ * Une exception, elle, ne se met pas en cache. Les lectures gardées en
+ * mémoire LÈVENT donc celle-ci quand la base répond mal, et les
+ * fonctions exportées la rattrapent pour retomber sur leur repli
+ * habituel. La visite suivante réessaie pour de bon.
+ */
+class LectureRatee extends Error {}
+
 /* ---------------- marques ---------------- */
 
 /**
@@ -115,7 +133,7 @@ const lireLAnnuaire = unstable_cache(
       .order("published_at", { ascending: false });
 
     report("annuaire des marques", error);
-    if (error || !data) return null;
+    if (error || !data) throw new LectureRatee("annuaire des marques");
 
     /*
      * CE QUE CHAQUE MARQUE VEND, compté sur ses pièces (migration 34).
@@ -145,7 +163,11 @@ const lireLAnnuaire = unstable_cache(
 );
 
 export async function getBrands(): Promise<Brand[]> {
-  return (await lireLAnnuaire()) ?? DEMO_BRANDS;
+  try {
+    return (await lireLAnnuaire()) ?? DEMO_BRANDS;
+  } catch {
+    return DEMO_BRANDS;
+  }
 }
 
 /**
@@ -179,7 +201,14 @@ const lireLesCategoriesEnVue = unstable_cache(
 );
 
 export async function categoriesEnVue(): Promise<string[]> {
-  return lireLesCategoriesEnVue();
+  /* L'annuaire a pu lever `LectureRatee` : pas de raccourcis cette
+     fois-ci, plutôt que ceux des marques de démonstration gardés cinq
+     minutes. */
+  try {
+    return await lireLesCategoriesEnVue();
+  } catch {
+    return [];
+  }
 }
 
 export async function getBrand(slug: string): Promise<Brand | null> {
@@ -367,7 +396,7 @@ const lireLaVitrine = unstable_cache(
         .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
 
       report("vitrine", error);
-      if (error) return null;
+      if (error) throw new LectureRatee("vitrine");
       if (!data?.length) break;
 
       tout.push(...(data as unknown as Product[]));
@@ -534,7 +563,11 @@ export async function getVitrine(parMarque = 10): Promise<Product[]> {
      de base et à l'erreur de lecture — `null`. Un catalogue vide n'est
      pas une panne : on rend une liste vide, et la page dit qu'il n'y a
      rien. */
-  return (await lireLaVitrine(parMarque)) ?? DEMO_PRODUCTS;
+  try {
+    return (await lireLaVitrine(parMarque)) ?? DEMO_PRODUCTS;
+  } catch {
+    return DEMO_PRODUCTS;
+  }
 }
 
 /** Ce que le catalogue contient, sans qu'aucune pièce ne descende. */
@@ -619,7 +652,7 @@ const lireLesComptes = unstable_cache(
     ]);
 
     report("comptes du catalogue", rayons.error);
-    if (rayons.error || !rayons.data) return null;
+    if (rayons.error || !rayons.data) throw new LectureRatee("comptes du catalogue");
 
     /*
      * LA LISTE PAR MARQUE EST FACULTATIVE, ET C'EST VOLONTAIRE.
@@ -708,7 +741,11 @@ const lireLesComptes = unstable_cache(
  * d'afficher zéro.
  */
 export async function compterLeCatalogue(): Promise<CompteDuCatalogue | null> {
-  return lireLesComptes();
+  try {
+    return await lireLesComptes();
+  } catch {
+    return null;
+  }
 }
 
 /**

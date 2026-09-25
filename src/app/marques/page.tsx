@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import BrandDirectory, { type AmorceAnnuaire } from "@/components/BrandDirectory";
 import RaccourciAdmin from "@/components/RaccourciAdmin";
-import { getBrands } from "@/lib/queries";
+import { compterLeCatalogue, getBrands } from "@/lib/queries";
 import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
 import { getNotesMarques } from "@/lib/avis";
@@ -68,6 +68,25 @@ export default async function BrandsPage({ searchParams }: Props) {
    */
   const notes = Object.fromEntries(await getNotesMarques(brands.map((b) => b.id)));
 
+  /*
+   * Le rayon de chaque type, pour ranger « Hoodies » sous « Hauts » dans
+   * le panneau des critères. Lu sur les pièces elles-mêmes (un type créé
+   * depuis l'admin y trouve donc sa place sans rien à déclarer), et
+   * gardé cinq minutes en mémoire avec les autres comptes du catalogue.
+   * Un type présent dans deux rayons va sous celui où il a le plus de
+   * pièces.
+   */
+  const catalogue = await compterLeCatalogue();
+  const rayonsDesTags: Record<string, string> = {};
+  const meilleur: Record<string, number> = {};
+  for (const l of catalogue?.tags ?? []) {
+    if (!l.rayon) continue;
+    if ((meilleur[l.tag] ?? -1) < l.total) {
+      meilleur[l.tag] = l.total;
+      rayonsDesTags[l.tag] = l.rayon;
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise mb-10">
@@ -94,6 +113,7 @@ export default async function BrandsPage({ searchParams }: Props) {
         favoris={Array.from(favoris)}
         notes={notes}
         amorce={{ cat, q, f, lettre }}
+        rayonsDesTags={catalogue?.tags ? rayonsDesTags : undefined}
       />
     </div>
   );

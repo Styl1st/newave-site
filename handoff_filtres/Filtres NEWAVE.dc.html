@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0f0526; font-family:Archivo, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#e86fd8; text-decoration:none; }
+  a:hover { color:#fff; }
+  input::placeholder { color:rgba(255,255,255,.5); }
+</style>
+</helmet>
+
+<section style="width:1560px;padding:52px 44px 72px;box-sizing:border-box;background:radial-gradient(900px 520px at 10% -8%, rgba(232,111,216,.22), transparent 60%), radial-gradient(900px 640px at 92% 4%, rgba(90,114,224,.26), transparent 58%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff;border-bottom:1px solid rgba(255,255,255,.15)">
+  <div style="max-width:960px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 2 · RETOURS SUR <a href="#1a">1a</a> &amp; <a href="#1b">1b</a></div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 14px;text-wrap:pretty">Moins de tags, mieux rangés</h1>
+    <p style="font:500 15.5px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0;text-wrap:pretty">Vestiaire supprimé partout. Marques : une seule ligne de styles, les 10 plus fréquents + « N autres ». Pièces : rayon et type fusionnés en un seul menu à sous-catégories — on ouvre « Hauts », on coche « Chemises ».</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:26px">
+
+    <div id="2a" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">2a</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Marques — une seule ligne de styles</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:880px;text-wrap:pretty">Pas de groupes, pas de colonnes. Les 10 styles les plus fréquents, du plus au moins courant, puis « N autres » pour le reste. Bijoux, accessoires, chaussures retirés : c'est le rôle de l'onglet Pièces.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:34px 40px 30px;max-width:1100px;margin:0 auto;box-sizing:border-box">
+        <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.7);margin-bottom:8px">L'ANNUAIRE</div>
+        <h3 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 8px">Les marques</h3>
+        <p style="font:500 14px Archivo;color:rgba(255,255,255,.82);margin:0 0 26px">Chaque marque ici a été lue, vérifiée et choisie. Pas de classement payant, pas de placement déguisé.</p>
+        <div style="display:flex;align-items:center;gap:14px;padding-bottom:14px">
+          <svg width="19" height="19" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.9)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+          <div style="flex:1;font:500 24px Archivo;letter-spacing:-.02em;color:rgba(255,255,255,.62)">Chercher une marque, un style…</div>
+          <div style="font:800 10px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:5px 8px 6px">⌘ K</div>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.35)"></div>
+
+        <div style="padding:18px 0 16px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+                <sc-for list="{{ aItems }}" as="c" hint-placeholder-count="10">
+                  <sc-if value="{{ c.sel }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:800 13px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:6px 12px 7px">{{ c.label }}<span style="font:800 10px Archivo;color:#6a5a92">{{ c.n }}</span></button></sc-if>
+                  <sc-if value="{{ c.unsel }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:700 13px Archivo;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:6px 12px 7px" style-hover="background:rgba(255,255,255,.22)">{{ c.label }}<span style="font:800 10px Archivo;color:rgba(255,255,255,.66)">{{ c.n }}</span></button></sc-if>
+                </sc-for>
+                <button onClick="{{ aToggleMore }}" style="all:unset;cursor:pointer;font:700 13px Archivo;color:#fff;text-decoration:underline;text-underline-offset:4px;padding:6px 6px 7px">{{ aMoreLabel }}</button>
+              </div>
+        </div>
+
+        <sc-if value="{{ aHasTokens }}">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.22);padding-top:14px">
+            <sc-for list="{{ aTokens }}" as="k" hint-placeholder-count="2">
+              <button onClick="{{ k.remove }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 9px 7px 11px">{{ k.label }}<span style="font:900 13px Archivo;color:#6a5a92">×</span></button>
+            </sc-for>
+            <button onClick="{{ aClear }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:#fff;text-decoration:underline;text-underline-offset:4px;margin-left:4px">Tout effacer</button>
+          </div>
+        </sc-if>
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.22);margin-top:14px;padding-top:14px">
+          <span style="font:900 11px Archivo;letter-spacing:.16em;color:#fff">{{ aCount }} MARQUES</span>
+          <span style="font:800 11px Archivo;letter-spacing:.12em;color:rgba(255,255,255,.72)">A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="2b" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">2b</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Pièces — un menu, des sous-catégories</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:880px;text-wrap:pretty">Chaque rayon est un menu déroulant : cliquer « Hauts » filtre sur tous les hauts et déroule ses types (t-shirts, chemises, pulls…) à cocher. Un seul rayon ouvert à la fois. Taille et prix gardent leur menu replié.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:30px;max-width:1100px;margin:0 auto;box-sizing:border-box;display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px;align-items:start">
+        <div style="background:rgba(30,10,70,.42);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:18px 14px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px 12px;border-bottom:1px solid rgba(255,255,255,.16)">
+            <span style="font:900 9.5px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.8)">FILTRES</span>
+            <sc-if value="{{ bHasTokens }}"><button onClick="{{ bClear }}" style="all:unset;cursor:pointer;font:700 11.5px Archivo;color:#fff;text-decoration:underline;text-underline-offset:3px">Effacer</button></sc-if>
+          </div>
+          <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);padding:14px 8px 8px">TYPE DE PIÈCE</div>
+          <div style="display:flex;flex-direction:column;gap:1px">
+            <sc-if value="{{ bAllSel }}"><button onClick="{{ bPickAll }}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;font:800 13.5px Archivo;color:#fff;background:#1a0840;border-radius:10px;padding:8px 10px 8px 30px">Tout voir<span style="font:700 12px Archivo;color:rgba(255,255,255,.85)">26 354</span></button></sc-if>
+            <sc-if value="{{ bAllUnsel }}"><button onClick="{{ bPickAll }}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;font:700 13.5px Archivo;color:rgba(255,255,255,.92);border-radius:10px;padding:8px 10px 8px 30px" style-hover="background:rgba(255,255,255,.1)">Tout voir<span style="font:700 12px Archivo;color:rgba(255,255,255,.66)">26 354</span></button></sc-if>
+            <sc-for list="{{ bTree }}" as="r" hint-placeholder-count="9">
+              <div>
+                <sc-if value="{{ r.open }}">
+                  <button onClick="{{ r.toggle }}" style="all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;font:800 13.5px Archivo;color:#fff;background:#1a0840;border-radius:10px;padding:8px 10px">
+                    <svg width="10" height="6" viewBox="0 0 10 6" style="flex:0 0 auto"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span style="flex:1">{{ r.label }}</span><span style="font:700 12px Archivo;color:rgba(255,255,255,.85)">{{ r.n }}</span>
+                  </button>
+                  <div style="display:flex;flex-direction:column;gap:1px;margin:4px 0 8px 14px;padding-left:10px;border-left:1px solid rgba(255,255,255,.25)">
+                    <sc-for list="{{ r.types }}" as="t" hint-placeholder-count="6">
+                      <button onClick="{{ t.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:9px;font:700 13px Archivo;color:rgba(255,255,255,.95);border-radius:8px;padding:6px 8px" style-hover="background:rgba(255,255,255,.1)">
+                        <sc-if value="{{ t.sel }}"><span style="width:14px;height:14px;border-radius:4px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto"><svg width="8" height="6" viewBox="0 0 10 8"><path d="M1 4 L3.8 6.6 L9 1.2" fill="none" stroke="#170a33" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></sc-if>
+                        <sc-if value="{{ t.unsel }}"><span style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(255,255,255,.5);box-sizing:border-box;flex:0 0 auto"></span></sc-if>
+                        <span style="flex:1">{{ t.label }}</span><span style="font:700 11.5px Archivo;color:rgba(255,255,255,.66)">{{ t.n }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.closed }}">
+                  <button onClick="{{ r.toggle }}" style="all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:10px;font:700 13.5px Archivo;color:rgba(255,255,255,.92);border-radius:10px;padding:8px 10px" style-hover="background:rgba(255,255,255,.1)">
+                    <svg width="10" height="6" viewBox="0 0 10 6" style="flex:0 0 auto;transform:rotate(-90deg)"><path d="M1 1 L5 5 L9 1" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span style="flex:1">{{ r.label }}</span><span style="font:700 12px Archivo;color:rgba(255,255,255,.66)">{{ r.n }}</span>
+                  </button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border-top:1px solid rgba(255,255,255,.16);margin-top:10px">
+            <sc-for list="{{ bSections }}" as="s" hint-placeholder-count="2">
+              <div style="border-bottom:1px solid rgba(255,255,255,.1)">
+                <button onClick="{{ s.toggle }}" style="all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:8px;padding:12px 8px">
+                  <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.8);flex:1">{{ s.label }}</span>
+                  <span style="font:700 12px Archivo;color:#fff">{{ s.value }}</span>
+                  <span style="font:700 15px Archivo;color:rgba(255,255,255,.8);width:12px;text-align:center">{{ s.sign }}</span>
+                </button>
+                <sc-if value="{{ s.open }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 6px 12px">
+                    <sc-for list="{{ s.opts }}" as="o" hint-placeholder-count="4">
+                      <sc-if value="{{ o.sel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 10px">{{ o.label }}</button></sc-if>
+                      <sc-if value="{{ o.unsel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 9px" style-hover="background:rgba(255,255,255,.12)">{{ o.label }}</button></sc-if>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px">
+            <h3 style="font:800 34px Archivo;letter-spacing:-.035em;margin:0">Les pièces</h3>
+            <span style="font:900 11px Archivo;letter-spacing:.16em;color:#fff">{{ bCount }} PIÈCES</span>
+          </div>
+          <sc-if value="{{ bHasTokens }}">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+              <sc-for list="{{ bTokens }}" as="k" hint-placeholder-count="2">
+                <button onClick="{{ k.remove }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 9px 7px 11px">{{ k.label }}<span style="font:900 13px Archivo;color:#6a5a92">×</span></button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+            <sc-for list="{{ bGrid }}" as="g" hint-placeholder-count="8">
+              <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:8px">
+                <div style="aspect-ratio:4/5;border-radius:10px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 8px,rgba(255,255,255,.03) 8px 16px);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:700 10px ui-monospace,monospace;color:rgba(255,255,255,.6)">photo pièce</div>
+                <div style="font:800 12.5px Archivo;margin:8px 2px 2px">{{ g.name }}</div>
+                <div style="font:600 11px Archivo;color:rgba(255,255,255,.72);margin:0 2px 2px">{{ g.brand }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="width:1560px;padding:52px 44px 72px;box-sizing:border-box;background:radial-gradient(900px 520px at 10% -8%, rgba(232,111,216,.22), transparent 60%), radial-gradient(900px 640px at 92% 4%, rgba(90,114,224,.26), transparent 58%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff">
+
+  <div style="max-width:960px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 1 · FILTRES MARQUES &amp; PIÈCES</div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 14px;text-wrap:pretty">Montrer 10 choix, pas 90</h1>
+    <p style="font:500 15.5px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0;text-wrap:pretty">Le problème n'est pas le style des tags, c'est qu'on affiche <strong style="color:#fff">toutes les valeurs de tous les critères en même temps</strong>. Une seule règle pour les deux onglets : <strong style="color:#fff">le rayon d'abord, le type ensuite</strong>. Les ~60 types ne s'affichent que pour le rayon choisi (8 à 13 à la fois). Les listes longues montrent les plus fréquents + « N autres » avec un champ pour chercher. Les critères à 2–3 valeurs (vestiaire, prix) deviennent un simple sélecteur en ligne. Tout est cliquable.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:26px">
+
+    <!-- ===== 1a MARQUES ===== -->
+    <div id="1a" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1a</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Marques — une ligne de critères qui se déplie</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:880px;text-wrap:pretty">Au repos : une seule ligne. <em>Catégorie</em> et <em>Ce qu'elle vend</em> se déplient sous le trait (un seul ouvert à la fois). Vestiaire et prix restent visibles en permanence car ils n'ont que 2–3 valeurs. Les choix actifs remontent en jetons. On passe de ~110 tags visibles à 4 mots au repos, 10–14 quand on ouvre.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:34px 40px 30px;max-width:1100px;margin:0 auto;box-sizing:border-box">
+        <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.7);margin-bottom:8px">L'ANNUAIRE</div>
+        <h3 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 8px">Les marques</h3>
+        <p style="font:500 14px Archivo;color:rgba(255,255,255,.82);margin:0 0 26px">Chaque marque ici a été lue, vérifiée et choisie. Pas de classement payant, pas de placement déguisé.</p>
+
+        <div style="display:flex;align-items:center;gap:14px;padding-bottom:14px">
+          <svg width="19" height="19" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="rgba(255,255,255,.9)" stroke-width="1.9" stroke-linecap="round"></path></svg>
+          <div style="flex:1;font:500 24px Archivo;letter-spacing:-.02em;color:rgba(255,255,255,.62)">Chercher une marque, un style…</div>
+          <div style="font:800 10px Archivo;letter-spacing:.16em;color:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:5px 8px 6px">⌘ K</div>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.35)"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px 0;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <sc-for list="{{ mFacets }}" as="f" hint-placeholder-count="2">
+              <sc-if value="{{ f.open }}">
+                <button onClick="{{ f.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:800 14px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:8px 14px 9px">{{ f.label }}<sc-if value="{{ f.n }}"><span style="font:900 10px Archivo;color:#fff;background:#170a33;border-radius:999px;padding:2px 6px 3px">{{ f.n }}</span></sc-if><svg width="9" height="6" viewBox="0 0 10 6" style="transform:rotate(180deg)"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#170a33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+              </sc-if>
+              <sc-if value="{{ f.closed }}">
+                <button onClick="{{ f.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:700 14px Archivo;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:7px 13px 8px" style-hover="background:rgba(255,255,255,.12)">{{ f.label }}<sc-if value="{{ f.n }}"><span style="font:900 10px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:2px 6px 3px">{{ f.n }}</span></sc-if><svg width="9" height="6" viewBox="0 0 10 6"><path d="M1 1 L5 5 L9 1" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+              </sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:22px">
+            <sc-for list="{{ mSegs }}" as="s" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.72)">{{ s.label }}</span>
+                <div style="display:flex;background:rgba(20,6,50,.28);border-radius:999px;padding:3px">
+                  <sc-for list="{{ s.opts }}" as="o" hint-placeholder-count="3">
+                    <sc-if value="{{ o.sel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:5px 11px 6px">{{ o.label }}</button></sc-if>
+                    <sc-if value="{{ o.unsel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:rgba(255,255,255,.85);border-radius:999px;padding:5px 11px 6px" style-hover="color:#fff">{{ o.label }}</button></sc-if>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ mOpenCat }}">
+          <div style="border-top:1px solid rgba(255,255,255,.22);padding:18px 0 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px">
+              <span style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.72)">STYLE DE LA MARQUE · PLUSIEURS CHOIX POSSIBLES</span>
+              <sc-if value="{{ mCatAll }}">
+                <input value="{{ mCatQ }}" onChange="{{ mSetCatQ }}" placeholder="Filtrer les 26 styles…" style="font:600 13px Archivo;color:#fff;background:rgba(20,6,50,.3);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:7px 14px;outline:none;width:220px">
+              </sc-if>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ mCatItems }}" as="c" hint-placeholder-count="10">
+                <sc-if value="{{ c.sel }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:800 13.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:7px 13px 8px">{{ c.label }}<span style="font:800 10px Archivo;color:#6a5a92">{{ c.n }}</span></button></sc-if>
+                <sc-if value="{{ c.unsel }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:700 13.5px Archivo;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:7px 13px 8px" style-hover="background:rgba(255,255,255,.22)">{{ c.label }}<span style="font:800 10px Archivo;color:rgba(255,255,255,.66)">{{ c.n }}</span></button></sc-if>
+              </sc-for>
+              <button onClick="{{ mToggleCatAll }}" style="all:unset;cursor:pointer;font:700 13px Archivo;color:#fff;text-decoration:underline;text-underline-offset:4px;padding:7px 6px 8px">{{ mCatMoreLabel }}</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ mOpenVend }}">
+          <div style="border-top:1px solid rgba(255,255,255,.22);padding:18px 0 16px">
+            <div style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.72);margin-bottom:12px">1 · LE RAYON</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px">
+              <sc-for list="{{ mRayons }}" as="r" hint-placeholder-count="8">
+                <sc-if value="{{ r.sel }}"><button onClick="{{ r.pick }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:800 13.5px Archivo;color:#170a33;background:#fff;border-radius:999px;padding:7px 13px 8px">{{ r.label }}<span style="font:800 10px Archivo;color:#6a5a92">{{ r.n }}</span></button></sc-if>
+                <sc-if value="{{ r.unsel }}"><button onClick="{{ r.pick }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;font:700 13.5px Archivo;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:7px 13px 8px" style-hover="background:rgba(255,255,255,.22)">{{ r.label }}<span style="font:800 10px Archivo;color:rgba(255,255,255,.66)">{{ r.n }}</span></button></sc-if>
+              </sc-for>
+            </div>
+            <div style="font:900 9px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.72);margin-bottom:12px">2 · {{ mTypeTitle }}</div>
+            <sc-if value="{{ mNoRayon }}">
+              <div style="font:600 13.5px Archivo;color:rgba(255,255,255,.78)">Choisis un rayon pour voir ses types — on n'affiche jamais les 60 d'un coup.</div>
+            </sc-if>
+            <sc-if value="{{ mHasRayon }}">
+              <div style="display:flex;flex-wrap:wrap;gap:8px 20px">
+                <sc-for list="{{ mTypes }}" as="t" hint-placeholder-count="8">
+                  <button onClick="{{ t.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font:700 13.5px Archivo;color:#fff;padding:5px 0">
+                    <sc-if value="{{ t.sel }}"><span style="width:15px;height:15px;border-radius:4px;background:#fff;display:inline-flex;align-items:center;justify-content:center"><svg width="9" height="7" viewBox="0 0 10 8"><path d="M1 4 L3.8 6.6 L9 1.2" fill="none" stroke="#170a33" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></sc-if>
+                    <sc-if value="{{ t.unsel }}"><span style="width:15px;height:15px;border-radius:4px;border:1.5px solid rgba(255,255,255,.55);box-sizing:border-box"></span></sc-if>
+                    {{ t.label }}<span style="font:800 10px Archivo;color:rgba(255,255,255,.66)">{{ t.n }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ mHasTokens }}">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.22);padding-top:14px">
+            <sc-for list="{{ mTokens }}" as="k" hint-placeholder-count="2">
+              <button onClick="{{ k.remove }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 9px 7px 11px">{{ k.label }}<span style="font:900 13px Archivo;color:#6a5a92">×</span></button>
+            </sc-for>
+            <button onClick="{{ mClear }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:#fff;text-decoration:underline;text-underline-offset:4px;margin-left:4px">Tout effacer</button>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.22);margin-top:14px;padding-top:14px">
+          <span style="font:900 11px Archivo;letter-spacing:.16em;color:#fff">{{ mCount }} MARQUES</span>
+          <span style="font:800 11px Archivo;letter-spacing:.12em;color:rgba(255,255,255,.72)">A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 1b PIÈCES ===== -->
+    <div id="1b" style="border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1b</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Pièces — le type dépend du rayon</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:880px;text-wrap:pretty">La colonne garde sa place mais ne défile plus. Rayon en tête ; la section Type n'affiche que les types du rayon choisi (sur « Tout » : les 6 plus fréquents). Au-delà de 8, un « N autres » et un champ pour chercher. Taille, prix, vestiaire sont repliés par défaut, avec la valeur choisie visible sur la ligne fermée.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:30px;max-width:1100px;margin:0 auto;box-sizing:border-box;display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start">
+
+        <div style="background:rgba(30,10,70,.42);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:18px 14px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px 12px;border-bottom:1px solid rgba(255,255,255,.16)">
+            <span style="font:900 9.5px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.8)">FILTRES</span>
+            <sc-if value="{{ pHasTokens }}"><button onClick="{{ pClear }}" style="all:unset;cursor:pointer;font:700 11.5px Archivo;color:#fff;text-decoration:underline;text-underline-offset:3px">Effacer</button></sc-if>
+          </div>
+
+          <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);padding:14px 8px 8px">RAYON</div>
+          <div style="display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{ pRayons }}" as="r" hint-placeholder-count="10">
+              <sc-if value="{{ r.sel }}"><button onClick="{{ r.pick }}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;font:800 13.5px Archivo;color:#fff;background:#1a0840;border-radius:10px;padding:8px 10px">{{ r.label }}<span style="font:700 12px Archivo;color:rgba(255,255,255,.85)">{{ r.n }}</span></button></sc-if>
+              <sc-if value="{{ r.unsel }}"><button onClick="{{ r.pick }}" style="all:unset;cursor:pointer;display:flex;justify-content:space-between;font:700 13.5px Archivo;color:rgba(255,255,255,.92);border-radius:10px;padding:8px 10px" style-hover="background:rgba(255,255,255,.1)">{{ r.label }}<span style="font:700 12px Archivo;color:rgba(255,255,255,.66)">{{ r.n }}</span></button></sc-if>
+            </sc-for>
+          </div>
+
+          <div style="border-top:1px solid rgba(255,255,255,.16);margin-top:10px;padding-top:14px">
+            <div style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);padding:0 8px 8px">{{ pTypeTitle }}</div>
+            <sc-if value="{{ pShowQ }}">
+              <div style="padding:0 4px 8px"><input value="{{ pTypeQ }}" onChange="{{ pSetTypeQ }}" placeholder="Chercher un type…" style="box-sizing:border-box;width:100%;font:600 12.5px Archivo;color:#fff;background:rgba(20,6,50,.35);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 10px;outline:none"></div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:1px">
+              <sc-for list="{{ pTypes }}" as="t" hint-placeholder-count="6">
+                <button onClick="{{ t.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:9px;font:700 13px Archivo;color:rgba(255,255,255,.95);border-radius:10px;padding:7px 10px" style-hover="background:rgba(255,255,255,.1)">
+                  <sc-if value="{{ t.sel }}"><span style="width:14px;height:14px;border-radius:4px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto"><svg width="8" height="6" viewBox="0 0 10 8"><path d="M1 4 L3.8 6.6 L9 1.2" fill="none" stroke="#170a33" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></sc-if>
+                  <sc-if value="{{ t.unsel }}"><span style="width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(255,255,255,.5);box-sizing:border-box;flex:0 0 auto"></span></sc-if>
+                  <span style="flex:1">{{ t.label }}</span><span style="font:700 11.5px Archivo;color:rgba(255,255,255,.66)">{{ t.n }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ pHasMore }}">
+              <button onClick="{{ pToggleMore }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:#fff;text-decoration:underline;text-underline-offset:3px;padding:8px 10px 2px">{{ pMoreLabel }}</button>
+            </sc-if>
+          </div>
+
+          <div style="border-top:1px solid rgba(255,255,255,.16);margin-top:12px">
+            <sc-for list="{{ pSections }}" as="s" hint-placeholder-count="3">
+              <div style="border-bottom:1px solid rgba(255,255,255,.1)">
+                <button onClick="{{ s.toggle }}" style="all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:8px;padding:12px 8px">
+                  <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.8);flex:1">{{ s.label }}</span>
+                  <span style="font:700 12px Archivo;color:#fff">{{ s.value }}</span>
+                  <span style="font:700 15px Archivo;color:rgba(255,255,255,.8);width:12px;text-align:center">{{ s.sign }}</span>
+                </button>
+                <sc-if value="{{ s.open }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 6px 12px">
+                    <sc-for list="{{ s.opts }}" as="o" hint-placeholder-count="4">
+                      <sc-if value="{{ o.sel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 10px">{{ o.label }}</button></sc-if>
+                      <sc-if value="{{ o.unsel }}"><button onClick="{{ o.pick }}" style="all:unset;cursor:pointer;font:700 12px Archivo;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 9px" style-hover="background:rgba(255,255,255,.12)">{{ o.label }}</button></sc-if>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:12px">
+            <h3 style="font:800 34px Archivo;letter-spacing:-.035em;margin:0">Les pièces</h3>
+            <span style="font:900 11px Archivo;letter-spacing:.16em;color:#fff">{{ pCount }} PIÈCES</span>
+          </div>
+          <sc-if value="{{ pHasTokens }}">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+              <sc-for list="{{ pTokens }}" as="k" hint-placeholder-count="2">
+                <button onClick="{{ k.remove }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font:800 12px Archivo;color:#170a33;background:#fff;border-radius:8px;padding:6px 9px 7px 11px">{{ k.label }}<span style="font:900 13px Archivo;color:#6a5a92">×</span></button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+            <sc-for list="{{ pGrid }}" as="g" hint-placeholder-count="8">
+              <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:8px">
+                <div style="aspect-ratio:4/5;border-radius:10px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 8px,rgba(255,255,255,.03) 8px 16px);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:700 10px ui-monospace,monospace;color:rgba(255,255,255,.6)">photo pièce</div>
+                <div style="font:800 12.5px Archivo;margin:8px 2px 2px">{{ g.name }}</div>
+                <div style="font:600 11px Archivo;color:rgba(255,255,255,.72);margin:0 2px 2px">{{ g.brand }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const RAYONS = [
+  ['Hauts',132,10118],['Bas',112,6026],['Vestes',99,2777],['Robes',18,86],['Maille',75,1112],
+  ['Chaussures',32,349],['Bijoux',62,2377],['Accessoires',114,2877],['Autres',40,632]
+];
+const TYPES = {
+  Hauts:[['T-shirts',115,4111],['Hoodies',94,2008],['Manches longues',59,812],['Chemises',57,640],['Sweats',48,1090],['Débardeurs',37,388],['Polos',26,251],['Corsets',6,40],['Crop tops',7,62],['Surchemises',5,31],['Bodys',3,18]],
+  Bas:[['Shorts',78,1057],['Pantalons',76,1488],['Jeans',69,2115],['Joggings',52,944],['Cargos',23,290],['Jupes',20,118],['Leggings',4,14]],
+  Vestes:[['Bombers',36,402],['Vestes en jean',36,388],['Vestes en cuir',28,212],['Doudounes',24,301],['Manteaux',24,280],['Gilets sans manches',23,190],['Coupe-vent',19,176],['Blazers',13,98],['Vestes varsity',10,64]],
+  Robes:[['Robes',18,58],['Combinaisons',7,16],['Ensembles',13,12]],
+  Maille:[['Pulls',52,720],['Cardigans',20,260],['Cagoules',12,132]],
+  Chaussures:[['Chaussettes',27,120],['Sneakers',12,98],['Bottes',12,64],['Mocassins & derbies',12,41],['Sandales & claquettes',7,26]],
+  Bijoux:[['Colliers',46,938],['Bagues',35,702],['Bracelets',28,420],['Boucles d\'oreilles',24,310],['Piercings',1,7]],
+  Accessoires:[['Casquettes',58,720],['Sacs',53,512],['Ceintures',50,388],['Bonnets',46,402],['Écharpes & foulards',31,190],['Porte-clés',31,160],['Chapeaux',27,140],['Petite maroquinerie',21,122],['Gants',16,70],['Lunettes',15,66],['Stickers & patchs',15,58],['Bobs',5,31],['Cravates',4,18]],
+  Autres:[['Maillots',31,380],['Sous-vêtements',25,180],['Maillots de bain',17,72]]
+};
+const CATS = [['Streetwear',91],['Denim',73],['Maille',54],['Bijoux',40],['Accessoires',33],['Alternative',13],['Vintage',11],['Grunge',10],['Upcycling',10],['Cuir',8],['Sportswear',8],['Chaussures',4],['Workwear',4],['Luxe',3],['Y2K',3],['Artiste',2],['Minimalisme',2],['Sur-mesure',2],['Womenswear',2],['Old money',1],['Punk',1],['Tailoring',1],['Techwear',1]];
+const ALLTYPES = Object.values(TYPES).flat().sort((a,b)=>b[2]-a[2]);
+const fmt = n => n.toLocaleString('fr-FR');
+const tog = (set, v) => { const s = new Set(set); s.has(v) ? s.delete(v) : s.add(v); return s; };
+
+class Component extends DCLogic {
+  state = {
+    aCats: new Set(['Streetwear','Denim']), aMore: false,
+    bRayon: 'Hauts', bTypes: new Set(['Chemises']), bOpen: null, bSec: { TAILLE: 'Tout', PRIX: 'Tout' },
+    mOpen: 'vend', mCats: new Set(['Streetwear']), mRayon: 'Hauts', mTypes: new Set(['Hoodies']), mVest: 'Tout', mPrix: 'Tous', mCatAll: false, mCatQ: '',
+    pRayon: 'Bas', pTypes: new Set(['Jeans']), pMore: false, pTypeQ: '', pOpen: 'TAILLE', pSec: { TAILLE: 'Tout', PRIX: 'Tout', VESTIAIRE: 'Tout' }
+  };
+  renderVals() {
+    const s = this.state, set = o => this.setState(o);
+    // ---- Marques
+    const mFacets = [['cat','Catégorie',s.mCats.size],['vend','Ce qu\'elle vend',s.mTypes.size + (s.mRayon ? 1 : 0)]].map(([k,label,n]) => ({
+      label, n: n || null, open: s.mOpen === k, closed: s.mOpen !== k, toggle: () => set({ mOpen: s.mOpen === k ? null : k })
+    }));
+    const seg = (label, key, opts) => ({ label, opts: opts.map(o => ({ label: o, sel: s[key] === o, unsel: s[key] !== o, pick: () => set({ [key]: o }) })) });
+    const mSegs = [seg('VESTIAIRE','mVest',['Tout','Mixte','Femme']), seg('PRIX','mPrix',['Tous','€','€€','€€€'])];
+    const q = s.mCatQ.trim().toLowerCase();
+    let cats = s.mCatAll ? CATS.filter(c => c[0].toLowerCase().includes(q)) : CATS.slice(0, 10);
+    const mCatItems = cats.map(([label,n]) => ({ label, n, sel: s.mCats.has(label), unsel: !s.mCats.has(label), toggle: () => set({ mCats: tog(s.mCats, label) }) }));
+    const mRayons = RAYONS.map(([label,n]) => ({ label, n, sel: s.mRayon === label, unsel: s.mRayon !== label, pick: () => set({ mRayon: s.mRayon === label ? null : label, mTypes: new Set() }) }));
+    const mTypes = (TYPES[s.mRayon] || []).map(([label,n]) => ({ label, n, sel: s.mTypes.has(label), unsel: !s.mTypes.has(label), toggle: () => set({ mTypes: tog(s.mTypes, label) }) }));
+    const mTokens = [
+      ...[...s.mCats].map(c => ({ label: c, remove: () => set({ mCats: tog(s.mCats, c) }) })),
+      ...(s.mRayon && !s.mTypes.size ? [{ label: s.mRayon, remove: () => set({ mRayon: null }) }] : []),
+      ...[...s.mTypes].map(t => ({ label: s.mRayon + ' · ' + t, remove: () => set({ mTypes: tog(s.mTypes, t) }) })),
+      ...(s.mVest !== 'Tout' ? [{ label: s.mVest, remove: () => set({ mVest: 'Tout' }) }] : []),
+      ...(s.mPrix !== 'Tous' ? [{ label: 'Prix ' + s.mPrix, remove: () => set({ mPrix: 'Tous' }) }] : [])
+    ];
+    let mc = 142;
+    if (s.mCats.size) mc = Math.min(mc, [...s.mCats].reduce((a,c) => a + (CATS.find(x => x[0] === c)||[0,0])[1], 0));
+    if (s.mRayon) mc = Math.round(mc * (RAYONS.find(r => r[0] === s.mRayon)[1] / 142));
+    if (s.mTypes.size) mc = Math.round(mc * 0.6);
+    if (s.mVest === 'Femme') mc = Math.min(mc, 2);
+    if (s.mPrix !== 'Tous') mc = Math.round(mc * ({'€':.34,'€€':.6,'€€€':.06})[s.mPrix]);
+    // ---- Pièces
+    const pRayons = [['Tout',null,26354], ...RAYONS].map(([label,,n]) => ({ label, n: fmt(n), sel: s.pRayon === label, unsel: s.pRayon !== label, pick: () => set({ pRayon: label, pTypes: new Set(), pMore: false, pTypeQ: '' }) }));
+    const all = s.pRayon === 'Tout';
+    let list = all ? ALLTYPES.slice(0, 6) : [...TYPES[s.pRayon]].sort((a,b)=>b[2]-a[2]);
+    const pq = s.pTypeQ.trim().toLowerCase();
+    const long = !all && list.length > 8;
+    if (long && s.pMore) list = list.filter(t => t[0].toLowerCase().includes(pq));
+    const hidden = long && !s.pMore ? list.length - 8 : 0;
+    if (long && !s.pMore) list = list.slice(0, 8);
+    const pTypes = list.map(([label,,n]) => ({ label, n: fmt(n), sel: s.pTypes.has(label), unsel: !s.pTypes.has(label), toggle: () => set({ pTypes: tog(s.pTypes, label) }) }));
+    const SEC = { TAILLE: ['Tout','XS','S','M','L','XL','XXL'], PRIX: ['Tout','< 50 €','50–100 €','100–200 €','200 € +'], VESTIAIRE: ['Tout','Mixte','Femme','Homme'] };
+    const pSections = Object.keys(SEC).map(k => ({
+      label: k, value: s.pSec[k] === 'Tout' ? '' : s.pSec[k], open: s.pOpen === k, sign: s.pOpen === k ? '−' : '+',
+      toggle: () => set({ pOpen: s.pOpen === k ? null : k }),
+      opts: SEC[k].map(o => ({ label: o, sel: s.pSec[k] === o, unsel: s.pSec[k] !== o, pick: () => set({ pSec: { ...s.pSec, [k]: o } }) }))
+    }));
+    const pTokens = [
+      ...(!all && !s.pTypes.size ? [{ label: s.pRayon, remove: () => set({ pRayon: 'Tout' }) }] : []),
+      ...[...s.pTypes].map(t => ({ label: t, remove: () => set({ pTypes: tog(s.pTypes, t) }) })),
+      ...Object.keys(s.pSec).filter(k => s.pSec[k] !== 'Tout').map(k => ({ label: s.pSec[k], remove: () => set({ pSec: { ...s.pSec, [k]: 'Tout' } }) }))
+    ];
+    let pc = all ? 26354 : RAYONS.find(r => r[0] === s.pRayon)[2];
+    if (s.pTypes.size) pc = [...s.pTypes].reduce((a,t) => a + ((ALLTYPES.find(x => x[0] === t)||[0,0,0])[2]), 0);
+    Object.values(s.pSec).forEach(v => { if (v !== 'Tout') pc = Math.round(pc * .3); });
+    const gName = s.pTypes.size ? [...s.pTypes][0] : (all ? 'Pièce' : s.pRayon);
+    const brands = ['04lowlife','4tothe9','Atelier Brut','Maison Deneb','Dentelle Noire','Kodama','Sillon','Vesper'];
+    const pGrid = brands.map((b,i) => ({ name: gName.replace(/s$/,'') + ' ' + ['brut','délavé','noir','écru','oversize','ample','court','lavé'][i], brand: b }));
+    // ---- Tour 2 · Marques
+    const STYLES = CATS.filter(c => !['Bijoux','Accessoires','Chaussures'].includes(c[0]));
+    const cn = c => (CATS.find(x => x[0] === c) || [0,0])[1];
+    const aItems = (s.aMore ? STYLES : STYLES.slice(0, 10)).map(([c,n]) => ({ label: c, n, sel: s.aCats.has(c), unsel: !s.aCats.has(c), toggle: () => set({ aCats: tog(s.aCats, c) }) }));
+    const aTokens = [...s.aCats].map(c => ({ label: c, remove: () => set({ aCats: tog(s.aCats, c) }) }));
+    const aCount = s.aCats.size ? Math.min(142, [...s.aCats].reduce((a,c) => a + cn(c), 0)) : 142;
+    // ---- Tour 2 · Pièces
+    const bTree = RAYONS.map(([label,,n]) => { const open = s.bRayon === label; return {
+      label, n: fmt(n), open, closed: !open,
+      toggle: () => set({ bRayon: open ? null : label, bTypes: new Set() }),
+      types: open ? [...TYPES[label]].sort((a,b)=>b[2]-a[2]).map(([t,,tn]) => ({ label: t, n: fmt(tn), sel: s.bTypes.has(t), unsel: !s.bTypes.has(t), toggle: () => set({ bTypes: tog(s.bTypes, t) }) })) : []
+    }; });
+    const BSEC = { TAILLE: ['Tout','XS','S','M','L','XL','XXL'], PRIX: ['Tout','< 50 €','50–100 €','100–200 €','200 € +'] };
+    const bSections = Object.keys(BSEC).map(k => ({
+      label: k, value: s.bSec[k] === 'Tout' ? '' : s.bSec[k], open: s.bOpen === k, sign: s.bOpen === k ? '−' : '+',
+      toggle: () => set({ bOpen: s.bOpen === k ? null : k }),
+      opts: BSEC[k].map(o => ({ label: o, sel: s.bSec[k] === o, unsel: s.bSec[k] !== o, pick: () => set({ bSec: { ...s.bSec, [k]: o } }) }))
+    }));
+    const bTokens = [
+      ...(s.bRayon && !s.bTypes.size ? [{ label: s.bRayon, remove: () => set({ bRayon: null }) }] : []),
+      ...[...s.bTypes].map(t => ({ label: s.bRayon + ' · ' + t, remove: () => set({ bTypes: tog(s.bTypes, t) }) })),
+      ...Object.keys(s.bSec).filter(k => s.bSec[k] !== 'Tout').map(k => ({ label: s.bSec[k], remove: () => set({ bSec: { ...s.bSec, [k]: 'Tout' } }) }))
+    ];
+    let bc = s.bRayon ? RAYONS.find(r => r[0] === s.bRayon)[2] : 26354;
+    if (s.bTypes.size) bc = [...s.bTypes].reduce((a,t) => a + ((ALLTYPES.find(x => x[0] === t)||[0,0,0])[2]), 0);
+    Object.values(s.bSec).forEach(v => { if (v !== 'Tout') bc = Math.round(bc * .3); });
+    const bName = s.bTypes.size ? [...s.bTypes][0] : (s.bRayon || 'Pièce');
+    const bGrid = brands.map((b,i) => ({ name: bName.replace(/s$/,'') + ' ' + ['brut','délavé','noir','écru','oversize','ample','court','lavé'][i], brand: b }));
+    return {
+      aItems, aToggleMore: () => set({ aMore: !s.aMore }), aMoreLabel: s.aMore ? 'Réduire' : '+ ' + (STYLES.length - 10) + ' autres', aTokens, aHasTokens: aTokens.length > 0, aClear: () => set({ aCats: new Set() }), aCount,
+      bTree, bSections, bTokens, bGrid, bHasTokens: bTokens.length > 0, bCount: fmt(bc),
+      bAllSel: !s.bRayon, bAllUnsel: !!s.bRayon, bPickAll: () => set({ bRayon: null, bTypes: new Set() }),
+      bClear: () => set({ bRayon: null, bTypes: new Set(), bSec: { TAILLE: 'Tout', PRIX: 'Tout' } }),
+      mFacets, mSegs, mCatItems, mRayons, mTypes, mTokens,
+      mOpenCat: s.mOpen === 'cat', mOpenVend: s.mOpen === 'vend',
+      mCatAll: s.mCatAll, mCatQ: s.mCatQ, mSetCatQ: e => set({ mCatQ: e.target.value }),
+      mToggleCatAll: () => set({ mCatAll: !s.mCatAll, mCatQ: '' }),
+      mCatMoreLabel: s.mCatAll ? 'Réduire' : (CATS.length - 10) + ' autres styles',
+      mNoRayon: !s.mRayon, mHasRayon: !!s.mRayon,
+      mTypeTitle: s.mRayon ? 'LE TYPE DANS « ' + s.mRayon.toUpperCase() + ' »' : 'LE TYPE',
+      mHasTokens: mTokens.length > 0, mClear: () => set({ mCats: new Set(), mRayon: null, mTypes: new Set(), mVest: 'Tout', mPrix: 'Tous' }),
+      mCount: mc,
+      pRayons, pTypes, pSections, pTokens, pGrid, pHasTokens: pTokens.length > 0,
+      pTypeTitle: all ? 'TYPES LES PLUS VUS' : 'TYPE · ' + s.pRayon.toUpperCase(),
+      pShowQ: long && s.pMore, pTypeQ: s.pTypeQ, pSetTypeQ: e => set({ pTypeQ: e.target.value }),
+      pHasMore: long, pMoreLabel: s.pMore ? 'Réduire' : hidden + ' autres types', pToggleMore: () => set({ pMore: !s.pMore, pTypeQ: '' }),
+      pClear: () => set({ pRayon: 'Tout', pTypes: new Set(), pSec: { TAILLE: 'Tout', PRIX: 'Tout', VESTIAIRE: 'Tout' } }),
+      pCount: fmt(pc)
+    };
+  }
+}
+</script>
+</body>
+</html>

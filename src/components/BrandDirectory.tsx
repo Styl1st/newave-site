@@ -210,8 +210,16 @@ export default function BrandDirectory({
   favoris,
   notes,
   amorce,
+  rayonsDesTags,
 }: {
   brands: Brand[];
+  /**
+   * Le rayon de chaque type (« Hoodies » → « Hauts »), tel que les pièces
+   * le portent. Sert à ranger les types sous leur famille dans « Ce
+   * qu'elle vend ». Absent avant la migration 34 : les types s'affichent
+   * alors tous ensemble, comme avant.
+   */
+  rayonsDesTags?: Record<string, string>;
   /** Les marques déjà suivies, pour allumer la bonne étoile. */
   favoris?: string[];
   /** Les moyennes d'avis, par identifiant de marque. */
@@ -300,6 +308,12 @@ export default function BrandDirectory({
    * ce sont les marques qui font les deux.
    */
   const [vendus, setVendus] = useState<string[]>(amorceJetons.vend);
+  /* La famille dont les types sont dépliés sous la rangée des familles.
+     Une seule à la fois : c'est ce qui garde le panneau court. */
+  const [familleOuverte, setFamilleOuverte] = useState<string | null>(() => {
+    const [premiere] = amorceJetons.vend.filter((v) => FAMILLES.includes(v));
+    return premiere ?? null;
+  });
 
   /*
    * La lettre de l'index est tenue ici et non dans la grille : elle part
@@ -926,54 +940,101 @@ export default function BrandDirectory({
                   lu sur son site
                 </span>
               </p>
-              <div className="mb-2 flex flex-wrap gap-2">
+              {/*
+                LES TYPES SE DÉPLIENT SOUS LEUR FAMILLE.
+
+                Ils étaient tous affichés d'un bloc sous les familles :
+                soixante pastilles, et un panneau qu'il fallait faire
+                défiler pour atteindre le vestiaire et le prix. On clique
+                maintenant « Hauts », et seuls ses types apparaissent
+                dessous : T-shirts, Hoodies, Sweats. « Hauts » puis
+                « Hoodies », ce sont les marques qui font des hoodies,
+                puisque les critères se cumulent.
+
+                Taper « hood » dans le champ propose toujours le type
+                directement, sans passer par sa famille.
+              */}
+              <div className="mb-4 flex flex-wrap gap-2">
                 <button
-                  onClick={() => setVendus([])}
+                  onClick={() => {
+                    setVendus([]);
+                    setFamilleOuverte(null);
+                  }}
                   className={`${chip} ${vendus.length === 0 ? chipOn : chipOff}`}
                 >
                   Tout
                 </button>
                 {ventes.familles.map(([v, n]) => {
                   const active = vendus.includes(v);
+                  const ouverte = familleOuverte === v;
+                  const typesPoses = rayonsDesTags
+                    ? vendus.filter((x) => rayonsDesTags[x] === v).length
+                    : 0;
                   return (
                     <button
                       key={v}
-                      onClick={() =>
-                        setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
-                      }
+                      onClick={() => {
+                        if (active) {
+                          // On retire la famille, et ses types avec elle.
+                          setVendus((l) =>
+                            l.filter((x) => x !== v && (!rayonsDesTags || rayonsDesTags[x] !== v))
+                          );
+                          if (ouverte) setFamilleOuverte(null);
+                        } else {
+                          setVendus((l) => [...l, v]);
+                          setFamilleOuverte(v);
+                        }
+                      }}
                       aria-pressed={active}
+                      aria-expanded={ouverte}
                       className={`${chip} ${active ? chipOn : chipOff}`}
                     >
                       {v}
                       <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                      {typesPoses > 0 && !ouverte && (
+                        <span className="ml-1.5 font-black text-[rgb(var(--accent-1))]">+{typesPoses}</span>
+                      )}
                     </button>
                   );
                 })}
               </div>
-              {/* Les tags fins en plus petit, sous les familles : on
-                  lit d'abord « Vestes », puis on précise « Bombers ». */}
-              {ventes.fins.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-1.5">
-                  {ventes.fins.map(([v, n]) => {
-                    const active = vendus.includes(v);
-                    return (
-                      <button
-                        key={v}
-                        onClick={() =>
-                          setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
-                        }
-                        aria-pressed={active}
-                        className={`shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-bold transition ${
-                          active ? chipOn : "border border-white/20 text-white/78 hover:bg-white/12 hover:text-white"
-                        }`}
-                      >
-                        {v}
-                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+
+              {(() => {
+                if (!familleOuverte || !vendus.includes(familleOuverte)) return null;
+                const types = ventes.fins.filter(
+                  ([v]) => !rayonsDesTags || rayonsDesTags[v] === familleOuverte
+                );
+                if (types.length === 0) return null;
+                return (
+                  <div className="-mt-2 mb-4 border-l border-white/15 pl-3">
+                    <p className="m-0 mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
+                      Types · {familleOuverte}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {types.map(([v, n]) => {
+                        const active = vendus.includes(v);
+                        return (
+                          <button
+                            key={v}
+                            onClick={() =>
+                              setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
+                            }
+                            aria-pressed={active}
+                            className={`shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-bold transition ${
+                              active
+                                ? chipOn
+                                : "border border-white/20 text-white/78 hover:bg-white/12 hover:text-white"
+                            }`}
+                          >
+                            {v}
+                            <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
 
