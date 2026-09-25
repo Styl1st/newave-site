@@ -12,15 +12,32 @@ import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
-import type { Brand, PriceTier, Recherche } from "@/lib/types";
-import { PRICE_TIER_LABEL } from "@/lib/types";
-import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
-import { enSlugDeCategorie, PRODUCT_CATEGORIES } from "@/lib/taxonomy";
+import type { Brand, Recherche } from "@/lib/types";
+import { enSlugDeCategorie } from "@/lib/taxonomy";
 
-/** Les familles, pour les distinguer des tags fins dans ce qu'une marque vend. */
-const FAMILLES: readonly string[] = PRODUCT_CATEGORIES;
+/**
+ * LE PANNEAU NE PROPOSE PLUS QUE DES STYLES.
+ *
+ * Il affichait tout à la fois : les styles, ce que la marque vend
+ * (familles et types), le vestiaire, la gamme de prix. Plus de cent
+ * pastilles, et un panneau qu'il fallait faire défiler pour atteindre
+ * la fin. Le vestiaire, la gamme et « Ce qu'elle vend » en sont sortis :
+ * chercher une pièce par rayon, par type ou par prix, c'est le rôle de
+ * la vitrine (`/pieces`), qui le fait mieux. Les champs restent en base
+ * et sur les fiches ; ce sont les FILTRES qui partent.
+ *
+ * Bijoux, Accessoires et Chaussures restent des catégories de marque
+ * (`BRAND_CATEGORIES` n'y touche pas), mais ce sont des produits, pas
+ * des styles : on ne les propose pas ici. Un lien `?cat=bijoux` les
+ * pose encore, et le jeton s'affiche comme les autres.
+ */
+const HORS_FILTRE = ["Bijoux", "Accessoires", "Chaussures"];
 
-const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
+/**
+ * Combien de styles la ligne montre avant « + N autres ». Assez pour que
+ * les courants tiennent sans déplier, pas assez pour faire un mur.
+ */
+const STYLES_VISIBLES = 10;
 
 /** Une liste vide, pour montrer les critères avant que la base réponde. */
 const RIEN: Recherche = { marques: [], pieces: [], totalPieces: 0 };
@@ -132,61 +149,28 @@ function categoriesDemandees(
 }
 
 /**
- * Les jetons demandés par l'adresse.
+ * Les styles demandés par l'adresse, dans `?f=style:streetwear,…`.
  *
- * `?f=style:streetwear,vestiaire:femme,prix:premium` rouvre l'écran
- * exactement tel qu'il était quand on a copié le lien. C'est ce que
- * `?cat=` faisait déjà pour les seules catégories ; il continue de
- * marcher, les anciens liens n'ont pas à mourir pour autant.
+ * `?f=` rouvre l'écran exactement tel qu'il était quand on a copié le
+ * lien. C'est ce que `?cat=` faisait déjà ; il continue de marcher.
  *
- * Une famille inconnue ou une valeur de travers est ignorée en
- * silence, pour la même raison que les catégories plus haut : mieux
- * vaut l'annuaire entier qu'une page qui a l'air cassée.
+ * LES ANCIENS JETONS SONT IGNORÉS EN SILENCE. Avant que le panneau ne
+ * se réduise aux styles, l'adresse portait aussi `vestiaire:femme`,
+ * `prix:premium` ou `vend:hoodies`. Un lien copié à cette époque doit
+ * ouvrir l'annuaire sur ses styles, simplement sans le reste, et sans
+ * erreur. Même règle pour une famille inconnue ou une valeur de
+ * travers : mieux vaut l'annuaire entier qu'une page qui a l'air cassée.
  */
-function jetonsDemandes(
-  brands: Brand[],
-  param: string | string[] | undefined
-): { cats: string[]; audience: Audience | null; tier: PriceTier | null; vend: string[] } {
+function stylesDemandes(brands: Brand[], param: string | string[] | undefined): string[] {
   const styles: string[] = [];
-  const ventes: string[] = [];
-  let audience: Audience | null = null;
-  let tier: PriceTier | null = null;
-
   for (const entree of valeursDe(param)) {
     const coupe = entree.indexOf(":");
     if (coupe < 0) continue;
-    const famille = entree.slice(0, coupe).toLowerCase();
-    const valeur = entree.slice(coupe + 1).toLowerCase();
-
-    if (famille === "style") styles.push(valeur);
-    else if (famille === "vend") ventes.push(valeur);
-    else if (famille === "vestiaire" && (AUDIENCES as readonly string[]).includes(valeur)) {
-      audience = valeur as Audience;
-    } else if (famille === "prix" && (TIERS as string[]).includes(valeur)) {
-      tier = valeur as PriceTier;
+    if (entree.slice(0, coupe).toLowerCase() === "style") {
+      styles.push(entree.slice(coupe + 1).toLowerCase());
     }
   }
-
-  /* Même règle que pour les styles : on se règle sur ce que les marques
-     vendent vraiment, et une valeur inconnue est ignorée en silence. */
-  const connues = new Map<string, string>();
-  for (const b of brands) {
-    for (const cle of Object.keys(b.vend ?? {})) connues.set(enSlugDeCategorie(cle), cle);
-  }
-  const vend = [
-    ...new Set(
-      ventes
-        .map((v) => connues.get(enSlugDeCategorie(v)))
-        .filter((v): v is string => Boolean(v))
-    ),
-  ];
-
-  return { cats: categoriesDemandees(brands, styles), audience, tier, vend };
-}
-
-/** La marque vend-elle tout ce qu'on a demandé ? */
-function vendTout(b: Brand, vendus: string[]): boolean {
-  return vendus.every((v) => (b.vend?.[v] ?? 0) > 0);
+  return categoriesDemandees(brands, styles);
 }
 
 /**
@@ -210,16 +194,8 @@ export default function BrandDirectory({
   favoris,
   notes,
   amorce,
-  rayonsDesTags,
 }: {
   brands: Brand[];
-  /**
-   * Le rayon de chaque type (« Hoodies » → « Hauts »), tel que les pièces
-   * le portent. Sert à ranger les types sous leur famille dans « Ce
-   * qu'elle vend ». Absent avant la migration 34 : les types s'affichent
-   * alors tous ensemble, comme avant.
-   */
-  rayonsDesTags?: Record<string, string>;
   /** Les marques déjà suivies, pour allumer la bonne étoile. */
   favoris?: string[];
   /** Les moyennes d'avis, par identifiant de marque. */
@@ -281,39 +257,21 @@ export default function BrandDirectory({
    * ferait revenir le filtre que la personne vient de retirer, puisque
    * l'adresse, elle, le mentionne toujours.
    */
-  const [amorceJetons] = useState(() => jetonsDemandes(brands, amorce?.f));
-
   const [choisies, setChoisies] = useState<string[]>(() => [
-    ...new Set([...categoriesDemandees(brands, amorce?.cat), ...amorceJetons.cats]),
+    ...new Set([
+      ...categoriesDemandees(brands, amorce?.cat),
+      ...stylesDemandes(brands, amorce?.f),
+    ]),
   ]);
 
   const basculer = (c: string) =>
     setChoisies((liste) =>
       liste.includes(c) ? liste.filter((x) => x !== c) : [...liste, c]
     );
-  const [tier, setTier] = useState<PriceTier | null>(amorceJetons.tier);
-  /*
-   * LE VESTIAIRE, ET IL SE CHOISIT SEUL.
-   *
-   * Une seule valeur à la fois, contrairement aux catégories : personne
-   * ne cherche « féminin ET masculin », c'est déjà ce que veut dire ne
-   * rien cocher.
-   */
-  const [audience, setAudience] = useState<Audience | null>(amorceJetons.audience);
-  /*
-   * CE QUE LA MARQUE VEND : « Vestes », « Hoodies », « Bagues ».
-   *
-   * Lu sur ses pièces, donc sur son site, et non coché à la main comme
-   * les styles. Les critères se cumulent : « Hoodies » puis « Cargos »,
-   * ce sont les marques qui font les deux.
-   */
-  const [vendus, setVendus] = useState<string[]>(amorceJetons.vend);
-  /* La famille dont les types sont dépliés sous la rangée des familles.
-     Une seule à la fois : c'est ce qui garde le panneau court. */
-  const [familleOuverte, setFamilleOuverte] = useState<string | null>(() => {
-    const [premiere] = amorceJetons.vend.filter((v) => FAMILLES.includes(v));
-    return premiere ?? null;
-  });
+
+  /* La ligne de styles est repliée sur ses dix premiers ; « + N autres »
+     la déplie en entier. */
+  const [tousLesStyles, setTousLesStyles] = useState(false);
 
   /*
    * La lettre de l'index est tenue ici et non dans la grille : elle part
@@ -327,13 +285,10 @@ export default function BrandDirectory({
   });
   const [ouvert, setOuvert] = useState(false);
 
-  const actifs = choisies.length + vendus.length + (tier ? 1 : 0) + (audience ? 1 : 0);
+  const actifs = choisies.length;
 
   function reinitialiser() {
     setChoisies([]);
-    setVendus([]);
-    setTier(null);
-    setAudience(null);
   }
 
   /*
@@ -563,74 +518,22 @@ export default function BrandDirectory({
   const base = parRecherche;
 
   /*
-   * Chaque famille de filtres se compte SANS elle-même : sinon choisir
-   * « Streetwear » ferait disparaître toutes les autres catégories, et
-   * l'on ne pourrait plus changer d'avis sans tout effacer.
+   * Les styles se comptent sur les marques qui restent : chaque puce dit
+   * combien de marques il resterait en la cochant EN PLUS. Comme le
+   * cumul est un ET, une puce qui ne laisserait plus personne debout
+   * n'apparaît simplement pas.
    */
   const categories = useMemo(() => {
     const compte = new Map<string, number>();
     for (const b of base) {
-      if (tier && b.price_tier !== tier) continue;
-      if (audience && uneAudience(b.audience) !== audience) continue;
       if (!choisies.every((c) => b.categories.includes(c))) continue;
-      if (!vendTout(b, vendus)) continue;
       for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
     }
     return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [base, tier, audience, choisies, vendus]);
-
-  /*
-   * Ce que vendent les marques qui restent, compté SANS ce filtre-là
-   * lui-même, comme les autres : chaque valeur proposée ramène au moins
-   * une marque. Les familles d'abord, dans l'ordre des rayons, puis les
-   * tags fins du plus répandu au plus rare.
-   */
-  const ventes = useMemo(() => {
-    const compte = new Map<string, number>();
-    for (const b of base) {
-      if (tier && b.price_tier !== tier) continue;
-      if (audience && uneAudience(b.audience) !== audience) continue;
-      if (!choisies.every((c) => b.categories.includes(c))) continue;
-      if (!vendTout(b, vendus)) continue;
-      for (const [cle, n] of Object.entries(b.vend ?? {})) {
-        if (n > 0) compte.set(cle, (compte.get(cle) ?? 0) + 1);
-      }
-    }
-    const familles = FAMILLES.filter((f) => compte.has(f)).map(
-      (f) => [f, compte.get(f) ?? 0] as const
-    );
-    const fins = [...compte.entries()]
-      .filter(([cle]) => !FAMILLES.includes(cle))
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"));
-    return { familles, fins };
-  }, [base, tier, audience, choisies, vendus]);
-
-  const gammes = useMemo(() => {
-    const compte = new Map<PriceTier, number>();
-    for (const b of base) {
-      if (!choisies.every((c) => b.categories.includes(c))) continue;
-      if (audience && uneAudience(b.audience) !== audience) continue;
-      if (!vendTout(b, vendus)) continue;
-      if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
-    }
-    return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
-  }, [base, choisies, audience, vendus]);
-
-  const vestiaires = useMemo(() => {
-    const compte = new Map<Audience, number>();
-    for (const b of base) {
-      if (tier && b.price_tier !== tier) continue;
-      if (!choisies.every((c) => b.categories.includes(c))) continue;
-      if (!vendTout(b, vendus)) continue;
-      const a = uneAudience(b.audience);
-      compte.set(a, (compte.get(a) ?? 0) + 1);
-    }
-    return AUDIENCES.filter((a) => compte.has(a)).map((a) => [a, compte.get(a) ?? 0] as const);
-  }, [base, tier, choisies, vendus]);
+  }, [base, choisies]);
 
   /* Un filtre qui n'a plus d'objet s'efface tout seul. Pas de boucle
-     possible : ces listes se calculent sans le filtre qu'elles
-     vérifient. */
+     possible : la liste se calcule sans le filtre qu'elle vérifie. */
   useEffect(() => {
     const disponibles = new Set(categories.map(([c]) => c));
     setChoisies((liste) =>
@@ -638,121 +541,74 @@ export default function BrandDirectory({
     );
   }, [categories]);
 
-  useEffect(() => {
-    const disponibles = new Set([...ventes.familles, ...ventes.fins].map(([c]) => c));
-    setVendus((liste) =>
-      liste.every((v) => disponibles.has(v)) ? liste : liste.filter((v) => disponibles.has(v))
-    );
-  }, [ventes]);
+  /*
+   * LA LIGNE DE STYLES : LES DIX PLUS FRÉQUENTS, PUIS « + N AUTRES ».
+   *
+   * Sans les produits (voir `HORS_FILTRE`), dans l'ordre des comptes.
+   *
+   * UN STYLE COCHÉ RESTE TOUJOURS VISIBLE, même s'il est au-delà du
+   * dixième : les cochés remontent en tête. Sinon un style posé depuis
+   * l'adresse disparaîtrait de la ligne au premier rendu, et l'on ne
+   * saurait plus où le décocher.
+   */
+  const styles = useMemo(
+    () => categories.filter(([c]) => !HORS_FILTRE.includes(c)),
+    [categories]
+  );
+  const stylesVisibles = useMemo(() => {
+    if (tousLesStyles) return styles;
+    const coches = styles.filter(([c]) => choisies.includes(c));
+    const autres = styles.filter(([c]) => !choisies.includes(c));
+    return [...coches, ...autres].slice(0, Math.max(STYLES_VISIBLES, coches.length));
+  }, [styles, choisies, tousLesStyles]);
+  const stylesCaches = styles.length - stylesVisibles.length;
 
-  useEffect(() => {
-    if (tier && !gammes.some(([t]) => t === tier)) setTier(null);
-  }, [gammes, tier]);
-
-  useEffect(() => {
-    if (audience && !vestiaires.some(([a]) => a === audience)) setAudience(null);
-  }, [vestiaires, audience]);
-
-  const results = useMemo(() => {
-    const retenues = base.filter((b) => {
-      if (tier && b.price_tier !== tier) return false;
-      if (audience && uneAudience(b.audience) !== audience) return false;
-      if (!vendTout(b, vendus)) return false;
-      return choisies.every((c) => b.categories.includes(c));
-    });
-    if (vendus.length === 0) return retenues;
-
-    /*
-     * « Hoodies » posé : celles qui en ont le plus d'abord. Une marque
-     * qui en vend trente répond mieux à la question qu'une qui en a un
-     * seul au milieu de ses casquettes. Le tri est stable : à égalité,
-     * l'ordre de l'annuaire est gardé. (La vue en liste reste, elle,
-     * alphabétique, c'est ce qui fait marcher son index.)
-     */
-    const poids = (b: Brand) => vendus.reduce((n, v) => n + (b.vend?.[v] ?? 0), 0);
-    return retenues
-      .map((b, i) => ({ b, i, p: poids(b) }))
-      .sort((x, y) => y.p - x.p || x.i - y.i)
-      .map((x) => x.b);
-  }, [base, choisies, tier, audience, vendus]);
+  const results = useMemo(
+    () => base.filter((b) => choisies.every((c) => b.categories.includes(c))),
+    [base, choisies]
+  );
 
   /* ------------------------------------------------------------------
      LA REQUÊTE
 
      Les filtres ne sont plus des cases cochées quelque part : ce sont
-     des JETONS posés dans le champ. L'état qui les porte n'a pourtant
-     pas changé d'un pouce — `choisies`, `audience`, `tier` — et c'est
-     délibéré : le comptage, l'amorçage par l'adresse et l'effacement
-     automatique d'un filtre devenu vide continuent de fonctionner tels
-     quels. Un jeton n'est qu'une façon de MONTRER ces trois valeurs, et
-     de les retirer d'un clic.
+     des JETONS posés dans le champ. Un jeton n'est qu'une façon de
+     MONTRER un style coché, et de le retirer d'un clic : le comptage,
+     l'amorçage par l'adresse et l'effacement automatique d'un filtre
+     devenu vide passent tous par `choisies`.
      ------------------------------------------------------------------ */
 
   /** Le jeton visé par le premier retour arrière, pas encore retiré. */
   const [vise, setVise] = useState<string | null>(null);
 
-  const jetons = useMemo<Critere[]>(() => {
-    const liste: Critere[] = choisies.map((c) => ({
-      famille: "Style",
-      valeur: c,
-      cle: `style:${enSlugDeCategorie(c)}`,
-    }));
-    for (const v of vendus) {
-      liste.push({ famille: "Vend", valeur: v, cle: `vend:${enSlugDeCategorie(v)}` });
-    }
-    if (audience) {
-      liste.push({
-        famille: "Vestiaire",
-        valeur: AUDIENCE_FILTRE[audience],
-        cle: `vestiaire:${audience}`,
-      });
-    }
-    if (tier) {
-      liste.push({ famille: "Prix", valeur: PRICE_TIER_LABEL[tier], cle: `prix:${tier}` });
-    }
-    return liste;
-  }, [choisies, vendus, audience, tier]);
+  const jetons = useMemo<Critere[]>(
+    () =>
+      choisies.map((c) => ({
+        famille: "Style",
+        valeur: c,
+        cle: `style:${enSlugDeCategorie(c)}`,
+      })),
+    [choisies]
+  );
 
   const poses = useMemo(() => new Set(jetons.map((j) => j.cle)), [jetons]);
 
   /*
-   * Tout ce qu'on peut encore poser, avec son compte. Les trois listes
-   * sont déjà établies plus haut, chacune comptée SANS elle-même : un
-   * critère proposé ici ramène donc toujours au moins une marque.
+   * Tout ce qu'on peut encore poser, avec son compte : les styles, et
+   * seulement eux. Chacun ramène au moins une marque, puisque la liste
+   * est déjà comptée sur ce qu'il reste.
    */
-  const tousCriteres = useMemo<Critere[]>(
-    () => [
-      ...categories.map(([c, n]) => ({
-        famille: "Style",
-        valeur: c,
-        cle: `style:${enSlugDeCategorie(c)}`,
-        compte: n,
-      })),
-      ...[...ventes.familles, ...ventes.fins].map(([v, n]) => ({
-        famille: "Vend",
-        valeur: v,
-        cle: `vend:${enSlugDeCategorie(v)}`,
-        compte: n,
-      })),
-      ...vestiaires.map(([a, n]) => ({
-        famille: "Vestiaire",
-        valeur: AUDIENCE_FILTRE[a],
-        cle: `vestiaire:${a}`,
-        compte: n,
-      })),
-      ...gammes.map(([t, n]) => ({
-        famille: "Prix",
-        valeur: PRICE_TIER_LABEL[t],
-        cle: `prix:${t}`,
-        compte: n,
-      })),
-    ],
-    [categories, ventes, vestiaires, gammes]
-  );
-
-  const posables = useMemo(
-    () => tousCriteres.filter((c) => !poses.has(c.cle)),
-    [tousCriteres, poses]
+  const posables = useMemo<Critere[]>(
+    () =>
+      styles
+        .map(([c, n]) => ({
+          famille: "Style",
+          valeur: c,
+          cle: `style:${enSlugDeCategorie(c)}`,
+          compte: n,
+        }))
+        .filter((c) => !poses.has(c.cle)),
+    [styles, poses]
   );
 
   /*
@@ -770,39 +626,25 @@ export default function BrandDirectory({
   }, [posables, query]);
 
   /*
-   * Et ce qu'on propose quand le champ est vide : les critères les
-   * mieux fournis de la sélection courante. Ils changent à chaque jeton
-   * posé, puisque les comptes sont ceux de ce qu'il reste.
+   * Et ce qu'on propose quand le champ est vide : les styles les mieux
+   * fournis de la sélection courante. Ils changent à chaque jeton posé,
+   * puisque les comptes sont ceux de ce qu'il reste.
    */
   const suggeres = useMemo(() => posables.slice(0, 5), [posables]);
 
-  const poser = useCallback(
-    (c: Critere) => {
-      const [famille, valeur] = c.cle.split(":");
-      if (famille === "style") {
-        setChoisies((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
-      } else if (famille === "vend") {
-        setVendus((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
-      } else if (famille === "vestiaire") {
-        setAudience(valeur as Audience);
-      } else if (famille === "prix") {
-        setTier(valeur as PriceTier);
-      }
-      /* Le texte a servi à trouver le critère ; une fois le jeton posé,
-         le garder filtrerait DEUX fois sur la même idée. */
-      setQuery("");
-      setVise(null);
-      champ.current?.focus();
-    },
-    []
-  );
+  const poser = useCallback((c: Critere) => {
+    if (c.cle.startsWith("style:")) {
+      setChoisies((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
+    }
+    /* Le texte a servi à trouver le critère ; une fois le jeton posé,
+       le garder filtrerait DEUX fois sur la même idée. */
+    setQuery("");
+    setVise(null);
+    champ.current?.focus();
+  }, []);
 
   const retirer = useCallback((c: Critere) => {
-    const [famille] = c.cle.split(":");
-    if (famille === "style") setChoisies((liste) => liste.filter((x) => x !== c.valeur));
-    else if (famille === "vend") setVendus((liste) => liste.filter((x) => x !== c.valeur));
-    else if (famille === "vestiaire") setAudience(null);
-    else if (famille === "prix") setTier(null);
+    setChoisies((liste) => liste.filter((x) => x !== c.valeur));
     setVise(null);
   }, []);
 
@@ -817,7 +659,7 @@ export default function BrandDirectory({
   /* ------------------------------------------------------------------
      LA REQUÊTE S'ÉCRIT DANS L'ADRESSE
 
-     `?q=den&f=style:streetwear,vestiaire:femme&lettre=a` : un lien
+     `?q=den&f=style:streetwear,style:denim&lettre=a` : un lien
      partagé rouvre exactement le même écran. C'est le vrai gain de
      cette barre — une requête qui se lit comme une phrase peut aussi
      s'envoyer, ce qu'un panneau de cases cochées ne savait pas faire.
@@ -883,207 +725,44 @@ export default function BrandDirectory({
   const contenuFiltres = (
     <>
           {/*
-           * LES CATÉGORIES SONT ICI ET NON DANS LA LIGNE COLLANTE.
+           * UNE SEULE LIGNE DE STYLES, QUI PASSE À LA LIGNE.
            *
-           * Elles y étaient, avec leur compteur, et c'était le
-           * gabarit. Sauf que le gabarit en montrait quatre : l'annuaire
-           * en compte plus de quinze. La pilule débordait, il fallait la
-           * faire défiler à l'horizontale pour atteindre la dernière, et
-           * une barre de défilement en travers d'une barre de filtres,
-           * c'est laid et ça se manque au doigt.
+           * Plus de titre de groupe ni de colonnes : le panneau ne
+           * propose plus que des styles, les dix plus fréquents d'abord,
+           * puis « + N autres » pour le reste. Ceux qu'on a choisis
+           * remontent aussi dans la ligne collante, en jetons : c'est là
+           * qu'il faut les voir, et là qu'on veut pouvoir les retirer.
            *
-           * Le panneau leur donne la place de tenir sur trois lignes,
-           * toutes visibles d'un coup. Celles qu'on a choisies remontent
-           * dans la ligne collante : c'est là qu'il faut les voir, et
-           * c'est là qu'on veut pouvoir les retirer.
+           * Plus de bouton « Toutes » en tête : « Tout effacer » et les
+           * croix des jetons font déjà ce travail.
            */}
-          {categories.length > 0 && (
-            <>
-              <p className="eyebrow m-0 mb-2">
-                Catégorie
-                {choisies.length > 0 && (
-                  <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
-                    elles se cumulent
-                  </span>
-                )}
-              </p>
-              <div className="mb-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => setChoisies([])}
-                  className={`${chip} ${choisies.length === 0 ? chipOn : chipOff}`}
-                >
-                  Toutes
-                </button>
-                {categories.map(([c, n]) => {
-                  const active = choisies.includes(c);
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => basculer(c)}
-                      aria-pressed={active}
-                      className={`${chip} ${active ? chipOn : chipOff}`}
-                    >
-                      {c}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {ventes.familles.length + ventes.fins.length > 0 && (
-            <>
-              <p className="eyebrow m-0 mb-2">
-                Ce qu&apos;elle vend
-                <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
-                  lu sur son site
-                </span>
-              </p>
-              {/*
-                LES TYPES SE DÉPLIENT SOUS LEUR FAMILLE.
-
-                Ils étaient tous affichés d'un bloc sous les familles :
-                soixante pastilles, et un panneau qu'il fallait faire
-                défiler pour atteindre le vestiaire et le prix. On clique
-                maintenant « Hauts », et seuls ses types apparaissent
-                dessous : T-shirts, Hoodies, Sweats. « Hauts » puis
-                « Hoodies », ce sont les marques qui font des hoodies,
-                puisque les critères se cumulent.
-
-                Taper « hood » dans le champ propose toujours le type
-                directement, sans passer par sa famille.
-              */}
-              <div className="mb-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => {
-                    setVendus([]);
-                    setFamilleOuverte(null);
-                  }}
-                  className={`${chip} ${vendus.length === 0 ? chipOn : chipOff}`}
-                >
-                  Tout
-                </button>
-                {ventes.familles.map(([v, n]) => {
-                  const active = vendus.includes(v);
-                  const ouverte = familleOuverte === v;
-                  const typesPoses = rayonsDesTags
-                    ? vendus.filter((x) => rayonsDesTags[x] === v).length
-                    : 0;
-                  return (
-                    <button
-                      key={v}
-                      onClick={() => {
-                        if (active) {
-                          // On retire la famille, et ses types avec elle.
-                          setVendus((l) =>
-                            l.filter((x) => x !== v && (!rayonsDesTags || rayonsDesTags[x] !== v))
-                          );
-                          if (ouverte) setFamilleOuverte(null);
-                        } else {
-                          setVendus((l) => [...l, v]);
-                          setFamilleOuverte(v);
-                        }
-                      }}
-                      aria-pressed={active}
-                      aria-expanded={ouverte}
-                      className={`${chip} ${active ? chipOn : chipOff}`}
-                    >
-                      {v}
-                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                      {typesPoses > 0 && !ouverte && (
-                        <span className="ml-1.5 font-black text-[rgb(var(--accent-1))]">+{typesPoses}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {(() => {
-                if (!familleOuverte || !vendus.includes(familleOuverte)) return null;
-                const types = ventes.fins.filter(
-                  ([v]) => !rayonsDesTags || rayonsDesTags[v] === familleOuverte
-                );
-                if (types.length === 0) return null;
+          {styles.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {stylesVisibles.map(([c, n]) => {
+                const active = choisies.includes(c);
                 return (
-                  <div className="-mt-2 mb-4 border-l border-white/15 pl-3">
-                    <p className="m-0 mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/55">
-                      Types · {familleOuverte}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {types.map(([v, n]) => {
-                        const active = vendus.includes(v);
-                        return (
-                          <button
-                            key={v}
-                            onClick={() =>
-                              setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
-                            }
-                            aria-pressed={active}
-                            className={`shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-bold transition ${
-                              active
-                                ? chipOn
-                                : "border border-white/20 text-white/78 hover:bg-white/12 hover:text-white"
-                            }`}
-                          >
-                            {v}
-                            <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <button
+                    key={c}
+                    onClick={() => basculer(c)}
+                    aria-pressed={active}
+                    className={`${chip} ${active ? chipOn : chipOff}`}
+                  >
+                    {c}
+                    <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                  </button>
                 );
-              })()}
-            </>
-          )}
-
-          {vestiaires.length > 1 && (
-            <>
-              <p className="eyebrow m-0 mb-2">Vestiaire</p>
-              <div className="mb-4 flex flex-wrap gap-2">
+              })}
+              {(stylesCaches > 0 || tousLesStyles) && styles.length > STYLES_VISIBLES && (
                 <button
-                  onClick={() => setAudience(null)}
-                  className={`${chip} ${audience === null ? chipOn : chipOff}`}
+                  type="button"
+                  onClick={() => setTousLesStyles((v) => !v)}
+                  aria-expanded={tousLesStyles}
+                  className="px-1 text-[13px] font-bold text-white underline underline-offset-4 transition hover:text-white/80"
                 >
-                  Tout
+                  {tousLesStyles ? "Réduire" : `+ ${stylesCaches} autre${stylesCaches > 1 ? "s" : ""}`}
                 </button>
-                {vestiaires.map(([a, n]) => (
-                  <button
-                    key={a}
-                    onClick={() => setAudience(audience === a ? null : a)}
-                    className={`${chip} ${audience === a ? chipOn : chipOff}`}
-                  >
-                    {AUDIENCE_FILTRE[a]}
-                    <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {gammes.length > 1 && (
-            <>
-              <p className="eyebrow m-0 mb-2">Gamme de prix</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setTier(null)}
-                  className={`${chip} ${tier === null ? chipOn : chipOff}`}
-                >
-                  Tous les prix
-                </button>
-                {gammes.map(([t, n]) => (
-                  <button
-                    key={t}
-                    onClick={() => setTier(t)}
-                    className={`${chip} ${tier === t ? chipOn : chipOff}`}
-                  >
-                    {PRICE_TIER_LABEL[t]}
-                    <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
-                  </button>
-                ))}
-              </div>
-            </>
+              )}
+            </div>
           )}
 
           {actifs > 0 && (

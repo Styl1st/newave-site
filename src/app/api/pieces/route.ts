@@ -31,6 +31,9 @@ function entier(v: string | null, defaut: number): number {
   return Number.isFinite(n) ? Math.trunc(n) : defaut;
 }
 
+/** L'échelle que `taille_normalisee` sait rendre (migration 35). */
+const TAILLES = ["XS", "S", "M", "L", "XL", "XXL"];
+
 export async function GET(request: Request) {
   const p = new URL(request.url).searchParams;
 
@@ -39,8 +42,11 @@ export async function GET(request: Request) {
      cherchent rien et débordent la ligne de requête. */
   const filtres: FiltresVitrine = {
     q: p.get("q")?.slice(0, 80) ?? "",
-    rayons: p.getAll("rayon").slice(0, 12),
+    // Un seul rayon à la fois : un ancien lien qui en porte deux garde le premier.
+    rayons: p.getAll("rayon").slice(0, 1),
     tags: p.getAll("tag").map((t) => t.slice(0, 60)).slice(0, 24),
+    // Une taille, et seulement une de l'échelle : le reste est ignoré.
+    tailles: TAILLES.includes(p.get("taille") ?? "") ? [p.get("taille") as string] : [],
     marque: p.get("marque"),
     prixMin: p.has("prixMin") ? entier(p.get("prixMin"), 0) : null,
     prixMax: p.has("prixMax") ? entier(p.get("prixMax"), 0) : null,

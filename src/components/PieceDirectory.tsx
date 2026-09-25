@@ -174,12 +174,22 @@ function crantDe(etendue: number): number {
   return 10000;
 }
 
+/**
+ * Les rayons qui s'habillent, les seuls où la taille a un sens. Une
+ * bague en M ou une casquette en XL ne veulent rien dire.
+ */
+const RAYONS_HABILLES = ["Hauts", "Bas", "Vestes", "Maille", "Robes"];
+
+/** Dans cet ordre-là, et pas dans l'ordre des comptes : on lit une échelle. */
+const ORDRE_DES_TAILLES = ["XS", "S", "M", "L", "XL", "XXL"];
+
 export default function PieceDirectory({
   premierLot,
   totalDuPremierLot,
   graine,
   rayonsDuCatalogue,
   tagsDuCatalogue,
+  taillesDuCatalogue,
   marquesDuCatalogue,
   bornesDuCatalogue,
   etatsDuCatalogue,
@@ -245,6 +255,12 @@ export default function PieceDirectory({
    */
   tagsDuCatalogue?: { rayon: string | null; tag: string; total: number }[];
   /**
+   * LES TAILLES EN STOCK, par rayon (XS à XXL, ramenées d'écritures
+   * aussi variées que « Small », « X-Large » ou « 2XL »). Absent avant
+   * la migration 35 : la section « Taille » ne s'affiche pas.
+   */
+  taillesDuCatalogue?: { rayon: string | null; taille: string; total: number }[];
+  /**
    * LES MARQUES DU SITE, ET NON CELLES DE L'ÉCHANTILLON.
    *
    * Même correction que pour les rayons, un cran plus loin. Le filtre
@@ -288,21 +304,33 @@ export default function PieceDirectory({
 
   const [query, setQuery] = useState(amorce ?? "");
   /*
-   * DEUX FAMILLES DE FILTRES, ET ELLES NE SE COMBINENT PAS PAREIL.
+   * UN SEUL RAYON À LA FOIS, ET SES TYPES DESSOUS.
    *
-   * À l'intérieur des rayons, c'est un OU : « Hauts ou Bas ». Entre les
-   * familles, c'est un ET : « des hauts, ET à moins de 60 €, ET en
-   * stock ».
+   * Le rayon et le type ne font plus qu'un menu. Cliquer « Hauts » le
+   * pose en filtre ET le déroule sur ses types ; cliquer un autre rayon
+   * replie le premier et le retire, types compris ; cliquer le rayon
+   * ouvert le referme et revient à tout. On pouvait cocher plusieurs
+   * rayons, mais personne ne cherche « des hauts ou des bas » : on
+   * cherche des hauts, puis des chemises.
    *
-   * C'est la règle habituelle des filtres de boutique, et surtout c'est
-   * la SEULE qui ait un sens ici : une pièce n'a qu'un rayon et qu'un
-   * prix. Demander un ET à l'intérieur des rayons — un article qui
-   * serait à la fois un haut et un bas — ne peut RIEN donner, jamais.
+   * Les types, eux, se cochent à plusieurs : « T-shirts ou Débardeurs ».
+   * Entre les familles de filtres, c'est toujours un ET : « des
+   * chemises, ET à moins de 60 €, ET en stock ».
+   *
+   * `rayons`, en tableau, reste ce que l'API attend (`?rayon=`), avec
+   * une valeur au plus.
    */
-  const [rayons, setRayons] = useState<string[]>([]);
-  /* Le tag fin affine le rayon : « des hauts » puis « des hoodies ». Un
-     OU entre les tags cochés, un ET avec le reste, comme les rayons. */
+  const [rayon, setRayon] = useState<string | null>(null);
+  const rayons = useMemo(() => (rayon ? [rayon] : []), [rayon]);
   const [tags, setTags] = useState<string[]>([]);
+  /*
+   * LA TAILLE, un seul choix, et seulement pour ce qui s'habille : voir
+   * `RAYONS_HABILLES`. « Bijoux + M » ne voudrait rien dire.
+   */
+  const [taille, setTaille] = useState<string | null>(null);
+  /* Taille et prix se replient ; une seule des deux ouverte à la fois. */
+  const [section, setSection] = useState<"taille" | "prix" | null>(null);
+  const basculerSection = (s: "taille" | "prix") => setSection((v) => (v === s ? null : s));
   const [marque, setMarque] = useState<string | null>(null);
   const [stock, setStock] = useState(false);
   const [promo, setPromo] = useState(false);
@@ -431,33 +459,41 @@ export default function PieceDirectory({
    */
   const prixActif = bornes !== null && (prix[0] > bornes.min || prix[1] < bornes.max);
 
-  const basculer = (r: string) =>
-    setRayons((liste) => (liste.includes(r) ? liste.filter((x) => x !== r) : [...liste, r]));
-
-  const basculerTag = (t: string) => {
-    const pose = tags.includes(t);
-    setTags((liste) => (pose ? liste.filter((x) => x !== t) : [...liste, t]));
-    if (pose) return;
-    /* « Hoodies » alors que « Bas » est coché : la grille serait vide,
-       puisque rayon et type se combinent en ET. On lâche donc les rayons
-       qui ne le contiennent pas, et ça se voit dans la colonne. */
-    const siens = new Set(
-      (tagsDuCatalogue ?? []).filter((l) => l.tag === t).map((l) => l.rayon ?? "Autres")
-    );
-    setRayons((liste) => (liste.length === 0 ? liste : liste.filter((r) => siens.has(r))));
+  /* Le rayon ouvert se referme et se retire ; un autre prend sa place.
+     Dans les deux cas, les types repartent de zéro. */
+  const basculer = (r: string) => {
+    setRayon((actuel) => (actuel === r ? null : r));
+    setTags([]);
   };
 
+  const basculerTag = (t: string) =>
+    setTags((liste) => (liste.includes(t) ? liste.filter((x) => x !== t) : [...liste, t]));
+
+  /* Le rayon d'un type, celui où il a le plus de pièces. Sert quand on
+     pose un type depuis la recherche, sans être passé par son rayon. */
+  const rayonDuType = (t: string): string | null => {
+    let meilleur: { rayon: string; total: number } | null = null;
+    for (const l of tagsDuCatalogue ?? []) {
+      if (l.tag !== t) continue;
+      if (!meilleur || l.total > meilleur.total) meilleur = { rayon: l.rayon ?? "Autres", total: l.total };
+    }
+    return meilleur?.rayon ?? null;
+  };
+
+  /* Un jeton par type coché, sinon un pour le rayon seul : « Hauts »,
+     puis « Hauts · Chemises » dès qu'un type est posé. */
   const actifs =
-    rayons.length +
-    tags.length +
+    (tags.length > 0 ? tags.length : rayon ? 1 : 0) +
+    (taille ? 1 : 0) +
     (marque ? 1 : 0) +
     (stock ? 1 : 0) +
     (promo ? 1 : 0) +
     (prixActif ? 1 : 0);
 
   function reinitialiser() {
-    setRayons([]);
+    setRayon(null);
     setTags([]);
+    setTaille(null);
     setMarque(null);
     setStock(false);
     setPromo(false);
@@ -605,6 +641,7 @@ export default function PieceDirectory({
     q: qDifferee.trim(),
     rayons: [...rayons].sort(),
     tags: [...tags].sort(),
+    taille,
     marque,
     prix: prixDemande ? prixDiffere : null,
     stock,
@@ -621,6 +658,7 @@ export default function PieceDirectory({
       if (qDifferee.trim()) p.set("q", qDifferee.trim());
       for (const r of rayons) p.append("rayon", r);
       for (const t of tags) p.append("tag", t);
+      if (taille) p.set("taille", taille);
       if (marque) p.set("marque", marque);
       if (prixDemande) {
         p.set("prixMin", String(prixDiffere[0]));
@@ -750,9 +788,9 @@ export default function PieceDirectory({
    * colonne dépassait l'écran, il fallait la faire défiler pour
    * atteindre le prix ou la marque.
    *
-   * Chaque rayon porte maintenant ses types dans un menu qui se déplie
-   * sous lui, un seul à la fois. La colonne garde la hauteur de ses
-   * rayons, et l'on n'ouvre que le rayon qui intéresse.
+   * Chaque rayon porte maintenant ses types dans le menu qui se déroule
+   * sous lui, du plus fourni au moins fourni, tous : le plus long en
+   * compte une quinzaine, ce qui tient sans défiler.
    *
    * Un même tag peut venir de deux rayons (un ensemble rangé tantôt
    * dans les hauts, tantôt nulle part) : il est listé sous chacun.
@@ -760,10 +798,10 @@ export default function PieceDirectory({
   const typesParRayon = useMemo(() => {
     const parRayon = new Map<string, { tag: string; total: number }[]>();
     for (const l of tagsDuCatalogue ?? []) {
-      const rayon = l.rayon ?? "Autres";
-      const liste = parRayon.get(rayon) ?? [];
+      const r = l.rayon ?? "Autres";
+      const liste = parRayon.get(r) ?? [];
       liste.push({ tag: l.tag, total: l.total });
-      parRayon.set(rayon, liste);
+      parRayon.set(r, liste);
     }
     for (const liste of parRayon.values()) {
       liste.sort((a, b) => b.total - a.total || a.tag.localeCompare(b.tag, "fr"));
@@ -771,20 +809,32 @@ export default function PieceDirectory({
     return parRayon;
   }, [tagsDuCatalogue]);
 
-  /* Le rayon dont les types sont dépliés. Cocher un rayon l'ouvre ; la
-     flèche l'ouvre sans rien filtrer, pour voir avant de choisir. */
-  const [deplie, setDeplie] = useState<string | null>(null);
+  const typesDuRayon = rayon ? (typesParRayon.get(rayon) ?? []) : [];
 
-  /* Décocher « Hauts » retire « Hoodies » : garder un type d'un rayon
-     qu'on vient de quitter donnerait une grille vide sans raison
-     visible. */
+  /*
+   * LES TAILLES QU'ON PROPOSE : celles qui ont des pièces en stock dans
+   * le rayon posé, ou dans tout le catalogue quand aucun ne l'est. Aucune
+   * pour un rayon qui ne s'habille pas. Voir `compter_les_tailles`,
+   * migration 35 : sans elle, la section ne s'affiche simplement pas.
+   */
+  const taillesDisponibles = useMemo(() => {
+    if (!taillesDuCatalogue || (rayon && !RAYONS_HABILLES.includes(rayon))) return [];
+    const compte = new Map<string, number>();
+    for (const l of taillesDuCatalogue) {
+      if (rayon && (l.rayon ?? "Autres") !== rayon) continue;
+      compte.set(l.taille, (compte.get(l.taille) ?? 0) + l.total);
+    }
+    return ORDRE_DES_TAILLES.filter((t) => (compte.get(t) ?? 0) > 0).map((t) => ({
+      taille: t,
+      total: compte.get(t) ?? 0,
+    }));
+  }, [taillesDuCatalogue, rayon]);
+
+  /* Passer à « Bijoux » retire la taille : elle n'y aurait pas de sens,
+     et la grille resterait vide sans qu'on voie pourquoi. */
   useEffect(() => {
-    if (rayons.length === 0 || !tagsDuCatalogue) return;
-    const permis = new Set(
-      tagsDuCatalogue.filter((l) => rayons.includes(l.rayon ?? "Autres")).map((l) => l.tag)
-    );
-    setTags((liste) => (liste.every((t) => permis.has(t)) ? liste : liste.filter((t) => permis.has(t))));
-  }, [rayons, tagsDuCatalogue]);
+    if (taille && !taillesDisponibles.some((t) => t.taille === taille)) setTaille(null);
+  }, [taille, taillesDisponibles]);
 
   const marquesDisponibles = useMemo(
     () => (marquesDuCatalogue ?? []).slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
@@ -949,7 +999,7 @@ export default function PieceDirectory({
     if (q.length === 0) return [];
 
     const proposes: Critere[] = rayonsDisponibles
-      .filter((r) => !rayons.includes(r.rayon) && sansAccent(r.rayon).includes(q))
+      .filter((r) => r.rayon !== rayon && sansAccent(r.rayon).includes(q))
       .map((r) => ({
         famille: "Rayon",
         valeur: r.rayon,
@@ -977,7 +1027,7 @@ export default function PieceDirectory({
     /* Six au plus : au-delà, la liste pousse les marques et les pièces
        hors du panneau, qui sont l'autre moitié de la réponse. */
     return proposes.slice(0, 6);
-  }, [rayonsDisponibles, rayons, tagsDuCatalogue, tags, etatsUtiles, stock, promo, query]);
+  }, [rayonsDisponibles, rayon, tagsDuCatalogue, tags, etatsUtiles, stock, promo, query]);
 
   /*
    * Poser un critère COCHE UN FILTRE, il ne navigue pas. C'est toute la
@@ -990,18 +1040,20 @@ export default function PieceDirectory({
    * rayon, et l'on veut souvent les deux — les jeans en denim.
    */
   function poser(c: Critere) {
-    if (c.cle.startsWith("rayon:")) basculer(c.valeur);
-    else if (c.cle.startsWith("type:")) {
-      /* Poser « Hoodies » alors que « Bas » est coché le ferait retirer
-         aussitôt : son rayon n'est pas coché. On lâche donc les rayons
-         qui ne le contiennent pas. */
-      const siens = new Set(
-        (tagsDuCatalogue ?? []).filter((l) => l.tag === c.valeur).map((l) => l.rayon ?? "Autres")
-      );
-      setRayons((liste) => (liste.length === 0 ? liste : liste.filter((r) => siens.has(r))));
-      setTags((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
-      // Le menu de son rayon s'ouvre, pour qu'on voie où il est rangé.
-      setDeplie([...siens][0] ?? null);
+    if (c.cle.startsWith("rayon:")) {
+      // Poser un rayon ne le retire jamais, même s'il est déjà posé.
+      if (rayon !== c.valeur) basculer(c.valeur);
+    } else if (c.cle.startsWith("type:")) {
+      /* Le type s'ouvre DANS son rayon : on pose le rayon s'il ne l'est
+         pas (les types d'un autre rayon partent avec lui), puis on
+         coche le type. Le menu déroulé montre ainsi où il est rangé. */
+      const sien = rayonDuType(c.valeur);
+      if (sien && sien !== rayon) {
+        setRayon(sien);
+        setTags([c.valeur]);
+      } else {
+        setTags((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
+      }
     }
     else if (c.cle === "etat:stock") setStock(true);
     else if (c.cle === "etat:promo") setPromo(true);
@@ -1083,8 +1135,11 @@ export default function PieceDirectory({
      même la première photo. Le compte reste dit là où il sert, au pied
      de la grille : « 24 sur 312 affichées ». */
 
-  /* Ces pastilles ne vivent que sur téléphone : elles sont donc taillées
-     pour le doigt, sans repli en version souris.
+  /* Ces pastilles sont taillées pour le doigt, et se resserrent à la
+     souris. Elles vivaient seulement sur téléphone ; elles s'affichent
+     maintenant partout, au-dessus de la grille : c'est là qu'on lit
+     « Hauts · Chemises » et qu'on le retire d'un clic, sans rouvrir le
+     menu.
 
      ELLES SONT PASSÉES DU BLANC À L'ACCENT, et c'est pour être du même
      sang que le panneau. Un critère y porte un aplat d'accent qui dit
@@ -1094,7 +1149,7 @@ export default function PieceDirectory({
      et deux familles de blancs sur le même écran ne se distinguaient
      plus l'une de l'autre. */
   const pastille =
-    "inline-flex min-h-[44px] items-center rounded-full bg-[rgb(var(--accent-1))] px-3.5 text-[11px] font-extrabold uppercase tracking-[0.07em] text-[var(--color-ink)] transition active:scale-[.97]";
+    "inline-flex min-h-[44px] items-center rounded-full bg-[rgb(var(--accent-1))] px-3.5 text-[11px] font-extrabold uppercase tracking-[0.07em] text-[var(--color-ink)] transition active:scale-[.97] lg:min-h-[32px] lg:px-3";
 
   /*
    * Le contenu des filtres, écrit une fois pour ses deux logements :
@@ -1128,145 +1183,170 @@ export default function PieceDirectory({
         </div>
 
         {rayonsDisponibles.length > 1 && (
-          <Section titre="Rayon">
-            {/* Deux colonnes au doigt : six rayons empilés poussent le
-                prix et la marque hors de la feuille, et l'on referme sans
-                les avoir vus. Les types du rayon ouvert s'affichent alors
-                sous la grille ; dans la colonne, sous le rayon lui-même. */}
-            <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col lg:gap-0.5">
-              {/* « Tout », c'est la somme des rayons listés : le
-                  catalogue entier quand la base l'a compté, et sinon ce
-                  que donneraient les autres familles SANS aucun rayon
-                  coché — surtout pas la liste courante, qui annoncerait
-                  le nombre de hauts au moment où l'on veut savoir
-                  combien il reste si on les décoche. */}
-              <LigneRayon
-                libelle="Tout"
-                total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
-                actif={rayons.length === 0 && tags.length === 0}
-                onClick={() => {
-                  setRayons([]);
-                  setTags([]);
-                  setDeplie(null);
-                }}
-                pastille={auDoigt}
-              />
-              {rayonsDisponibles.map(({ rayon, total }) => {
-                const types = typesParRayon.get(rayon) ?? [];
-                const ouvert = deplie === rayon && types.length > 0;
-                const typesPoses = types.filter((t) => tags.includes(t.tag)).length;
-                const choisir = () => {
-                  const pose = rayons.includes(rayon);
-                  basculer(rayon);
-                  setDeplie(pose ? (deplie === rayon ? null : deplie) : rayon);
-                };
-
-                if (auDoigt) {
-                  return (
+          <Section titre="Type de pièce">
+            {auDoigt ? (
+              <>
+                {/* Deux colonnes au doigt : neuf rayons empilés poussent le
+                    prix et la marque hors de la feuille. La pastille pose le
+                    rayon et le déroule à la fois ; ses types s'affichent
+                    dessous, en pastilles. */}
+                <div className="grid grid-cols-2 gap-2">
+                  <LigneRayon
+                    libelle="Tout voir"
+                    total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
+                    actif={rayon === null}
+                    onClick={() => {
+                      setRayon(null);
+                      setTags([]);
+                    }}
+                    pastille
+                  />
+                  {rayonsDisponibles.map(({ rayon: r, total }) => (
                     <LigneRayon
-                      key={rayon}
-                      libelle={rayon}
+                      key={r}
+                      libelle={r}
                       total={total}
-                      actif={rayons.includes(rayon)}
-                      indice={typesPoses > 0 ? `+${typesPoses}` : undefined}
-                      onClick={choisir}
+                      actif={rayon === r}
+                      ouvert={rayon === r}
+                      onClick={() => basculer(r)}
                       pastille
                     />
-                  );
-                }
-
-                return (
-                  <div key={rayon}>
-                    <div className="flex items-center gap-0.5">
-                      <div className="min-w-0 flex-1">
-                        <LigneRayon
-                          libelle={rayon}
-                          total={total}
-                          actif={rayons.includes(rayon)}
-                          indice={typesPoses > 0 && !ouvert ? `+${typesPoses}` : undefined}
-                          onClick={choisir}
-                        />
-                      </div>
-                      {/* Sans types, une place vide de la même largeur :
-                          les nombres restent alignés d'une ligne à l'autre. */}
-                      {types.length === 0 && <span aria-hidden className="w-7 shrink-0" />}
-                      {types.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setDeplie(ouvert ? null : rayon)}
-                          aria-expanded={ouvert}
-                          aria-label={`${ouvert ? "Replier" : "Déplier"} les types de ${rayon}`}
-                          className="flex h-8 w-7 shrink-0 items-center justify-center rounded-[9px] text-white/55 transition hover:bg-white/12 hover:text-white"
-                        >
-                          <IconChevron
-                            className={`h-3.5 w-3.5 transition-transform duration-200 ${ouvert ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                      )}
-                    </div>
-                    {ouvert && (
-                      <div className="mb-1 ml-[11px] mt-0.5 flex flex-col gap-0.5 border-l border-white/15 pl-1.5">
-                        {types.map((t) => (
-                          <LigneRayon
-                            key={t.tag}
-                            libelle={t.tag}
-                            total={t.total}
-                            actif={tags.includes(t.tag)}
-                            onClick={() => basculerTag(t.tag)}
-                            sous
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Au doigt, le menu du rayon ouvert se déplie sous la grille,
-                en pastilles : une liste de plus dans une feuille déjà
-                haute ferait défiler pour rien. */}
-            {auDoigt && deplie && (typesParRayon.get(deplie)?.length ?? 0) > 0 && (
-              <div className="mt-3">
-                <p className="m-0 mb-2 text-[10.5px] font-black uppercase tracking-[0.14em] text-white/55">
-                  Types · {deplie}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(typesParRayon.get(deplie) ?? []).map((t) => (
-                    <button
-                      key={t.tag}
-                      type="button"
-                      onClick={() => basculerTag(t.tag)}
-                      aria-pressed={tags.includes(t.tag)}
-                      className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[12px] font-bold transition active:scale-[.97] ${
-                        tags.includes(t.tag)
-                          ? "bg-white text-[var(--color-ink)]"
-                          : "bg-white/8 text-white/88 hover:bg-white/14"
-                      }`}
-                    >
-                      {t.tag}
-                      <span className="text-[11px] tabular-nums opacity-55">{enChiffres(t.total)}</span>
-                    </button>
                   ))}
                 </div>
+
+                {rayon && typesDuRayon.length > 0 && (
+                  <div className="mt-3">
+                    <p className="m-0 mb-2 text-[10.5px] font-black uppercase tracking-[0.14em] text-white/55">
+                      Types · {rayon}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {typesDuRayon.map((t) => (
+                        <button
+                          key={t.tag}
+                          type="button"
+                          onClick={() => basculerTag(t.tag)}
+                          aria-pressed={tags.includes(t.tag)}
+                          className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[12px] font-bold transition active:scale-[.97] ${
+                            tags.includes(t.tag)
+                              ? "bg-white text-[var(--color-ink)]"
+                              : "bg-white/8 text-white/88 hover:bg-white/14"
+                          }`}
+                        >
+                          {t.tag}
+                          <span className="text-[11px] tabular-nums opacity-55">
+                            {enChiffres(t.total)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /*
+               * UN SEUL MENU : LA LIGNE ENTIÈRE EST LE BOUTON.
+               *
+               * Le nom du rayon cochait et une flèche à part dépliait :
+               * deux cibles pour une seule idée. Le chevron passe à gauche
+               * du nom, dans la même ligne, et un clic fait tout : il pose
+               * le rayon et le déroule, replie celui qui était ouvert, ou
+               * referme le rayon ouvert et revient à tout.
+               */
+              <div className="flex flex-col gap-0.5">
+                <LigneRayon
+                  libelle="Tout voir"
+                  total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
+                  actif={false}
+                  retrait
+                  onClick={() => {
+                    setRayon(null);
+                    setTags([]);
+                  }}
+                />
+                {rayonsDisponibles.map(({ rayon: r, total }) => {
+                  const ouvert = rayon === r;
+                  const types = ouvert ? typesDuRayon : [];
+                  return (
+                    <div key={r}>
+                      <LigneRayon
+                        libelle={r}
+                        total={total}
+                        actif={ouvert}
+                        ouvert={ouvert}
+                        onClick={() => basculer(r)}
+                      />
+                      {types.length > 0 && (
+                        <div className="mb-1 ml-[17px] mt-1 flex flex-col gap-0.5 border-l border-white/15 pl-2">
+                          {types.map((t) => (
+                            <LigneRayon
+                              key={t.tag}
+                              libelle={t.tag}
+                              total={t.total}
+                              actif={tags.includes(t.tag)}
+                              onClick={() => basculerTag(t.tag)}
+                              sous
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Section>
         )}
 
+        {/*
+          TAILLE ET PRIX, REPLIÉS.
+
+          Ils prenaient leur hauteur en permanence, même quand on ne s'en
+          servait pas. Ils se replient maintenant sur leur titre, une seule
+          section ouverte à la fois, et la valeur posée reste lisible sur
+          la ligne du titre quand la section est fermée.
+        */}
+        {taillesDisponibles.length > 0 && (
+          <Section
+            titre="Taille"
+            ouverte={section === "taille"}
+            onBasculer={() => basculerSection("taille")}
+            valeur={taille}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {taillesDisponibles.map(({ taille: t, total }) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTaille((v) => (v === t ? null : t))}
+                  aria-pressed={taille === t}
+                  title={`${enChiffres(total)} pièce${total > 1 ? "s" : ""}`}
+                  className={`inline-flex min-w-[44px] items-center justify-center rounded-full px-3 text-[12.5px] font-bold tabular-nums transition active:scale-[.97] ${
+                    auDoigt ? "min-h-[40px]" : "min-h-[32px]"
+                  } ${
+                    taille === t
+                      ? "bg-white text-[var(--color-ink)]"
+                      : "bg-white/10 text-white/88 hover:bg-white/16"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {bornes && (
-          /* Au doigt, les bornes remontent sur la ligne du titre : le rail
-             tient alors sur une seule hauteur au lieu de deux, et c'est
-             autant de gagné sur une feuille qui doit aussi loger les
-             rayons, la disponibilité et la marque. */
           <Section
             titre="Prix"
-            apres={
-              auDoigt ? (
-                <span className="text-[13px] font-extrabold tabular-nums text-white">
-                  {euros(prix[0])} — {euros(prix[1])}
-                </span>
-              ) : undefined
+            ouverte={section === "prix"}
+            onBasculer={() => basculerSection("prix")}
+            /* Fermée, la plage posée remonte sur la ligne du titre. Au
+               doigt, elle y reste aussi une fois ouverte : le rail tient
+               alors sur une seule hauteur, sans bornes en dessous. */
+            valeur={
+              prixActif || (auDoigt && section === "prix")
+                ? `${euros(prix[0])} — ${euros(prix[1])}`
+                : null
             }
           >
             <CurseurPrix
@@ -1482,19 +1562,21 @@ export default function PieceDirectory({
         )}
 
         {actifs > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 lg:hidden">
-            {rayons.map((r) => (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {/* Le rayon seul tant qu'aucun type n'est coché ; ensuite un
+                jeton par type, « Hauts · Chemises », et celui du rayon
+                seul disparaît. Retirer le dernier type le fait revenir. */}
+            {rayon && tags.length === 0 && (
               <button
-                key={r}
                 type="button"
-                onClick={() => basculer(r)}
-                aria-label={`Retirer le filtre ${r}`}
+                onClick={() => basculer(rayon)}
+                aria-label={`Retirer le filtre ${rayon}`}
                 className={pastille}
               >
-                {r}
+                {rayon}
                 <span className="ml-1.5 opacity-45">×</span>
               </button>
-            ))}
+            )}
             {tags.map((t) => (
               <button
                 key={`type-${t}`}
@@ -1503,10 +1585,21 @@ export default function PieceDirectory({
                 aria-label={`Retirer le filtre ${t}`}
                 className={pastille}
               >
-                {t}
+                {rayon ? `${rayon} · ${t}` : t}
                 <span className="ml-1.5 opacity-45">×</span>
               </button>
             ))}
+            {taille && (
+              <button
+                type="button"
+                onClick={() => setTaille(null)}
+                aria-label="Retirer le filtre de taille"
+                className={pastille}
+              >
+                Taille {taille}
+                <span className="ml-1.5 opacity-45">×</span>
+              </button>
+            )}
             {marque && nomDeLaMarque && (
               <button
                 type="button"
@@ -1979,17 +2072,58 @@ export default function PieceDirectory({
  * Le trait plutôt qu'un simple écart : quatre familles de filtres
  * empilées sans rien entre elles se lisent comme une seule longue liste,
  * et l'on cherche alors le prix parmi les rayons.
+ *
+ * REPLIABLE quand on lui donne `onBasculer` : le titre devient le
+ * bouton, la valeur posée s'affiche à droite (lisible même fermée),
+ * puis `+` ou `−`. C'est ce qui garde la colonne à la hauteur de
+ * l'écran : la taille et le prix ne prennent leur place que quand on
+ * les ouvre.
  */
 function Section({
   titre,
   apres,
   children,
+  ouverte = false,
+  onBasculer,
+  valeur,
 }: {
   titre: string;
-  /** Posé à droite du titre : la plage de prix y remonte, au doigt. */
+  /** Posé à droite du titre. */
   apres?: React.ReactNode;
   children: React.ReactNode;
+  /** Pour une section repliable : ouverte ou non. */
+  ouverte?: boolean;
+  /** Rend la section repliable, le titre devient le bouton. */
+  onBasculer?: () => void;
+  /** Ce qui est posé, lisible sur la ligne du titre : « M », « 50 € — 120 € ». */
+  valeur?: string | null;
 }) {
+  if (onBasculer) {
+    return (
+      <div className="section-filtre mt-4 border-t border-white/15 pt-1.5">
+        <button
+          type="button"
+          onClick={onBasculer}
+          aria-expanded={ouverte}
+          className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left lg:min-h-[34px]"
+        >
+          <span className="eyebrow m-0">{titre}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            {valeur && (
+              <span className="truncate text-[12.5px] font-extrabold tabular-nums text-white">
+                {valeur}
+              </span>
+            )}
+            <span aria-hidden="true" className="w-3 text-center text-[16px] font-bold leading-none text-white/70">
+              {ouverte ? "\u2212" : "+"}
+            </span>
+          </span>
+        </button>
+        {ouverte && <div className="pb-1 pt-2">{children}</div>}
+      </div>
+    );
+  }
+
   return (
     <div className="section-filtre mt-4 border-t border-white/15 pt-4">
       <div className="mb-2.5 flex items-baseline justify-between gap-3">
@@ -2002,11 +2136,20 @@ function Section({
 }
 
 /**
- * Une ligne de rayon : le nom à gauche, ce qu'il contient à droite.
+ * Une ligne du menu des pièces : le nom à gauche, ce qu'il contient à
+ * droite.
  *
  * Le compteur avant le clic, et c'est tout l'intérêt de la forme en
  * lignes : on choisit en sachant si l'on va tomber sur cent quarante
  * pièces ou sur trois.
+ *
+ * Trois formes, un seul dessin :
+ *   - un RAYON (`ouvert` renseigné) : le chevron à gauche du nom, vers
+ *     la droite quand il est fermé, vers le bas quand il est déroulé, et
+ *     la ligne entière est le bouton ;
+ *   - un TYPE (`sous`), rangé sous son rayon : un cran plus petit, avec
+ *     sa case à cocher dessinée ;
+ *   - « Tout voir » (`retrait`) : aligné sur le texte des rayons.
  */
 function LigneRayon({
   libelle,
@@ -2015,14 +2158,20 @@ function LigneRayon({
   onClick,
   pastille = false,
   sous = false,
+  ouvert,
+  retrait = false,
   indice,
 }: {
   libelle: string;
   total: number;
   actif: boolean;
   onClick: () => void;
-  /** Un type, rangé sous son rayon : un cran plus petit, pour que la hiérarchie se lise. */
+  /** Un type, rangé sous son rayon : un cran plus petit, avec sa case à cocher. */
   sous?: boolean;
+  /** Un rayon du menu : déroulé ou non. Absent pour ce qui ne se déroule pas. */
+  ouvert?: boolean;
+  /** Décale le texte de la largeur du chevron, pour s'aligner sur les rayons. */
+  retrait?: boolean;
   /** Ce qui est coché à l'intérieur quand le menu est replié : « +2 ». */
   indice?: string;
   /**
@@ -2035,32 +2184,65 @@ function LigneRayon({
    */
   pastille?: boolean;
 }) {
+  const estRayon = ouvert !== undefined;
+  const chevron = estRayon && !pastille;
+  /* Un type coché se voit à sa case, pas à un aplat : sous un rayon
+     déjà foncé, un second aplat ferait un pavé dans un pavé. */
+  const aplat = actif && !sous;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={actif}
+      /* Un rayon DÉROULE : on annonce qu'il est ouvert. Un type ou une
+         pastille se COCHE : on annonce qu'il est enfoncé. */
+      aria-expanded={estRayon ? ouvert : undefined}
+      aria-pressed={estRayon ? undefined : actif}
       /* La cible fait 44 px au doigt et se resserre à la souris : la
          feuille de téléphone est justement l'endroit où l'on vise mal. */
       className={`ligne-filtre flex min-h-[44px] w-full items-center justify-between gap-2 text-left transition lg:min-h-0 ${
         sous ? "lg:py-1.5" : "lg:py-2"
       } ${
-        pastille ? "rounded-[13px] px-3.5" : sous ? "rounded-[9px] px-[9px]" : "rounded-[11px] px-[11px]"
+        pastille ? "rounded-[13px] px-3.5" : sous ? "rounded-[8px] px-2" : "rounded-[11px] px-[11px]"
       } ${
-        actif
+        aplat
           ? pastille
             ? "bg-white text-[var(--color-ink)]"
             : "bg-[var(--color-ink)] text-white"
           : pastille
             ? "bg-white/8 text-white/88 hover:bg-white/14"
-            : "text-white/84 hover:bg-white/12 hover:text-white"
+            : actif
+              ? "text-white hover:bg-white/10"
+              : "text-white/84 hover:bg-white/12 hover:text-white"
       }`}
     >
-      <span className={`min-w-0 truncate font-bold ${sous ? "text-[12px]" : "text-[12.5px]"}`}>
-        {libelle}
-        {indice && (
-          <span className="ml-1.5 text-[10.5px] font-black text-[rgb(var(--accent-1))]">{indice}</span>
+      <span className="flex min-w-0 items-center gap-[7px]">
+        {chevron && (
+          <IconChevron
+            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${ouvert ? "" : "-rotate-90"}`}
+          />
         )}
+        {retrait && !pastille && <span aria-hidden="true" className="w-3.5 shrink-0" />}
+        {sous && (
+          <span
+            aria-hidden="true"
+            className={`grid h-[14px] w-[14px] shrink-0 place-items-center rounded-[4px] transition ${
+              actif ? "bg-white text-[var(--color-ink)]" : "border-[1.5px] border-white/45"
+            }`}
+          >
+            {actif && <IconCheck className="h-2.5 w-2.5" />}
+          </span>
+        )}
+        <span
+          className={`min-w-0 truncate ${
+            sous ? "text-[12.5px] font-bold" : ouvert ? "text-[13px] font-extrabold" : "text-[12.5px] font-bold"
+          }`}
+        >
+          {libelle}
+          {indice && (
+            <span className="ml-1.5 text-[10.5px] font-black text-[rgb(var(--accent-1))]">{indice}</span>
+          )}
+        </span>
       </span>
       <span
         className={`shrink-0 font-bold tabular-nums ${sous ? "text-[11px]" : "text-[11.5px]"} ${actif ? "opacity-70" : "opacity-55"}`}

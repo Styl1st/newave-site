@@ -439,6 +439,8 @@ export type FiltresVitrine = {
   rayons?: string[];
   /** Les tags fins cochés : Hoodies, Bombers… Voir `lib/tags`. */
   tags?: string[];
+  /** La taille, XS à XXL, ramenée par `taille_normalisee` (migration 35). */
+  tailles?: string[];
   marque?: string | null;
   /** En centimes d'euro. `null` de chaque côté tant qu'on n'a rien bougé. */
   prixMin?: number | null;
@@ -500,6 +502,8 @@ export async function lireUnePageDeVitrine(
      * ou pas. Sans lui, l'ancienne fonction répond comme avant.
      */
     ...(filtres.tags?.length ? { p_tags: filtres.tags } : {}),
+    // Même raison, pour la migration 35.
+    ...(filtres.tailles?.length ? { p_tailles: filtres.tailles } : {}),
     p_marque: filtres.marque ?? null,
     p_prix_min: filtres.prixMin ?? null,
     p_prix_max: filtres.prixMax ?? null,
@@ -584,6 +588,11 @@ export type CompteDuCatalogue = {
    */
   tags?: { rayon: string | null; tag: string; total: number }[];
   /**
+   * Les tailles en stock (XS à XXL), par rayon. Absent avant la
+   * migration 35 : la section « Taille » ne s'affiche pas.
+   */
+  tailles?: { rayon: string | null; taille: string; total: number }[];
+  /**
    * Chaque marque publiée et son compte de pièces, zéro compris.
    *
    * C'est la liste qui nourrit le filtre « Marque » de la vitrine, et
@@ -640,7 +649,7 @@ const lireLesComptes = unstable_cache(
     const supabase = createPublicClient();
     if (!supabase) return null;
 
-    const [rayons, marques, parMarque, bornes, tags] = await Promise.all([
+    const [rayons, marques, parMarque, bornes, tags, tailles] = await Promise.all([
       supabase.rpc("compter_les_rayons", { p_rayons: [...PRODUCT_CATEGORIES] }),
       supabase
         .from("brands")
@@ -649,6 +658,7 @@ const lireLesComptes = unstable_cache(
       supabase.rpc("compter_les_marques"),
       supabase.rpc("vitrine_bornes"),
       supabase.rpc("compter_les_tags", { p_taxonomie: [...PRODUCT_CATEGORIES] }),
+      supabase.rpc("compter_les_tailles", { p_taxonomie: [...PRODUCT_CATEGORIES] }),
     ]);
 
     report("comptes du catalogue", rayons.error);
@@ -704,6 +714,11 @@ const lireLesComptes = unstable_cache(
       ? undefined
       : ((tags.data as { rayon: string | null; tag: string; total: number }[] | null) ?? []);
 
+    report("comptes des tailles", tailles.error);
+    const parTaille = tailles.error
+      ? undefined
+      : ((tailles.data as { rayon: string | null; taille: string; total: number }[] | null) ?? []);
+
     return {
       pieces: lignes.reduce((n, l) => n + l.total, 0),
       /* La longueur de la liste QUAND ON L'A, et le comptage direct
@@ -717,6 +732,7 @@ const lireLesComptes = unstable_cache(
         .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
       marquesListe,
       tags: parTag,
+      tailles: parTaille,
       prix:
         brut && brut.prix_min !== null && brut.prix_max !== null && brut.prix_max > brut.prix_min
           ? { min: brut.prix_min, max: brut.prix_max }

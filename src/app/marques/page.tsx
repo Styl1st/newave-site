@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import BrandDirectory, { type AmorceAnnuaire } from "@/components/BrandDirectory";
 import RaccourciAdmin from "@/components/RaccourciAdmin";
-import { compterLeCatalogue, getBrands } from "@/lib/queries";
+import { getBrands } from "@/lib/queries";
 import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
 import { getNotesMarques } from "@/lib/avis";
@@ -51,7 +51,17 @@ export default async function BrandsPage({ searchParams }: Props) {
    * Voir `ordonnerLAnnuaire` pour le détail, et notamment pourquoi les
    * marques à la une sont mélangées entre elles plutôt que figées.
    */
-  const brands = ordonnerLAnnuaire(await getBrands());
+  /*
+   * `vend` (ce que chaque marque vend, compté sur ses pièces) ne sert
+   * plus au panneau, réduit aux styles. On ne le fait pas voyager
+   * jusqu'au navigateur : c'est un objet de plus par marque dans le
+   * HTML de la page, pour rien.
+   */
+  const brands = ordonnerLAnnuaire(await getBrands()).map((b) => {
+    const copie = { ...b };
+    delete copie.vend;
+    return copie;
+  });
   const favoris = await getMyFavorites(brands.map((b) => b.id));
 
   /*
@@ -67,25 +77,6 @@ export default async function BrandsPage({ searchParams }: Props) {
    * discussion.
    */
   const notes = Object.fromEntries(await getNotesMarques(brands.map((b) => b.id)));
-
-  /*
-   * Le rayon de chaque type, pour ranger « Hoodies » sous « Hauts » dans
-   * le panneau des critères. Lu sur les pièces elles-mêmes (un type créé
-   * depuis l'admin y trouve donc sa place sans rien à déclarer), et
-   * gardé cinq minutes en mémoire avec les autres comptes du catalogue.
-   * Un type présent dans deux rayons va sous celui où il a le plus de
-   * pièces.
-   */
-  const catalogue = await compterLeCatalogue();
-  const rayonsDesTags: Record<string, string> = {};
-  const meilleur: Record<string, number> = {};
-  for (const l of catalogue?.tags ?? []) {
-    if (!l.rayon) continue;
-    if ((meilleur[l.tag] ?? -1) < l.total) {
-      meilleur[l.tag] = l.total;
-      rayonsDesTags[l.tag] = l.rayon;
-    }
-  }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -113,7 +104,6 @@ export default async function BrandsPage({ searchParams }: Props) {
         favoris={Array.from(favoris)}
         notes={notes}
         amorce={{ cat, q, f, lettre }}
-        rayonsDesTags={catalogue?.tags ? rayonsDesTags : undefined}
       />
     </div>
   );
