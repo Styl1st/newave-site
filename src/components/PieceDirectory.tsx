@@ -179,6 +179,7 @@ export default function PieceDirectory({
   totalDuPremierLot,
   graine,
   rayonsDuCatalogue,
+  tagsDuCatalogue,
   marquesDuCatalogue,
   bornesDuCatalogue,
   etatsDuCatalogue,
@@ -231,6 +232,18 @@ export default function PieceDirectory({
    * le comptage de ce qui est chargé, qui est ce qu'on faisait avant.
    */
   rayonsDuCatalogue?: { rayon: string; total: number }[];
+  /**
+   * LES TAGS FINS DU SITE, AVEC LE RAYON DE LEURS PIÈCES.
+   *
+   * « Hauts » rassemble des milliers de pièces ; « Hoodies » en est une
+   * part qu'on veut pouvoir isoler. Comptés par Postgres comme les
+   * rayons (voir `compter_les_tags`, migration 34) : un tag n'est
+   * listé que s'il a des pièces, aucun filtre ne mène donc à une grille
+   * vide.
+   *
+   * Absent avant la migration 34 : la section « Type » ne s'affiche pas.
+   */
+  tagsDuCatalogue?: { rayon: string | null; tag: string; total: number }[];
   /**
    * LES MARQUES DU SITE, ET NON CELLES DE L'ÉCHANTILLON.
    *
@@ -287,6 +300,9 @@ export default function PieceDirectory({
    * serait à la fois un haut et un bas — ne peut RIEN donner, jamais.
    */
   const [rayons, setRayons] = useState<string[]>([]);
+  /* Le tag fin affine le rayon : « des hauts » puis « des hoodies ». Un
+     OU entre les tags cochés, un ET avec le reste, comme les rayons. */
+  const [tags, setTags] = useState<string[]>([]);
   const [marque, setMarque] = useState<string | null>(null);
   const [stock, setStock] = useState(false);
   const [promo, setPromo] = useState(false);
@@ -418,11 +434,20 @@ export default function PieceDirectory({
   const basculer = (r: string) =>
     setRayons((liste) => (liste.includes(r) ? liste.filter((x) => x !== r) : [...liste, r]));
 
+  const basculerTag = (t: string) =>
+    setTags((liste) => (liste.includes(t) ? liste.filter((x) => x !== t) : [...liste, t]));
+
   const actifs =
-    rayons.length + (marque ? 1 : 0) + (stock ? 1 : 0) + (promo ? 1 : 0) + (prixActif ? 1 : 0);
+    rayons.length +
+    tags.length +
+    (marque ? 1 : 0) +
+    (stock ? 1 : 0) +
+    (promo ? 1 : 0) +
+    (prixActif ? 1 : 0);
 
   function reinitialiser() {
     setRayons([]);
+    setTags([]);
     setMarque(null);
     setStock(false);
     setPromo(false);
@@ -569,6 +594,7 @@ export default function PieceDirectory({
   const signature = JSON.stringify({
     q: qDifferee.trim(),
     rayons: [...rayons].sort(),
+    tags: [...tags].sort(),
     marque,
     prix: prixDemande ? prixDiffere : null,
     stock,
@@ -584,6 +610,7 @@ export default function PieceDirectory({
       p.set("combien", String(LOT));
       if (qDifferee.trim()) p.set("q", qDifferee.trim());
       for (const r of rayons) p.append("rayon", r);
+      for (const t of tags) p.append("tag", t);
       if (marque) p.set("marque", marque);
       if (prixDemande) {
         p.set("prixMin", String(prixDiffere[0]));
@@ -704,6 +731,45 @@ export default function PieceDirectory({
   /* `?? []` dans le corps donnerait un tableau neuf à chaque rendu, donc
      un `useMemo` qui se recalcule pour rien un peu plus bas. */
   const rayonsDisponibles = useMemo(() => rayonsDuCatalogue ?? [], [rayonsDuCatalogue]);
+
+  /*
+   * LES TYPES QU'ON PROPOSE : CEUX DES RAYONS COCHÉS.
+   *
+   * Sans rayon coché, on montre les plus fournis du site, une douzaine :
+   * la liste complète en compte plus de soixante et pousserait le prix
+   * et la marque hors de la colonne. Un rayon coché, on montre tous les
+   * siens. Un tag déjà coché reste toujours visible, sinon on ne
+   * pourrait plus le décocher là où on l'a coché.
+   *
+   * Un même tag peut venir de deux rayons (un ensemble rangé tantôt
+   * dans les hauts, tantôt nulle part) : on additionne.
+   */
+  const tagsDisponibles = useMemo(() => {
+    const parTag = new Map<string, number>();
+    for (const l of tagsDuCatalogue ?? []) {
+      if (rayons.length > 0 && !rayons.includes(l.rayon ?? "Autres")) continue;
+      parTag.set(l.tag, (parTag.get(l.tag) ?? 0) + l.total);
+    }
+    const tries = [...parTag.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"))
+      .map(([tag, total]) => ({ tag, total }));
+    const visibles = rayons.length > 0 ? tries : tries.slice(0, 12);
+    for (const t of tags) {
+      if (!visibles.some((v) => v.tag === t)) visibles.push({ tag: t, total: 0 });
+    }
+    return visibles;
+  }, [tagsDuCatalogue, rayons, tags]);
+
+  /* Décocher « Hauts » retire « Hoodies » : garder un type d'un rayon
+     qu'on vient de quitter donnerait une grille vide sans raison
+     visible. */
+  useEffect(() => {
+    if (rayons.length === 0 || !tagsDuCatalogue) return;
+    const permis = new Set(
+      tagsDuCatalogue.filter((l) => rayons.includes(l.rayon ?? "Autres")).map((l) => l.tag)
+    );
+    setTags((liste) => (liste.every((t) => permis.has(t)) ? liste : liste.filter((t) => permis.has(t))));
+  }, [rayons, tagsDuCatalogue]);
 
   const marquesDisponibles = useMemo(
     () => (marquesDuCatalogue ?? []).slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
@@ -876,6 +942,16 @@ export default function PieceDirectory({
         compte: r.total,
       }));
 
+    /* Les types du site entier, pas seulement ceux du rayon coché : on
+       tape « hoodie » pour les trouver, pas pour découvrir qu'il fallait
+       d'abord cocher « Hauts ». */
+    const parTag = new Map<string, number>();
+    for (const l of tagsDuCatalogue ?? []) parTag.set(l.tag, (parTag.get(l.tag) ?? 0) + l.total);
+    for (const [tag, total] of parTag) {
+      if (tags.includes(tag) || !sansAccent(tag).includes(q)) continue;
+      proposes.push({ famille: "Type", valeur: tag, cle: `type:${sansAccent(tag)}`, compte: total });
+    }
+
     if (q.length >= 2) {
       if (etatsUtiles.stock && !stock && "en stock".includes(q))
         proposes.push({ famille: "État", valeur: "En stock", cle: "etat:stock" });
@@ -886,7 +962,7 @@ export default function PieceDirectory({
     /* Six au plus : au-delà, la liste pousse les marques et les pièces
        hors du panneau, qui sont l'autre moitié de la réponse. */
     return proposes.slice(0, 6);
-  }, [rayonsDisponibles, rayons, etatsUtiles, stock, promo, query]);
+  }, [rayonsDisponibles, rayons, tagsDuCatalogue, tags, etatsUtiles, stock, promo, query]);
 
   /*
    * Poser un critère COCHE UN FILTRE, il ne navigue pas. C'est toute la
@@ -900,6 +976,16 @@ export default function PieceDirectory({
    */
   function poser(c: Critere) {
     if (c.cle.startsWith("rayon:")) basculer(c.valeur);
+    else if (c.cle.startsWith("type:")) {
+      /* Poser « Hoodies » alors que « Bas » est coché le ferait retirer
+         aussitôt : son rayon n'est pas coché. On lâche donc les rayons
+         qui ne le contiennent pas. */
+      const siens = new Set(
+        (tagsDuCatalogue ?? []).filter((l) => l.tag === c.valeur).map((l) => l.rayon ?? "Autres")
+      );
+      setRayons((liste) => (liste.length === 0 ? liste : liste.filter((r) => siens.has(r))));
+      setTags((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
+    }
     else if (c.cle === "etat:stock") setStock(true);
     else if (c.cle === "etat:promo") setPromo(true);
 
@@ -1050,6 +1136,23 @@ export default function PieceDirectory({
                   total={total}
                   actif={rayons.includes(rayon)}
                   onClick={() => basculer(rayon)}
+                  pastille={auDoigt}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {tagsDisponibles.length > 0 && (
+          <Section titre="Type">
+            <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col lg:gap-0.5">
+              {tagsDisponibles.map(({ tag, total }) => (
+                <LigneRayon
+                  key={tag}
+                  libelle={tag}
+                  total={total}
+                  actif={tags.includes(tag)}
+                  onClick={() => basculerTag(tag)}
                   pastille={auDoigt}
                 />
               ))}
@@ -1295,6 +1398,18 @@ export default function PieceDirectory({
                 className={pastille}
               >
                 {r}
+                <span className="ml-1.5 opacity-45">×</span>
+              </button>
+            ))}
+            {tags.map((t) => (
+              <button
+                key={`type-${t}`}
+                type="button"
+                onClick={() => basculerTag(t)}
+                aria-label={`Retirer le filtre ${t}`}
+                className={pastille}
+              >
+                {t}
                 <span className="ml-1.5 opacity-45">×</span>
               </button>
             ))}

@@ -17,6 +17,7 @@
  */
 
 import type { CatalogueItem, Fermeture, Resultat, Source } from "./catalogue-commun";
+import { libelleSansInteret, type Rangement } from "./tags";
 
 export { cleLien, SOURCE_LABEL } from "./catalogue-commun";
 export type { CatalogueItem, Resultat, Source } from "./catalogue-commun";
@@ -131,6 +132,72 @@ async function lire(url: string, accept = "application/json"): Promise<Response 
   } catch {
     return null;
   }
+}
+
+/**
+ * Une lecture qui abandonne au bout de `delai` millisecondes.
+ *
+ * `lire` attend aussi longtemps que la boutique le veut. Pour le
+ * catalogue lui-même, c'est le bon choix : sans lui il n'y a rien.
+ * Pour les collections, qui ne font que RANGER des pièces déjà lues,
+ * une boutique lente ne doit pas faire manquer la minute dont dispose
+ * la tâche quotidienne. On range ce qu'on a eu le temps de lire.
+ *
+ * Pas de cache non plus : une page de collection pèse vite plusieurs
+ * mégaoctets, au-delà de ce que Next accepte de garder.
+ */
+async function lireVite(url: string, delai: number): Promise<Response | null> {
+  try {
+    const r = await fetch(url, {
+      headers: { Accept: "application/json", ...EN_TETES },
+      cache: "no-store",
+      signal: AbortSignal.timeout(delai),
+    });
+    return r.ok ? r : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Les étiquettes d'une pièce, bornées : certaines boutiques en posent quarante. */
+function etiquettesBornees(brutes: unknown): string[] {
+  const liste: unknown[] = Array.isArray(brutes)
+    ? brutes
+    : typeof brutes === "string"
+      ? brutes.split(",")
+      : [];
+  return [
+    ...new Set(
+      liste
+        .map((e) => (typeof e === "string" ? e : String((e as { name?: unknown })?.name ?? "")))
+        .map((e) => decoderEntites(e).trim().slice(0, 50))
+        .filter(Boolean)
+    ),
+  ].slice(0, 25);
+}
+
+/** Un rangement sans champs vides, pour ne pas garder de bruit en base. */
+function rangement(r: Rangement): Rangement | undefined {
+  const type = decoderEntites((r.type ?? "").trim()).slice(0, 60) || null;
+  const collections = [
+    ...new Set((r.collections ?? []).map((c) => decoderEntites(c).trim()).filter(Boolean)),
+  ].slice(0, 20);
+  const etiquettes = r.etiquettes ?? [];
+  if (!type && collections.length === 0 && etiquettes.length === 0) return undefined;
+  return {
+    ...(type ? { type } : {}),
+    ...(collections.length ? { collections } : {}),
+    ...(etiquettes.length ? { etiquettes } : {}),
+  };
+}
+
+/** WooCommerce rend « Vestes &amp; manteaux » : on veut « Vestes & manteaux ». */
+function decoderEntites(texte: string): string {
+  return texte
+    .replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&apos;|&#8217;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ");
 }
 
 /**
@@ -541,6 +608,7 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
   // qu'on est sûr d'avoir affaire à du Shopify : inutile de payer une
   // requête pour une adresse qui n'aurait rien donné.
   const devise = await devineLaDevise(base);
+  const collections = await collectionsShopify(base, brutes.length);
 
   return brutes.map((p) => {
     const variants = p.variants ?? [];
@@ -584,18 +652,136 @@ async function viaShopify(base: string): Promise<CatalogueItem[] | null> {
       shop_url: `${base}/products/${p.handle}`,
       available: variants.some((v) => v.available),
       /*
-       * Le type déclaré et les étiquettes, réunis en une seule chaîne.
+       * Ce que la boutique dit de la pièce, tel quel.
        *
-       * On ne cherche pas à les interpréter ici : c'est le travail de
-       * `deduireLeRayon`, qui saura y reconnaître « T-Shirts » comme il
-       * reconnaît « t-shirt » dans un titre. Les rassembler suffit, et
-       * évite d'avoir deux champs à transporter jusqu'à la base.
+       * On ne l'interprète pas ici : c'est le travail de `lib/tags`,
+       * qui reconnaîtra « TEES » ou « Outerwear » comme il reconnaît
+       * « t-shirt » dans un titre. Les garder à part, plutôt que
+       * fondus en une chaîne, permet de savoir QUI parle : le type est
+       * écrit pour cette pièce, une collection pour tout un rayon.
        */
-      type: [p.product_type ?? "", Array.isArray(p.tags) ? p.tags.join(" ") : (p.tags ?? "")]
-        .join(" ")
-        .trim(),
+      rangement: rangement({
+        type: p.product_type,
+        collections: collections.get(String(p.id)) ?? [],
+        etiquettes: etiquettesBornees(p.tags),
+      }),
     };
   });
+}
+
+/* ---------------- 1 bis. Les collections Shopify ---------------- */
+
+type CollectionShopify = { title?: string; handle?: string; products_count?: number };
+
+/** Au-delà, une collection rassemble presque tout : c'est un « Shop all » déguisé. */
+const PART_D_UN_FOURRE_TOUT = 0.85;
+/** Combien de collections on accepte de parcourir pour une boutique. */
+const COLLECTIONS_MAX = 30;
+/** Combien à la fois : assez pour aller vite, pas assez pour se faire refuser. */
+const COLLECTIONS_PAR_VAGUE = 6;
+/**
+ * Le temps qu'on s'accorde pour les lire toutes, par boutique.
+ *
+ * C'est une borne DURE : chaque lecture reçoit le temps qui reste, pas
+ * un délai à elle. La tâche quotidienne dispose d'une minute pour
+ * plusieurs marques, et une boutique aux trente collections lentes ne
+ * doit pas la faire manquer aux suivantes.
+ */
+const BUDGET_COLLECTIONS = 8_000;
+
+/**
+ * QUI EST DANS QUELLE COLLECTION.
+ *
+ * C'est ce qui fait les tags dynamiques. `products.json` donne le type
+ * de chaque pièce mais pas les collections qui la contiennent ; or les
+ * collections sont le MENU de la boutique, ce que la marque a choisi
+ * de montrer : « Outerwear », « Tees », « Capsule Nuit ». On les lit
+ * donc à part, puis on demande à chacune la liste de ses pièces.
+ *
+ * On ne lit pas tout. Une collection vide, une collection qui contient
+ * presque tout le catalogue (« Shop all », « Collection »), une
+ * collection de rebut (« Soldes », « Best sellers », « ads avril 26 »)
+ * ne rangent rien : inutile de télécharger leurs pièces pour les jeter.
+ *
+ * Rend une table « identifiant de pièce → titres de collections ».
+ * Vide si la boutique ne publie pas ses collections : les pièces
+ * seront rangées sur leur type et leur nom, comme avant.
+ */
+async function collectionsShopify(
+  base: string,
+  totalPieces: number
+): Promise<Map<string, string[]>> {
+  const appartenance = new Map<string, string[]>();
+  const limite = Date.now() + BUDGET_COLLECTIONS;
+  const reste = () => limite - Date.now();
+
+  const r = await lireVite(`${base}/collections.json?limit=250`, Math.min(4000, reste()));
+  if (!r) return appartenance;
+
+  let liste: CollectionShopify[];
+  try {
+    const payload = (await r.json()) as { collections?: CollectionShopify[] };
+    liste = Array.isArray(payload?.collections) ? payload.collections : [];
+  } catch {
+    return appartenance;
+  }
+
+  const titresVus = new Set<string>();
+  const retenues = liste
+    .filter((c) => {
+      const titre = (c.title ?? "").trim();
+      if (!titre || !c.handle) return false;
+      if (typeof c.products_count === "number") {
+        if (c.products_count === 0) return false;
+        if (totalPieces >= 6 && c.products_count >= totalPieces * PART_D_UN_FOURRE_TOUT) return false;
+      }
+      if (libelleSansInteret(titre)) return false;
+      /* Deux collections de même titre (une boutique de l'annuaire a
+         deux « FW25 - INKED IN LA ») : une seule lecture suffit. */
+      const cle = titre.toLowerCase();
+      if (titresVus.has(cle)) return false;
+      titresVus.add(cle);
+      return true;
+    })
+    .slice(0, COLLECTIONS_MAX);
+
+  for (let i = 0; i < retenues.length; i += COLLECTIONS_PAR_VAGUE) {
+    if (reste() < 500) break;
+
+    await Promise.all(
+      retenues.slice(i, i + COLLECTIONS_PAR_VAGUE).map(async (c) => {
+        const titre = (c.title ?? "").trim();
+        for (let page = 1; page <= 4; page++) {
+          if (reste() < 500) break;
+          const rp = await lireVite(
+            `${base}/collections/${encodeURIComponent(c.handle as string)}/products.json?limit=${PAGE_SHOPIFY}&page=${page}`,
+            reste()
+          );
+          if (!rp) break;
+
+          let lot: { id?: number | string }[];
+          try {
+            const payload = (await rp.json()) as { products?: { id?: number | string }[] };
+            lot = Array.isArray(payload?.products) ? payload.products : [];
+          } catch {
+            break;
+          }
+
+          for (const p of lot) {
+            if (p?.id == null) continue;
+            const id = String(p.id);
+            const deja = appartenance.get(id);
+            if (deja) deja.push(titre);
+            else appartenance.set(id, [titre]);
+          }
+
+          if (lot.length < PAGE_SHOPIFY) break;
+        }
+      })
+    );
+  }
+
+  return appartenance;
 }
 
 /* ---------------- 2. WooCommerce ---------------- */
@@ -616,6 +802,9 @@ type WooBrut = {
   images?: { src: string }[];
   is_in_stock?: boolean;
   attributes?: { name?: string; terms?: { name: string }[] }[];
+  /** Les catégories de la boutique : son menu, comme les collections Shopify. */
+  categories?: { name?: string }[];
+  tags?: { name?: string }[];
 };
 
 /**
@@ -701,6 +890,10 @@ async function viaWooCommerce(base: string): Promise<CatalogueItem[] | null> {
       images: (p.images ?? []).map((i) => i.src).slice(0, 8),
       shop_url: p.permalink,
       available: p.is_in_stock !== false,
+      rangement: rangement({
+        collections: (p.categories ?? []).map((c) => c?.name ?? ""),
+        etiquettes: etiquettesBornees(p.tags),
+      }),
     };
   });
 }
@@ -717,6 +910,7 @@ type BigCartelBrut = {
   status?: string;
   images?: { url?: string; secure_url?: string }[];
   options?: { name?: string; sold_out?: boolean }[];
+  categories?: { name?: string }[];
 };
 
 async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
@@ -755,6 +949,7 @@ async function viaBigCartel(base: string): Promise<CatalogueItem[] | null> {
       images: p.images?.map((i) => i.secure_url ?? i.url ?? "").filter(Boolean).slice(0, 8) ?? [],
       shop_url: chemin.startsWith("http") ? chemin : `${base}${chemin}`,
       available: p.status !== "sold-out",
+      rangement: rangement({ collections: (p.categories ?? []).map((c) => c?.name ?? "") }),
     };
   });
 }
@@ -768,6 +963,8 @@ type LdProduit = {
   image?: string | string[] | { url?: string }[];
   url?: string;
   sku?: string;
+  /** Souvent la taxonomie de Google : « Apparel & Accessories > Clothing > Shirts ». */
+  category?: string | string[];
   offers?:
     | {
         price?: string | number;
@@ -845,6 +1042,10 @@ async function viaDonneesStructurees(url: string): Promise<CatalogueItem[] | nul
       images,
       shop_url: p.url?.startsWith("http") ? p.url : p.url ? `${base}${p.url}` : url,
       available: !dispo.includes("outofstock") && !dispo.includes("soldout"),
+      // Le dernier maillon de la taxonomie est le plus précis.
+      rangement: rangement({
+        type: (Array.isArray(p.category) ? p.category[0] : p.category)?.split(">").pop() ?? null,
+      }),
     };
   });
 }

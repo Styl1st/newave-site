@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cleLien, type CatalogueItem } from "./catalogue-commun";
 import { enEuros, lireLesTaux, type Taux } from "./devises";
-import { deduireLeRayon } from "./rayons";
+import { lireLesRegles } from "./regles-tags";
+import { avecLaFamille, classerLaPiece, type Classement } from "./tags";
 
 /**
  * Ranger un catalogue lu chez une marque dans notre base.
@@ -19,8 +20,14 @@ import { deduireLeRayon } from "./rayons";
  *
  * Et ce que la personne a décidé lui appartient. Un rafraîchissement
  * met à jour le prix, les photos, les tailles et la disponibilité,
- * mais ne touche ni au rayon choisi, ni à la mise en avant, ni à
- * l'ordre d'affichage, ni au fait qu'une pièce soit publiée ou non.
+ * mais ne touche ni à la mise en avant, ni à l'ordre d'affichage, ni
+ * au fait qu'une pièce soit publiée ou non.
+ *
+ * LE RAYON ET LES TAGS, EUX, SE RECALCULENT À CHAQUE PASSAGE, parce
+ * qu'ils suivent le site de la marque : une pièce qui entre dans la
+ * collection « Outerwear » doit s'y retrouver chez nous aussi. Sauf
+ * quand un gérant les a choisis à la main (`classement_manuel`) : là,
+ * seuls les tags propres à la marque bougent encore.
  */
 
 export type Existante = {
@@ -33,6 +40,9 @@ export type Existante = {
   categories: string[] | null;
   featured: boolean | null;
   retired_at: string | null;
+  /** Absents tant que la migration 34 n'est pas passée. */
+  tags?: string[] | null;
+  classement_manuel?: boolean | null;
 };
 
 export type Bilan = { creees: number; majs: number; retirees: number; erreur?: string };
@@ -85,6 +95,42 @@ export function enLigne(item: CatalogueItem, brandId: string, taux?: Taux) {
     image_url: item.images[0] ?? null,
     shop_url: item.shop_url,
     available: item.available,
+    /*
+     * Ce que la boutique a déclaré, gardé tel quel. C'est ce qui permet
+     * de reclasser tout le catalogue depuis l'admin, après une
+     * correction du lexique ou une règle posée sur un tag, sans
+     * relire une seule boutique.
+     */
+    rangement_boutique: item.rangement ?? null,
+  };
+}
+
+/** Les colonnes de la migration 34, à retirer si la base ne les a pas encore. */
+const COLONNES_34 = ["tags", "tags_locaux", "rangement_boutique", "classement_manuel"] as const;
+
+function sansColonnes34<T extends Record<string, unknown>>(ligne: T): T {
+  const copie = { ...ligne };
+  for (const c of COLONNES_34) delete copie[c];
+  return copie;
+}
+
+/** Le classement d'une pièce, tel qu'il s'écrit en base. */
+function colonnesDuClassement(
+  classe: Classement,
+  existante: Existante | null
+): { categories: string[]; tags: string[]; tags_locaux: string[] } {
+  // Choisi à la main : on garde le rayon et le tag fin tels quels.
+  if (existante?.classement_manuel) {
+    return {
+      categories: existante.categories ?? [],
+      tags: existante.tags ?? [],
+      tags_locaux: classe.locaux,
+    };
+  }
+  return {
+    categories: avecLaFamille(existante?.categories, classe.famille),
+    tags: classe.tags,
+    tags_locaux: classe.locaux,
   };
 }
 
@@ -108,8 +154,8 @@ export async function synchroniserCatalogue(
 ): Promise<Bilan> {
   if (items.length === 0) return { creees: 0, majs: 0, retirees: 0 };
 
-  // Les taux du jour, lus une fois pour tout le catalogue.
-  const taux = await lireLesTaux();
+  // Les taux du jour et les règles de tags, lus une fois pour tout le catalogue.
+  const [taux, regles] = await Promise.all([lireLesTaux(), lireLesRegles(supabase)]);
 
   /*
    * ⚠️ LA LECTURE DE L'EXISTANT SE FAIT PAR TRANCHES, ET C'EST LA PLUS
@@ -128,19 +174,41 @@ export async function synchroniserCatalogue(
    */
   const existantes: Existante[] = [];
   const TRANCHE = 1000;
+  const CHAMPS = "id, source_id, shop_url, slug, status, position, categories, featured, retired_at";
+
+  /*
+   * UNE BASE SANS LA MIGRATION 34 NE DOIT PAS ARRÊTER LA SYNCHRO.
+   *
+   * La tâche quotidienne tourne sans personne pour la regarder. Si le
+   * code arrive avant la migration, lire `tags` échoue : on se rabat
+   * alors sur les anciennes colonnes, et l'on écrit sans les tags. Les
+   * prix et les disponibilités continuent d'être mis à jour.
+   */
+  let ancienneBase = false;
+
   for (let de = 0; de < 100 * TRANCHE; de += TRANCHE) {
-    const { data: brut, error: lecture } = await supabase
-      .from("products")
-      .select("id, source_id, shop_url, slug, status, position, categories, featured, retired_at")
-      .eq("brand_id", brandId)
-      /* Un ordre total, sinon deux tranches peuvent se recouvrir : une
-         pièce serait alors lue deux fois et une autre jamais. */
-      .order("id", { ascending: true })
-      .range(de, de + TRANCHE - 1);
+    const lire = (champs: string) =>
+      supabase
+        .from("products")
+        .select(champs)
+        .eq("brand_id", brandId)
+        /* Un ordre total, sinon deux tranches peuvent se recouvrir : une
+           pièce serait alors lue deux fois et une autre jamais. */
+        .order("id", { ascending: true })
+        .range(de, de + TRANCHE - 1);
+
+    let { data: brut, error: lecture } = ancienneBase
+      ? await lire(CHAMPS)
+      : await lire(`${CHAMPS}, tags, classement_manuel`);
+
+    if (lecture && !ancienneBase && /tags|classement_manuel/.test(lecture.message)) {
+      ancienneBase = true;
+      ({ data: brut, error: lecture } = await lire(CHAMPS));
+    }
 
     if (lecture) return { creees: 0, majs: 0, retirees: 0, erreur: lecture.message };
 
-    const lot = (brut as Existante[] | null) ?? [];
+    const lot = (brut as unknown as Existante[] | null) ?? [];
     existantes.push(...lot);
     if (lot.length < TRANCHE) break;
   }
@@ -163,6 +231,10 @@ export async function synchroniserCatalogue(
 
   for (const item of items) {
     const ligne = enLigne(item, brandId, taux);
+    const classe = classerLaPiece(
+      { nom: ligne.name, description: ligne.description, rangement: item.rangement },
+      regles
+    );
     const trouvee =
       (ligne.source_id ? parSource.get(ligne.source_id) : undefined) ??
       parLien.get(cleLien(ligne.shop_url));
@@ -179,16 +251,7 @@ export async function synchroniserCatalogue(
         slug: trouvee.slug ?? ligne.slug,
         status: trouvee.status,
         position: trouvee.position ?? 0,
-        /*
-         * Le rayon choisi à la main l'emporte toujours. On ne devine
-         * que pour les pièces qui n'en ont aucun — celles importées
-         * avant que cette déduction existe, notamment : sans ça, il
-         * aurait fallu reclasser cent quarante pièces une par une.
-         */
-        categories:
-          trouvee.categories && trouvee.categories.length > 0
-            ? trouvee.categories
-            : deduireLeRayon(ligne.name, ligne.description, item.type),
+        ...colonnesDuClassement(classe, trouvee),
         featured: trouvee.featured ?? false,
         // Elle est de retour dans la boutique : on lève l'archive.
         retired_at: null,
@@ -206,11 +269,16 @@ export async function synchroniserCatalogue(
       aCreer.push({
         ...ligne,
         slug: pieceSlug,
-        categories: deduireLeRayon(ligne.name, ligne.description, item.type),
+        ...colonnesDuClassement(classe, null),
         status: options.statutDesNouvelles,
         position: rang++,
       });
     }
+  }
+
+  if (ancienneBase) {
+    aMettreAJour.forEach((l, i) => (aMettreAJour[i] = sansColonnes34(l)));
+    aCreer.forEach((l, i) => (aCreer[i] = sansColonnes34(l)));
   }
 
   if (aMettreAJour.length > 0) {

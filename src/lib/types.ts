@@ -42,6 +42,17 @@ export type Brand = {
    * doit se comporter comme une boutique ouverte.
    */
   acces?: string | null;
+  /**
+   * Ce que la marque vend, compté sur ses pièces publiées : ses familles
+   * (« Vestes ») et ses tags fins (« Bombers »), avec le nombre de
+   * pièces de chacun.
+   *
+   * Ce n'est pas une colonne : `getBrands` le joint depuis
+   * `tags_des_marques` (migration 34). Absent tant que la migration
+   * n'est pas passée, et le filtre « Vend » de l'annuaire ne s'affiche
+   * alors simplement pas.
+   */
+  vend?: Record<string, number>;
 };
 
 /**
@@ -123,7 +134,22 @@ export type Product = {
   images: string[];
   description: string;
   shop_url: string;
+  /** La famille de la pièce (son rayon) : Hauts, Bas, Vestes… Voir `lib/tags`. */
   categories: string[];
+  /**
+   * Le tag fin : T-shirts, Hoodies, Bombers… Un seul aujourd'hui, dans
+   * un tableau pour ne pas avoir à changer la colonne le jour où il en
+   * faudra deux. Facultatif : absent avant la migration 34.
+   */
+  tags?: string[];
+  /**
+   * Les collections de la boutique que le lexique ne sait pas ranger :
+   * « Capsule Nuit », « Archive ». Elles ne s'affichent que sur la page
+   * de la marque.
+   */
+  tags_locaux?: string[];
+  /** Le rayon et le tag ont été choisis à la main : la synchro n'y touche plus. */
+  classement_manuel?: boolean;
   featured: boolean;
   available: boolean;
   status: Status;

@@ -101,7 +101,18 @@ export async function GET(request: Request) {
   const marques = (data as Marque[] | null) ?? [];
   const journal: Record<string, string>[] = [];
 
+  /*
+   * LA MINUTE EST UNE LIMITE DURE. Depuis que la lecture d'une boutique
+   * comprend aussi ses collections (les tags, voir `lib/tags`), une
+   * marque peut prendre une quinzaine de secondes. Plutôt que de risquer
+   * d'être coupé au milieu d'une écriture, on s'arrête à temps : les
+   * marques non traitées gardent leur date de passage la plus ancienne,
+   * et passent donc en tête demain.
+   */
+  const debut = Date.now();
+
   for (const marque of marques) {
+    if (journal.length > 0 && Date.now() - debut > 40_000) break;
     const adresse = marque.shop_url ?? marque.website_url;
     let note: string;
 

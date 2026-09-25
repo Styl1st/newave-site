@@ -333,12 +333,23 @@ export default async function PiecePage({ params }: Props) {
             </section>
           )}
 
-          {product.categories.length > 0 && (
+          {/* Le rayon, le tag fin, puis les collections de la boutique qui
+              contiennent la pièce, en plus discret : ce sont ses mots à
+              elle, pas le vocabulaire commun du site. */}
+          {product.categories.length + (product.tags?.length ?? 0) + (product.tags_locaux?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {product.categories.map((c) => (
+              {[...new Set([...product.categories, ...(product.tags ?? [])])].map((c) => (
                 <span
                   key={c}
                   className="rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/85"
+                >
+                  {c}
+                </span>
+              ))}
+              {(product.tags_locaux ?? []).map((c) => (
+                <span
+                  key={`boutique-${c}`}
+                  className="rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-[0.02em] text-white/70"
                 >
                   {c}
                 </span>

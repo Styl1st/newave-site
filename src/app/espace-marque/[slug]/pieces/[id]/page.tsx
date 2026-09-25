@@ -7,6 +7,7 @@ import { Area, Check, CheckGroup, Select, Text } from "@/components/admin/fields
 import { deleteBrandProduct, saveBrandProduct } from "../../../actions";
 import { getBrandProduct, requireManagedBrand } from "@/lib/brand-space";
 import { PRODUCT_CATEGORIES, withExisting } from "@/lib/taxonomy";
+import { TAGS_CONNUS, estUneFamille } from "@/lib/tags";
 import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
@@ -141,6 +142,27 @@ export default async function EditBrandProduct({ params }: Props) {
           label="Rayon"
           options={withExisting(PRODUCT_CATEGORIES, product?.categories)}
           selected={product?.categories}
+        />
+
+        {/* Les types proposés sont ceux du rayon de la pièce : une liste
+            de soixante cases pour en cocher une n'aide personne. Pas de
+            rayon encore : on les montre tous. */}
+        <CheckGroup
+          name="tags"
+          label="Type"
+          hint={
+            product?.classement_manuel
+              ? "Choisis à la main : la mise à jour du catalogue n'y touche plus."
+              : "Lus sur ta boutique et recalculés à chaque mise à jour. Si tu changes le rayon ou le type ici, ton choix est gardé."
+          }
+          options={withExisting(
+            TAGS_CONNUS.filter((t) => {
+              const famille = product?.categories.find(estUneFamille);
+              return !famille || t.famille === famille || t.famille === null;
+            }).map((t) => t.tag),
+            product?.tags
+          )}
+          selected={product?.tags}
         />
 
         <div className="flex flex-wrap gap-6">

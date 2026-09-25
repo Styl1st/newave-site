@@ -116,7 +116,29 @@ const lireLAnnuaire = unstable_cache(
 
     report("annuaire des marques", error);
     if (error || !data) return null;
-    return data as Brand[];
+
+    /*
+     * CE QUE CHAQUE MARQUE VEND, compté sur ses pièces (migration 34).
+     *
+     * Une seule requête pour tout l'annuaire, une ligne par marque. Si
+     * la fonction n'existe pas encore, on le note et on continue : le
+     * filtre « Vend » ne s'affiche pas, rien d'autre ne change.
+     */
+    const { data: vend, error: sansVend } = await supabase.rpc("tags_des_marques", {
+      p_taxonomie: [...PRODUCT_CATEGORIES],
+    });
+    report("ce que vendent les marques", sansVend);
+
+    const parMarque = new Map(
+      ((vend as { brand_id: string; vend: Record<string, number> }[] | null) ?? []).map((l) => [
+        l.brand_id,
+        l.vend,
+      ])
+    );
+
+    return (data as Brand[]).map((b) =>
+      parMarque.has(b.id) ? { ...b, vend: parMarque.get(b.id) } : b
+    );
   },
   ["annuaire-marques"],
   { revalidate: 60, tags: ["marques"] }
@@ -255,6 +277,14 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
    * est absente, tout est considéré comme en vente, et l'ordre reste
    * celui des positions. Le site fonctionne avant comme après.
    */
+  /*
+   * Ce que la boutique a déclaré (`rangement_boutique`) ne sert qu'à
+   * reclasser. `select("*")` le ramène, et la page de la marque passe
+   * ses pièces à un composant client : on le retire ici, sinon il
+   * partirait dans le HTML de chaque pièce pour rien.
+   */
+  for (const piece of data) delete (piece as { rangement_boutique?: unknown }).rangement_boutique;
+
   return data
     .slice()
     .sort((a, b) => Number(Boolean(a.retired_at)) - Number(Boolean(b.retired_at)));
@@ -378,6 +408,8 @@ const lireLaVitrine = unstable_cache(
 export type FiltresVitrine = {
   q?: string;
   rayons?: string[];
+  /** Les tags fins cochés : Hoodies, Bombers… Voir `lib/tags`. */
+  tags?: string[];
   marque?: string | null;
   /** En centimes d'euro. `null` de chaque côté tant qu'on n'a rien bougé. */
   prixMin?: number | null;
@@ -432,6 +464,13 @@ export async function lireUnePageDeVitrine(
     p_graine: graine,
     p_taxonomie: [...PRODUCT_CATEGORIES],
     p_rayons: filtres.rayons?.length ? filtres.rayons : null,
+    /*
+     * PASSÉ SEULEMENT QUAND IL SERT. L'API choisit la fonction d'après
+     * les noms d'arguments : tant que la migration 34 n'est pas
+     * passée, envoyer `p_tags` ferait échouer TOUTE la vitrine, filtre
+     * ou pas. Sans lui, l'ancienne fonction répond comme avant.
+     */
+    ...(filtres.tags?.length ? { p_tags: filtres.tags } : {}),
     p_marque: filtres.marque ?? null,
     p_prix_min: filtres.prixMin ?? null,
     p_prix_max: filtres.prixMax ?? null,
@@ -506,6 +545,12 @@ export type CompteDuCatalogue = {
   /** Par rayon, dans l'ordre de la taxonomie, « Autres » en dernier. */
   rayons: { rayon: string; total: number }[];
   /**
+   * Par tag fin, avec le rayon des pièces qui le portent. Absent avant
+   * la migration 34 : la section « Type » de la vitrine ne s'affiche
+   * alors pas.
+   */
+  tags?: { rayon: string | null; tag: string; total: number }[];
+  /**
    * Chaque marque publiée et son compte de pièces, zéro compris.
    *
    * C'est la liste qui nourrit le filtre « Marque » de la vitrine, et
@@ -562,7 +607,7 @@ const lireLesComptes = unstable_cache(
     const supabase = createPublicClient();
     if (!supabase) return null;
 
-    const [rayons, marques, parMarque, bornes] = await Promise.all([
+    const [rayons, marques, parMarque, bornes, tags] = await Promise.all([
       supabase.rpc("compter_les_rayons", { p_rayons: [...PRODUCT_CATEGORIES] }),
       supabase
         .from("brands")
@@ -570,6 +615,7 @@ const lireLesComptes = unstable_cache(
         .eq("status", "published"),
       supabase.rpc("compter_les_marques"),
       supabase.rpc("vitrine_bornes"),
+      supabase.rpc("compter_les_tags", { p_taxonomie: [...PRODUCT_CATEGORIES] }),
     ]);
 
     report("comptes du catalogue", rayons.error);
@@ -618,6 +664,13 @@ const lireLesComptes = unstable_cache(
 
     const ordre = [...PRODUCT_CATEGORIES, "Autres"];
 
+    /* Les tags fins. Si la migration 34 manque, on le note et la vitrine
+       se passe simplement de la section « Type ». */
+    report("comptes des tags", tags.error);
+    const parTag = tags.error
+      ? undefined
+      : ((tags.data as { rayon: string | null; tag: string; total: number }[] | null) ?? []);
+
     return {
       pieces: lignes.reduce((n, l) => n + l.total, 0),
       /* La longueur de la liste QUAND ON L'A, et le comptage direct
@@ -630,6 +683,7 @@ const lireLesComptes = unstable_cache(
         .filter((r) => parRayon.has(r))
         .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
       marquesListe,
+      tags: parTag,
       prix:
         brut && brut.prix_min !== null && brut.prix_max !== null && brut.prix_max > brut.prix_min
           ? { min: brut.prix_min, max: brut.prix_max }
@@ -702,6 +756,8 @@ export async function getProduct(
 
   report("fiche de la pièce", error);
   if (!data) return null;
+  // Ne sert qu'à reclasser : même raison que pour `getProductsByBrand`.
+  delete (data as { rangement_boutique?: unknown }).rangement_boutique;
   return { product: data as Product, brand };
 }
 

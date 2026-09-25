@@ -376,9 +376,51 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
    * modifiée garde donc simplement son rang, et une nouvelle se range
    * à la suite des autres.
    */
-  const { error } = id
-    ? await supabase.from("products").update(payload).eq("id", id).eq("brand_id", brand.id)
-    : await supabase.from("products").insert({ ...payload, position: await rangSuivant(brand.id) });
+  /*
+   * LE RAYON ET LE TYPE, S'ILS ONT ÉTÉ TOUCHÉS, DEVIENNENT UN CHOIX.
+   *
+   * Pour une pièce importée, ils sont recalculés à chaque lecture de la
+   * boutique. Si le gérant les corrige ici, la synchro doit s'arrêter
+   * de les recalculer, sinon sa correction disparaîtrait le lendemain.
+   * On compare donc à ce qui était enregistré : enregistrer une pièce
+   * pour changer son prix ne fige rien.
+   *
+   * Une pièce créée ici n'a jamais été lue chez la boutique : elle est
+   * manuelle d'emblée.
+   */
+  const tags = list(formData, "tags");
+  let classementManuel = true;
+  if (id) {
+    const { data: avant } = await supabase
+      .from("products")
+      .select("categories, tags, classement_manuel")
+      .eq("id", id)
+      .eq("brand_id", brand.id)
+      .maybeSingle();
+    const a = avant as { categories?: string[]; tags?: string[]; classement_manuel?: boolean } | null;
+    const pareil = (x: string[] = [], y: string[] = []) =>
+      x.length === y.length && x.every((v) => y.includes(v));
+    classementManuel = a
+      ? Boolean(a.classement_manuel) ||
+        !pareil(a.categories, payload.categories) ||
+        !pareil(a.tags, tags)
+      : true;
+  }
+
+  const ecrire = (ligne: Record<string, unknown>) =>
+    id
+      ? supabase.from("products").update(ligne).eq("id", id).eq("brand_id", brand.id)
+      : rangSuivant(brand.id).then((position) =>
+          supabase.from("products").insert({ ...ligne, position })
+        );
+
+  let { error } = await ecrire({ ...payload, tags, classement_manuel: classementManuel });
+
+  /* Une base qui n'a pas encore la migration 34 refuse ces deux
+     colonnes : on enregistre le reste plutôt que tout refuser. */
+  if (error && /tags|classement_manuel/.test(error.message)) {
+    ({ error } = await ecrire(payload));
+  }
 
   if (error) return { ok: false, error: error.message };
 

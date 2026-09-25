@@ -32,8 +32,8 @@ export default async function CataloguesPage() {
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-[14.5px] leading-relaxed text-white/78">
           À lancer après une correction qui touche à la façon dont on lit les boutiques.
-          Rien n&apos;est écrasé de ce que tu as décidé : le rayon d&apos;une pièce, sa
-          mise en avant et son état de publication restent tels quels.
+          Rien n&apos;est écrasé de ce que tu as décidé : un rayon choisi à la main, la
+          mise en avant d&apos;une pièce et son état de publication restent tels quels.
         </p>
       </header>
 

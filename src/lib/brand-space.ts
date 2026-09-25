@@ -97,7 +97,7 @@ export async function getBrandProducts(brandId: string): Promise<Product[]> {
      l'espace marque doit montrer le catalogue entier — c'est là qu'on
      le corrige. `id` en dernier critère donne l'ordre total sans lequel
      deux tranches se recouvrent. Voir `stats.ts`. */
-  return parTranches<Product>((de, a) =>
+  const pieces = await parTranches<Product>((de, a) =>
     supabase
       .from("products")
       .select("*")
@@ -107,6 +107,10 @@ export async function getBrandProducts(brandId: string): Promise<Product[]> {
       .order("id", { ascending: true })
       .range(de, a)
   );
+  /* Ce que la boutique a déclaré ne sert qu'à reclasser : inutile de le
+     faire voyager jusqu'à la liste de l'espace marque. */
+  for (const p of pieces) delete (p as { rangement_boutique?: unknown }).rangement_boutique;
+  return pieces;
 }
 
 export async function getBrandProduct(id: string): Promise<Product | null> {

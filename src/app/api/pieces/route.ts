@@ -40,6 +40,7 @@ export async function GET(request: Request) {
   const filtres: FiltresVitrine = {
     q: p.get("q")?.slice(0, 80) ?? "",
     rayons: p.getAll("rayon").slice(0, 12),
+    tags: p.getAll("tag").map((t) => t.slice(0, 60)).slice(0, 24),
     marque: p.get("marque"),
     prixMin: p.has("prixMin") ? entier(p.get("prixMin"), 0) : null,
     prixMax: p.has("prixMax") ? entier(p.get("prixMax"), 0) : null,

@@ -15,7 +15,10 @@ import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import type { Brand, PriceTier, Recherche } from "@/lib/types";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import { AUDIENCES, AUDIENCE_FILTRE, uneAudience, type Audience } from "@/lib/audience";
-import { enSlugDeCategorie } from "@/lib/taxonomy";
+import { enSlugDeCategorie, PRODUCT_CATEGORIES } from "@/lib/taxonomy";
+
+/** Les familles, pour les distinguer des tags fins dans ce qu'une marque vend. */
+const FAMILLES: readonly string[] = PRODUCT_CATEGORIES;
 
 const TIERS: PriceTier[] = ["accessible", "intermediaire", "premium"];
 
@@ -143,8 +146,9 @@ function categoriesDemandees(
 function jetonsDemandes(
   brands: Brand[],
   param: string | string[] | undefined
-): { cats: string[]; audience: Audience | null; tier: PriceTier | null } {
+): { cats: string[]; audience: Audience | null; tier: PriceTier | null; vend: string[] } {
   const styles: string[] = [];
+  const ventes: string[] = [];
   let audience: Audience | null = null;
   let tier: PriceTier | null = null;
 
@@ -155,6 +159,7 @@ function jetonsDemandes(
     const valeur = entree.slice(coupe + 1).toLowerCase();
 
     if (famille === "style") styles.push(valeur);
+    else if (famille === "vend") ventes.push(valeur);
     else if (famille === "vestiaire" && (AUDIENCES as readonly string[]).includes(valeur)) {
       audience = valeur as Audience;
     } else if (famille === "prix" && (TIERS as string[]).includes(valeur)) {
@@ -162,7 +167,26 @@ function jetonsDemandes(
     }
   }
 
-  return { cats: categoriesDemandees(brands, styles), audience, tier };
+  /* Même règle que pour les styles : on se règle sur ce que les marques
+     vendent vraiment, et une valeur inconnue est ignorée en silence. */
+  const connues = new Map<string, string>();
+  for (const b of brands) {
+    for (const cle of Object.keys(b.vend ?? {})) connues.set(enSlugDeCategorie(cle), cle);
+  }
+  const vend = [
+    ...new Set(
+      ventes
+        .map((v) => connues.get(enSlugDeCategorie(v)))
+        .filter((v): v is string => Boolean(v))
+    ),
+  ];
+
+  return { cats: categoriesDemandees(brands, styles), audience, tier, vend };
+}
+
+/** La marque vend-elle tout ce qu'on a demandé ? */
+function vendTout(b: Brand, vendus: string[]): boolean {
+  return vendus.every((v) => (b.vend?.[v] ?? 0) > 0);
 }
 
 /**
@@ -268,6 +292,14 @@ export default function BrandDirectory({
    * rien cocher.
    */
   const [audience, setAudience] = useState<Audience | null>(amorceJetons.audience);
+  /*
+   * CE QUE LA MARQUE VEND : « Vestes », « Hoodies », « Bagues ».
+   *
+   * Lu sur ses pièces, donc sur son site, et non coché à la main comme
+   * les styles. Les critères se cumulent : « Hoodies » puis « Cargos »,
+   * ce sont les marques qui font les deux.
+   */
+  const [vendus, setVendus] = useState<string[]>(amorceJetons.vend);
 
   /*
    * La lettre de l'index est tenue ici et non dans la grille : elle part
@@ -281,10 +313,11 @@ export default function BrandDirectory({
   });
   const [ouvert, setOuvert] = useState(false);
 
-  const actifs = choisies.length + (tier ? 1 : 0) + (audience ? 1 : 0);
+  const actifs = choisies.length + vendus.length + (tier ? 1 : 0) + (audience ? 1 : 0);
 
   function reinitialiser() {
     setChoisies([]);
+    setVendus([]);
     setTier(null);
     setAudience(null);
   }
@@ -526,31 +559,60 @@ export default function BrandDirectory({
       if (tier && b.price_tier !== tier) continue;
       if (audience && uneAudience(b.audience) !== audience) continue;
       if (!choisies.every((c) => b.categories.includes(c))) continue;
+      if (!vendTout(b, vendus)) continue;
       for (const c of b.categories) compte.set(c, (compte.get(c) ?? 0) + 1);
     }
     return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [base, tier, audience, choisies]);
+  }, [base, tier, audience, choisies, vendus]);
+
+  /*
+   * Ce que vendent les marques qui restent, compté SANS ce filtre-là
+   * lui-même, comme les autres : chaque valeur proposée ramène au moins
+   * une marque. Les familles d'abord, dans l'ordre des rayons, puis les
+   * tags fins du plus répandu au plus rare.
+   */
+  const ventes = useMemo(() => {
+    const compte = new Map<string, number>();
+    for (const b of base) {
+      if (tier && b.price_tier !== tier) continue;
+      if (audience && uneAudience(b.audience) !== audience) continue;
+      if (!choisies.every((c) => b.categories.includes(c))) continue;
+      if (!vendTout(b, vendus)) continue;
+      for (const [cle, n] of Object.entries(b.vend ?? {})) {
+        if (n > 0) compte.set(cle, (compte.get(cle) ?? 0) + 1);
+      }
+    }
+    const familles = FAMILLES.filter((f) => compte.has(f)).map(
+      (f) => [f, compte.get(f) ?? 0] as const
+    );
+    const fins = [...compte.entries()]
+      .filter(([cle]) => !FAMILLES.includes(cle))
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"));
+    return { familles, fins };
+  }, [base, tier, audience, choisies, vendus]);
 
   const gammes = useMemo(() => {
     const compte = new Map<PriceTier, number>();
     for (const b of base) {
       if (!choisies.every((c) => b.categories.includes(c))) continue;
       if (audience && uneAudience(b.audience) !== audience) continue;
+      if (!vendTout(b, vendus)) continue;
       if (b.price_tier) compte.set(b.price_tier, (compte.get(b.price_tier) ?? 0) + 1);
     }
     return TIERS.filter((t) => compte.has(t)).map((t) => [t, compte.get(t) ?? 0] as const);
-  }, [base, choisies, audience]);
+  }, [base, choisies, audience, vendus]);
 
   const vestiaires = useMemo(() => {
     const compte = new Map<Audience, number>();
     for (const b of base) {
       if (tier && b.price_tier !== tier) continue;
       if (!choisies.every((c) => b.categories.includes(c))) continue;
+      if (!vendTout(b, vendus)) continue;
       const a = uneAudience(b.audience);
       compte.set(a, (compte.get(a) ?? 0) + 1);
     }
     return AUDIENCES.filter((a) => compte.has(a)).map((a) => [a, compte.get(a) ?? 0] as const);
-  }, [base, tier, choisies]);
+  }, [base, tier, choisies, vendus]);
 
   /* Un filtre qui n'a plus d'objet s'efface tout seul. Pas de boucle
      possible : ces listes se calculent sans le filtre qu'elles
@@ -563,6 +625,13 @@ export default function BrandDirectory({
   }, [categories]);
 
   useEffect(() => {
+    const disponibles = new Set([...ventes.familles, ...ventes.fins].map(([c]) => c));
+    setVendus((liste) =>
+      liste.every((v) => disponibles.has(v)) ? liste : liste.filter((v) => disponibles.has(v))
+    );
+  }, [ventes]);
+
+  useEffect(() => {
     if (tier && !gammes.some(([t]) => t === tier)) setTier(null);
   }, [gammes, tier]);
 
@@ -570,15 +639,28 @@ export default function BrandDirectory({
     if (audience && !vestiaires.some(([a]) => a === audience)) setAudience(null);
   }, [vestiaires, audience]);
 
-  const results = useMemo(
-    () =>
-      base.filter((b) => {
-        if (tier && b.price_tier !== tier) return false;
-        if (audience && uneAudience(b.audience) !== audience) return false;
-        return choisies.every((c) => b.categories.includes(c));
-      }),
-    [base, choisies, tier, audience]
-  );
+  const results = useMemo(() => {
+    const retenues = base.filter((b) => {
+      if (tier && b.price_tier !== tier) return false;
+      if (audience && uneAudience(b.audience) !== audience) return false;
+      if (!vendTout(b, vendus)) return false;
+      return choisies.every((c) => b.categories.includes(c));
+    });
+    if (vendus.length === 0) return retenues;
+
+    /*
+     * « Hoodies » posé : celles qui en ont le plus d'abord. Une marque
+     * qui en vend trente répond mieux à la question qu'une qui en a un
+     * seul au milieu de ses casquettes. Le tri est stable : à égalité,
+     * l'ordre de l'annuaire est gardé. (La vue en liste reste, elle,
+     * alphabétique, c'est ce qui fait marcher son index.)
+     */
+    const poids = (b: Brand) => vendus.reduce((n, v) => n + (b.vend?.[v] ?? 0), 0);
+    return retenues
+      .map((b, i) => ({ b, i, p: poids(b) }))
+      .sort((x, y) => y.p - x.p || x.i - y.i)
+      .map((x) => x.b);
+  }, [base, choisies, tier, audience, vendus]);
 
   /* ------------------------------------------------------------------
      LA REQUÊTE
@@ -601,6 +683,9 @@ export default function BrandDirectory({
       valeur: c,
       cle: `style:${enSlugDeCategorie(c)}`,
     }));
+    for (const v of vendus) {
+      liste.push({ famille: "Vend", valeur: v, cle: `vend:${enSlugDeCategorie(v)}` });
+    }
     if (audience) {
       liste.push({
         famille: "Vestiaire",
@@ -612,7 +697,7 @@ export default function BrandDirectory({
       liste.push({ famille: "Prix", valeur: PRICE_TIER_LABEL[tier], cle: `prix:${tier}` });
     }
     return liste;
-  }, [choisies, audience, tier]);
+  }, [choisies, vendus, audience, tier]);
 
   const poses = useMemo(() => new Set(jetons.map((j) => j.cle)), [jetons]);
 
@@ -629,6 +714,12 @@ export default function BrandDirectory({
         cle: `style:${enSlugDeCategorie(c)}`,
         compte: n,
       })),
+      ...[...ventes.familles, ...ventes.fins].map(([v, n]) => ({
+        famille: "Vend",
+        valeur: v,
+        cle: `vend:${enSlugDeCategorie(v)}`,
+        compte: n,
+      })),
       ...vestiaires.map(([a, n]) => ({
         famille: "Vestiaire",
         valeur: AUDIENCE_FILTRE[a],
@@ -642,7 +733,7 @@ export default function BrandDirectory({
         compte: n,
       })),
     ],
-    [categories, vestiaires, gammes]
+    [categories, ventes, vestiaires, gammes]
   );
 
   const posables = useMemo(
@@ -676,6 +767,8 @@ export default function BrandDirectory({
       const [famille, valeur] = c.cle.split(":");
       if (famille === "style") {
         setChoisies((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
+      } else if (famille === "vend") {
+        setVendus((liste) => (liste.includes(c.valeur) ? liste : [...liste, c.valeur]));
       } else if (famille === "vestiaire") {
         setAudience(valeur as Audience);
       } else if (famille === "prix") {
@@ -693,6 +786,7 @@ export default function BrandDirectory({
   const retirer = useCallback((c: Critere) => {
     const [famille] = c.cle.split(":");
     if (famille === "style") setChoisies((liste) => liste.filter((x) => x !== c.valeur));
+    else if (famille === "vend") setVendus((liste) => liste.filter((x) => x !== c.valeur));
     else if (famille === "vestiaire") setAudience(null);
     else if (famille === "prix") setTier(null);
     setVise(null);
@@ -821,6 +915,65 @@ export default function BrandDirectory({
                   );
                 })}
               </div>
+            </>
+          )}
+
+          {ventes.familles.length + ventes.fins.length > 0 && (
+            <>
+              <p className="eyebrow m-0 mb-2">
+                Ce qu&apos;elle vend
+                <span className="ml-2 font-medium normal-case tracking-normal text-white/45">
+                  lu sur son site
+                </span>
+              </p>
+              <div className="mb-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setVendus([])}
+                  className={`${chip} ${vendus.length === 0 ? chipOn : chipOff}`}
+                >
+                  Tout
+                </button>
+                {ventes.familles.map(([v, n]) => {
+                  const active = vendus.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      onClick={() =>
+                        setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
+                      }
+                      aria-pressed={active}
+                      className={`${chip} ${active ? chipOn : chipOff}`}
+                    >
+                      {v}
+                      <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Les tags fins en plus petit, sous les familles : on
+                  lit d'abord « Vestes », puis on précise « Bombers ». */}
+              {ventes.fins.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {ventes.fins.map(([v, n]) => {
+                    const active = vendus.includes(v);
+                    return (
+                      <button
+                        key={v}
+                        onClick={() =>
+                          setVendus((l) => (active ? l.filter((x) => x !== v) : [...l, v]))
+                        }
+                        aria-pressed={active}
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-[11.5px] font-bold transition ${
+                          active ? chipOn : "border border-white/20 text-white/78 hover:bg-white/12 hover:text-white"
+                        }`}
+                      >
+                        {v}
+                        <span className="ml-1.5 opacity-55 tabular-nums">{n}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 

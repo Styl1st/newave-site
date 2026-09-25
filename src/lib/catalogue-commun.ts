@@ -9,6 +9,8 @@
  * fonctions pures vivent donc ici.
  */
 
+import type { Rangement } from "./tags";
+
 /**
  * Une boutique debout, mais qui ne vend pas aujourd'hui.
  *
@@ -44,17 +46,19 @@ export type CatalogueItem = {
   shop_url: string;
   available: boolean;
   /**
-   * Ce que la BOUTIQUE dit du type de la pièce : « T-Shirts »,
-   * « Bottoms », « Jewelry »… plus ses étiquettes.
+   * Ce que la BOUTIQUE dit de la pièce : son type, les collections qui
+   * la contiennent, ses étiquettes.
    *
-   * C'est la meilleure source qui soit pour ranger une pièce dans un
-   * rayon, et de loin : c'est la marque elle-même qui l'a écrit, dans
-   * un champ prévu pour ça. On devinait à partir du nom faute de
-   * l'avoir lu, alors que Shopify le sert dans la même réponse.
+   * C'est la meilleure source qui soit pour la ranger, et de loin :
+   * c'est la marque elle-même qui l'a écrit, et les collections sont le
+   * menu qu'on voit sur son site. `lib/tags` s'en sert pour poser la
+   * famille, le tag fin et les tags propres à la marque, et la synchro
+   * le garde en base pour pouvoir reclasser plus tard sans relire la
+   * boutique.
    *
    * Facultatif : toutes les plateformes ne le donnent pas.
    */
-  type?: string;
+  rangement?: Rangement;
 };
 
 export type Resultat =

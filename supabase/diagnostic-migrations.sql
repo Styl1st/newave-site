@@ -38,6 +38,20 @@ union all select
   case when exists (
     select 1 from information_schema.tables
     where table_schema='public' and table_name='reviews'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-34 : products.tags',
+  case when exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='products' and column_name='tags'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-34 : table tags_regles',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema='public' and table_name='tags_regles'
   ) then 'OK' else 'MANQUE' end;
 
 -- ------------------------------------------------------------

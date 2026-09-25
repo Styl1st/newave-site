@@ -8,6 +8,7 @@ import Portal from "@/components/Portal";
 import {
   IconDownload,
   IconEye,
+  IconFiltre,
   IconGrid,
   IconImage,
   IconInbox,
@@ -74,6 +75,7 @@ const PLACES: Place[] = [
 const PLUS = [
   { href: "/admin/utilisateurs", label: "Comptes", note: "Rôles et rattachements", Icone: IconUser },
   { href: "/admin/catalogues", label: "Catalogues", note: "Mettre à jour les imports", Icone: IconDownload },
+  { href: "/admin/tags", label: "Tags", note: "Ranger les collections des marques", Icone: IconFiltre },
   { href: "/admin#frequentation", label: "Fréquentation", note: "Ce que le site a reçu", Icone: IconEye },
 ];
 
