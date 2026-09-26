@@ -43,6 +43,7 @@ export default function FeuilleRecherche({
   criteres = [],
   onPoser,
   uniteCompte,
+  placeholder = "Chercher une marque, un style…",
 }: {
   ouverte: boolean;
   /** La saisie de l'annuaire, écrite ici et lue là-bas. */
@@ -62,7 +63,9 @@ export default function FeuilleRecherche({
   criteres?: Critere[];
   onPoser?: (critere: Critere) => void;
   /** Ce que compte une ligne de critère : voir `Suggestions`. */
-  uniteCompte?: "marques" | "pièces";
+  uniteCompte?: "marques" | "pièces" | "posts";
+  /** Ce que dit le champ vide. Les posts ne cherchent pas un style. */
+  placeholder?: string;
 }) {
   const router = useRouter();
   const champ = useRef<HTMLInputElement>(null);
@@ -170,7 +173,7 @@ export default function FeuilleRecherche({
                   onPoser
                 );
               }}
-              placeholder="Chercher une marque, un style…"
+              placeholder={placeholder}
               aria-label="Chercher une marque, une pièce"
               autoComplete="off"
               enterKeyHint="search"

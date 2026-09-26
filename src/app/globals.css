@@ -3360,6 +3360,13 @@ html[data-curseur="1"] :is(input:not([type="range"]), textarea, select, [content
 .champ-loupe { padding-left: 40px; }
 .champ-croix { padding-right: 40px; }
 
+/* La croix native d'un champ de recherche (Chrome, Safari) s'ajoutait
+   à la nôtre, dessinée juste à côté : deux croix pour un geste. */
+.champ-croix::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .champ::placeholder {
   color: rgba(255, 255, 255, .46);
   font-weight: 500;

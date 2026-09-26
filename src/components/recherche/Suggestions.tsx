@@ -65,9 +65,9 @@ export default function Suggestions({
    * L'annuaire compte des MARQUES : « Denim, 22 marques ». La vitrine
    * compte des PIÈCES : « Bas, 5 857 pièces ». Le même mot pour les deux
    * ferait mentir l'un des deux écrans, et c'est le genre de chiffre
-   * qu'on ne vérifie jamais.
+   * qu'on ne vérifie jamais. Les posts comptent des POSTS.
    */
-  uniteCompte?: "marques" | "pièces";
+  uniteCompte?: "marques" | "pièces" | "posts";
   /**
    * Les titres de groupes.
    *
@@ -85,7 +85,7 @@ export default function Suggestions({
   const mot = query.trim();
 
   const ligne = feuille
-    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 transition"
+    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 text-left transition"
     : "flex items-center gap-3 rounded-[10px] px-2 py-[7px] text-left transition";
 
   return (
@@ -109,7 +109,8 @@ export default function Suggestions({
 
               {c.compte !== undefined && (
                 <span className={classeContexte(feuille)}>
-                  {c.compte} {uniteCompte === "pièces" ? "pièce" : "marque"}
+                  {c.compte}{" "}
+                  {uniteCompte === "pièces" ? "pièce" : uniteCompte === "posts" ? "post" : "marque"}
                   {c.compte > 1 ? "s" : ""}
                 </span>
               )}
@@ -211,7 +212,7 @@ export function LigneMarque({
   onOuvrir: () => void;
 }) {
   const ligne = feuille
-    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 transition"
+    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 text-left transition"
     : "flex items-center gap-3 rounded-[10px] px-2 py-[7px] text-left transition";
 
   return (

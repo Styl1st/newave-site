@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PostMosaic from "@/components/PostMosaic";
+import PostMosaic, { type AmorcePosts } from "@/components/PostMosaic";
 import RaccourciAdmin from "@/components/RaccourciAdmin";
 import { getPosts } from "@/lib/queries";
 
@@ -17,8 +17,12 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-export default async function PostsPage() {
-  const posts = await getPosts();
+type Props = { searchParams: Promise<AmorcePosts> };
+
+export default async function PostsPage({ searchParams }: Props) {
+  /* `?q=` et `?f=` rouvrent le fil tel qu'on l'a partagé : voir
+     « l'amorçage par l'adresse » dans `PostMosaic`. */
+  const [posts, { q, f }] = await Promise.all([getPosts(), searchParams]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -54,7 +58,7 @@ export default async function PostsPage() {
         <RaccourciAdmin href="/admin/posts/nouveau">Ajouter un post</RaccourciAdmin>
       </div>
 
-      <PostMosaic posts={posts} variante="fil" />
+      <PostMosaic posts={posts} variante="fil" amorce={{ q, f }} />
     </div>
   );
 }
