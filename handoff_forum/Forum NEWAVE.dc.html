@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0f0526; font-family:Archivo, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#e86fd8; text-decoration:none; }
+  a:hover { color:#fff; }
+  input::placeholder, textarea::placeholder { color:#9a8fb8; }
+</style>
+</helmet>
+
+<section style="width:3500px;padding:52px 44px 80px;box-sizing:border-box;background:radial-gradient(900px 520px at 6% -8%, rgba(90,114,224,.24), transparent 60%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff;border-bottom:1px solid rgba(255,255,255,.15)">
+  <div style="max-width:980px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 2 · MESSAGES PRIVÉS · SUITE DE <a href="#1d">1d</a></div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 14px">Répondre en privé</h1>
+    <p style="font:500 15.5px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0;text-wrap:pretty">Chaque conversation naît d'une annonce et la garde épinglée en haut : on sait toujours de quoi on parle. Le desktop et le mobile partagent les mêmes conversations — cliquez, tapez, envoyez, ça suit des deux côtés.</p>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;gap:26px">
+
+    <div id="2a" style="flex:0 0 auto;width:1180px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2a</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Messagerie — conversations + fil</h3>
+      </div>
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 32px;border-bottom:1px solid rgba(255,255,255,.18)">
+          <span style="font:900 17px Archivo;letter-spacing:.14em">NEWAVE</span>
+          <nav style="display:flex;gap:2px">
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Marques</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Pièces</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Posts</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Coups de cœur</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Forum</span>
+          </nav>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#fff;color:#170a33"><svg width="17" height="17" viewBox="0 0 20 20"><path d="M3 5 h14 v9 h-8 l-4 3 v-3 h-2 z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path></svg><sc-if value="{{ hasUnread }}"><span style="position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:99px;background:#e58ad8;color:#170a33;display:grid;place-items:center;font:900 10px Archivo">{{ unreadTotal }}</span></sc-if></span>
+            <span style="width:34px;height:34px;border-radius:999px;background:#f2ecff;color:#170a33;display:grid;place-items:center;font:900 12px Archivo">LG</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:350px minmax(0,1fr);height:720px">
+          <div style="border-right:1px solid rgba(255,255,255,.18);display:flex;flex-direction:column;min-height:0">
+            <div style="padding:22px 20px 14px">
+              <h4 style="margin:0;font:800 26px Archivo;letter-spacing:-.03em">Messages</h4>
+              <div style="display:flex;gap:4px;background:rgba(23,10,51,.22);border-radius:11px;padding:4px;margin-top:14px">
+                <sc-for list="{{ boxTabs }}" as="t" hint-placeholder-count="3">
+                  <sc-if value="{{ t.active }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:8px 0;border-radius:8px;background:#fff;color:#170a33;font:800 12px/1 Archivo">{{ t.label }}</button></sc-if>
+                  <sc-if value="{{ t.inactive }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:8px 0;border-radius:8px;color:#fff;font:700 12px/1 Archivo">{{ t.label }}</button></sc-if>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:1;overflow:auto;padding:0 10px 14px">
+              <sc-for list="{{ convList }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.open }}" style="all:unset;cursor:pointer;display:flex;gap:12px;width:100%;box-sizing:border-box;padding:12px 10px;border-radius:14px;background:{{ c.bg }}" style-hover="background:rgba(255,255,255,.1)">
+                  <span style="flex:0 0 auto;width:42px;height:42px;border-radius:13px;background:{{ c.color }};color:#170a33;display:grid;place-items:center;font:900 13px Archivo">{{ c.initials }}</span>
+                  <span style="flex:1;min-width:0">
+                    <span style="display:flex;align-items:center;gap:6px"><span style="font:800 14px Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span><sc-if value="{{ c.brand }}"><span style="padding:2px 5px;border-radius:4px;background:#fff;color:#170a33;font:900 8.5px/1.2 Archivo;letter-spacing:.1em">MARQUE</span></sc-if><span style="margin-left:auto;flex:0 0 auto;font:700 11px Archivo;color:rgba(255,255,255,.7)">{{ c.time }}</span></span>
+                    <span style="display:block;margin-top:3px;font:700 11px Archivo;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">↳ {{ c.postTitle }}</span>
+                    <span style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="flex:1;min-width:0;font:{{ c.previewFont }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</span><sc-if value="{{ c.unread }}"><span style="width:9px;height:9px;border-radius:99px;background:#e58ad8;flex:0 0 auto"></span></sc-if></span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;min-height:0">
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.18)">
+              <span style="width:40px;height:40px;border-radius:12px;background:{{ conv.color }};color:#170a33;display:grid;place-items:center;font:900 13px Archivo">{{ conv.initials }}</span>
+              <div style="flex:1;min-width:0"><div style="font:800 16px Archivo">{{ conv.name }}</div><div style="margin-top:3px;font:600 12px Archivo;color:rgba(255,255,255,.75)">{{ conv.sub }}</div></div>
+              <span style="padding:9px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.3);font:700 12.5px/1 Archivo">Voir le profil</span>
+              <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.3);font:900 14px Archivo">⋯</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin:14px 24px 0;padding:10px;border-radius:14px;background:#fff;color:#170a33">
+              <span style="flex:0 0 52px;height:52px;border-radius:10px;background:{{ conv.tint }};background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 7px,transparent 7px 14px)"></span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;font:700 11px Archivo;color:#6a5a92"><span style="width:7px;height:7px;border-radius:99px;background:{{ conv.dot }}"></span>{{ conv.catLabel }} · {{ conv.city }}</div>
+                <div style="margin-top:4px;font:800 14px/1.25 Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ conv.postTitle }}</div>
+              </div>
+              <span style="padding:6px 9px;border-radius:7px;background:{{ conv.statusBg }};color:{{ conv.statusFg }};font:800 11px/1 Archivo">{{ conv.status }}</span>
+              <span style="font:800 12.5px Archivo;text-decoration:underline;text-underline-offset:4px;padding:0 6px">Voir l'annonce</span>
+            </div>
+            <div style="flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ convMsgs }}" as="m" hint-placeholder-count="4">
+                <sc-if value="{{ m.isDay }}"><div style="align-self:center;margin:6px 0;font:800 10px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.65)">{{ m.text }}</div></sc-if>
+                <sc-if value="{{ m.them }}"><div style="align-self:flex-start;max-width:64%;padding:11px 14px;border-radius:16px 16px 16px 5px;background:#fff;color:#170a33;font:500 14.5px/1.5 Archivo;text-wrap:pretty">{{ m.text }}<div style="margin-top:4px;font:700 10.5px Archivo;color:#6a5a92">{{ m.time }}</div></div></sc-if>
+                <sc-if value="{{ m.mine }}"><div style="align-self:flex-end;max-width:64%;padding:11px 14px;border-radius:16px 16px 5px 16px;background:linear-gradient(118deg,#e58ad8,#9e63d6);color:#fff;font:600 14.5px/1.5 Archivo;text-wrap:pretty">{{ m.text }}<div style="margin-top:4px;font:700 10.5px Archivo;color:rgba(255,255,255,.85);text-align:right">{{ m.time }}</div></div></sc-if>
+                <sc-if value="{{ m.file }}"><div style="align-self:flex-end;display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;border-radius:14px;background:rgba(23,10,51,.3);border:1px solid rgba(255,255,255,.26)"><span style="width:38px;height:44px;border-radius:7px;background:#fff;color:#170a33;display:grid;place-items:center;font:900 9px Archivo">PDF</span><span><span style="display:block;font:800 13.5px Archivo">{{ m.text }}</span><span style="display:block;margin-top:3px;font:600 11px Archivo;color:rgba(255,255,255,.75)">{{ m.time }}</span></span></div></sc-if>
+              </sc-for>
+            </div>
+            <div style="padding:12px 24px 18px;border-top:1px solid rgba(255,255,255,.18)">
+              <div style="display:flex;align-items:center;gap:10px;padding:6px 6px 6px 8px;border-radius:15px;background:#fff">
+                <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#f2ecff;color:#170a33;font:800 18px Archivo">+</span>
+                <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="Écrire à {{ conv.name }}…" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:#170a33;font:500 15px Archivo"></input>
+                <button onClick="{{ send }}" style="all:unset;cursor:pointer;padding:11px 16px;border-radius:11px;background:#170a33;color:#fff;font:800 13px/1 Archivo">Envoyer</button>
+              </div>
+              <div style="margin-top:8px;font:600 11.5px Archivo;color:rgba(255,255,255,.72)">Ne partagez jamais de coordonnées bancaires ici. <span style="text-decoration:underline;text-underline-offset:3px">Signaler la conversation</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2b" style="flex:0 0 auto;width:860px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2b</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Premier message — depuis l'annonce</h3>
+      </div>
+      <div style="position:relative;height:720px;border-radius:18px;overflow:hidden;background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%)">
+        <div style="position:absolute;inset:0;padding:26px 32px;opacity:.5">
+          <div style="height:240px;border-radius:22px;background:#c255c4"></div>
+          <div style="margin-top:18px;height:26px;width:60%;border-radius:8px;background:rgba(255,255,255,.4)"></div>
+          <div style="margin-top:12px;height:14px;width:85%;border-radius:6px;background:rgba(255,255,255,.25)"></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(15,5,38,.55)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;background:#fff;color:#170a33;border-radius:24px;padding:24px;box-shadow:0 30px 60px -20px rgba(0,0,0,.6)">
+          <div style="display:flex;align-items:center;justify-content:space-between"><h4 style="margin:0;font:800 22px Archivo;letter-spacing:-.025em">Répondre à Maison Ourse</h4><span style="display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#f2ecff;font:900 14px Archivo">×</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px;border-radius:12px;background:#f7f3ff">
+            <span style="flex:0 0 40px;height:40px;border-radius:9px;background:#c255c4"></span>
+            <div style="min-width:0"><div style="font:700 11px Archivo;color:#6a5a92">Casting · Paris · 14 oct.</div><div style="margin-top:3px;font:800 13.5px Archivo">Recherche mannequin pour shooting lookbook AH26</div></div>
+          </div>
+          <textarea value="{{ firstDraft }}" onChange="{{ onFirst }}" placeholder="Présentez-vous en deux lignes : qui vous êtes, pourquoi ce projet." style="display:block;width:100%;box-sizing:border-box;min-height:120px;margin-top:14px;resize:none;border:1.5px solid #e4d9fb;outline:0;border-radius:13px;padding:13px 14px;color:#170a33;font:500 14.5px/1.55 Archivo"></textarea>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+            <sc-for list="{{ quick }}" as="q" hint-placeholder-count="3">
+              <button onClick="{{ q.add }}" style="all:unset;cursor:pointer;padding:7px 11px;border-radius:999px;background:#f2ecff;font:700 12px/1 Archivo" style-hover="background:#e4d9fb">+ {{ q.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border-radius:12px;border:1.5px dashed #d6c8f5">
+            <span style="width:30px;height:34px;border-radius:6px;background:#170a33;color:#fff;display:grid;place-items:center;font:900 8px Archivo">PDF</span>
+            <span style="flex:1;font:700 13px Archivo">Joindre un book ou un portfolio</span>
+            <span style="font:600 11.5px Archivo;color:#6a5a92">10 Mo max</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:18px">
+            <span style="flex:1;font:600 11.5px/1.5 Archivo;color:#6a5a92">Maison Ourse verra votre profil et vos votes reçus.</span>
+            <button onClick="{{ sendFirst }}" style="all:unset;cursor:pointer;padding:13px 20px;border-radius:13px;background:linear-gradient(118deg,#e58ad8,#7b52e8);color:#fff;font:900 14px/1 Archivo">{{ firstLabel }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2c" style="flex:0 0 auto;width:470px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2c</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Mobile — boîte</h3>
+      </div>
+      <div style="width:390px;height:844px;margin:0 auto;border-radius:48px;border:10px solid #0a0418;overflow:hidden;position:relative;background:linear-gradient(170deg,#6a3fc9 0%,#5a2fb3 50%,#8a45c8 100%)">
+        <div style="display:flex;justify-content:space-between;padding:14px 26px 0;font:800 14px Archivo"><span>9:41</span><span>●●●</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 6px">
+          <h4 style="margin:0;font:800 30px Archivo;letter-spacing:-.035em">Messages</h4>
+          <span style="width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.14);font:800 16px Archivo">≡</span>
+        </div>
+        <div style="display:flex;gap:4px;background:rgba(23,10,51,.22);border-radius:12px;padding:4px;margin:10px 18px 8px">
+          <sc-for list="{{ boxTabs }}" as="t" hint-placeholder-count="3">
+            <sc-if value="{{ t.active }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px 0;border-radius:9px;background:#fff;color:#170a33;font:800 13px/1 Archivo">{{ t.label }}</button></sc-if>
+            <sc-if value="{{ t.inactive }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:12px 0;border-radius:9px;color:#fff;font:700 13px/1 Archivo">{{ t.label }}</button></sc-if>
+          </sc-for>
+        </div>
+        <div style="padding:0 8px">
+          <sc-for list="{{ convList }}" as="c" hint-placeholder-count="4">
+            <button onClick="{{ c.open }}" style="all:unset;cursor:pointer;display:flex;gap:12px;width:100%;box-sizing:border-box;padding:13px 10px;border-radius:14px">
+              <span style="flex:0 0 auto;width:48px;height:48px;border-radius:15px;background:{{ c.color }};color:#170a33;display:grid;place-items:center;font:900 14px Archivo">{{ c.initials }}</span>
+              <span style="flex:1;min-width:0">
+                <span style="display:flex;align-items:center;gap:6px"><span style="font:800 15px Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span><span style="margin-left:auto;flex:0 0 auto;font:700 11.5px Archivo;color:rgba(255,255,255,.72)">{{ c.time }}</span></span>
+                <span style="display:block;margin-top:3px;font:700 11.5px Archivo;color:rgba(255,255,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">↳ {{ c.postTitle }}</span>
+                <span style="display:flex;align-items:center;gap:8px;margin-top:4px"><span style="flex:1;min-width:0;font:{{ c.previewFont }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.preview }}</span><sc-if value="{{ c.unread }}"><span style="width:10px;height:10px;border-radius:99px;background:#e58ad8;flex:0 0 auto"></span></sc-if></span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:10px 12px 26px;background:rgba(23,10,51,.55);border-top:1px solid rgba(255,255,255,.14)">
+          <span style="display:grid;place-items:center;min-width:64px;height:44px;font:700 11.5px Archivo;color:rgba(255,255,255,.7)">Forum</span>
+          <span style="display:grid;place-items:center;min-width:64px;height:44px;font:700 11.5px Archivo;color:rgba(255,255,255,.7)">Publier</span>
+          <span style="display:grid;place-items:center;min-width:64px;height:44px;font:800 11.5px Archivo;color:#fff;box-shadow:inset 0 -2.5px 0 #fff">Messages {{ unreadTotal }}</span>
+          <span style="display:grid;place-items:center;min-width:64px;height:44px;font:700 11.5px Archivo;color:rgba(255,255,255,.7)">Profil</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="2d" style="flex:0 0 auto;width:470px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">2d</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Mobile — conversation</h3>
+      </div>
+      <div style="width:390px;height:844px;margin:0 auto;border-radius:48px;border:10px solid #0a0418;overflow:hidden;position:relative;display:flex;flex-direction:column;background:linear-gradient(170deg,#6a3fc9 0%,#5a2fb3 50%,#8a45c8 100%)">
+        <div style="display:flex;justify-content:space-between;padding:14px 26px 0;font:800 14px Archivo"><span>9:41</span><span>●●●</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px 10px 8px;border-bottom:1px solid rgba(255,255,255,.18)">
+          <span style="display:grid;place-items:center;width:44px;height:44px;font:800 20px Archivo">‹</span>
+          <span style="width:38px;height:38px;border-radius:12px;background:{{ conv.color }};color:#170a33;display:grid;place-items:center;font:900 12px Archivo">{{ conv.initials }}</span>
+          <div style="flex:1;min-width:0"><div style="font:800 15px Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ conv.name }}</div><div style="margin-top:2px;font:600 11.5px Archivo;color:rgba(255,255,255,.75)">{{ conv.subShort }}</div></div>
+          <span style="display:grid;place-items:center;width:44px;height:44px;font:900 16px Archivo">⋯</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 12px 0;padding:8px 10px 8px 8px;border-radius:13px;background:#fff;color:#170a33">
+          <span style="flex:0 0 38px;height:38px;border-radius:9px;background:{{ conv.tint }}"></span>
+          <div style="flex:1;min-width:0"><div style="font:700 10.5px Archivo;color:#6a5a92">{{ conv.catLabel }} · {{ conv.status }}</div><div style="margin-top:2px;font:800 13px Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ conv.postTitle }}</div></div>
+          <span style="font:900 14px Archivo;padding:0 4px">›</span>
+        </div>
+        <div style="flex:1;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:7px">
+          <sc-for list="{{ convMsgs }}" as="m" hint-placeholder-count="4">
+            <sc-if value="{{ m.isDay }}"><div style="align-self:center;margin:4px 0;font:800 9.5px Archivo;letter-spacing:.18em;color:rgba(255,255,255,.65)">{{ m.text }}</div></sc-if>
+            <sc-if value="{{ m.them }}"><div style="align-self:flex-start;max-width:80%;padding:10px 13px;border-radius:16px 16px 16px 5px;background:#fff;color:#170a33;font:500 14.5px/1.45 Archivo">{{ m.text }}</div></sc-if>
+            <sc-if value="{{ m.mine }}"><div style="align-self:flex-end;max-width:80%;padding:10px 13px;border-radius:16px 16px 5px 16px;background:linear-gradient(118deg,#e58ad8,#9e63d6);color:#fff;font:600 14.5px/1.45 Archivo">{{ m.text }}</div></sc-if>
+            <sc-if value="{{ m.file }}"><div style="align-self:flex-end;display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;border-radius:13px;background:rgba(23,10,51,.3);border:1px solid rgba(255,255,255,.26)"><span style="width:32px;height:38px;border-radius:6px;background:#fff;color:#170a33;display:grid;place-items:center;font:900 8px Archivo">PDF</span><span style="font:800 12.5px Archivo">{{ m.text }}</span></div></sc-if>
+          </sc-for>
+        </div>
+        <div style="padding:8px 10px 28px;background:rgba(23,10,51,.4);border-top:1px solid rgba(255,255,255,.14)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:0 0 44px;height:44px;display:grid;place-items:center;border-radius:13px;background:rgba(255,255,255,.16);font:800 20px Archivo">+</span>
+            <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="Message" style="flex:1;min-width:0;height:44px;box-sizing:border-box;border:0;outline:0;border-radius:13px;padding:0 14px;background:#fff;color:#170a33;font:500 16px Archivo"></input>
+            <button onClick="{{ send }}" style="all:unset;cursor:pointer;flex:0 0 44px;height:44px;display:grid;place-items:center;border-radius:13px;background:#fff;color:#170a33"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 13 V3 M3.5 7.5 L8 3 L12.5 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="width:1270px;padding:52px 44px 72px;box-sizing:border-box;background:radial-gradient(900px 520px at 6% -8%, rgba(232,111,216,.2), transparent 60%), linear-gradient(168deg,#1b0a44 0%,#170a33 48%,#0f0526 100%);color:#fff;border-bottom:1px solid rgba(255,255,255,.15)">
+  <div style="max-width:980px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 1 · FORUM · LE FIL RETENU</div>
+    <h1 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 14px">Le forum : des annonces qui se votent</h1>
+    <p style="font:500 15.5px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0;text-wrap:pretty">Membres et marques publient directement. Un seul vote, positif : on fait monter, on ne fait pas couler. Les votes sont partagés : votez ici, le compteur bouge sur tous les écrans du parcours, en dessous.</p>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;gap:26px">
+
+    <div id="1a" style="flex:0 0 auto;width:1180px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px;flex:0 0 auto">1a</span>
+        <div>
+          <h2 style="font:800 25px Archivo;letter-spacing:-.03em;margin:0 0 6px">Le babillard — une grille de cartes</h2>
+          <p style="font:500 13.5px/1.6 Archivo;color:rgba(255,255,255,.72);margin:0;max-width:880px;text-wrap:pretty">L'image d'abord, comme l'annuaire. Les annonces sans photo deviennent des cartes-citations pour ne pas avoir l'air vides. Tri, ville et rubrique sur deux lignes, rien de plus.</p>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 32px;border-bottom:1px solid rgba(255,255,255,.18)">
+          <span style="font:900 17px Archivo;letter-spacing:.14em">NEWAVE</span>
+          <nav style="display:flex;gap:2px">
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Marques</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Pièces</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Posts</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:rgba(255,255,255,.72)">Coups de cœur</span>
+            <span style="padding:9px 14px;border-radius:999px;font:700 13px/1 Archivo;color:#fff;background-image:linear-gradient(118deg,rgba(232,111,216,.58) 0%,rgba(180,122,234,.52) 52%,rgba(90,114,224,.5) 100%)">Forum</span>
+          </nav>
+          <span style="width:34px;height:34px;border-radius:999px;background:#f2ecff;color:#170a33;display:grid;place-items:center;font:900 12px Archivo">LG</span>
+        </div>
+
+        <div style="padding:34px 32px 36px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px">
+            <div style="max-width:620px">
+              <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.72);margin-bottom:8px">LA COMMUNAUTÉ</div>
+              <h3 style="font:800 40px Archivo;letter-spacing:-.035em;margin:0 0 8px">Le forum</h3>
+              <p style="font:500 14px/1.6 Archivo;color:rgba(255,255,255,.84);margin:0;text-wrap:pretty">Castings, collabs, pop-ups, idées pour le site. Les votes font l'ordre, rien d'autre.</p>
+            </div>
+            <button onClick="{{ goCompose }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:13px;background:#fff;color:#170a33;font:900 13px/1 Archivo;box-shadow:0 6px 20px -6px rgba(23,10,51,.5)">+ Publier une annonce</button>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.28)">
+            <div style="display:flex;gap:4px;background:rgba(23,10,51,.22);border-radius:12px;padding:4px">
+              <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="3">
+                <sc-if value="{{ s.active }}"><button onClick="{{ s.pick }}" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:9px;background:#fff;color:#170a33;font:800 12.5px/1 Archivo">{{ s.label }}</button></sc-if>
+                <sc-if value="{{ s.inactive }}"><button onClick="{{ s.pick }}" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:9px;color:#fff;font:700 12.5px/1 Archivo" style-hover="background:rgba(255,255,255,.12)">{{ s.label }}</button></sc-if>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font:900 9.5px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.72);margin-right:4px">VILLE</span>
+              <sc-for list="{{ cities }}" as="c" hint-placeholder-count="6">
+                <sc-if value="{{ c.active }}"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;padding:6px 11px 7px;border-radius:999px;background:#fff;color:#170a33;font:800 12px/1 Archivo">{{ c.label }}</button></sc-if>
+                <sc-if value="{{ c.inactive }}"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;padding:6px 11px 7px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:700 12px/1 Archivo" style-hover="background:rgba(255,255,255,.22)">{{ c.label }}</button></sc-if>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 0 22px">
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="7">
+              <sc-if value="{{ c.active }}"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 13px 8px;border-radius:999px;background:#fff;color:#170a33;font:800 13px/1 Archivo"><span style="width:8px;height:8px;border-radius:99px;background:{{ c.dot }}"></span>{{ c.label }}</button></sc-if>
+              <sc-if value="{{ c.inactive }}"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 13px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.3);color:#fff;font:700 13px/1 Archivo" style-hover="background:rgba(255,255,255,.12)"><span style="width:8px;height:8px;border-radius:99px;background:{{ c.dot }}"></span>{{ c.label }}</button></sc-if>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ feedAEmpty }}">
+            <div style="border:1px dashed rgba(255,255,255,.4);border-radius:18px;padding:40px;text-align:center;font:600 14px/1.6 Archivo;color:rgba(255,255,255,.85)">Rien dans cette ville pour cette rubrique. Soyez le premier à publier.</div>
+          </sc-if>
+          <div style="columns:3;column-gap:18px">
+            <sc-for list="{{ feedA }}" as="p" hint-placeholder-count="6">
+              <div style="break-inside:avoid;margin-bottom:18px;background:#fff;border-radius:20px;overflow:hidden;color:#170a33;box-shadow:0 10px 30px -14px rgba(23,10,51,.55)">
+                <sc-if value="{{ p.hasImg }}">
+                  <div style="position:relative;aspect-ratio:4/3;background:{{ p.tint }};background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 10px,transparent 10px 20px)">
+                    <span style="position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px 7px;border-radius:999px;background:#fff;font:800 11px/1 Archivo;color:#170a33"><span style="width:7px;height:7px;border-radius:99px;background:{{ p.dot }}"></span>{{ p.catLabel }}</span>
+                    <span style="position:absolute;left:12px;bottom:10px;font:600 10.5px/1 ui-monospace,monospace;color:rgba(255,255,255,.9)">{{ p.img }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ p.noImg }}">
+                  <div style="padding:16px 16px 0"><span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px 7px;border-radius:999px;background:#f2ecff;font:800 11px/1 Archivo;color:#170a33"><span style="width:7px;height:7px;border-radius:99px;background:{{ p.dot }}"></span>{{ p.catLabel }}</span></div>
+                </sc-if>
+                <div style="padding:14px 16px 16px">
+                  <h4 style="margin:0;font:800 17px/1.25 Archivo;letter-spacing:-.02em;text-wrap:pretty">{{ p.title }}</h4>
+                  <sc-if value="{{ p.noImg }}"><p style="margin:8px 0 0;font:500 13.5px/1.55 Archivo;color:#4a3d6e;text-wrap:pretty">{{ p.excerpt }}</p></sc-if>
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;font:600 12px/1.3 Archivo;color:#6a5a92">
+                    <span style="font-weight:800;color:#170a33">{{ p.author }}</span>
+                    <sc-if value="{{ p.brand }}"><span style="padding:3px 6px;border-radius:5px;background:#170a33;color:#fff;font:900 9px/1 Archivo;letter-spacing:.1em">MARQUE</span></sc-if>
+                    <span>· {{ p.city }} · {{ p.ago }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+                    <sc-if value="{{ p.voted }}"><button onClick="{{ p.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:10px;background:#170a33;color:#fff;font:800 12.5px/1 Archivo"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="currentColor"></path></svg>{{ p.n }}</button></sc-if>
+                    <sc-if value="{{ p.unvoted }}"><button onClick="{{ p.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:10px;background:#f2ecff;color:#170a33;font:800 12.5px/1 Archivo" style-hover="background:#e4d9fb"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>{{ p.n }}</button></sc-if>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font:700 12.5px/1 Archivo;color:#6a5a92"><svg width="13" height="13" viewBox="0 0 14 14"><path d="M2 3.5 h10 v6 h-5 l-3 2.5 v-2.5 h-2 z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"></path></svg>{{ p.comments }}</span>
+                    <sc-if value="{{ p.hasPaid }}"><span style="margin-left:auto;padding:5px 8px;border-radius:7px;background:#e7f5ec;color:#1d7a4f;font:800 11px/1 Archivo">{{ p.paid }}</span></sc-if>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="width:3700px;padding:52px 44px 80px;box-sizing:border-box;background:linear-gradient(168deg,#170a33 0%,#0f0526 100%);color:#fff">
+  <div style="max-width:980px;margin-bottom:34px">
+    <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.6);margin-bottom:10px">TOUR 1 · LE PARCOURS, SUR LA BASE DE <a href="#1a">1a</a></div>
+    <h2 style="font:800 34px Archivo;letter-spacing:-.035em;margin:0 0 12px">Lire, répondre, publier, se faire connaître</h2>
+    <p style="font:500 15px/1.65 Archivo;color:rgba(255,255,255,.78);margin:0;text-wrap:pretty">Répondre à une annonce ouvre un message privé : les commentaires publics servent aux questions, pas aux numéros de téléphone. La réputation d'un membre, c'est la somme des votes reçus — visible, jamais classée.</p>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;gap:26px">
+
+    <div id="1d" style="flex:0 0 auto;width:1180px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">1d</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Page d'une annonce + commentaires</h3>
+      </div>
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:26px 32px 34px">
+        <span style="font:700 13px Archivo;color:rgba(255,255,255,.85)">← Forum · Casting</span>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;margin-top:18px">
+          <div>
+            <div style="background:#fff;border-radius:22px;overflow:hidden;color:#170a33">
+              <div style="aspect-ratio:16/8;background:{{ d.tint }};background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 12px,transparent 12px 24px);position:relative"><span style="position:absolute;left:16px;bottom:14px;font:600 11px/1 ui-monospace,monospace;color:rgba(255,255,255,.9)">{{ d.img }}</span></div>
+              <div style="padding:26px 28px 28px">
+                <div style="display:flex;align-items:center;gap:7px;font:700 12px/1 Archivo;color:#6a5a92"><span style="width:8px;height:8px;border-radius:99px;background:{{ d.dot }}"></span><strong style="color:#170a33">{{ d.catLabel }}</strong> · {{ d.city }} · {{ d.ago }}</div>
+                <h4 style="margin:12px 0 0;font:800 32px/1.1 Archivo;letter-spacing:-.035em;text-wrap:pretty">{{ d.title }}</h4>
+                <p style="margin:16px 0 0;font:500 15px/1.7 Archivo;color:#33285a;text-wrap:pretty">On shoote le lookbook automne-hiver dans notre atelier du 11e. On cherche deux profils, femme et homme, à l'aise avec la maille et le mouvement. Pas besoin d'agence ni d'expérience, on veut des gens qui ressemblent à ceux qui portent nos pièces.</p>
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#e4d9fb;border-radius:14px;overflow:hidden;margin-top:20px">
+                  <div style="background:#f7f3ff;padding:12px 14px"><div style="font:900 9px Archivo;letter-spacing:.2em;color:#6a5a92">QUAND</div><div style="margin-top:6px;font:800 14px Archivo">14 oct., 1 journée</div></div>
+                  <div style="background:#f7f3ff;padding:12px 14px"><div style="font:900 9px Archivo;letter-spacing:.2em;color:#6a5a92">OÙ</div><div style="margin-top:6px;font:800 14px Archivo">Paris 11e</div></div>
+                  <div style="background:#f7f3ff;padding:12px 14px"><div style="font:900 9px Archivo;letter-spacing:.2em;color:#6a5a92">RÉMUNÉRATION</div><div style="margin-top:6px;font:800 14px Archivo;color:#1d7a4f">Rémunéré</div></div>
+                  <div style="background:#f7f3ff;padding:12px 14px"><div style="font:900 9px Archivo;letter-spacing:.2em;color:#6a5a92">PROFILS</div><div style="margin-top:6px;font:800 14px Archivo">2 · F et H</div></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:22px">
+                  <sc-if value="{{ d.voted }}"><button onClick="{{ d.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:13px 16px;border-radius:13px;background:#170a33;color:#fff;font:800 14px/1 Archivo"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="currentColor"></path></svg>{{ d.n }}</button></sc-if>
+                  <sc-if value="{{ d.unvoted }}"><button onClick="{{ d.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:13px 16px;border-radius:13px;background:#f2ecff;color:#170a33;font:800 14px/1 Archivo"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>{{ d.n }}</button></sc-if>
+                  <span style="padding:13px 20px;border-radius:13px;background:linear-gradient(118deg,#e58ad8,#7b52e8);color:#fff;font:900 14px/1 Archivo">Répondre en privé</span>
+                  <span style="padding:13px 16px;border-radius:13px;border:1px solid #e4d9fb;font:700 13px/1 Archivo">Partager</span>
+                  <span style="margin-left:auto;font:600 12px Archivo;color:#6a5a92">Signaler</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:26px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+                <h4 style="margin:0;font:800 21px Archivo;letter-spacing:-.025em">{{ d.comments }} réponses</h4>
+                <span style="font:700 12.5px Archivo;color:rgba(255,255,255,.8)">Les plus votées ▾</span>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center;background:rgba(23,10,51,.24);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px 14px;margin-bottom:16px">
+                <span style="width:30px;height:30px;flex:0 0 auto;border-radius:99px;background:#f2ecff;color:#170a33;display:grid;place-items:center;font:900 11px Archivo">LG</span>
+                <span style="flex:1;font:500 14px Archivo;color:rgba(255,255,255,.7)">Poser une question publique…</span>
+                <span style="font:800 12px Archivo;padding:8px 12px;border-radius:9px;background:#fff;color:#170a33">Envoyer</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ comments }}" as="c" hint-placeholder-count="3">
+                  <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:16px 18px">
+                    <div style="display:flex;align-items:center;gap:8px;font:600 12.5px Archivo;color:rgba(255,255,255,.75)"><strong style="color:#fff;font-weight:800">{{ c.author }}</strong><sc-if value="{{ c.brand }}"><span style="padding:3px 6px;border-radius:5px;background:#fff;color:#170a33;font:900 9px/1 Archivo;letter-spacing:.1em">MARQUE</span></sc-if>· {{ c.ago }}</div>
+                    <p style="margin:8px 0 0;font:500 14.5px/1.6 Archivo;color:#fff;text-wrap:pretty">{{ c.text }}</p>
+                    <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+                      <sc-if value="{{ c.voted }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;background:#fff;color:#170a33;font:800 12px/1 Archivo"><svg width="9" height="9" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="currentColor"></path></svg>{{ c.n }}</button></sc-if>
+                      <sc-if value="{{ c.unvoted }}"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font:800 12px/1 Archivo"><svg width="9" height="9" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>{{ c.n }}</button></sc-if>
+                      <span style="font:700 12px Archivo;color:rgba(255,255,255,.75)">Répondre</span>
+                    </div>
+                    <sc-if value="{{ c.hasReply }}">
+                      <div style="margin-top:14px;margin-left:6px;padding-left:16px;border-left:2px solid rgba(255,255,255,.28)">
+                        <div style="display:flex;align-items:center;gap:8px;font:600 12.5px Archivo;color:rgba(255,255,255,.75)"><strong style="color:#fff;font-weight:800">{{ c.reply.author }}</strong><span style="padding:3px 6px;border-radius:5px;background:#fff;color:#170a33;font:900 9px/1 Archivo;letter-spacing:.1em">AUTEUR</span>· {{ c.reply.ago }}</div>
+                        <p style="margin:6px 0 0;font:500 14px/1.6 Archivo;color:#fff">{{ c.reply.text }}</p>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <aside style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:#fff;color:#170a33;border-radius:18px;padding:18px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:46px;height:46px;border-radius:14px;background:#b49bf0;display:grid;place-items:center;font:900 15px Archivo;color:#170a33">MO</span>
+                <div><div style="font:800 16px Archivo">Maison Ourse</div><div style="margin-top:3px;font:600 11px Archivo;letter-spacing:.05em;color:#6a5a92">MARQUE VÉRIFIÉE · PARIS</div></div>
+              </div>
+              <div style="display:flex;gap:1px;background:#e4d9fb;border-radius:12px;overflow:hidden;margin-top:14px">
+                <div style="flex:1;background:#f7f3ff;padding:10px;text-align:center"><div style="font:800 18px Archivo">1 942</div><div style="font:700 10.5px Archivo;color:#6a5a92">votes reçus</div></div>
+                <div style="flex:1;background:#f7f3ff;padding:10px;text-align:center"><div style="font:800 18px Archivo">7</div><div style="font:700 10.5px Archivo;color:#6a5a92">annonces</div></div>
+              </div>
+              <div style="margin-top:12px;text-align:center;font:800 12.5px Archivo;padding:10px;border-radius:10px;border:1px solid #e4d9fb">Voir la fiche marque</div>
+            </div>
+            <div style="background:rgba(23,10,51,.24);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:18px">
+              <div style="font:900 9.5px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.72);margin-bottom:10px">AUTRES CASTINGS</div>
+              <sc-for list="{{ similar }}" as="p" hint-placeholder-count="2">
+                <div style="padding:10px 0;border-top:1px solid rgba(255,255,255,.16)"><div style="font:800 14px/1.3 Archivo">{{ p.title }}</div><div style="margin-top:5px;font:600 11.5px Archivo;color:rgba(255,255,255,.72)">▲ {{ p.n }} · {{ p.city }}</div></div>
+              </sc-for>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div id="1e" style="flex:0 0 auto;width:1180px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">1e</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Création d'annonce — l'aperçu se construit en tapant</h3>
+      </div>
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:30px 32px 34px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:32px">
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div>
+            <div style="font:900 9.5px Archivo;letter-spacing:.24em;color:rgba(255,255,255,.72);margin-bottom:8px">NOUVELLE ANNONCE</div>
+            <h4 style="margin:0;font:800 34px Archivo;letter-spacing:-.035em">Qu'est-ce que vous cherchez ?</h4>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <sc-for list="{{ types }}" as="t" hint-placeholder-count="6">
+              <sc-if value="{{ t.active }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:14px;background:#fff;color:#170a33;box-shadow:0 0 0 2px #fff"><span style="display:flex;align-items:center;gap:8px;font:800 14px Archivo"><span style="width:9px;height:9px;border-radius:99px;background:{{ t.dot }}"></span>{{ t.label }}</span><span style="font:500 12px/1.4 Archivo;color:#6a5a92">{{ t.hint }}</span></button></sc-if>
+              <sc-if value="{{ t.inactive }}"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:14px;background:rgba(23,10,51,.2);border:1px solid rgba(255,255,255,.26);color:#fff" style-hover="background:rgba(255,255,255,.12)"><span style="display:flex;align-items:center;gap:8px;font:800 14px Archivo"><span style="width:9px;height:9px;border-radius:99px;background:{{ t.dot }}"></span>{{ t.label }}</span><span style="font:500 12px/1.4 Archivo;color:rgba(255,255,255,.75)">{{ t.hint }}</span></button></sc-if>
+            </sc-for>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.8);margin-bottom:8px"><span>TITRE</span><span style="letter-spacing:.05em">{{ cTitleLen }} / 90</span></div>
+            <input value="{{ cTitle }}" onChange="{{ onTitle }}" maxLength="90" placeholder="Ex. Recherche mannequin pour shooting à Paris" style="width:100%;box-sizing:border-box;border:0;outline:0;border-radius:13px;padding:15px 16px;background:#fff;color:#170a33;font:700 16px Archivo"></input>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+            <div>
+              <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.8);margin-bottom:8px">VILLE</div>
+              <select value="{{ cCity }}" onChange="{{ onCity }}" style="width:100%;border:0;outline:0;border-radius:13px;padding:14px 14px;background:#fff;color:#170a33;font:700 15px Archivo">
+                <option>Paris</option><option>Lyon</option><option>Marseille</option><option>Bordeaux</option><option>Nantes</option><option>En ligne</option>
+              </select>
+            </div>
+            <div>
+              <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.8);margin-bottom:8px">PHOTOS <span style="letter-spacing:.05em;color:rgba(255,255,255,.6)">· FACULTATIF</span></div>
+              <div style="border:1.5px dashed rgba(255,255,255,.5);border-radius:13px;padding:13px 14px;font:700 13.5px Archivo;color:rgba(255,255,255,.88);text-align:center">Glisser jusqu'à 4 images</div>
+            </div>
+          </div>
+          <div>
+            <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.8);margin-bottom:8px">DESCRIPTION</div>
+            <textarea placeholder="Le projet, le profil recherché, ce que vous proposez en échange." style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;border:0;outline:0;border-radius:13px;padding:14px 16px;background:#fff;color:#170a33;font:500 14.5px/1.6 Archivo"></textarea>
+          </div>
+          <sc-if value="{{ hasDetails }}">
+            <div style="background:rgba(23,10,51,.22);border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:16px">
+              <div style="font:900 10px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.8);margin-bottom:12px">DÉTAILS · {{ cTypeLabelUp }}</div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+                <sc-for list="{{ detailFields }}" as="f" hint-placeholder-count="3">
+                  <div><div style="font:700 12px Archivo;color:rgba(255,255,255,.85);margin-bottom:6px">{{ f.label }}</div><div style="border-radius:11px;padding:11px 12px;background:#fff;color:#9a8fb8;font:600 13.5px Archivo">{{ f.ph }}</div></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="position:sticky;top:0;align-self:start">
+          <div style="font:900 9.5px Archivo;letter-spacing:.22em;color:rgba(255,255,255,.72);margin-bottom:10px">APERÇU DANS LE FIL</div>
+          <div style="background:#fff;border-radius:20px;overflow:hidden;color:#170a33;box-shadow:0 14px 34px -14px rgba(23,10,51,.6)">
+            <div style="position:relative;aspect-ratio:4/3;background:#9e63d6;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 10px,transparent 10px 20px)">
+              <span style="position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px 7px;border-radius:999px;background:#fff;font:800 11px/1 Archivo"><span style="width:7px;height:7px;border-radius:99px;background:{{ cDot }}"></span>{{ cTypeLabel }}</span>
+            </div>
+            <div style="padding:14px 16px 16px">
+              <h4 style="margin:0;font:800 17px/1.25 Archivo;letter-spacing:-.02em;text-wrap:pretty">{{ cPreviewTitle }}</h4>
+              <div style="margin-top:10px;font:600 12px Archivo;color:#6a5a92"><strong style="color:#170a33">@lea.grain</strong> · {{ cCity }} · à l'instant</div>
+              <div style="display:flex;gap:8px;margin-top:14px"><span style="display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:10px;background:#f2ecff;font:800 12.5px/1 Archivo">▲ 0</span></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+            <span style="text-align:center;padding:14px;border-radius:13px;background:#fff;color:#170a33;font:900 14px/1 Archivo">Publier</span>
+            <span style="text-align:center;font:600 12px/1.5 Archivo;color:rgba(255,255,255,.78)">Publié tout de suite. Une annonce signalée trois fois est masquée en attendant qu'on la relise.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1f" style="flex:0 0 auto;width:880px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">1f</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Profil membre — la réputation</h3>
+      </div>
+      <div style="background:linear-gradient(160deg,#6a3fc9 0%,#5a2fb3 45%,#8a45c8 100%);border-radius:18px;padding:32px">
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="width:92px;height:92px;border-radius:28px;background:#8fa8f0;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 8px,transparent 8px 16px);flex:0 0 auto"></div>
+          <div style="flex:1">
+            <h4 style="margin:0;font:800 32px Archivo;letter-spacing:-.035em">Léa Grain</h4>
+            <div style="margin-top:6px;font:700 13.5px Archivo;color:rgba(255,255,255,.85)">@lea.grain · Photographe argentique · Lyon</div>
+            <div style="margin-top:4px;font:500 12.5px Archivo;color:rgba(255,255,255,.7)">Membre depuis mars 2026</div>
+          </div>
+          <span style="padding:12px 18px;border-radius:13px;background:#fff;color:#170a33;font:900 13px/1 Archivo">Écrire</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.22);border-radius:16px;overflow:hidden;margin-top:26px">
+          <div style="background:rgba(23,10,51,.28);padding:16px 18px"><div style="font:800 28px Archivo;letter-spacing:-.03em">{{ lea.votes }}</div><div style="margin-top:4px;font:700 12px Archivo;color:rgba(255,255,255,.78)">votes reçus</div></div>
+          <div style="background:rgba(23,10,51,.28);padding:16px 18px"><div style="font:800 28px Archivo;letter-spacing:-.03em">{{ lea.count }}</div><div style="margin-top:4px;font:700 12px Archivo;color:rgba(255,255,255,.78)">annonces</div></div>
+          <div style="background:rgba(23,10,51,.28);padding:16px 18px"><div style="font:800 28px Archivo;letter-spacing:-.03em">46</div><div style="margin-top:4px;font:700 12px Archivo;color:rgba(255,255,255,.78)">réponses utiles</div></div>
+        </div>
+        <div style="display:flex;gap:18px;margin:26px 0 16px;border-bottom:1px solid rgba(255,255,255,.28)">
+          <span style="padding:0 0 10px;font:800 14px Archivo;box-shadow:inset 0 -2.5px 0 #fff">Annonces</span>
+          <span style="padding:0 0 10px;font:700 14px Archivo;color:rgba(255,255,255,.72)">Réponses</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
+          <sc-for list="{{ lea.posts }}" as="p" hint-placeholder-count="3">
+            <div style="background:#fff;border-radius:16px;overflow:hidden;color:#170a33">
+              <div style="aspect-ratio:4/3;background:{{ p.tint }};background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 10px,transparent 10px 20px)"></div>
+              <div style="padding:12px 14px 14px"><div style="font:800 14.5px/1.3 Archivo;text-wrap:pretty">{{ p.title }}</div><div style="margin-top:8px;font:700 11.5px Archivo;color:#6a5a92">▲ {{ p.n }} · {{ p.ago }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div id="1g" style="flex:0 0 auto;width:470px;border:1px solid rgba(255,255,255,.15);border-radius:26px;padding:24px;background:rgba(255,255,255,.045)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <span style="font:900 11px Archivo;letter-spacing:.1em;background:#fff;color:#170a33;border-radius:999px;padding:6px 12px 7px">1g</span>
+        <h3 style="font:800 22px Archivo;letter-spacing:-.03em;margin:0">Mobile</h3>
+      </div>
+      <div style="width:390px;height:844px;margin:0 auto;border-radius:48px;border:10px solid #0a0418;overflow:hidden;position:relative;background:linear-gradient(170deg,#6a3fc9 0%,#5a2fb3 50%,#8a45c8 100%)">
+        <div style="display:flex;justify-content:space-between;padding:14px 26px 0;font:800 14px Archivo"><span>9:41</span><span>●●●</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px">
+          <span style="font:900 15px Archivo;letter-spacing:.14em">NEWAVE</span>
+          <span style="width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.14);font:800 16px Archivo">≡</span>
+        </div>
+        <div style="padding:4px 18px 0">
+          <h4 style="margin:0;font:800 30px Archivo;letter-spacing:-.035em">Le forum</h4>
+          <div style="display:flex;gap:4px;background:rgba(23,10,51,.22);border-radius:12px;padding:4px;margin-top:14px">
+            <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="3">
+              <sc-if value="{{ s.active }}"><button onClick="{{ s.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:11px 0;border-radius:9px;background:#fff;color:#170a33;font:800 13px/1 Archivo">{{ s.label }}</button></sc-if>
+              <sc-if value="{{ s.inactive }}"><button onClick="{{ s.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;padding:11px 0;border-radius:9px;color:#fff;font:700 13px/1 Archivo">{{ s.label }}</button></sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;height:46px;margin-top:12px;padding:0 14px;border-radius:13px;background:#fff;color:#170a33">
+            <svg width="16" height="16" viewBox="0 0 20 20" style="flex:0 0 auto"><circle cx="8.6" cy="8.6" r="6.1" fill="none" stroke="#6a5a92" stroke-width="1.9"></circle><path d="M13.2 13.2 L18 18" stroke="#6a5a92" stroke-width="1.9" stroke-linecap="round"></path></svg>
+            <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Mannequin, pop-up, Lyon…" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:#170a33;font:600 15px Archivo"></input>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:8px">
+            <label style="position:relative;display:flex;flex-direction:column;justify-content:center;height:52px;padding:0 34px 0 14px;border-radius:13px;background:rgba(23,10,51,.24);border:1px solid rgba(255,255,255,.26)">
+              <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.7)">VILLE</span>
+              <span style="margin-top:3px;font:800 14px/1.1 Archivo;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ cityLabel }}</span>
+              <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font:800 12px Archivo">▾</span>
+              <select value="{{ cityVal }}" onChange="{{ onCitySel }}" style="position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px">
+                <sc-for list="{{ cities }}" as="c" hint-placeholder-count="7"><option value="{{ c.label }}">{{ c.label }}</option></sc-for>
+              </select>
+            </label>
+            <label style="position:relative;display:flex;flex-direction:column;justify-content:center;height:52px;padding:0 34px 0 14px;border-radius:13px;background:rgba(23,10,51,.24);border:1px solid rgba(255,255,255,.26)">
+              <span style="font:900 9px Archivo;letter-spacing:.2em;color:rgba(255,255,255,.7)">RUBRIQUE</span>
+              <span style="margin-top:3px;display:flex;align-items:center;gap:6px;font:800 14px/1.1 Archivo;white-space:nowrap;overflow:hidden"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:99px;background:{{ catDot }}"></span><span style="overflow:hidden;text-overflow:ellipsis">{{ catLabel }}</span></span>
+              <span style="position:absolute;right:13px;top:50%;transform:translateY(-50%);font:800 12px Archivo">▾</span>
+              <select value="{{ catVal }}" onChange="{{ onCatSel }}" style="position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px">
+                <sc-for list="{{ cats }}" as="c" hint-placeholder-count="7"><option value="{{ c.key }}">{{ c.label }}</option></sc-for>
+              </select>
+            </label>
+          </div>
+          <sc-if value="{{ mobileEmpty }}"><div style="margin-top:14px;border:1px dashed rgba(255,255,255,.45);border-radius:16px;padding:22px;text-align:center;font:600 13.5px/1.5 Archivo">Aucune annonce ne correspond.</div></sc-if>
+        </div>
+        <div style="padding:14px 18px 120px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ feedMobile }}" as="p" hint-placeholder-count="3">
+            <div style="background:#fff;border-radius:18px;overflow:hidden;color:#170a33">
+              <sc-if value="{{ p.hasImg }}"><div style="aspect-ratio:16/9;background:{{ p.tint }};background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 10px,transparent 10px 20px)"></div></sc-if>
+              <div style="padding:12px 14px 14px">
+                <div style="display:flex;align-items:center;gap:6px;font:700 11.5px Archivo;color:#6a5a92"><span style="width:7px;height:7px;border-radius:99px;background:{{ p.dot }}"></span><strong style="color:#170a33">{{ p.catLabel }}</strong> · {{ p.city }}</div>
+                <div style="margin-top:7px;font:800 16px/1.25 Archivo;letter-spacing:-.02em">{{ p.title }}</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                  <sc-if value="{{ p.voted }}"><button onClick="{{ p.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:12px;background:#170a33;color:#fff;font:800 13px/1 Archivo"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="currentColor"></path></svg>{{ p.n }}</button></sc-if>
+                  <sc-if value="{{ p.unvoted }}"><button onClick="{{ p.toggle }}" style="all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:12px;background:#f2ecff;color:#170a33;font:800 13px/1 Archivo"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1.5 L11 8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>{{ p.n }}</button></sc-if>
+                  <span style="font:700 12.5px Archivo;color:#6a5a92">{{ p.comments }} réponses · {{ p.ago }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:absolute;left:18px;right:18px;bottom:28px">
+          <button onClick="{{ goCompose }}" style="all:unset;cursor:pointer;display:block;text-align:center;box-sizing:border-box;width:100%;padding:17px;border-radius:16px;background:#fff;color:#170a33;font:900 15px/1 Archivo;box-shadow:0 12px 30px -8px rgba(23,10,51,.7)">+ Publier une annonce</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const CATS = {
+  casting: { label: 'Casting', dot: '#e58ad8', hint: 'Mannequins, modèles mains, figurants' },
+  photo: { label: 'Photo & stylisme', dot: '#8fa8f0', hint: 'Photographes, stylistes, MUA' },
+  collab: { label: 'Collab', dot: '#b49bf0', hint: 'Capsule, co-branding, atelier partagé' },
+  event: { label: 'Événement', dot: '#f0a860', hint: 'Pop-up, vente privée, salon' },
+  idees: { label: 'Idées pour NEWAVE', dot: '#f2ecff', hint: 'Ce que le site devrait faire' },
+  discu: { label: 'Discussion', dot: '#6fd0b0', hint: 'Questions, retours, entraide' }
+};
+const POSTS = [
+  { id: 1, cat: 'casting', title: 'Recherche mannequin pour shooting lookbook AH26', excerpt: "Deux profils, femme et homme, à l'aise avec la maille. Pas besoin d'agence.", author: 'Maison Ourse', brand: true, city: 'Paris', h: 3, votes: 248, comments: 34, img: 'photo · atelier', tint: '#c255c4', paid: 'Rémunéré' },
+  { id: 2, cat: 'photo', title: 'Photographe argentique dispo pour marques émergentes', excerpt: 'Moyen format, lumière naturelle. Tarifs adaptés aux petites marques.', author: '@lea.grain', brand: false, city: 'Lyon', h: 9, votes: 186, comments: 21, img: 'photo · portfolio', tint: '#5a72e0' },
+  { id: 3, cat: 'collab', title: 'On cherche une marque de bijoux pour une capsule commune', excerpt: 'Dix pièces en édition limitée, lancement en décembre.', author: 'Atelier Sève', brand: true, city: 'Marseille', h: 20, votes: 142, comments: 18, img: 'photo · moodboard', tint: '#7b52e8' },
+  { id: 4, cat: 'idees', title: 'Un filtre « fabriqué en France » dans l\'annuaire ?', excerpt: "Beaucoup de marques le précisent déjà dans leur fiche. Un filtre éviterait de tout ouvrir une par une.", author: '@nino', brand: false, city: 'En ligne', h: 30, votes: 312, comments: 57 },
+  { id: 5, cat: 'event', title: 'Pop-up de 12 marques indépendantes, 18–20 octobre', excerpt: 'Il reste deux portants. Candidatures jusqu\'au 5 octobre.', author: 'Collectif Friche', brand: true, city: 'Paris', h: 14, votes: 205, comments: 26, img: 'photo · lieu', tint: '#e0787a' },
+  { id: 6, cat: 'discu', title: 'Vos retours sur les salons pro cette saison ?', excerpt: "On hésite entre deux salons en janvier. Ça vaut le coût pour une marque de moins de deux ans ?", author: '@camille.m', brand: false, city: 'En ligne', h: 5, votes: 97, comments: 43 },
+  { id: 7, cat: 'photo', title: 'Styliste cherche projet de défilé étudiant', excerpt: 'Trois ans en showroom, envie de mettre les mains dans un vrai défilé.', author: '@ines.styl', brand: false, city: 'Bordeaux', h: 40, votes: 64, comments: 9, img: 'photo · book', tint: '#4e5bc0' },
+  { id: 8, cat: 'casting', title: 'Modèles mains pour shooting bijoux', excerpt: 'Une demi-journée, mains soignées, pas de tatouage visible.', author: 'Ondine Bijoux', brand: true, city: 'Nantes', h: 7, votes: 51, comments: 6, img: 'photo · bijoux', tint: '#9e63d6', paid: 'Rémunéré' },
+  { id: 9, cat: 'casting', title: 'Figurants pour clip, marque de streetwear', excerpt: 'Tournage de nuit, ambiance parking. Repas et tenues offerts.', author: 'Nuit Blanche Club', brand: true, city: 'Lyon', h: 26, votes: 88, comments: 12, img: 'photo · repérage', tint: '#33217f', paid: 'Tenues offertes' },
+  { id: 10, cat: 'photo', title: 'Cherche modèle pour série portrait argentique', author: '@lea.grain', brand: false, city: 'Lyon', h: 200, votes: 74, comments: 11, img: 'photo', tint: '#8fa8f0', excerpt: '' },
+  { id: 11, cat: 'event', title: 'Balade photo entre membres, Croix-Rousse', author: '@lea.grain', brand: false, city: 'Lyon', h: 400, votes: 39, comments: 8, img: 'photo', tint: '#b49bf0', excerpt: '' }
+];
+const FEED = POSTS.filter(p => p.id <= 9);
+const COMMENTS = [
+  { id: 'c1', author: '@sacha.mdl', h: 2, votes: 42, text: "Dispo le 14, j'ai déjà posé pour deux marques de maille. Je vous envoie mon book en privé ?", reply: { author: 'Maison Ourse', ago: 'il y a 1 h', text: 'Oui, avec plaisir — passez par « Répondre en privé ».' } },
+  { id: 'c2', author: '@lea.grain', h: 2, votes: 27, text: "Si vous n'avez pas encore de photographe pour ce shooting, je suis à Paris la semaine du 12." },
+  { id: 'c3', author: '@jules.f', h: 1, votes: 9, text: 'Vous prenez aussi des profils sans aucune expérience ?', reply: { author: 'Maison Ourse', ago: 'il y a 40 min', text: "Oui, c'est même le but." } }
+];
+const DETAILS = {
+  casting: [{ label: 'Date', ph: '14 oct.' }, { label: 'Rémunération', ph: 'Rémunéré ▾' }, { label: 'Profils', ph: 'Nombre, genre, taille' }],
+  photo: [{ label: 'Date', ph: 'Flexible' }, { label: 'Rémunération', ph: 'Échange ▾' }, { label: 'Portfolio', ph: 'Lien' }],
+  event: [{ label: 'Dates', ph: '18 – 20 oct.' }, { label: 'Adresse', ph: 'Rue, arrondissement' }, { label: 'Entrée', ph: 'Libre ▾' }]
+};
+const CONVS = [
+  { id: 'mo', name: 'Maison Ourse', initials: 'MO', color: '#b49bf0', brand: true, post: 1, status: 'Annonce active', time: '18:42', unread: true, msgs: [
+    { day: "HIER" }, { me: true, text: "Bonjour ! Je suis à Paris la semaine du 12 si vous cherchez encore quelqu'un pour photographier le lookbook.", time: '17:10' },
+    { day: "AUJOURD'HUI" }, { text: 'Bonjour Léa, oui justement, on n\'a pas encore tranché. Vous avez un book à nous envoyer ?', time: '11:02' },
+    { file: true, text: 'book-lea-grain-2026.pdf', time: '4,2 Mo · 11:20' }, { text: 'Super, on regarde ça ce soir. On peut s\'appeler jeudi ?', time: '18:42' } ] },
+  { id: 'sa', name: '@sacha.mdl', initials: 'SA', color: '#e58ad8', post: 10, status: 'Votre annonce', time: '14:05', unread: true, msgs: [
+    { day: "AUJOURD'HUI" }, { text: 'Salut ! La série portrait m\'intéresse, c\'est toujours d\'actualité ?', time: '14:05' } ] },
+  { id: 'ni', name: '@nino', initials: 'NI', color: '#6fd0b0', post: 11, status: 'Votre annonce', time: 'lun.', msgs: [
+    { day: 'LUNDI' }, { text: 'Je peux venir avec un ami à la balade ?', time: '09:30' }, { me: true, text: 'Bien sûr, plus on est de fous.', time: '09:48' } ] },
+  { id: 'on', name: 'Ondine Bijoux', initials: 'OB', color: '#f0a860', brand: true, post: 8, status: 'Clôturée', time: '12 sept.', msgs: [
+    { day: '12 SEPT.' }, { me: true, text: 'Vous avez déjà quelqu\'un pour les photos du shooting mains ?', time: '10:12' }, { text: 'Oui, désolée ! On garde votre contact pour la prochaine collection.', time: '16:40' } ] }
+];
+const QUICK = [['Je suis disponible le 14', 'Je suis disponible le 14 octobre.'], ['Mon book est joint', 'Mon book est en pièce jointe.'], ['Première fois', "Ce serait ma première expérience, mais j'ai très envie d'essayer."]];
+const ago = h => h < 24 ? `il y a ${h} h` : `il y a ${Math.round(h / 24)} j`;
+
+class Component extends DCLogic {
+  state = { voted: { 2: true }, cvoted: {}, sort: 'pop', city: 'Toutes', cat: 'all', cType: 'casting', cTitle: '', cCity: 'Paris',
+    active: 'mo', read: { mo: true }, extra: {}, draft: '', box: 'all', firstDraft: '', firstSent: false };
+
+  send() {
+    const t = this.state.draft.trim(); if (!t) return;
+    const now = new Date(), time = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+    this.setState(s => ({ draft: '', extra: { ...s.extra, [s.active]: [...(s.extra[s.active] || []), { me: true, text: t, time }] } }));
+  }
+
+  msgVals() {
+    const s = this.state;
+    const withExtra = c => [...c.msgs, ...(s.extra[c.id] || [])];
+    const list = CONVS.filter(c => s.box === 'all' || (s.box === 'unread' ? c.unread && !s.read[c.id] : c.status === 'Votre annonce')).map(c => {
+      const post = POSTS.find(p => p.id === c.post), msgs = withExtra(c).filter(m => !m.day), last = msgs[msgs.length - 1];
+      const unread = c.unread && !s.read[c.id] && s.active !== c.id && !last.me;
+      return { ...c, postTitle: post.title, unread, bg: s.active === c.id ? 'rgba(255,255,255,.16)' : 'transparent',
+        preview: (last.me ? 'Vous : ' : '') + last.text, previewFont: unread ? '800 13px Archivo' : '500 13px Archivo',
+        time: (s.extra[c.id] || []).length ? last.time : c.time, open: () => this.setState(st => ({ active: c.id, read: { ...st.read, [c.id]: true } })) };
+    });
+    const c = CONVS.find(x => x.id === s.active), post = POSTS.find(p => p.id === c.post), closed = c.status === 'Clôturée';
+    const conv = { ...c, postTitle: post.title, tint: post.tint || '#9e63d6', dot: CATS[post.cat].dot, catLabel: CATS[post.cat].label, city: post.city,
+      sub: (c.brand ? 'Marque vérifiée · ' : 'Membre · ') + post.city, subShort: c.brand ? 'Marque vérifiée' : 'Membre',
+      statusBg: closed ? '#f0e8e8' : '#e7f5ec', statusFg: closed ? '#8a4a4a' : '#1d7a4f' };
+    const convMsgs = withExtra(c).map(m => ({ ...m, isDay: !!m.day, text: m.day || m.text, them: !m.day && !m.me && !m.file, mine: !!m.me, file: !!m.file }));
+    const unreadTotal = CONVS.filter(x => x.unread && !s.read[x.id] && s.active !== x.id).length;
+    const boxTabs = [['all', 'Toutes'], ['unread', 'Non lues'], ['mine', 'Mes annonces']].map(([k, label]) => ({ label, active: s.box === k, inactive: s.box !== k, pick: () => this.setState({ box: k }) }));
+    return { convList: list, conv, convMsgs, unreadTotal, hasUnread: unreadTotal > 0, boxTabs, draft: s.draft,
+      onDraft: e => this.setState({ draft: e.target.value }), onDraftKey: e => { if (e.key === 'Enter') this.send(); }, send: () => this.send(),
+      firstDraft: s.firstDraft, onFirst: e => this.setState({ firstDraft: e.target.value, firstSent: false }),
+      quick: QUICK.map(([label, txt]) => ({ label, add: () => this.setState(st => ({ firstDraft: (st.firstDraft ? st.firstDraft + ' ' : '') + txt, firstSent: false })) })),
+      firstLabel: s.firstSent ? 'Envoyé ✓' : 'Envoyer', sendFirst: () => s.firstDraft.trim() && this.setState({ firstSent: true }) };
+  }
+
+  toggle(id) { this.setState(s => ({ voted: { ...s.voted, [id]: !s.voted[id] } })); }
+
+  renderVals() {
+    const s = this.state;
+    const mk = p => {
+      const c = CATS[p.cat], v = !!s.voted[p.id];
+      return { ...p, catLabel: c.label, dot: c.dot, n: p.votes + (v ? 1 : 0), voted: v, unvoted: !v, hasImg: !!p.img, noImg: !p.img, hasPaid: !!p.paid, ago: ago(p.h), toggle: () => this.toggle(p.id) };
+    };
+    const score = p => s.sort === 'pop' ? p.n : s.sort === 'new' ? -p.h : p.n / Math.pow(p.h + 2, 0.8);
+    const sorted = list => list.map(mk).sort((a, b) => score(b) - score(a));
+    const all = sorted(FEED);
+    const feedA = all.filter(p => (s.cat === 'all' || p.cat === s.cat) && (s.city === 'Toutes' || p.city === s.city));
+    const qn = (s.q || '').trim().toLowerCase();
+    const feedMobile = feedA.filter(p => !qn || (p.title + ' ' + p.city + ' ' + p.catLabel + ' ' + p.author).toLowerCase().includes(qn)).slice(0, 4);
+    const sorts = [['pop', 'Populaires'], ['trend', 'Tendance'], ['new', 'Récentes']].map(([k, label]) => ({ label, active: s.sort === k, inactive: s.sort !== k, pick: () => this.setState({ sort: k }) }));
+    const cities = ['Toutes', 'Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Nantes', 'En ligne'].map(c => ({ label: c, active: s.city === c, inactive: s.city !== c, pick: () => this.setState({ city: c }) }));
+    const cats = [['all', 'Tout', '#fff'], ...Object.entries(CATS).map(([k, c]) => [k, c.label, c.dot])].map(([k, label, dot]) => ({ key: k, label, dot, active: s.cat === k, inactive: s.cat !== k, pick: () => this.setState({ cat: k }) }));
+    const catCounts = Object.entries(CATS).map(([k, c]) => ({ label: c.label, dot: c.dot, n: FEED.filter(p => p.cat === k).length }));
+    const cityCounts = ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Nantes', 'En ligne'].map(c => ({ label: c, n: FEED.filter(p => p.city === c).length }));
+    const byVotes = FEED.map(mk).sort((a, b) => b.n - a.n);
+    const top = byVotes.filter(p => p.img)[0];
+    const rayon = (keys, label, dot) => { const l = byVotes.filter(p => keys.includes(p.cat) && p.id !== top.id); return { label, dot, total: l.length, items: l.slice(0, 3) }; };
+    const rayons = [rayon(['casting', 'photo'], 'Castings & créatifs', '#e58ad8'), rayon(['collab', 'event'], 'Collabs & événements', '#f0a860'), rayon(['idees', 'discu'], 'Idées & discussions', '#6fd0b0')];
+    const d = mk(POSTS[0]);
+    const comments = COMMENTS.map(c => { const v = !!s.cvoted[c.id]; return { ...c, ago: ago(c.h), n: c.votes + (v ? 1 : 0), voted: v, unvoted: !v, hasReply: !!c.reply, toggle: () => this.setState(st => ({ cvoted: { ...st.cvoted, [c.id]: !st.cvoted[c.id] } })) }; });
+    const similar = byVotes.filter(p => p.cat === 'casting' && p.id !== 1);
+    const leaPosts = POSTS.filter(p => p.author === '@lea.grain').map(mk);
+    const lea = { posts: leaPosts, count: leaPosts.length, votes: (1284 + leaPosts.filter(p => p.voted).length).toLocaleString('fr-FR') };
+    const types = Object.entries(CATS).map(([k, c]) => ({ label: c.label, dot: c.dot, hint: c.hint, active: s.cType === k, inactive: s.cType !== k, pick: () => this.setState({ cType: k }) }));
+    const ct = CATS[s.cType];
+    return {
+      ...this.msgVals(),
+      sorts, cities, cats, feedA, feedAEmpty: feedA.length === 0, feedB: all, catCounts, cityCounts, top, rayons,
+      feedMobile, mobileEmpty: feedMobile.length === 0, q: s.q || '', onQ: e => this.setState({ q: e.target.value }),
+      cityVal: s.city, cityLabel: s.city === 'Toutes' ? 'Toutes' : s.city, onCitySel: e => this.setState({ city: e.target.value }),
+      catVal: s.cat, catLabel: s.cat === 'all' ? 'Tout' : CATS[s.cat].label, catDot: s.cat === 'all' ? '#fff' : CATS[s.cat].dot, onCatSel: e => this.setState({ cat: e.target.value }), d, comments, similar, lea, types,
+      goCompose: () => {},
+      cTitle: s.cTitle, cTitleLen: s.cTitle.length, cCity: s.cCity, cDot: ct.dot, cTypeLabel: ct.label, cTypeLabelUp: ct.label.toUpperCase(),
+      cPreviewTitle: s.cTitle || 'Votre titre apparaîtra ici',
+      onTitle: e => this.setState({ cTitle: e.target.value }), onCity: e => this.setState({ cCity: e.target.value }),
+      hasDetails: !!DETAILS[s.cType], detailFields: DETAILS[s.cType] || []
+    };
+  }
+}
+</script>
+</body>
+</html>
