@@ -4,6 +4,8 @@ import CompteEcran, { type Espace } from "@/components/CompteEcran";
 import VisuelMonCompte from "@/components/compte/VisuelMonCompte";
 import SuppressionCompte from "@/components/SuppressionCompte";
 import ThemePicker from "@/components/ThemePicker";
+import ProfilForum from "@/components/forum/ProfilForum";
+import { moiForum } from "@/lib/forum-queries";
 import { requireUser } from "@/lib/auth";
 import { lireApparenceDuCompte } from "@/lib/apparence";
 import { ROLE_LABEL } from "@/lib/types";
@@ -16,10 +18,11 @@ export const dynamic = "force-dynamic";
 
 export default async function ComptePage() {
   const profile = await requireUser();
-  const [brands, favorites, apparence] = await Promise.all([
+  const [brands, favorites, apparence, forum] = await Promise.all([
     getManagedBrands(),
     getFavoriteBrands(),
     lireApparenceDuCompte(),
+    moiForum(),
   ]);
 
   const isAdmin = profile.role === "admin";
@@ -91,6 +94,10 @@ export default async function ComptePage() {
         nomActuel={profile.display_name ?? ""}
         emailActuel={profile.email ?? null}
       />
+
+      {/* Seulement une fois la migration 37 passée : avant, les colonnes
+          n'existent pas et le formulaire échouerait à l'envoi. */}
+      {forum?.pret && <ProfilForum handle={forum.handle} ville={forum.ville} bio={forum.bio} />}
 
       {/* ---------- mot de passe ----------
           Une ligne, et non un formulaire : il n'y a rien à saisir ici,

@@ -14,7 +14,10 @@
  * mieux que pas de signalement.
  */
 
-export type CibleSignalement = "avis" | "piece" | "marque";
+export type CibleSignalement = "avis" | "piece" | "marque" | "annonce" | "commentaire";
+
+/** Toutes les cibles, dans l'ordre des filtres de la pile d'administration. */
+export const CIBLES: CibleSignalement[] = ["avis", "piece", "marque", "annonce", "commentaire"];
 
 type Motif = { cle: string; label: string };
 
@@ -43,12 +46,32 @@ export const MOTIFS: Record<CibleSignalement, Motif[]> = {
     { cle: "choquant", label: "Contenu choquant" },
     { cle: "autre", label: "Autre" },
   ],
+  // Le forum (migration 37). « Faux casting » a sa ligne : c'est l'abus
+  // le plus grave qu'on puisse y croiser, et il ne doit pas se perdre
+  // dans « autre ».
+  annonce: [
+    { cle: "faux-casting", label: "Faux casting" },
+    { cle: "arnaque", label: "Soupçon d'arnaque" },
+    { cle: "spam", label: "Publicité ou spam" },
+    { cle: "insulte", label: "Insultant ou haineux" },
+    { cle: "hors-sujet", label: "Hors sujet" },
+    { cle: "autre", label: "Autre" },
+  ],
+  commentaire: [
+    { cle: "insulte", label: "Insultant ou haineux" },
+    { cle: "arnaque", label: "Soupçon d'arnaque" },
+    { cle: "spam", label: "Publicité ou spam" },
+    { cle: "hors-sujet", label: "Hors sujet" },
+    { cle: "autre", label: "Autre" },
+  ],
 };
 
 export const NOM_CIBLE: Record<CibleSignalement, string> = {
   avis: "cet avis",
   piece: "cette pièce",
   marque: "cette marque",
+  annonce: "cette annonce",
+  commentaire: "ce commentaire",
 };
 
 /** L'étiquette lisible d'un motif, ou le motif brut s'il est inconnu. */
@@ -61,7 +84,7 @@ export function motifValide(cible: CibleSignalement, valeur: string): boolean {
 }
 
 export function estUneCible(valeur: string): valeur is CibleSignalement {
-  return valeur === "avis" || valeur === "piece" || valeur === "marque";
+  return (CIBLES as string[]).includes(valeur);
 }
 
 export type Signalement = {
@@ -74,7 +97,7 @@ export type ASignaler = {
   /** L'identifiant du signalement le plus récent sur cette cible. */
   id: string;
   cible: CibleSignalement;
-  /** L'identifiant de l'objet visé : avis, pièce ou marque. */
+  /** L'identifiant de l'objet visé : avis, pièce, marque, annonce ou commentaire. */
   cibleId: string;
   /** Ce qu'on lit pour juger : le commentaire, le nom de la pièce… */
   titre: string;

@@ -46,6 +46,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/pieces`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE}/populaires`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE}/posts`, changeFrequency: "weekly", priority: 0.8 },
+    // Le fil seulement : les annonces sont éphémères, et la plupart
+    // n'ont plus d'objet quand un moteur repasse.
+    { url: `${SITE}/forum`, changeFrequency: "daily", priority: 0.7 },
     { url: `${SITE}/a-propos`, changeFrequency: "yearly", priority: 0.5 },
     { url: `${SITE}/candidature`, changeFrequency: "yearly", priority: 0.6 },
     { url: `${SITE}/conditions`, changeFrequency: "yearly", priority: 0.1 },

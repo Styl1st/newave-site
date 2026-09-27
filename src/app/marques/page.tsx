@@ -51,17 +51,7 @@ export default async function BrandsPage({ searchParams }: Props) {
    * Voir `ordonnerLAnnuaire` pour le détail, et notamment pourquoi les
    * marques à la une sont mélangées entre elles plutôt que figées.
    */
-  /*
-   * `vend` (ce que chaque marque vend, compté sur ses pièces) ne sert
-   * plus au panneau, réduit aux styles. On ne le fait pas voyager
-   * jusqu'au navigateur : c'est un objet de plus par marque dans le
-   * HTML de la page, pour rien.
-   */
-  const brands = ordonnerLAnnuaire(await getBrands()).map((b) => {
-    const copie = { ...b };
-    delete copie.vend;
-    return copie;
-  });
+  const brands = ordonnerLAnnuaire(await getBrands());
   const favoris = await getMyFavorites(brands.map((b) => b.id));
 
   /*

@@ -3,13 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { classerSignalements, retirerAvis } from "@/lib/moderation";
-import { libelleMotif, type ASignaler } from "@/lib/signalement";
+import { classerSignalements, retirerAvis, retirerDuForum } from "@/lib/moderation";
+import { CIBLES, libelleMotif, type ASignaler } from "@/lib/signalement";
 
 const NATURE: Record<ASignaler["cible"], string> = {
   avis: "Avis",
   piece: "Pièce",
   marque: "Marque",
+  annonce: "Annonce",
+  commentaire: "Commentaire",
+};
+
+/** Ce qui se retire d'ici en un geste, et ce que dit le bouton. */
+const RETRAIT: Partial<Record<ASignaler["cible"], { bouton: string; question: string }>> = {
+  avis: { bouton: "Retirer l'avis", question: "Retirer cet avis définitivement ?" },
+  annonce: {
+    bouton: "Retirer l'annonce",
+    question: "Retirer cette annonce définitivement ? Ses réponses et ses votes partent avec elle.",
+  },
+  commentaire: { bouton: "Retirer le commentaire", question: "Retirer ce commentaire définitivement ?" },
 };
 
 /**
@@ -33,7 +45,7 @@ function Carte({ item }: { item: ASignaler }) {
   const [erreur, setErreur] = useState<string | null>(null);
 
   async function agir(quoi: "retrait" | "classement") {
-    if (quoi === "retrait" && !confirm("Retirer cet avis définitivement ?")) return;
+    if (quoi === "retrait" && !confirm(RETRAIT[item.cible]?.question ?? "Retirer définitivement ?")) return;
 
     setPending(quoi);
     setErreur(null);
@@ -41,6 +53,7 @@ function Carte({ item }: { item: ASignaler }) {
     const formData = new FormData();
     if (quoi === "retrait") {
       formData.set("id", item.cibleId);
+      formData.set("cible", item.cible);
       if (item.href) formData.set("chemin", item.href);
     } else {
       formData.set("cible", item.cible);
@@ -48,7 +61,11 @@ function Carte({ item }: { item: ASignaler }) {
     }
 
     const res =
-      quoi === "retrait" ? await retirerAvis(formData) : await classerSignalements(formData);
+      quoi === "classement"
+        ? await classerSignalements(formData)
+        : item.cible === "avis"
+          ? await retirerAvis(formData)
+          : await retirerDuForum(formData);
 
     setPending("");
     if (!res.ok) {
@@ -110,14 +127,15 @@ function Carte({ item }: { item: ASignaler }) {
             {pending === "classement" ? "…" : "Sans suite"}
           </button>
 
-          {item.cible === "avis" && (
+          {/* Une annonce ou un commentaire déjà supprimé n'a plus rien à retirer. */}
+          {RETRAIT[item.cible] && (item.cible === "avis" || item.href) && (
             <button
               type="button"
               onClick={() => agir("retrait")}
               disabled={Boolean(pending)}
               className="rounded-full bg-white px-4 py-2 text-[12px] font-black text-[var(--color-ink)] transition active:scale-[.97] disabled:opacity-50"
             >
-              {pending === "retrait" ? "…" : "Retirer l'avis"}
+              {pending === "retrait" ? "…" : RETRAIT[item.cible]?.bouton}
             </button>
           )}
         </div>
@@ -169,7 +187,7 @@ export default function ListeSignalements({ items }: { items: ASignaler[] }) {
         <button type="button" onClick={() => setNature(null)} className={bouton(nature === null)}>
           Tout <span className="opacity-55">{items.length}</span>
         </button>
-        {(["avis", "piece", "marque"] as const).map((c) =>
+        {CIBLES.map((c) =>
           compter(c) > 0 ? (
             <button
               key={c}

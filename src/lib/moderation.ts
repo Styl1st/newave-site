@@ -32,10 +32,15 @@ import {
  * de la migration 19. Ce fichier transmet des demandes.
  */
 
-const COLONNE: Record<CibleSignalement, "review_id" | "product_id" | "brand_id"> = {
+const COLONNE: Record<
+  CibleSignalement,
+  "review_id" | "product_id" | "brand_id" | "annonce_id" | "commentaire_id"
+> = {
   avis: "review_id",
   piece: "product_id",
   marque: "brand_id",
+  annonce: "annonce_id",
+  commentaire: "commentaire_id",
 };
 
 /* ---------------- côté visiteur ---------------- */
@@ -151,6 +156,36 @@ export async function retirerAvis(
 }
 
 /**
+ * Retire une annonce ou un commentaire du forum, quel qu'en soit
+ * l'auteur. Ses signalements partent avec lui (clé étrangère en
+ * cascade), comme pour un avis.
+ */
+export async function retirerDuForum(
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, error: "Supabase n'est pas configuré." };
+
+  const cible = String(formData.get("cible") ?? "");
+  const id = String(formData.get("id") ?? "");
+  if (!id || (cible !== "annonce" && cible !== "commentaire")) {
+    return { ok: false, error: "Cible introuvable." };
+  }
+
+  const { error } = await supabase
+    .from(cible === "annonce" ? "forum_annonces" : "forum_commentaires")
+    .delete()
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/signalements");
+  revalidatePath("/forum");
+  return { ok: true };
+}
+
+/**
  * Classe les signalements d'une cible sans rien supprimer.
  *
  * C'est la réponse à un signalement qui n'était pas fondé, et c'est la
@@ -181,7 +216,7 @@ export async function classerSignalements(
 }
 
 /**
- * Tout ce qui attend d'être regardé, les trois natures confondues.
+ * Tout ce qui attend d'être regardé, toutes natures confondues.
  *
  * Les noms et les adresses sont résolus par lot plutôt qu'une requête
  * par ligne : une pile de trente signalements en déclencherait
@@ -193,23 +228,41 @@ export async function getSignalements(): Promise<ASignaler[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const { data } = await supabase
-    .from("signalements")
-    .select("id, review_id, product_id, brand_id, motif, detail, created_at")
-    .is("traite_at", null)
-    .order("created_at", { ascending: false })
-    .limit(300);
+  /*
+   * LES COLONNES DU FORUM D'ABORD, LES ANCIENNES SI ELLES MANQUENT.
+   *
+   * `annonce_id` et `commentaire_id` arrivent avec la migration 37. Tant
+   * qu'elle n'est pas passée, les demander ferait échouer toute la
+   * lecture, et la pile paraîtrait vide alors qu'elle attend des
+   * signalements d'avis. On retombe donc sur la lecture d'avant.
+   */
+  const lire = (colonnes: string) =>
+    supabase
+      .from("signalements")
+      .select(colonnes)
+      .is("traite_at", null)
+      .order("created_at", { ascending: false })
+      .limit(300);
+
+  let { data, error } = await lire(
+    "id, review_id, product_id, brand_id, annonce_id, commentaire_id, motif, detail, created_at"
+  );
+  if (error) {
+    ({ data, error } = await lire("id, review_id, product_id, brand_id, motif, detail, created_at"));
+  }
 
   type Ligne = {
     id: string;
     review_id: string | null;
     product_id: string | null;
     brand_id: string | null;
+    annonce_id?: string | null;
+    commentaire_id?: string | null;
     motif: string;
     detail: string | null;
     created_at: string;
   };
-  const lignes = (data as Ligne[] | null) ?? [];
+  const lignes = (data as unknown as Ligne[] | null) ?? [];
   if (lignes.length === 0) return [];
 
   /* ---- on regroupe par cible ---- */
@@ -219,8 +272,17 @@ export async function getSignalements(): Promise<ASignaler[]> {
   >();
 
   for (const l of lignes) {
-    const cible: CibleSignalement = l.review_id ? "avis" : l.product_id ? "piece" : "marque";
-    const cibleId = l.review_id ?? l.product_id ?? l.brand_id ?? "";
+    const cible: CibleSignalement = l.review_id
+      ? "avis"
+      : l.product_id
+        ? "piece"
+        : l.annonce_id
+          ? "annonce"
+          : l.commentaire_id
+            ? "commentaire"
+            : "marque";
+    const cibleId =
+      l.review_id ?? l.product_id ?? l.annonce_id ?? l.commentaire_id ?? l.brand_id ?? "";
     if (!cibleId) continue;
 
     const cle = `${cible}:${cibleId}`;
@@ -284,6 +346,36 @@ export async function getSignalements(): Promise<ASignaler[]> {
     }
   }
 
+  /* ---- le forum : annonces et commentaires ---- */
+  const commentaires = new Map<string, { texte: string; annonce_id: string; auteur: string | null }>();
+  const idsCommentaires = parNature("commentaire");
+  if (idsCommentaires.length > 0) {
+    const { data: d } = await supabase
+      .from("forum_commentaires")
+      .select("id, texte, annonce_id, auteur_id")
+      .in("id", idsCommentaires);
+    const lignesC = (d as { id: string; texte: string; annonce_id: string; auteur_id: string }[] | null) ?? [];
+    const { data: m } = lignesC.length
+      ? await supabase.from("forum_membres").select("id, handle").in("id", lignesC.map((c) => c.auteur_id))
+      : { data: [] };
+    const pseudos = new Map(((m as { id: string; handle: string }[] | null) ?? []).map((x) => [x.id, x.handle]));
+    for (const c of lignesC) {
+      commentaires.set(c.id, { texte: c.texte, annonce_id: c.annonce_id, auteur: pseudos.get(c.auteur_id) ?? null });
+    }
+  }
+
+  const annonces = new Map<string, { titre: string; texte: string; masque: boolean }>();
+  const idsAnnonces = parNature("annonce");
+  if (idsAnnonces.length > 0) {
+    const { data: d } = await supabase
+      .from("forum_annonces")
+      .select("id, titre, texte, masque")
+      .in("id", idsAnnonces);
+    for (const a of (d as { id: string; titre: string; texte: string; masque: boolean }[] | null) ?? []) {
+      annonces.set(a.id, { titre: a.titre, texte: a.texte, masque: a.masque });
+    }
+  }
+
   const lienPiece = (id: string) => {
     const p = pieces.get(id);
     const m = p ? marques.get(p.brand_id) : undefined;
@@ -320,6 +412,32 @@ export async function getSignalements(): Promise<ASignaler[]> {
           titre: p ? p.nom : "Pièce supprimée",
           extrait: m ? `Chez ${m.nom}` : "",
           href: lienPiece(g.cibleId),
+          signalements: g.signalements,
+        };
+      }
+
+      if (g.cible === "annonce") {
+        const a = annonces.get(g.cibleId);
+        return {
+          id: g.id,
+          cible: "annonce",
+          cibleId: g.cibleId,
+          titre: a ? a.titre : "Annonce supprimée",
+          extrait: a ? `${a.masque ? "Masquée en attendant ta décision. " : ""}${a.texte.slice(0, 280)}` : "",
+          href: a ? `/forum/${g.cibleId}` : null,
+          signalements: g.signalements,
+        };
+      }
+
+      if (g.cible === "commentaire") {
+        const c = commentaires.get(g.cibleId);
+        return {
+          id: g.id,
+          cible: "commentaire",
+          cibleId: g.cibleId,
+          titre: c ? `Commentaire de ${c.auteur ? `@${c.auteur}` : "un membre"}` : "Commentaire supprimé",
+          extrait: c?.texte ?? "",
+          href: c ? `/forum/${c.annonce_id}` : null,
           signalements: g.signalements,
         };
       }

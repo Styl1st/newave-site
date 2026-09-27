@@ -136,27 +136,18 @@ const lireLAnnuaire = unstable_cache(
     if (error || !data) throw new LectureRatee("annuaire des marques");
 
     /*
-     * CE QUE CHAQUE MARQUE VEND, compté sur ses pièces (migration 34).
+     * « CE QUE VEND LA MARQUE » N'EST PLUS LU ICI.
      *
-     * Une seule requête pour tout l'annuaire, une ligne par marque. Si
-     * la fonction n'existe pas encore, on le note et on continue : le
-     * filtre « Vend » ne s'affiche pas, rien d'autre ne change.
+     * `tags_des_marques` (migration 34) comptait les tags de toutes les
+     * pièces du catalogue, marque par marque, à chaque relecture de
+     * l'annuaire. Il ne servait plus qu'au filtre « Vend », parti quand
+     * le panneau s'est réduit aux styles ; et sur vingt-six mille pièces
+     * il dépassait les trois secondes que l'API accorde, d'où le
+     * « canceling statement due to statement timeout » qui remontait à
+     * chaque page (l'en-tête lit l'annuaire pour « en ce moment »).
+     * La fonction reste en base ; plus personne ne l'appelle.
      */
-    const { data: vend, error: sansVend } = await supabase.rpc("tags_des_marques", {
-      p_taxonomie: [...PRODUCT_CATEGORIES],
-    });
-    report("ce que vendent les marques", sansVend);
-
-    const parMarque = new Map(
-      ((vend as { brand_id: string; vend: Record<string, number> }[] | null) ?? []).map((l) => [
-        l.brand_id,
-        l.vend,
-      ])
-    );
-
-    return (data as Brand[]).map((b) =>
-      parMarque.has(b.id) ? { ...b, vend: parMarque.get(b.id) } : b
-    );
+    return data as Brand[];
   },
   ["annuaire-marques"],
   { revalidate: 60, tags: ["marques"] }

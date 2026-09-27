@@ -5,7 +5,13 @@ import { attenteCourte } from "@/lib/attente";
 import { CANDIDATURES_EN_ATTENTE, RELATIONSHIP_LABEL, type Application } from "@/lib/types";
 
 /** Comment on nomme ce qui est signalé, dans une ligne de pile. */
-const NATURE = { avis: "Avis", piece: "Pièce", marque: "Marque" } as const;
+const NATURE = {
+  avis: "Avis",
+  piece: "Pièce",
+  marque: "Marque",
+  annonce: "Annonce",
+  commentaire: "Commentaire",
+} as const;
 
 /**
  * Tout ce qui attend une décision, sur un seul écran.

@@ -42,17 +42,6 @@ export type Brand = {
    * doit se comporter comme une boutique ouverte.
    */
   acces?: string | null;
-  /**
-   * Ce que la marque vend, compté sur ses pièces publiées : ses familles
-   * (« Vestes ») et ses tags fins (« Bombers »), avec le nombre de
-   * pièces de chacun.
-   *
-   * Ce n'est pas une colonne : `getBrands` le joint depuis
-   * `tags_des_marques` (migration 34). Absent tant que la migration
-   * n'est pas passée, et le filtre « Vend » de l'annuaire ne s'affiche
-   * alors simplement pas.
-   */
-  vend?: Record<string, number>;
 };
 
 /**

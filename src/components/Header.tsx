@@ -15,6 +15,7 @@ const NAV = [
   { href: "/pieces", label: "Pièces" },
   { href: "/posts", label: "Posts" },
   { href: "/populaires", label: "Coups de cœur" },
+  { href: "/forum", label: "Forum" },
   { href: "/a-propos", label: "À propos" },
   { href: "/candidature", label: "Proposer une marque" },
 ];
@@ -117,11 +118,20 @@ export default async function Header() {
                 les moins utiles. Le seuil a bougé avec l'arrivée des
                 pièces, sinon « À propos » disparaissait de la barre sans
                 que personne l'ait décidé. */}
-            {NAV.slice(0, 6).map((item, i) => (
+            {/* Le forum a rejoint la barre : « À propos », le moins
+                utile des liens, n'y revient qu'à partir de 1280 px
+                pour que « Connexion » ne soit pas poussé hors du cadre. */}
+            {NAV.slice(0, 7).map((item, i) => (
               <LienNav
                 key={item.href}
                 href={item.href}
-                className={i >= 4 ? "hidden lg:inline-block" : ""}
+                className={
+                  item.href === "/a-propos"
+                    ? "hidden xl:inline-block"
+                    : i >= 4
+                      ? "hidden lg:inline-block"
+                      : ""
+                }
               >
                 {item.label}
               </LienNav>
@@ -244,7 +254,7 @@ export default async function Header() {
               </Link>
             )}
             <MobileMenu
-              liens={NAV.slice(0, 6)}
+              liens={NAV.slice(0, 7)}
               compte={compte}
               action={{ href: "/candidature", label: "Proposer une marque" }}
             />

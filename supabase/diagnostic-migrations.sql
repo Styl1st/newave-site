@@ -52,6 +52,33 @@ union all select
   case when exists (
     select 1 from information_schema.tables
     where table_schema='public' and table_name='tags_regles'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-37 : profiles.handle (pseudo du forum)',
+  case when exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='profiles' and column_name='handle'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-37 : table forum_annonces',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema='public' and table_name='forum_annonces'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-37 : fonction forum_fil',
+  case when exists (
+    select 1 from pg_proc where proname = 'forum_fil'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-37 : signalements.annonce_id',
+  case when exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='signalements' and column_name='annonce_id'
   ) then 'OK' else 'MANQUE' end;
 
 -- ------------------------------------------------------------

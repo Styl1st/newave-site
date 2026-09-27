@@ -4553,3 +4553,19 @@ html[data-clair="1"] .colonne-filtres--deborde::-webkit-scrollbar-thumb {
 html[data-clair="1"] .colonne-filtres--deborde::after {
   background: linear-gradient(to bottom, rgba(245, 242, 255, 0), rgba(245, 242, 255, .62));
 }
+
+
+/* ---------- le forum ----------
+
+   « Signaler » est dessiné pour le fond sombre du site : texte blanc,
+   voile blanc. Sur la carte claire d'une annonce il disparaîtrait. Le
+   pivot du mode clair sert ici aussi : on redéfinit `--color-white`
+   pour ce seul bloc, et tous ses `text-white/xx` et `border-white/xx`
+   passent à l'encre d'un coup. Les pastilles pleines (`bg-white`)
+   deviennent encre elles aussi, leur texte repasse donc en blanc. */
+.signaler-sur-clair {
+  --color-white: #170a33;
+}
+.signaler-sur-clair .bg-white {
+  color: #fff;
+}
