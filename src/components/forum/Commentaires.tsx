@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import BoutonSignaler from "@/components/BoutonSignaler";
 import { commenter, supprimerCommentaire } from "@/app/forum/actions";
-import { COMMENTAIRE_MAX, ilYA, initiales, type Commentaire } from "@/lib/forum";
+import Link from "next/link";
+import { COMMENTAIRE_MAX, ilYA, initiales, lienMembre, type Commentaire } from "@/lib/forum";
 import BoutonVote from "./BoutonVote";
 import ChoixPseudo from "./ChoixPseudo";
 
@@ -21,7 +22,7 @@ import ChoixPseudo from "./ChoixPseudo";
  * le badge AUTEUR : c'est souvent elle qu'on cherche en descendant.
  */
 
-type Moi = { id: string; handle: string | null; nom: string | null } | null;
+type Moi = { id: string; handle: string | null; nom: string | null; avatar?: string | null } | null;
 
 export default function Commentaires({
   annonceId,
@@ -29,6 +30,7 @@ export default function Commentaires({
   total,
   auteurAnnonceId,
   signatureAuteur,
+  lienSignature = null,
   moi,
   chemin,
   dejaSignales,
@@ -39,6 +41,8 @@ export default function Commentaires({
   auteurAnnonceId: string;
   /** Au nom de la marque si l'annonce l'est, sinon null. */
   signatureAuteur: string | null;
+  /** Où mène ce nom de marque : sa fiche. */
+  lienSignature?: string | null;
   moi: Moi;
   chemin: string;
   dejaSignales: string[];
@@ -67,6 +71,7 @@ export default function Commentaires({
           annonceId={annonceId}
           parentId={null}
           initialesMoi={initiales(moi.nom ?? handle)}
+          photoMoi={moi.avatar ?? null}
           placeholder="Poser une question publique…"
           avecPseudo={avecPseudo}
           onEnvoye={() => router.refresh()}
@@ -88,6 +93,7 @@ export default function Commentaires({
             annonceId={annonceId}
             auteurAnnonceId={auteurAnnonceId}
             signatureAuteur={signatureAuteur}
+            lienSignature={lienSignature}
             moi={moi}
             handle={handle}
             chemin={chemin}
@@ -117,6 +123,7 @@ function Fil({
   annonceId,
   auteurAnnonceId,
   signatureAuteur,
+  lienSignature = null,
   moi,
   handle,
   chemin,
@@ -127,6 +134,7 @@ function Fil({
   annonceId: string;
   auteurAnnonceId: string;
   signatureAuteur: string | null;
+  lienSignature?: string | null;
   moi: Moi;
   handle: string | null;
   chemin: string;
@@ -142,6 +150,7 @@ function Fil({
         c={c}
         auteurAnnonceId={auteurAnnonceId}
         signatureAuteur={signatureAuteur}
+        lienSignature={lienSignature}
         moi={moi}
         chemin={chemin}
         dejaSignales={dejaSignales}
@@ -156,6 +165,7 @@ function Fil({
               c={r}
               auteurAnnonceId={auteurAnnonceId}
               signatureAuteur={signatureAuteur}
+              lienSignature={lienSignature}
               moi={moi}
               chemin={chemin}
               dejaSignales={dejaSignales}
@@ -166,6 +176,7 @@ function Fil({
               annonceId={annonceId}
               parentId={c.id}
               initialesMoi={initiales(moi.nom ?? handle)}
+              photoMoi={moi.avatar ?? null}
               placeholder={`Répondre à ${c.auteur.handle ? `@${c.auteur.handle}` : "ce commentaire"}…`}
               avecPseudo={avecPseudo}
               onEnvoye={() => {
@@ -185,6 +196,7 @@ function Ligne({
   c,
   auteurAnnonceId,
   signatureAuteur,
+  lienSignature = null,
   moi,
   chemin,
   dejaSignales,
@@ -193,6 +205,7 @@ function Ligne({
   c: Commentaire;
   auteurAnnonceId: string;
   signatureAuteur: string | null;
+  lienSignature?: string | null;
   moi: Moi;
   chemin: string;
   dejaSignales: string[];
@@ -202,7 +215,10 @@ function Ligne({
   const [retrait, setRetrait] = useState(false);
   const deLAuteur = c.auteur.id === auteurAnnonceId;
   const aMoi = Boolean(moi) && moi?.id === c.auteur.id;
-  const nom = deLAuteur && signatureAuteur ? signatureAuteur : c.auteur.handle ? `@${c.auteur.handle}` : c.auteur.nom ?? "Membre";
+  const signeMarque = deLAuteur && Boolean(signatureAuteur);
+  const nom = signeMarque ? signatureAuteur : c.auteur.handle ? `@${c.auteur.handle}` : c.auteur.nom ?? "Membre";
+  // Le nom mène à qui a écrit : la fiche de la marque, ou le profil.
+  const lien = signeMarque ? lienSignature : c.auteur.handle ? lienMembre(c.auteur.handle) : null;
 
   async function retirer() {
     if (!confirm("Retirer ce commentaire ?")) return;
@@ -213,9 +229,15 @@ function Ligne({
   }
 
   return (
-    <div>
+    <div id={`commentaire-${c.id}`} className="scroll-mt-28">
       <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-bold text-white/70">
-        <span className="font-extrabold text-white">{nom}</span>
+        {lien ? (
+          <Link href={lien} className="font-extrabold text-white underline-offset-4 hover:underline">
+            {nom}
+          </Link>
+        ) : (
+          <span className="font-extrabold text-white">{nom}</span>
+        )}
         {deLAuteur && (
           <span className="rounded-[5px] bg-white px-1.5 py-[3px] text-[8.5px] font-black uppercase leading-none tracking-[0.12em] text-[var(--color-ink)]">
             Auteur
@@ -279,6 +301,7 @@ function Formulaire({
   annonceId,
   parentId,
   initialesMoi,
+  photoMoi = null,
   placeholder,
   avecPseudo,
   onEnvoye,
@@ -287,6 +310,8 @@ function Formulaire({
   annonceId: string;
   parentId: string | null;
   initialesMoi: string;
+  /** Sa photo de profil : elle remplace les initiales. */
+  photoMoi?: string | null;
   placeholder: string;
   avecPseudo: (envoyer: () => void) => void;
   onEnvoye: () => void;
@@ -325,9 +350,14 @@ function Formulaire({
         {!compact && (
           <span
             aria-hidden
-            className="mb-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#fff] text-[11.5px] font-black text-[var(--color-ink)]"
+            className="relative mb-1 grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#fff] text-[11.5px] font-black text-[var(--color-ink)]"
           >
-            {initialesMoi}
+            {photoMoi ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={photoMoi} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              initialesMoi
+            )}
           </span>
         )}
         <textarea

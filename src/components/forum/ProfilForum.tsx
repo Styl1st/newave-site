@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { enregistrerProfilForum } from "@/app/forum/actions";
-import { BIO_MAX, handleNettoye } from "@/lib/forum";
+import { BIO_MAX, handleNettoye, lienMembre } from "@/lib/forum";
 
 /**
  * « Sur le forum » : le pseudo, la ville et la phrase de présentation,
- * depuis Mon compte.
+ * depuis Mon compte. La photo, elle, se change en tête de la page
+ * (`PhotoCompte`) : elle sert à tout le compte, pas qu'au forum.
  *
  * C'est l'endroit pour CHANGER son pseudo ; on le CHOISIT d'abord au
  * premier geste sur le forum (voir `ChoixPseudo`). Le vider est permis :
@@ -43,8 +45,18 @@ export default function ProfilForum({
   const etiquette = "mb-1.5 block text-[12.5px] font-extrabold text-white";
 
   return (
-    <section className="glass rise rise-3 p-4 sm:p-[26px]">
-      <h2 className="m-0 text-[17px] font-extrabold text-white">Sur le forum</h2>
+    <section id="forum" className="glass rise rise-3 scroll-mt-28 p-4 sm:p-[26px]">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="m-0 text-[17px] font-extrabold text-white">Sur le forum</h2>
+        {handle && (
+          <Link
+            href={lienMembre(handle)}
+            className="text-[13px] font-bold text-white/85 underline decoration-white/35 underline-offset-4 transition hover:text-white"
+          >
+            Voir mon profil public
+          </Link>
+        )}
+      </div>
       <p className="m-0 mt-2 text-[13.5px] leading-relaxed text-white/70">
         Ce que les autres membres voient de toi à côté de tes annonces et de tes réponses. Ton
         adresse email, elle, n&apos;apparaît nulle part.

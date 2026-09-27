@@ -7,7 +7,7 @@
  * `lib/messages-queries.ts`.
  */
 
-import { estUneRubrique, libelleDates, type RubriqueCle } from "./forum";
+import { estUneRubrique, libelleDates, photoSure, type RubriqueCle } from "./forum";
 
 /** Recopiées de la migration 38 : la base les impose de toute façon. */
 export const MESSAGE_MAX = 2000;
@@ -113,7 +113,7 @@ export function versConversation(l: LigneConversation): ConversationResumee {
           rubrique: (estUneRubrique(l.annonce_rubrique) ? l.annonce_rubrique : "discussion") as RubriqueCle,
           ville: l.annonce_ville,
           cloturee: Boolean(l.annonce_cloturee),
-          image: l.annonce_image,
+          image: photoSure(l.annonce_image),
           auteurId: l.annonce_auteur_id ?? "",
           marqueNom: l.annonce_marque_nom,
         }
@@ -121,7 +121,7 @@ export function versConversation(l: LigneConversation): ConversationResumee {
   return {
     id: l.id,
     annonce,
-    autre: { id: l.autre_id, handle: l.autre_handle, nom: l.autre_nom, avatar: l.autre_avatar },
+    autre: { id: l.autre_id, handle: l.autre_handle, nom: l.autre_nom, avatar: photoSure(l.autre_avatar) },
     autreEstLaMarque: Boolean(annonce?.marqueNom) && annonce?.auteurId === l.autre_id,
     monAnnonce: Boolean(l.mon_annonce),
     dernier: {

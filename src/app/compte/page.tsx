@@ -6,6 +6,8 @@ import SuppressionCompte from "@/components/SuppressionCompte";
 import ThemePicker from "@/components/ThemePicker";
 import ProfilForum from "@/components/forum/ProfilForum";
 import { moiForum } from "@/lib/forum-queries";
+import { photoSure } from "@/lib/forum";
+import PhotoCompte from "@/components/compte/PhotoCompte";
 import { requireUser } from "@/lib/auth";
 import { lireApparenceDuCompte } from "@/lib/apparence";
 import { ROLE_LABEL } from "@/lib/types";
@@ -81,11 +83,12 @@ export default async function ComptePage() {
   const initiale =
     (profile.display_name ?? profile.email ?? "?").trim().charAt(0).toUpperCase() || "?";
   const role = profile.role !== "membre" ? ROLE_LABEL[profile.role] : null;
+  const photo = photoSure(profile.avatar_url);
 
   /* ---------------- « Mon compte » : nom, adresse, mot de passe ---------------- */
   const pageMonCompte = (
     <div className="flex flex-col gap-5">
-      <VisuelMonCompte initiale={initiale} role={role} />
+      <VisuelMonCompte id={profile.id} initiale={initiale} photo={photo} role={role} />
 
       {/* Le nom part en base, l'adresse part dans Supabase Auth, et les
           deux n'échouent pas ensemble : c'est tout le soin qu'il y a
@@ -97,7 +100,9 @@ export default async function ComptePage() {
 
       {/* Seulement une fois la migration 37 passée : avant, les colonnes
           n'existent pas et le formulaire échouerait à l'envoi. */}
-      {forum?.pret && <ProfilForum handle={forum.handle} ville={forum.ville} bio={forum.bio} />}
+      {forum?.pret && (
+        <ProfilForum handle={forum.handle} ville={forum.ville} bio={forum.bio} />
+      )}
 
       {/* ---------- mot de passe ----------
           Une ligne, et non un formulaire : il n'y a rien à saisir ici,
@@ -149,19 +154,10 @@ export default async function ComptePage() {
           compact du hub dit la même chose en quarante-six pixels, et les
           quatre-vingts qu'il rendait sont ce qui manquait pour que le
           hub tienne sans défiler. */}
-      <header className="rise mb-7 hidden items-center gap-4 sm:mb-9 sm:gap-5 lg:flex">
-        <span
-          aria-hidden
-          className="grid h-[62px] w-[62px] shrink-0 place-items-center rounded-[24px] text-[24px] font-black text-white sm:h-[76px] sm:w-[76px] sm:text-[28px]"
-          style={{
-            background:
-              "linear-gradient(140deg, rgba(var(--accent-1), .5), rgba(var(--accent-2), .44))",
-          }}
-        >
-          {initiale}
-        </span>
-
-        <div className="min-w-0">
+      <header className="rise mb-7 hidden sm:mb-9 lg:block">
+        {/* La photo de profil se change ici, en touchant le carré ou le
+            lien sous l'adresse : voir `PhotoCompte`. */}
+        <PhotoCompte id={profile.id} initiale={initiale} avatar={photo} taille={76} arrondi={24}>
           <p className="eyebrow m-0">Ton compte</p>
           <h1 className="m-0 mt-1.5 truncate text-[clamp(22px,4.9vw,34px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
             {profile.display_name ?? "Mon compte"}
@@ -172,15 +168,17 @@ export default async function ComptePage() {
             </p>
             {role && <span className="badge">{role}</span>}
           </div>
-        </div>
+        </PhotoCompte>
       </header>
 
       <CompteEcran
         espaces={espaces}
         identite={{
+          id: profile.id,
           nom: profile.display_name ?? "Mon compte",
           email: profile.email ?? null,
           initiale,
+          photo,
           role,
         }}
         /* Le compte fait foi, comme partout ailleurs sur l'apparence.

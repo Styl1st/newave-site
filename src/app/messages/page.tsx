@@ -5,6 +5,7 @@ import Messagerie from "@/components/messages/Messagerie";
 import OngletsForum from "@/components/forum/OngletsForum";
 import { getProfile } from "@/lib/auth";
 import { lireMessages, mesConversations } from "@/lib/messages-queries";
+import { moiForum } from "@/lib/forum-queries";
 
 export const metadata: Metadata = {
   title: "Messages",
@@ -20,7 +21,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   if (!profile) redirect("/connexion?suite=/messages");
 
   const { c } = await searchParams;
-  const conversations = await mesConversations();
+  const [conversations, moi] = await Promise.all([mesConversations(), moiForum()]);
 
   if (conversations === null) {
     /* La migration 38 n'est pas passée, ou la base n'a pas répondu : on
@@ -53,7 +54,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
         messagesInitiaux={messages}
         moiId={profile.id}
       />
-      <OngletsForum actif="messages" connecte />
+      <OngletsForum actif="messages" connecte handle={moi?.handle} />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "./Icons";
 import { LogoutButton } from "./AccountForms";
 import { decrireApparence, lire } from "@/lib/theme";
+import PhotoCompte from "@/components/compte/PhotoCompte";
 
 /**
  * Le dessin d'une tuile ne traverse pas la frontière serveur.
@@ -42,9 +43,12 @@ export type Espace = {
 
 /** Ce que le bandeau du hub a besoin de savoir de la personne. */
 export type Identite = {
+  id: string;
   nom: string;
   email: string | null;
   initiale: string;
+  /** La photo de profil, déjà passée par `photoSure`. */
+  photo: string | null;
   /** Le rôle écrit, ou `null` pour un membre — on ne badge pas l'ordinaire. */
   role: string | null;
 };
@@ -327,27 +331,26 @@ export default function CompteEcran({
             exactement ce qui manquait pour que le hub tienne sans
             défiler. */}
         <div className="flex items-center gap-3.5">
-          <span
-            aria-hidden
-            className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[16px] text-[19px] font-black text-white"
-            style={{
-              background:
-                "linear-gradient(140deg, rgba(var(--accent-1), .5), rgba(var(--accent-2), .44))",
-            }}
-          >
-            {identite.initiale}
-          </span>
+          {/* La photo se change d'ici, d'un toucher : voir `PhotoCompte`. */}
           <div className="min-w-0 flex-1">
-            <p className="m-0 truncate text-[17px] font-extrabold leading-tight text-white">
-              {identite.nom}
-            </p>
-            {identite.email && (
-              <p className="m-0 mt-0.5 truncate text-[12.5px] font-semibold text-white/55">
-                {identite.email}
+            <PhotoCompte
+              id={identite.id}
+              initiale={identite.initiale}
+              avatar={identite.photo}
+              taille={52}
+              arrondi={17}
+            >
+              <p className="m-0 truncate text-[17px] font-extrabold leading-tight text-white">
+                {identite.nom}
               </p>
-            )}
+              {identite.email && (
+                <p className="m-0 mt-0.5 truncate text-[12.5px] font-semibold text-white/55">
+                  {identite.email}
+                </p>
+              )}
+            </PhotoCompte>
           </div>
-          {identite.role && <span className="badge shrink-0">{identite.role}</span>}
+          {identite.role && <span className="badge shrink-0 self-start">{identite.role}</span>}
         </div>
 
         {/* ---- mes espaces ---- */}

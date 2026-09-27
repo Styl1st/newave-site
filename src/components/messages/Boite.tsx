@@ -105,6 +105,7 @@ export default function Boite({
                     <Avatar
                       id={c.autre.id}
                       nom={c.autreEstLaMarque ? c.annonce?.marqueNom ?? null : c.autre.nom ?? c.autre.handle}
+                      src={c.autreEstLaMarque ? null : c.autre.avatar}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5">

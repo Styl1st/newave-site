@@ -6,7 +6,7 @@ import BoutonSignaler from "@/components/BoutonSignaler";
 import { createClient } from "@/lib/supabase/client";
 import { allegerImage } from "@/lib/alleger-image";
 import { bloquer, debloquer, envoyerMessage } from "@/app/messages/actions";
-import { lienAnnonce, rubrique } from "@/lib/forum";
+import { lienAnnonce, lienMembre, rubrique } from "@/lib/forum";
 import {
   heure,
   libelleJour,
@@ -59,6 +59,8 @@ export default function Conversation({
   const fil = useRef<HTMLDivElement>(null);
   const choix = useRef<HTMLInputElement>(null);
   const nom = nomDeLAutre(c);
+  // Son profil public ; pas pour une marque, que la personne représente.
+  const profil = !c.autreEstLaMarque && c.autre.handle ? lienMembre(c.autre.handle) : null;
 
   /* Toujours en bas : c'est là qu'est la conversation. */
   useEffect(() => {
@@ -165,10 +167,21 @@ export default function Conversation({
         >
           ‹
         </button>
-        <Avatar id={c.autre.id} nom={c.autreEstLaMarque ? a?.marqueNom ?? null : c.autre.nom ?? c.autre.handle} taille={44} />
+        <Avatar
+          id={c.autre.id}
+          nom={c.autreEstLaMarque ? a?.marqueNom ?? null : c.autre.nom ?? c.autre.handle}
+          src={c.autreEstLaMarque ? null : c.autre.avatar}
+          taille={44}
+        />
         <div className="min-w-0 flex-1">
           <p className="m-0 flex items-center gap-1.5 truncate text-[16px] font-extrabold text-white">
-            {nom}
+            {profil ? (
+              <Link href={profil} className="truncate underline-offset-4 hover:underline">
+                {nom}
+              </Link>
+            ) : (
+              <span className="truncate">{nom}</span>
+            )}
             {c.autreEstLaMarque && <BadgeMarque sombre />}
           </p>
           <p className="m-0 truncate text-[12px] font-semibold text-white/70">
@@ -195,6 +208,14 @@ export default function Conversation({
               >
                 {c.jeBloque ? `Débloquer ${nom}` : `Bloquer ${nom}`}
               </button>
+              {profil && (
+                <Link
+                  href={profil}
+                  className="block px-4 py-2.5 text-[13.5px] font-bold text-white transition hover:bg-white/10"
+                >
+                  Voir le profil
+                </Link>
+              )}
               {a && (
                 <Link
                   href={lienAnnonce(a)}

@@ -3,6 +3,7 @@ import {
   ilYA,
   libelleRemuneration,
   lienAnnonce,
+  lienAuteur,
   signature,
   type Annonce,
 } from "@/lib/forum";
@@ -20,7 +21,7 @@ import { IconBulle } from "./icones";
  * donne aux « Idées » et aux « Discussions » (rarement illustrées) de
  * quoi se lire d'un coup d'œil.
  *
- * TOUTE LA CARTE EST UN LIEN, SAUF LE VOTE. Le lien est posé en calque
+ * TOUTE LA CARTE EST UN LIEN, SAUF LE VOTE ET LE NOM DE L'AUTEUR. Le lien est posé en calque
  * sous le contenu (`data-calque`, comme les lignes de l'annuaire) et le
  * pied passe au-dessus : voter ne doit pas ouvrir l'annonce.
  *
@@ -39,6 +40,7 @@ export default function CarteAnnonce({
   const photo = a.images[0];
   const remuneration = a.details.remuneration;
   const payee = remuneration && remuneration !== "benevole" ? libelleRemuneration(remuneration) : null;
+  const versAuteur = apercu ? null : lienAuteur(a);
 
   return (
     <article className="card-light flex flex-col">
@@ -85,7 +87,17 @@ export default function CarteAnnonce({
         )}
 
         <p className="m-0 mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-semibold text-[#6a5a92]">
-          <span className="font-extrabold text-[var(--color-ink)]">{signature(a)}</span>
+          {/* Au-dessus du calque, comme le vote : le nom mène à l'auteur. */}
+          {versAuteur ? (
+            <Link
+              href={versAuteur}
+              className="relative z-[4] font-extrabold text-[var(--color-ink)] underline-offset-4 hover:underline"
+            >
+              {signature(a)}
+            </Link>
+          ) : (
+            <span className="font-extrabold text-[var(--color-ink)]">{signature(a)}</span>
+          )}
           {a.marque && <BadgeMarque />}
           {a.ville && <span>· {a.ville}</span>}
           <span suppressHydrationWarning>· {ilYA(a.created_at)}</span>

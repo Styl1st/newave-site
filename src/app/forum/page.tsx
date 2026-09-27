@@ -59,7 +59,7 @@ export default async function ForumPage({ searchParams }: { searchParams: Promis
 
       {/* Au doigt, les quatre gestes du forum restent sous le pouce
           pendant qu'on descend le fil, « Publier » compris. */}
-      <OngletsForum actif="forum" connecte={Boolean(moi)} />
+      <OngletsForum actif="forum" connecte={Boolean(moi)} handle={moi?.handle} />
     </div>
   );
 }

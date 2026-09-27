@@ -92,6 +92,18 @@ union all select
   'migration-38 : fonction mes_conversations',
   case when exists (
     select 1 from pg_proc where proname = 'mes_conversations'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-39 : fonction forum_profil (profil public)',
+  case when exists (
+    select 1 from pg_proc where proname = 'forum_profil'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-39 : garde-fou de la photo de profil',
+  case when exists (
+    select 1 from pg_trigger where tgname = 'profiles_avatar_garde'
   ) then 'OK' else 'MANQUE' end;
 
 -- ------------------------------------------------------------

@@ -5,6 +5,7 @@ import MobileMenu from "./MobileMenu";
 import PastilleMessages from "./messages/PastilleMessages";
 import { IconCoeur } from "./Icons";
 import { getProfile } from "@/lib/auth";
+import { photoSure } from "@/lib/forum";
 import { getMesMarques } from "@/lib/brand-space";
 import { categoriesEnVue } from "@/lib/queries";
 
@@ -23,6 +24,7 @@ const NAV = [
 
 export default async function Header() {
   const profile = await getProfile();
+  const photo = photoSure(profile?.avatar_url);
 
   /*
    * Le raccourci vers sa propre marque.
@@ -222,9 +224,9 @@ export default async function Header() {
                 href="/compte"
                 aria-label="Mon compte"
                 title={profile.display_name ?? profile.email ?? "Mon compte"}
-                className="puce-barre ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black text-white transition active:scale-95"
+                className="puce-barre relative ml-1.5 grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full text-[13px] font-black text-white transition active:scale-95"
               >
-                {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+                {photo ? <PhotoPuce src={photo} /> : (profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
               </Link>
             ) : (
               <LienNav href="/connexion" className="ml-1">
@@ -240,9 +242,9 @@ export default async function Header() {
               <Link
                 href="/compte"
                 aria-label="Mon compte"
-                className="grid h-9 w-9 place-items-center rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] active:scale-95"
+                className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-white text-[13px] font-black text-[var(--color-ink)] active:scale-95"
               >
-                {(profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
+                {photo ? <PhotoPuce src={photo} /> : (profile.display_name ?? profile.email ?? "?").charAt(0).toUpperCase()}
               </Link>
             ) : (
               /*
@@ -270,4 +272,13 @@ export default async function Header() {
       />
     </header>
   );
+}
+
+/**
+ * La photo de profil sur la pastille du compte. Elle REMPLACE l'initiale :
+ * un logo détouré (PNG transparent) la laisserait voir à travers.
+ */
+function PhotoPuce({ src }: { src: string }) {
+  /* eslint-disable-next-line @next/next/no-img-element */
+  return <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />;
 }

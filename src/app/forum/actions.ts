@@ -11,6 +11,7 @@ import {
   IMAGES_MAX,
   lienAnnonce,
   lireDates,
+  photoSure,
   REMUNERATIONS,
   rubrique as laRubrique,
   estUneRubrique,
@@ -136,6 +137,46 @@ export async function enregistrerProfilForum(input: {
   revalidatePath("/compte");
   revalidatePath("/forum", "layout");
   return { ok: true, message: "Profil du forum enregistré." };
+}
+
+/* ------------------------------------------------------------------
+   La photo de profil (lot C, migration 39)
+   ------------------------------------------------------------------ */
+
+const DOSSIER_PUBLIC_FORUM = "/storage/v1/object/public/forum/";
+
+/**
+ * Pose (ou retire, avec `null`) la photo de profil, déjà envoyée par le
+ * navigateur dans `forum/{identifiant}/avatar-….webp`.
+ *
+ * L'ancienne photo part du stockage dans la foulée : une photo qu'on a
+ * remplacée n'a aucune raison de rester en ligne. Si elle résiste, elle
+ * n'est plus affichée nulle part.
+ */
+export async function enregistrerPhotoProfil(url: string | null): Promise<Resultat> {
+  const { supabase, user } = await session();
+  if (!supabase || !user) return { ok: false, raison: "non-connecte", error: "Connecte-toi d'abord." };
+
+  const dossier = `${DOSSIER_PUBLIC_FORUM}${user.id}/`;
+  if (url !== null && (!photoSure(url) || !url.includes(dossier))) {
+    return { ok: false, error: "Cette photo ne vient pas de ton dossier." };
+  }
+
+  const { data: avant } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
+
+  const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
+  if (error) return traduire(error, "La photo n'a pas été enregistrée.");
+
+  const ancienne = (avant as { avatar_url: string | null } | null)?.avatar_url ?? null;
+  if (ancienne && ancienne !== url && ancienne.includes(dossier)) {
+    const chemin = decodeURIComponent(ancienne.split(DOSSIER_PUBLIC_FORUM)[1] ?? "");
+    if (chemin.startsWith(`${user.id}/avatar-`)) await supabase.storage.from("forum").remove([chemin]);
+  }
+
+  revalidatePath("/compte");
+  revalidatePath("/forum", "layout");
+  revalidatePath("/messages");
+  return { ok: true };
 }
 
 /* ------------------------------------------------------------------

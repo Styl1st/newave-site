@@ -3,12 +3,15 @@ import { DEMO_ANNONCES, DEMO_COMMENTAIRES } from "./forum-demo";
 import {
   estUneRubrique,
   LOT_FORUM,
+  photoSure,
   type Annonce,
   type CarteAuteur,
   type Commentaire,
   type Details,
   type FiltresForum,
   type MoiForum,
+  type ProfilMembre,
+  type ReponseMembre,
   type RubriqueCle,
 } from "./forum";
 
@@ -63,7 +66,8 @@ function versAnnonce(l: LigneAnnonce): Annonce {
     titre: l.titre,
     texte: l.texte ?? l.extrait ?? "",
     ville: l.ville,
-    images: l.images ?? [],
+    // Seulement ce que sert notre stockage (voir `photoSure`).
+    images: (l.images ?? []).map(photoSure).filter((u): u is string => Boolean(u)),
     details: l.details ?? {},
     cloturee: Boolean(l.cloturee),
     masque: Boolean(l.masque),
@@ -74,7 +78,7 @@ function versAnnonce(l: LigneAnnonce): Annonce {
       id: l.auteur_id,
       handle: l.auteur_handle,
       nom: l.auteur_nom,
-      avatar: l.auteur_avatar,
+      avatar: photoSure(l.auteur_avatar),
     },
     // Une marque dépubliée n'est plus lisible : l'annonce reste, au nom
     // de la personne.
@@ -193,7 +197,7 @@ export async function lireCommentaires(annonceId: string): Promise<Commentaire[]
       votes: Number(l.votes) || 0,
       masque: Boolean(l.masque),
       created_at: l.created_at,
-      auteur: { id: l.auteur_id, handle: l.auteur_handle, nom: l.auteur_nom, avatar: l.auteur_avatar },
+      auteur: { id: l.auteur_id, handle: l.auteur_handle, nom: l.auteur_nom, avatar: photoSure(l.auteur_avatar) },
       aVote: Boolean(l.a_vote),
       reponses: [],
     })
@@ -263,15 +267,201 @@ export async function moiForum(): Promise<MoiForum | null> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, display_name, handle, ville, bio")
+    .select("id, display_name, handle, ville, bio, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
   if (error || !data) {
     signaler("profil du forum", error);
-    return { id: user.id, handle: null, nom: null, ville: null, bio: null, pret: false };
+    return { id: user.id, handle: null, nom: null, ville: null, bio: null, avatar: null, pret: false };
   }
 
-  const p = data as { id: string; display_name: string | null; handle: string | null; ville: string | null; bio: string | null };
-  return { id: p.id, handle: p.handle, nom: p.display_name, ville: p.ville, bio: p.bio, pret: true };
+  const p = data as {
+    id: string;
+    display_name: string | null;
+    handle: string | null;
+    ville: string | null;
+    bio: string | null;
+    avatar_url: string | null;
+  };
+  return {
+    id: p.id,
+    handle: p.handle,
+    nom: p.display_name,
+    ville: p.ville,
+    bio: p.bio,
+    avatar: photoSure(p.avatar_url),
+    pret: true,
+  };
+}
+
+/* ------------------------------------------------------------------
+   Le profil public (lot C, migration 39)
+   ------------------------------------------------------------------ */
+
+/**
+ * Au plus soixante annonces et soixante réponses par profil. Pendant la
+ * bêta, personne n'en approche ; le jour où quelqu'un y arrive, on
+ * ajoutera « Voir plus », comme dans le fil.
+ */
+export const PROFIL_MAX = 60;
+
+/** Le profil de démonstration : l'auteur retrouvé dans les annonces de démo. */
+function profilDeDemo(handle: string): ProfilMembre | null {
+  const commentaires = DEMO_COMMENTAIRES.flatMap((c) => [c, ...c.reponses]);
+  const auteur =
+    DEMO_ANNONCES.find((a) => a.auteur.handle === handle)?.auteur ??
+    commentaires.find((c) => c.auteur.handle === handle)?.auteur;
+  if (!auteur || !auteur.handle) return null;
+
+  const annonces = DEMO_ANNONCES.filter((a) => a.auteur.id === auteur.id && !a.marque);
+  const reponses = commentaires.filter((c) => c.auteur.id === auteur.id);
+  const PHRASES: Record<string, { bio: string; ville: string }> = {
+    "lea.grain": { bio: "Photographe argentique, portraits et lookbooks", ville: "Lyon" },
+    "sacha.mdl": { bio: "Mannequin freelance, maille et mouvement", ville: "Paris" },
+  };
+  return {
+    id: auteur.id,
+    handle: auteur.handle,
+    nom: auteur.nom ?? auteur.handle,
+    ville: PHRASES[handle]?.ville ?? annonces[0]?.ville ?? null,
+    bio: PHRASES[handle]?.bio ?? null,
+    avatar: null,
+    created_at: "2026-03-12T10:00:00.000Z",
+    votesRecus: annonces.reduce((n, a) => n + a.votes, 0) + reponses.reduce((n, c) => n + c.votes, 0),
+    annonces: annonces.length,
+    reponses: reponses.length,
+    reponsesUtiles: reponses.filter((c) => c.votes > 0).length,
+  };
+}
+
+/**
+ * Le profil d'un pseudo : `null` s'il n'existe pas, `"erreur"` si la
+ * base n'a pas répondu (migration 39 absente, surtout). Les deux
+ * n'appellent pas la même page : une 404 dans le premier cas, une
+ * phrase d'excuse dans le second.
+ */
+export async function lireProfil(handle: string): Promise<ProfilMembre | null | "erreur"> {
+  const supabase = await createClient();
+  if (!supabase) return profilDeDemo(handle);
+
+  const { data, error } = await supabase.rpc("forum_profil", { p_handle: handle });
+  signaler("profil", error);
+  if (error) return "erreur";
+
+  const l = (data as
+    | {
+        id: string;
+        handle: string;
+        nom: string | null;
+        ville: string | null;
+        bio: string | null;
+        avatar_url: string | null;
+        created_at: string;
+        votes_recus: number | string;
+        annonces: number | string;
+        reponses: number | string;
+        reponses_utiles: number | string;
+      }[]
+    | null)?.[0];
+  if (!l) return null;
+
+  return {
+    id: l.id,
+    handle: l.handle,
+    nom: l.nom || l.handle,
+    ville: l.ville,
+    bio: l.bio,
+    avatar: photoSure(l.avatar_url),
+    created_at: l.created_at,
+    votesRecus: Number(l.votes_recus) || 0,
+    annonces: Number(l.annonces) || 0,
+    reponses: Number(l.reponses) || 0,
+    reponsesUtiles: Number(l.reponses_utiles) || 0,
+  };
+}
+
+/**
+ * Ses annonces à son nom, de la plus récente à la plus ancienne. Celles
+ * publiées au nom d'une marque restent à la marque ; celles en cours de
+ * relecture n'apparaissent pas, même à leur auteur (c'est la vitrine
+ * publique : Mon compte les montre).
+ */
+export async function lireAnnoncesDe(p: ProfilMembre): Promise<Annonce[]> {
+  const supabase = await createClient();
+  if (!supabase) return DEMO_ANNONCES.filter((a) => a.auteur.id === p.id && !a.marque);
+
+  const { data, error } = await supabase
+    .from("forum_annonces")
+    .select("id, rubrique, titre, ville, images, details, cloturee, votes, commentaires, created_at, auteur_id")
+    .eq("auteur_id", p.id)
+    .is("marque_id", null)
+    .eq("masque", false)
+    .order("created_at", { ascending: false })
+    .limit(PROFIL_MAX);
+  signaler("annonces du profil", error);
+
+  return ((data as Omit<LigneAnnonce, "auteur_handle" | "auteur_nom" | "auteur_avatar" | "marque_id" | "marque_nom" | "marque_slug" | "a_vote">[] | null) ?? []).map(
+    (l) =>
+      versAnnonce({
+        ...l,
+        auteur_handle: p.handle,
+        auteur_nom: p.nom,
+        auteur_avatar: p.avatar,
+        marque_id: null,
+        marque_nom: null,
+        marque_slug: null,
+        a_vote: false,
+      })
+  );
+}
+
+/** Ses commentaires, du plus récent au plus ancien, avec l'annonce où ils ont été écrits. */
+export async function lireReponsesDe(p: ProfilMembre): Promise<ReponseMembre[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return DEMO_COMMENTAIRES.flatMap((c) => [c, ...c.reponses])
+      .filter((c) => c.auteur.id === p.id)
+      .map((c) => ({
+        id: c.id,
+        texte: c.texte,
+        votes: c.votes,
+        created_at: c.created_at,
+        estReponse: Boolean(c.parentId),
+        annonce: { id: DEMO_ANNONCES[1].id, titre: DEMO_ANNONCES[1].titre, rubrique: DEMO_ANNONCES[1].rubrique },
+      }));
+  }
+
+  const { data, error } = await supabase.rpc("forum_reponses_de", {
+    p_auteur: p.id,
+    p_limite: PROFIL_MAX,
+    p_decalage: 0,
+  });
+  signaler("réponses du profil", error);
+
+  return (
+    (data as
+      | {
+          id: string;
+          texte: string;
+          votes: number;
+          created_at: string;
+          est_reponse: boolean;
+          annonce_id: string;
+          annonce_titre: string;
+          annonce_rubrique: string;
+        }[]
+      | null) ?? []
+  ).map((l) => ({
+    id: l.id,
+    texte: l.texte,
+    votes: Number(l.votes) || 0,
+    created_at: l.created_at,
+    estReponse: Boolean(l.est_reponse),
+    annonce: {
+      id: l.annonce_id,
+      titre: l.annonce_titre,
+      rubrique: (estUneRubrique(l.annonce_rubrique) ? l.annonce_rubrique : "discussion") as RubriqueCle,
+    },
+  }));
 }

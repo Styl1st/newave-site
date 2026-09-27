@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useNonLus } from "@/components/messages/PastilleMessages";
+import { lienMembre } from "@/lib/forum";
 
 /**
  * La barre d'onglets du forum, au doigt : Forum · Publier · Messages ·
@@ -13,13 +14,23 @@ import { useNonLus } from "@/components/messages/PastilleMessages";
  * deux à regarder. Ici, les quatre gestes du forum restent sous le
  * pouce pendant qu'on descend le fil.
  *
- * « Profil » mène à Mon compte, où se règlent le pseudo, la ville et la
- * phrase de présentation, en attendant la page de profil publique.
+ * « Profil » mène au profil public de la personne connectée, ou à Mon
+ * compte tant qu'elle n'a pas choisi de pseudo (c'est là qu'on le
+ * choisit, avec sa ville, sa phrase et sa photo).
  */
 
 type Onglet = "forum" | "publier" | "messages" | "profil";
 
-export default function OngletsForum({ actif, connecte }: { actif: Onglet; connecte: boolean }) {
+export default function OngletsForum({
+  actif,
+  connecte,
+  handle = null,
+}: {
+  actif: Onglet;
+  connecte: boolean;
+  /** Le pseudo de la personne connectée, s'il y en a un. */
+  handle?: string | null;
+}) {
   const nonLus = useNonLus(connecte);
 
   /* Le pied de page se décale de la hauteur de la barre (`--pied`, voir
@@ -38,7 +49,7 @@ export default function OngletsForum({ actif, connecte }: { actif: Onglet; conne
     { cle: "forum", label: "Forum", href: "/forum" },
     { cle: "publier", label: "Publier", href: vers("/forum/publier") },
     { cle: "messages", label: "Messages", href: vers("/messages") },
-    { cle: "profil", label: "Profil", href: vers("/compte") },
+    { cle: "profil", label: "Profil", href: vers(handle ? lienMembre(handle) : "/compte") },
   ];
 
   return (

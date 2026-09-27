@@ -6,6 +6,7 @@ import OngletsForum from "@/components/forum/OngletsForum";
 import { conversationSur } from "@/lib/messages-queries";
 import Commentaires from "@/components/forum/Commentaires";
 import PastilleRubrique from "@/components/forum/PastilleRubrique";
+import Avatar from "@/components/messages/Avatar";
 import { BadgeMarque } from "@/components/forum/CarteAnnonce";
 import { getProfile } from "@/lib/auth";
 import { mesSignalements } from "@/lib/moderation";
@@ -19,10 +20,10 @@ import {
 import {
   idDepuisParam,
   ilYA,
-  initiales,
   libelleDates,
   libelleRemuneration,
   lienAnnonce,
+  lienAuteur,
   rubrique,
   signature,
   type Annonce,
@@ -94,6 +95,7 @@ export default async function AnnoncePage({ params }: Props) {
   const cases = casesDeDetails(a);
   const [photo, ...autresPhotos] = a.images;
   const nomAuteur = signature(a);
+  const versAuteur = lienAuteur(a);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] pb-24 pt-6 sm:pt-9 md:pb-9">
@@ -193,7 +195,8 @@ export default async function AnnoncePage({ params }: Props) {
             total={idsCommentaires.length}
             auteurAnnonceId={a.auteur.id}
             signatureAuteur={a.marque ? a.marque.nom : null}
-            moi={moi ? { id: moi.id, handle: moi.handle, nom: moi.nom } : null}
+            lienSignature={a.marque ? `/marques/${a.marque.slug}` : null}
+            moi={moi ? { id: moi.id, handle: moi.handle, nom: moi.nom, avatar: moi.avatar } : null}
             chemin={chemin}
             dejaSignales={commentairesSignales}
           />
@@ -203,16 +206,22 @@ export default async function AnnoncePage({ params }: Props) {
         <aside className="flex flex-col gap-4 lg:sticky lg:top-[96px]">
           <div className="card-light p-4 sm:p-5">
             <div className="flex items-center gap-3">
-              <span
-                aria-hidden
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] text-[15px] font-black text-[var(--color-ink)]"
-                style={{ background: r.couleur }}
-              >
-                {initiales(a.marque?.nom ?? a.auteur.nom ?? a.auteur.handle)}
-              </span>
+              {/* Au nom d'une marque : ses initiales, jamais la photo de la
+                  personne qui la gère. */}
+              <Avatar
+                id={a.marque?.id ?? a.auteur.id}
+                nom={a.marque?.nom ?? a.auteur.nom ?? a.auteur.handle}
+                src={a.marque ? null : a.auteur.avatar}
+              />
               <div className="min-w-0">
                 <p className="m-0 flex items-center gap-1.5 truncate text-[16px] font-extrabold text-[var(--color-ink)]">
-                  {a.marque ? a.marque.nom : a.auteur.nom ?? nomAuteur}
+                  {versAuteur ? (
+                    <Link href={versAuteur} className="truncate underline-offset-4 hover:underline">
+                      {a.marque ? a.marque.nom : a.auteur.nom ?? nomAuteur}
+                    </Link>
+                  ) : (
+                    <span className="truncate">{a.marque ? a.marque.nom : a.auteur.nom ?? nomAuteur}</span>
+                  )}
                   {a.marque && <BadgeMarque />}
                 </p>
                 <p className="m-0 mt-0.5 truncate text-[10.5px] font-black uppercase tracking-[0.12em] text-[#6a5a92]">
@@ -241,12 +250,12 @@ export default async function AnnoncePage({ params }: Props) {
               </dl>
             )}
 
-            {a.marque && (
+            {versAuteur && (
               <Link
-                href={`/marques/${a.marque.slug}`}
+                href={versAuteur}
                 className="mt-3 flex min-h-[42px] items-center justify-center rounded-[13px] border border-[rgba(23,10,51,0.14)] bg-[#fff] text-[13px] font-extrabold text-[var(--color-ink)] transition hover:border-[rgba(23,10,51,0.3)]"
               >
-                Voir la fiche marque
+                {a.marque ? "Voir la fiche marque" : "Voir le profil"}
               </Link>
             )}
           </div>
@@ -274,7 +283,7 @@ export default async function AnnoncePage({ params }: Props) {
         </aside>
       </div>
 
-      <OngletsForum actif="forum" connecte={Boolean(moi)} />
+      <OngletsForum actif="forum" connecte={Boolean(moi)} handle={moi?.handle} />
     </div>
   );
 }

@@ -364,6 +364,34 @@ export type CarteAuteur = {
   reponsesUtiles: number;
 };
 
+/** Le profil public d'un membre (`/forum/membre/[pseudo]`, lot C). */
+export type ProfilMembre = {
+  id: string;
+  handle: string;
+  nom: string;
+  ville: string | null;
+  bio: string | null;
+  avatar: string | null;
+  created_at: string;
+  votesRecus: number;
+  annonces: number;
+  reponses: number;
+  reponsesUtiles: number;
+};
+
+/** Un commentaire, vu depuis le profil de son auteur (onglet Réponses). */
+export type ReponseMembre = {
+  id: string;
+  texte: string;
+  votes: number;
+  created_at: string;
+  /** Vrai si c'est une réponse à un autre commentaire. */
+  estReponse: boolean;
+  annonce: { id: string; titre: string; rubrique: RubriqueCle };
+};
+
+export type OngletProfil = "annonces" | "reponses";
+
 /** Ce que le forum sait de la personne connectée. */
 export type MoiForum = {
   id: string;
@@ -371,6 +399,7 @@ export type MoiForum = {
   nom: string | null;
   ville: string | null;
   bio: string | null;
+  avatar: string | null;
   /** Faux tant que la migration 37 n'est pas passée : le forum se tait alors. */
   pret: boolean;
 };
@@ -378,6 +407,54 @@ export type MoiForum = {
 /* ------------------------------------------------------------------
    L'affichage
    ------------------------------------------------------------------ */
+
+/**
+ * Où mène un nom d'auteur : la fiche de la marque pour une annonce de
+ * marque, le profil public pour une personne qui a un pseudo, nulle
+ * part sinon.
+ */
+export function lienAuteur(a: Pick<Annonce, "marque" | "auteur">): string | null {
+  if (a.marque) return `/marques/${a.marque.slug}`;
+  return a.auteur.handle ? lienMembre(a.auteur.handle) : null;
+}
+
+export function lienMembre(handle: string): string {
+  return `/forum/membre/${encodeURIComponent(handle)}`;
+}
+
+/** « Membre depuis mars 2026 ». */
+export function moisAnnee(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+}
+
+/* ------------------------------------------------------------------
+   Les photos venues des membres
+   ------------------------------------------------------------------ */
+
+const STOCKAGE_PUBLIC = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/+$/, "")}/storage/v1/object/public/`
+  : null;
+
+/**
+ * Une photo de membre (annonce, photo de profil), ou null si elle ne
+ * vient pas de NOTRE stockage.
+ *
+ * LA BASE VÉRIFIE LE DOSSIER, LE SITE VÉRIFIE L'ADRESSE. Les
+ * garde-fous des migrations 37 et 39 imposent le chemin
+ * `…/storage/v1/object/public/forum/{identifiant}/…`, mais pas le
+ * domaine devant : `https://ailleurs.fr/storage/v1/object/public/forum/…`
+ * passerait. Ici on exige notre Supabase. Une adresse refusée ne
+ * s'affiche pas, rien d'autre : pas de pixel espion chez qui regarde.
+ *
+ * Les chemins du site (`/brand/…`) passent : ce sont les images de
+ * démonstration.
+ */
+export function photoSure(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  if (!STOCKAGE_PUBLIC || url.includes("..")) return null;
+  return url.startsWith(STOCKAGE_PUBLIC) ? url : null;
+}
 
 /** Au nom de la marque, ou « @pseudo ». */
 export function signature(a: Pick<Annonce, "marque" | "auteur">): string {

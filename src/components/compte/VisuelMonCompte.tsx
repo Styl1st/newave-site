@@ -1,3 +1,5 @@
+import PhotoCompte from "./PhotoCompte";
+
 /**
  * Le visuel d'en-tête de la page « Mon compte », au doigt.
  *
@@ -21,10 +23,15 @@
  * carte. C'est le dégradé du bandeau d'identité, au caractère près.
  */
 export default function VisuelMonCompte({
+  id,
   initiale,
+  photo,
   role,
 }: {
+  id: string;
   initiale: string;
+  /** La photo de profil, déjà passée par `photoSure`. */
+  photo: string | null;
   /** Le rôle écrit, ou `null` pour un membre — on ne badge pas l'ordinaire. */
   role: string | null;
 }) {
@@ -55,16 +62,8 @@ export default function VisuelMonCompte({
           {role && <span className="badge shrink-0">{role}</span>}
         </div>
 
-        <span
-          aria-hidden
-          className="grid h-[58px] w-[58px] place-items-center rounded-[18px] text-[23px] font-black text-white"
-          style={{
-            background:
-              "linear-gradient(140deg, rgba(var(--accent-1), .5), rgba(var(--accent-2), .44))",
-          }}
-        >
-          {initiale}
-        </span>
+        {/* La plaque est la photo, et la photo se change en la touchant. */}
+        <PhotoCompte id={id} initiale={initiale} avatar={photo} taille={58} arrondi={18} clair />
       </div>
     </div>
   );

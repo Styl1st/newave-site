@@ -12,13 +12,19 @@ export async function getProfile(): Promise<Profile | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, email, display_name, role")
-    .eq("id", user.id)
-    .maybeSingle();
+  /*
+   * LA PHOTO EST LUE AVEC LE RESTE, MAIS NE PEUT RIEN CASSER. La colonne
+   * `avatar_url` vient de la migration 37 ; sur une base qui ne l'aurait
+   * pas, la lecture échouerait et tout le monde paraîtrait déconnecté.
+   * On relit alors sans elle : on perd la photo, pas la session.
+   */
+  const lire = (colonnes: string) =>
+    supabase.from("profiles").select(colonnes).eq("id", user.id).maybeSingle();
 
-  return (data as Profile) ?? null;
+  let { data, error } = await lire("id, email, display_name, role, avatar_url");
+  if (error) ({ data, error } = await lire("id, email, display_name, role"));
+
+  return (data as unknown as Profile) ?? null;
 }
 
 /**

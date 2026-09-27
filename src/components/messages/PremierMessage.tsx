@@ -234,7 +234,7 @@ export default function PremierMessage({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="m-0 text-[12.5px] font-bold text-[#6a5a92]">
-              {signatureAuteur} verra ton pseudo et ton message.
+              {signatureAuteur} verra ton profil et tes votes reçus.
             </p>
             <button
               type="submit"
