@@ -13,6 +13,7 @@ import { avecMessage } from "@/lib/flash";
 import { premiereImage } from "@/lib/medias";
 import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { obstacleAPublication, peutEtrePubliee } from "@/lib/publication";
+import { SITE, emailsBranches, envoyerCandidatureAcceptee } from "@/lib/emails";
 
 /**
  * Toutes les ecritures de l'administration passent par ici.
@@ -621,6 +622,7 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
     user_id: string | null;
     brand_id: string | null;
     relationship: "proprietaire" | "decouvreur";
+    status: string;
   } | null;
 
   if (!application) return { ok: false, error: "Candidature introuvable." };
@@ -701,6 +703,26 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
 
   if (error) return { ok: false, error: error.message };
 
+  /*
+   * L'email d'acceptation, pour la marque elle-même seulement.
+   *
+   * Son texte parle à qui dirige la marque (« ta fiche », « ton
+   * dossier ») : il n'a pas de sens pour quelqu'un qui nous l'a
+   * recommandée. Et il ne part qu'au premier passage à « acceptée »,
+   * pas à chaque clic sur le bouton.
+   *
+   * Le lien mène à l'espace marque. Sans compte, il passe d'abord par
+   * la connexion, où l'on peut s'inscrire avec la même adresse.
+   */
+  const premiereAcceptation = application.status !== "acceptee";
+  const prevenir = estProprietaire && premiereAcceptation && emailsBranches();
+  if (prevenir) {
+    const lienDossier = application.user_id
+      ? `${SITE}/espace-marque`
+      : `${SITE}/connexion?suite=${encodeURIComponent("/espace-marque")}`;
+    envoyerCandidatureAcceptee(application.email, application.brand_name, lienDossier, application.id);
+  }
+
   revalidatePath("/admin/candidatures");
   revalidatePath("/admin/marques");
   let message: string;
@@ -713,6 +735,7 @@ export async function acceptApplication(formData: FormData): Promise<Result> {
     message =
       "Marque créée en brouillon. Le candidat n'avait pas de compte : rattache-le depuis sa fiche quand il en aura un.";
   }
+  if (prevenir) message += ` Un email d'acceptation part vers ${application.email}.`;
 
   return { ok: true, message };
 }

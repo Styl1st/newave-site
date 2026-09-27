@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchIdentite, normalizeShopUrl } from "@/lib/catalogue";
 import { BRAND_CATEGORIES } from "@/lib/taxonomy";
+import { envoyerCandidatureRecue } from "@/lib/emails";
 
 /**
  * Les deux moments du parcours de candidature.
@@ -187,6 +188,27 @@ export async function deposerLaCandidature(formData: FormData): Promise<Depot> {
   if (error) {
     // Les messages levés par la fonction sont écrits pour être lus.
     return { ok: false, error: error.message || "L'envoi a échoué. Réessaie dans un instant." };
+  }
+
+  /*
+   * L'accusé de réception.
+   *
+   * Ce formulaire est public et l'adresse est tapée par n'importe qui :
+   * sans garde-fou, quelqu'un pourrait s'en servir pour faire pleuvoir
+   * nos messages sur la boîte d'un tiers, une candidature toutes les
+   * trente secondes. Le tiers nous classerait en indésirable, et les
+   * emails de confirmation des vrais inscrits suivraient le même
+   * chemin. La base dit donc si cette adresse a déjà reçu son accusé
+   * dans la journée (migration-40.sql). Dans le doute, on n'envoie pas.
+   */
+  const email = texte("email").toLowerCase();
+  const { data: aAccuser, error: erreurAccuse } = await supabase.rpc("candidature_a_accuser", {
+    p_email: email,
+  });
+  if (erreurAccuse) {
+    console.error("[emails] candidature_a_accuser (migration-40 lancée ?) :", erreurAccuse.message);
+  } else if (aAccuser === true) {
+    envoyerCandidatureRecue(email, texte("marque"));
   }
 
   return { ok: true };
