@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Fil from "@/components/forum/Fil";
+import OngletsForum from "@/components/forum/OngletsForum";
 import { lireLeFil, moiForum } from "@/lib/forum-queries";
 import { estUneRubrique, estUnTri, VILLES, type FiltresForum } from "@/lib/forum";
 
@@ -56,18 +57,9 @@ export default async function ForumPage({ searchParams }: { searchParams: Promis
 
       <Fil premierePage={page} filtresInitiaux={filtres} moiId={moi?.id ?? null} />
 
-      {/* Au doigt, publier reste sous le pouce pendant qu'on descend le
-          fil : le bouton du haut est loin dès la troisième carte. */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-30 px-[var(--pad)] pb-[calc(env(safe-area-inset-bottom,0px)+14px)] md:hidden"
-      >
-        <Link
-          href="/forum/publier"
-          className="flex min-h-[50px] w-full items-center justify-center rounded-full bg-white text-[14px] font-black text-[var(--color-ink)] shadow-[0_12px_32px_rgba(23,10,51,0.4)] transition active:scale-[.98]"
-        >
-          + Publier une annonce
-        </Link>
-      </div>
+      {/* Au doigt, les quatre gestes du forum restent sous le pouce
+          pendant qu'on descend le fil, « Publier » compris. */}
+      <OngletsForum actif="forum" connecte={Boolean(moi)} />
     </div>
   );
 }

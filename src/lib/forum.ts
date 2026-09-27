@@ -258,11 +258,11 @@ export const IMAGES_MAX = 4;
 export const BIO_MAX = 160;
 
 /**
- * La messagerie privée arrive au lot B. Tant qu'elle n'est pas là, le
- * bouton « Répondre en privé » ne s'affiche pas : un bouton qui ne mène
- * nulle part est pire que pas de bouton.
+ * La messagerie privée (lot B, migration 38). À repasser à `false` pour
+ * retirer « Répondre en privé » sans toucher au reste : un bouton qui ne
+ * mène nulle part est pire que pas de bouton.
  */
-export const MESSAGERIE_OUVERTE = false;
+export const MESSAGERIE_OUVERTE = true;
 
 /* ------------------------------------------------------------------
    Le pseudo

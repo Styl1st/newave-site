@@ -11,6 +11,7 @@ const NATURE = {
   marque: "Marque",
   annonce: "Annonce",
   commentaire: "Commentaire",
+  conversation: "Conversation",
 } as const;
 
 /**

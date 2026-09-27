@@ -79,6 +79,19 @@ union all select
   case when exists (
     select 1 from information_schema.columns
     where table_schema='public' and table_name='signalements' and column_name='annonce_id'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-38 : table messages (messagerie privée)',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema='public' and table_name='messages'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-38 : fonction mes_conversations',
+  case when exists (
+    select 1 from pg_proc where proname = 'mes_conversations'
   ) then 'OK' else 'MANQUE' end;
 
 -- ------------------------------------------------------------

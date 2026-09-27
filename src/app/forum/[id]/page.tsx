@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ActionsAnnonce from "@/components/forum/ActionsAnnonce";
+import OngletsForum from "@/components/forum/OngletsForum";
+import { conversationSur } from "@/lib/messages-queries";
 import Commentaires from "@/components/forum/Commentaires";
 import PastilleRubrique from "@/components/forum/PastilleRubrique";
 import { BadgeMarque } from "@/components/forum/CarteAnnonce";
@@ -73,11 +75,14 @@ export default async function AnnoncePage({ params }: Props) {
   if (!a) notFound();
 
   const chemin = lienAnnonce(a);
-  const [commentaires, carte, voisines, signalees] = await Promise.all([
+  const [commentaires, carte, voisines, signalees, conversationId] = await Promise.all([
     lireCommentaires(a.id),
     lireCarteAuteur(a.auteur.id, a.marque?.id ?? null),
     lireVoisines(a),
     moi ? mesSignalements("annonce", [a.id]) : Promise.resolve([] as string[]),
+    // Une conversation déjà commencée sur cette annonce : « Répondre en
+    // privé » y ramène au lieu d'en ouvrir une deuxième.
+    moi && moi.id !== a.auteur.id ? conversationSur(a.id) : Promise.resolve(null),
   ]);
 
   const idsCommentaires = commentaires.flatMap((c) => [c.id, ...c.reponses.map((r) => r.id)]);
@@ -91,7 +96,7 @@ export default async function AnnoncePage({ params }: Props) {
   const nomAuteur = signature(a);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-6 sm:py-9">
+    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] pb-24 pt-6 sm:pt-9 md:pb-9">
       <Link
         href={`/forum?rubrique=${a.rubrique}`}
         className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-white/80 transition hover:text-white"
@@ -173,10 +178,11 @@ export default async function AnnoncePage({ params }: Props) {
 
               <ActionsAnnonce
                 annonce={a}
-                moiId={moi?.id ?? null}
+                moi={moi ? { id: moi.id, handle: moi.handle, nom: moi.nom } : null}
                 estAdmin={profil?.role === "admin"}
                 chemin={chemin}
                 dejaSignalee={signalees.includes(a.id)}
+                conversationId={conversationId}
               />
             </div>
           </article>
@@ -267,6 +273,8 @@ export default async function AnnoncePage({ params }: Props) {
           )}
         </aside>
       </div>
+
+      <OngletsForum actif="forum" connecte={Boolean(moi)} />
     </div>
   );
 }

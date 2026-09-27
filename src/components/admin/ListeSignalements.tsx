@@ -12,6 +12,7 @@ const NATURE: Record<ASignaler["cible"], string> = {
   marque: "Marque",
   annonce: "Annonce",
   commentaire: "Commentaire",
+  conversation: "Conversation",
 };
 
 /** Ce qui se retire d'ici en un geste, et ce que dit le bouton. */
@@ -98,7 +99,13 @@ function Carte({ item }: { item: ASignaler }) {
 
           <p className="m-0 mt-2 text-[15px] font-extrabold text-white">{item.titre}</p>
           {item.extrait && (
-            <p className="m-0 mt-1 line-clamp-3 whitespace-pre-line text-[13.5px] leading-relaxed text-white/78">
+            /* Une conversation se lit en entier (ses derniers messages) :
+               c'est la seule façon de juger, il n'y a pas de page à ouvrir. */
+            <p
+              className={`m-0 mt-1 whitespace-pre-line text-[13.5px] leading-relaxed text-white/78 ${
+                item.cible === "conversation" ? "" : "line-clamp-3"
+              }`}
+            >
               {item.extrait}
             </p>
           )}
@@ -110,7 +117,7 @@ function Carte({ item }: { item: ASignaler }) {
             >
               Aller voir en contexte
             </Link>
-          ) : (
+          ) : item.cible === "conversation" && item.extrait ? null : (
             <p className="m-0 mt-2 text-[12.5px] text-white/45">
               La cible n&apos;existe plus. Classe sans suite.
             </p>

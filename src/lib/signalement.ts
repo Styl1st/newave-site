@@ -14,10 +14,10 @@
  * mieux que pas de signalement.
  */
 
-export type CibleSignalement = "avis" | "piece" | "marque" | "annonce" | "commentaire";
+export type CibleSignalement = "avis" | "piece" | "marque" | "annonce" | "commentaire" | "conversation";
 
 /** Toutes les cibles, dans l'ordre des filtres de la pile d'administration. */
-export const CIBLES: CibleSignalement[] = ["avis", "piece", "marque", "annonce", "commentaire"];
+export const CIBLES: CibleSignalement[] = ["avis", "piece", "marque", "annonce", "commentaire", "conversation"];
 
 type Motif = { cle: string; label: string };
 
@@ -64,6 +64,17 @@ export const MOTIFS: Record<CibleSignalement, Motif[]> = {
     { cle: "hors-sujet", label: "Hors sujet" },
     { cle: "autre", label: "Autre" },
   ],
+  // La messagerie (migration 38). Signaler une conversation est ce qui
+  // ouvre sa lecture à l'administration : sans signalement, personne
+  // d'autre que les deux participants ne la voit.
+  conversation: [
+    { cle: "harcelement", label: "Harcèlement ou insistance" },
+    { cle: "arnaque", label: "Soupçon d'arnaque" },
+    { cle: "bancaire", label: "Demande de coordonnées bancaires" },
+    { cle: "faux-casting", label: "Faux casting" },
+    { cle: "spam", label: "Publicité ou spam" },
+    { cle: "autre", label: "Autre" },
+  ],
 };
 
 export const NOM_CIBLE: Record<CibleSignalement, string> = {
@@ -72,6 +83,7 @@ export const NOM_CIBLE: Record<CibleSignalement, string> = {
   marque: "cette marque",
   annonce: "cette annonce",
   commentaire: "ce commentaire",
+  conversation: "cette conversation",
 };
 
 /** L'étiquette lisible d'un motif, ou le motif brut s'il est inconnu. */

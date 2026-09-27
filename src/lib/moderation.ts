@@ -34,13 +34,14 @@ import {
 
 const COLONNE: Record<
   CibleSignalement,
-  "review_id" | "product_id" | "brand_id" | "annonce_id" | "commentaire_id"
+  "review_id" | "product_id" | "brand_id" | "annonce_id" | "commentaire_id" | "conversation_id"
 > = {
   avis: "review_id",
   piece: "product_id",
   marque: "brand_id",
   annonce: "annonce_id",
   commentaire: "commentaire_id",
+  conversation: "conversation_id",
 };
 
 /* ---------------- côté visiteur ---------------- */
@@ -244,9 +245,15 @@ export async function getSignalements(): Promise<ASignaler[]> {
       .order("created_at", { ascending: false })
       .limit(300);
 
+  // Du plus complet au plus ancien : migration 38, puis 37, puis avant.
   let { data, error } = await lire(
-    "id, review_id, product_id, brand_id, annonce_id, commentaire_id, motif, detail, created_at"
+    "id, review_id, product_id, brand_id, annonce_id, commentaire_id, conversation_id, motif, detail, created_at"
   );
+  if (error) {
+    ({ data, error } = await lire(
+      "id, review_id, product_id, brand_id, annonce_id, commentaire_id, motif, detail, created_at"
+    ));
+  }
   if (error) {
     ({ data, error } = await lire("id, review_id, product_id, brand_id, motif, detail, created_at"));
   }
@@ -258,6 +265,7 @@ export async function getSignalements(): Promise<ASignaler[]> {
     brand_id: string | null;
     annonce_id?: string | null;
     commentaire_id?: string | null;
+    conversation_id?: string | null;
     motif: string;
     detail: string | null;
     created_at: string;
@@ -280,9 +288,17 @@ export async function getSignalements(): Promise<ASignaler[]> {
           ? "annonce"
           : l.commentaire_id
             ? "commentaire"
-            : "marque";
+            : l.conversation_id
+              ? "conversation"
+              : "marque";
     const cibleId =
-      l.review_id ?? l.product_id ?? l.annonce_id ?? l.commentaire_id ?? l.brand_id ?? "";
+      l.review_id ??
+      l.product_id ??
+      l.annonce_id ??
+      l.commentaire_id ??
+      l.conversation_id ??
+      l.brand_id ??
+      "";
     if (!cibleId) continue;
 
     const cle = `${cible}:${cibleId}`;
@@ -376,6 +392,45 @@ export async function getSignalements(): Promise<ASignaler[]> {
     }
   }
 
+  /*
+   * ---- les conversations ----
+   *
+   * Les derniers messages, pour juger sur pièce. L'administration ne
+   * peut les lire QUE parce que la conversation est signalée et pas
+   * encore traitée (règle `conversation_signalee`, migration 38) : une
+   * fois classée, elle redevient privée.
+   */
+  const conversations = new Map<string, { participants: string; extrait: string }>();
+  const idsConversations = parNature("conversation");
+  if (idsConversations.length > 0) {
+    const { data: cs } = await supabase
+      .from("conversations")
+      .select("id, a_id, b_id")
+      .in("id", idsConversations);
+    const lignesCs = (cs as { id: string; a_id: string; b_id: string }[] | null) ?? [];
+    const personnes = Array.from(new Set(lignesCs.flatMap((c) => [c.a_id, c.b_id])));
+    const { data: ms } = personnes.length
+      ? await supabase.from("forum_membres").select("id, handle").in("id", personnes)
+      : { data: [] };
+    const pseudo = new Map(((ms as { id: string; handle: string }[] | null) ?? []).map((m) => [m.id, `@${m.handle}`]));
+
+    for (const c of lignesCs) {
+      const { data: derniers } = await supabase
+        .from("messages")
+        .select("auteur_id, texte, piece_jointe_nom, created_at")
+        .eq("conversation_id", c.id)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      const lignes = ((derniers as { auteur_id: string; texte: string; piece_jointe_nom: string | null }[] | null) ?? [])
+        .reverse()
+        .map((m) => `${pseudo.get(m.auteur_id) ?? "Membre"} : ${m.texte || `[pièce jointe : ${m.piece_jointe_nom ?? "fichier"}]`}`);
+      conversations.set(c.id, {
+        participants: `${pseudo.get(c.a_id) ?? "Membre"} et ${pseudo.get(c.b_id) ?? "Membre"}`,
+        extrait: lignes.join("\n"),
+      });
+    }
+  }
+
   const lienPiece = (id: string) => {
     const p = pieces.get(id);
     const m = p ? marques.get(p.brand_id) : undefined;
@@ -425,6 +480,20 @@ export async function getSignalements(): Promise<ASignaler[]> {
           titre: a ? a.titre : "Annonce supprimée",
           extrait: a ? `${a.masque ? "Masquée en attendant ta décision. " : ""}${a.texte.slice(0, 280)}` : "",
           href: a ? `/forum/${g.cibleId}` : null,
+          signalements: g.signalements,
+        };
+      }
+
+      if (g.cible === "conversation") {
+        const c = conversations.get(g.cibleId);
+        return {
+          id: g.id,
+          cible: "conversation",
+          cibleId: g.cibleId,
+          titre: c ? `Conversation entre ${c.participants}` : "Conversation supprimée",
+          extrait: c?.extrait ?? "",
+          // Pas de page pour la lire : c'est l'extrait ci-dessus qui sert.
+          href: null,
           signalements: g.signalements,
         };
       }

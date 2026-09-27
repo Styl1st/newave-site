@@ -2,6 +2,7 @@ import Link from "next/link";
 import BarreDuHaut from "./BarreDuHaut";
 import LienNav from "./LienNav";
 import MobileMenu from "./MobileMenu";
+import PastilleMessages from "./messages/PastilleMessages";
 import { IconCoeur } from "./Icons";
 import { getProfile } from "@/lib/auth";
 import { getMesMarques } from "@/lib/brand-space";
@@ -64,6 +65,7 @@ export default async function Header() {
             ? [{ href: maMarque, label: mesMarques.length === 1 ? "Ma marque" : "Mes marques" }]
             : []),
           { href: "/compte", label: "Mon compte" },
+          { href: "/messages", label: "Messages" },
           { href: "/favoris", label: "Mes favoris" },
           ...(profile.role === "admin" ? [{ href: "/admin", label: "Administration" }] : []),
         ],
@@ -211,6 +213,10 @@ export default async function Header() {
               <span className="hidden xl:inline">Proposer une marque</span>
             </Link>
 
+            {/* Les messages privés du forum, à gauche de l'avatar, avec le
+                nombre de conversations non lues. Voir `PastilleMessages`. */}
+            {profile && <PastilleMessages />}
+
             {profile ? (
               <Link
                 href="/compte"
@@ -229,6 +235,7 @@ export default async function Header() {
         }
         mobileFin={
           <>
+            {profile && <PastilleMessages compact />}
             {profile ? (
               <Link
                 href="/compte"
