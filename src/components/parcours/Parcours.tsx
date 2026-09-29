@@ -1,27 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { IconBack } from "@/components/Icons";
 
 /**
  * La forme d'un parcours guidé, sans son issue.
  *
  *   1. Qui es-tu par rapport à cette marque.
- *   2. On lit son site, ou tu remplis à la main.
- *   3. Tu relis ce qu'on a trouvé, tu corriges.
- *   4. C'est parti.
+ *   2. La fiche : on lit son site (ou tu remplis à la main), et tu vois
+ *      tout de suite ce que ça donne, à côté des champs.
+ *   3. C'est parti.
  *
  * Cette forme sert deux fois, à deux personnes qui n'ont rien à voir :
  * un créateur qui propose sa marque et repart avec une candidature en
  * attente d'examen, un administrateur qui ajoute une fiche et repart
  * avec une marque. Le chemin est le même, la porte de sortie non.
  *
+ * IL N'Y A PLUS D'ÉCRAN « VÉRIFIER LES INFORMATIONS ». Lire le site
+ * aboutissait à une phrase (« 42 pièces lues, repris : le nom, la
+ * description… »), puis à un bouton, puis à un second écran de champs.
+ * On lisait un compte rendu au lieu de voir le résultat. La lecture
+ * remplit maintenant la fiche SUR LE MÊME ÉCRAN, et l'aperçu (la vraie
+ * carte de l'annuaire, le haut de la page, les pièces trouvées) se met
+ * à jour à mesure qu'on corrige.
+ *
  * CE FICHIER NE CONNAÎT QUE CE QUI EST COMMUN : l'enchaînement des
- * écrans, le premier écran, le cadre du deuxième et du troisième, le
- * lien qui ramène en arrière, la matière des boutons. Ce qu'on relit à
- * l'écran 3 et ce qui arrive à l'écran 4 restent chez chaque parcours,
- * parce que c'est exactement ce qui les distingue — les poser ici
- * demanderait un `if` par différence, et deux parcours cousus dans le
- * même composant divergent de toute façon, un `if` à la fois.
+ * écrans, le premier écran, le cadre du second, le bouton qui ramène en
+ * arrière, la matière des boutons. Ce qu'on remplit et ce qui arrive à
+ * la fin restent chez chaque parcours, parce que c'est exactement ce qui
+ * les distingue.
  *
  * Tout le reste tient dans un seul composant côté appelant, et c'est
  * voulu : une saisie à moitié remplie ne survit pas à un changement de
@@ -29,7 +36,12 @@ import { useEffect, useRef, useState } from "react";
  * qu'on a cliqué sur « précédent ».
  */
 
-export type Etape = "choix" | "source" | "relecture" | "fin";
+export type Etape = "choix" | "fiche" | "fin";
+
+const ETAPES: readonly Etape[] = ["choix", "fiche", "fin"];
+
+/** Le paramètre d'adresse qui porte l'écran courant. */
+const PARAMETRE = "etape";
 
 // La matière des champs vit dans `globals.css`. Voir `.champ`.
 export const CHAMP = "champ";
@@ -39,28 +51,97 @@ export const PRINCIPAL =
 export const SECONDAIRE =
   "rounded-full border border-white/40 bg-white/8 px-5 py-3 text-[13.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/18 active:scale-[.97] disabled:opacity-55";
 
+/** L'écran que porte l'adresse, s'il y en a un. */
+function etapeDeLAdresse(): Etape | null {
+  const valeur = new URLSearchParams(window.location.search).get(PARAMETRE);
+  return ETAPES.includes(valeur as Etape) ? (valeur as Etape) : null;
+}
+
+/** L'adresse courante, avec ou sans l'écran. */
+function adresseAvec(etape: Etape | null): string {
+  const url = new URL(window.location.href);
+  if (etape) url.searchParams.set(PARAMETRE, etape);
+  else url.searchParams.delete(PARAMETRE);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 /**
- * L'écran courant, et le retour en haut de page qui va avec.
+ * L'écran courant, le retour en haut de page, et l'historique.
  *
- * Sans ce dernier, on change d'écran et l'on reste au milieu, devant un
- * contenu qui n'a plus de sens.
+ * LE BOUTON « PRÉCÉDENT » DU NAVIGATEUR RAMÈNE À L'ÉCRAN D'AVANT. Les
+ * écrans n'étaient qu'un état React : l'adresse ne bougeait pas, et
+ * « précédent » quittait tout le parcours, fiche remplie comprise. Il
+ * fallait revenir, recharger, tout reprendre. Chaque écran pousse donc
+ * maintenant une entrée dans l'historique (`?etape=fiche`), et c'est
+ * l'adresse qui dit où l'on est.
+ *
+ * `history.pushState` et non `router.push` : Next 15 relaie les appels
+ * directs à l'historique sans redemander la page au serveur. Le
+ * formulaire, monté une fois, garde donc ce qu'on y a écrit d'un écran
+ * à l'autre, dans un sens comme dans l'autre.
+ *
+ * Une adresse qui arrive AVEC un écran (page rechargée, lien copié) est
+ * ramenée au premier : ce qui avait été saisi n'existe plus, et
+ * l'écran d'avant, lui, n'est pas dans l'historique.
  */
 export function useEtapes(depart: Etape = "choix") {
-  const [etape, aller] = useState<Etape>(depart);
+  const [etape, poser] = useState<Etape>(depart);
   const haut = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (etapeDeLAdresse()) window.history.replaceState(null, "", adresseAvec(null));
+
+    const surPrecedent = () => {
+      const lue = etapeDeLAdresse();
+      // « fin » ne se rejoue pas : on ne renvoie pas deux fois un dossier.
+      poser(lue && lue !== "fin" ? lue : depart);
+    };
+
+    window.addEventListener("popstate", surPrecedent);
+    return () => window.removeEventListener("popstate", surPrecedent);
+  }, [depart]);
 
   useEffect(() => {
     haut.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [etape]);
 
-  return { etape, aller, haut };
+  /**
+   * Passer à un écran. `remplacer` pour la fin : une fois le dossier
+   * parti, « précédent » ne doit pas rouvrir le formulaire rempli.
+   */
+  const aller = useCallback((suivante: Etape, { remplacer = false } = {}) => {
+    poser(suivante);
+    const adresse = adresseAvec(suivante === depart ? null : suivante);
+    if (remplacer) window.history.replaceState(null, "", adresse);
+    else window.history.pushState(null, "", adresse);
+  }, [depart]);
+
+  /**
+   * Revenir d'un écran, comme le ferait « précédent ».
+   *
+   * Si l'écran courant a été poussé dans l'historique, on RECULE dans
+   * l'historique plutôt que d'en empiler un de plus : sans ça, chaque
+   * aller-retour laissait une entrée, et « précédent » du navigateur
+   * faisait ensuite défiler tous ces écrans un par un.
+   */
+  const revenir = useCallback(
+    (vers: Etape = depart) => {
+      if (etapeDeLAdresse()) window.history.back();
+      else poser(vers);
+    },
+    [depart]
+  );
+
+  return { etape, aller, revenir, haut };
 }
 
 /**
  * Le pas en arrière.
  *
- * Discret et toujours au même endroit : c'est ce qui permet de cliquer
- * sans crainte sur le premier écran, puisqu'on sait qu'on peut revenir.
+ * Il était un lien souligné de treize pixels, qu'on ne voyait pas : on
+ * finissait par utiliser le « précédent » du navigateur, qui quittait
+ * le parcours. C'est désormais la même pastille que `BackLink`, au même
+ * endroit sur chaque écran.
  */
 export function LienRetour({
   onClick,
@@ -73,9 +154,10 @@ export function LienRetour({
     <button
       type="button"
       onClick={onClick}
-      className="self-start text-[13px] font-bold text-white/65 underline underline-offset-2 transition hover:text-white"
+      className="inline-flex min-h-[44px] items-center gap-2 self-start rounded-full border border-white/30 bg-white/8 py-2.5 pl-3.5 pr-4.5 text-[12.5px] font-bold text-white/85 transition hover:border-white/60 hover:bg-white/18 hover:text-white active:scale-[.97]"
     >
-      {children}
+      <IconBack />
+      <span className="truncate">{children}</span>
     </button>
   );
 }
@@ -123,81 +205,91 @@ export function EcranChoix<T extends string>({
   );
 }
 
-/* ==================== 2. la source ==================== */
+/* ==================== 2. la fiche ==================== */
 
 /**
- * Le cadre de la lecture du site.
+ * L'écran de la fiche : lire le site, remplir, voir.
  *
- * L'appareil qui lit la boutique n'est pas le même des deux côtés — le
- * public a le sien, l'administration en a un autre, plus bavard — et il
- * arrive donc en `children`. Ce qui l'entoure, lui, est identique : le
- * retour en arrière, et surtout la sortie de secours pour qui n'a pas
- * de site. C'est le message qui compte le plus de cet écran.
+ *   - `lecture` : l'appareil qui lit la boutique. Il n'est pas le même
+ *     des deux côtés (le public a le sien, l'administration un autre,
+ *     plus bavard), il arrive donc de l'appelant.
+ *   - `children` : le formulaire. TOUJOURS MONTÉ, même replié : côté
+ *     administration, la lecture du site écrit directement dans ses
+ *     champs et doit les trouver, et ce qui y est saisi doit survivre à
+ *     un aller-retour vers le premier écran.
+ *   - `apercu` : ce que la saisie donne, collé à droite sur grand écran,
+ *     au-dessus des champs au doigt (c'est ce qu'on veut voir d'abord).
+ *
+ * `ouverte` : la fiche ne se déplie qu'après une lecture, ou sur
+ * « Remplir à la main ». Trente champs vides d'emblée, c'est une page
+ * qu'on ne sait pas par où prendre ; le lien du site, lui, se colle en
+ * un geste.
  */
-export function CadreSource({
+export function CadreFiche({
   onRetour,
-  retour = "← Changer de choix",
+  retour = "Changer de choix",
+  lecture,
+  ouverte,
   sansSite,
   onManuel,
   manuel = "Remplir à la main",
+  avis,
+  apercu,
+  refFiche,
   children,
 }: {
   onRetour: () => void;
   retour?: string;
+  lecture: React.ReactNode;
+  ouverte: boolean;
   sansSite: { titre: string; texte: string };
   onManuel: () => void;
   manuel?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-5">
-      <LienRetour onClick={onRetour}>{retour}</LienRetour>
-
-      {children}
-
-      <section className="glass p-4 sm:px-7 sm:py-6">
-        <h2 className="m-0 text-[15.5px] font-extrabold text-white">{sansSite.titre}</h2>
-        <p className="m-0 mt-2 max-w-2xl text-[13.5px] leading-relaxed text-white/72">
-          {sansSite.texte}
-        </p>
-        <button type="button" onClick={onManuel} className={`${SECONDAIRE} mt-4`}>
-          {manuel}
-        </button>
-      </section>
-    </div>
-  );
-}
-
-/* ==================== 3. la relecture ==================== */
-
-/**
- * Le cadre de l'écran de relecture.
- *
- * Le formulaire arrive en `children` : celui d'une candidature et celui
- * d'une fiche d'annuaire ne demandent pas les mêmes choses et ne
- * partent pas au même endroit. Ce qui les entoure ne change pas : on
- * peut revenir, et une phrase rappelle que rien n'est définitif.
- */
-export function CadreRelecture({
-  onRetour,
-  retour = "← Revenir",
-  avis,
-  children,
-}: {
-  onRetour: () => void;
-  retour?: string;
   avis?: React.ReactNode;
+  apercu: React.ReactNode;
+  /** Pour y faire défiler l'écran une fois la lecture faite. */
+  refFiche?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-5">
       <LienRetour onClick={onRetour}>{retour}</LienRetour>
 
-      {avis && (
-        <p className="glass m-0 px-5 py-3.5 text-[13.5px] leading-relaxed text-white">{avis}</p>
+      {lecture}
+
+      {!ouverte && (
+        <section className="glass p-4 sm:px-7 sm:py-6">
+          <h2 className="m-0 text-[15.5px] font-extrabold text-white">{sansSite.titre}</h2>
+          <p className="m-0 mt-2 max-w-2xl text-[13.5px] leading-relaxed text-white/72">
+            {sansSite.texte}
+          </p>
+          <button type="button" onClick={onManuel} className={`${SECONDAIRE} mt-4`}>
+            {manuel}
+          </button>
+        </section>
       )}
 
-      {children}
+      {/* La structure ne change jamais, seule la classe bascule : le
+          formulaire garde ainsi son identité, et ce qu'il contient. */}
+      <div
+        ref={refFiche}
+        className={
+          ouverte
+            ? "grid scroll-mt-28 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]"
+            : "hidden"
+        }
+      >
+        <aside className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[86px] lg:order-2">
+          {apercu}
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-5 lg:order-1">
+          {avis && (
+            <p className="glass m-0 px-5 py-3.5 text-[13.5px] leading-relaxed text-white">{avis}</p>
+          )}
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

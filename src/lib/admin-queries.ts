@@ -43,40 +43,32 @@ export type BrandAdmin = Brand & { pieces: number; gerants: number };
  *
  * Le nombre de pièces et celui des gérants ne sont pas des colonnes de
  * la table : ce sont eux qui permettent de retrouver les fiches
- * vides, ou celles que personne n'a encore réclamées. On les compte
- * ici, en deux requêtes pour tout le monde, plutôt qu'une par marque.
+ * vides, ou celles que personne n'a encore réclamées. Les gérants se
+ * comptent ici (une table courte) ; les pièces, par Postgres (voir
+ * `piecesParMarque`).
  */
 export async function adminGetBrandsDetaillees(): Promise<BrandAdmin[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
   /*
-   * ⚠️ CES TROIS LECTURES ÉTAIENT PLAFONNÉES À MILLE LIGNES, ET C'EST
-   * LE COMPTE DE PIÈCES QUI EN MOURAIT.
+   * LE NOMBRE DE PIÈCES EST COMPTÉ PAR POSTGRES, PLUS PAR NOUS.
    *
-   * PostgREST ne rend jamais plus de mille lignes et ne le dit pas
-   * (voir `stats.ts`). `select("brand_id")` sur TOUTES les pièces du
-   * site : passé mille pièces au total, les marques absentes de ces
-   * mille premières lignes se retrouvaient avec zéro pièce. Zéro pièce
-   * veut dire « sans catalogue » pour `obstacleAPublication`, donc une
-   * fiche complète déclarée impubliable, un filtre « Sans pièce » qui
-   * ment, et une ligne de liste qui annonce un manque inexistant.
+   * On rapatriait une ligne par pièce, par tranches de mille, avec un
+   * plafond de vingt tranches. La table garde aussi les brouillons et
+   * les pièces retirées, elle grossit vite : passé vingt mille lignes,
+   * ou à la première tranche ratée en route (délai dépassé), tout ce qui
+   * restait n'était plus compté, et sans un mot. Des marques publiées,
+   * catalogue importé, s'affichaient alors « 0 pièce » avec la jauge
+   * rouge : un manque inexistant, et un filtre « Sans pièce » qui ment.
    *
-   * Le second critère d'ordre n'est pas décoratif : `brand_id` se
-   * répète des centaines de fois, et deux tranches successives se
-   * recouvriraient sans une clé qui tranche pour de bon.
+   * Voir `piecesParMarque` : une fonction SQL si la migration 41 est
+   * passée, sinon un compte exact par marque. Les deux sont justes,
+   * seule la vitesse change.
    */
-  const [marques, pieces, gerants] = await Promise.all([
+  const [marques, gerants] = await Promise.all([
     parTranches<Brand>((de, a) =>
       supabase.from("brands").select("*").order("name").order("id").range(de, a)
-    ),
-    parTranches<{ brand_id: string }>((de, a) =>
-      supabase
-        .from("products")
-        .select("brand_id")
-        .order("brand_id")
-        .order("id")
-        .range(de, a)
     ),
     parTranches<{ brand_id: string }>((de, a) =>
       supabase
@@ -88,20 +80,70 @@ export async function adminGetBrandsDetaillees(): Promise<BrandAdmin[]> {
     ),
   ]);
 
-  const compter = (lignes: { brand_id: string }[]) => {
-    const total = new Map<string, number>();
-    for (const l of lignes) total.set(l.brand_id, (total.get(l.brand_id) ?? 0) + 1);
-    return total;
-  };
+  const parGerants = new Map<string, number>();
+  for (const l of gerants) parGerants.set(l.brand_id, (parGerants.get(l.brand_id) ?? 0) + 1);
 
-  const parPieces = compter(pieces);
-  const parGerants = compter(gerants);
+  const parPieces = await piecesParMarque(
+    supabase,
+    marques.map((b) => b.id)
+  );
 
   return marques.map((b) => ({
     ...b,
     pieces: parPieces.get(b.id) ?? 0,
     gerants: parGerants.get(b.id) ?? 0,
   }));
+}
+
+type Client = NonNullable<Awaited<ReturnType<typeof createClient>>>;
+
+/** Combien de requêtes `count` partent en même temps, au plus. */
+const COMPTES_SIMULTANES = 12;
+
+/**
+ * Le nombre de pièces de chaque marque, sans rapatrier une seule pièce.
+ *
+ * 1. `compter_les_pieces_par_marque()` (migration 41) : un seul aller-
+ *    retour, Postgres groupe et ne renvoie qu'une ligne par marque.
+ * 2. À défaut (migration pas encore passée), un `count: "exact"` par
+ *    marque, par paquets. C'est exactement le compte que relit l'action
+ *    de publication, donc la liste ne peut pas la contredire.
+ *
+ * Une marque dont le compte échoue est ABSENTE de la table, pas à zéro :
+ * l'appelant retombe sur 0, mais le journal le dit. Mieux vaut une
+ * erreur visible dans Vercel qu'un « sans catalogue » inventé.
+ */
+async function piecesParMarque(supabase: Client, ids: string[]): Promise<Map<string, number>> {
+  const total = new Map<string, number>();
+
+  const { data, error } = await supabase.rpc("compter_les_pieces_par_marque");
+  if (!error && Array.isArray(data)) {
+    for (const ligne of data as { brand_id: string; total: number }[]) {
+      total.set(ligne.brand_id, Number(ligne.total) || 0);
+    }
+    return total;
+  }
+
+  for (let i = 0; i < ids.length; i += COMPTES_SIMULTANES) {
+    const paquet = ids.slice(i, i + COMPTES_SIMULTANES);
+    const comptes = await Promise.all(
+      paquet.map((id) =>
+        supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("brand_id", id)
+      )
+    );
+    comptes.forEach((r, j) => {
+      if (r.error) {
+        console.error(`[admin] compte des pièces raté pour ${paquet[j]} :`, r.error.message);
+        return;
+      }
+      total.set(paquet[j], r.count ?? 0);
+    });
+  }
+
+  return total;
 }
 
 export async function adminGetBrand(id: string): Promise<Brand | null> {

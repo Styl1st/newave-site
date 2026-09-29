@@ -20,9 +20,9 @@ import { mesSignalements } from "@/lib/moderation";
 import { getProfile } from "@/lib/auth";
 import { PRICE_TIER_LABEL } from "@/lib/types";
 import Link from "next/link";
-import BackLink from "@/components/BackLink";
 import BandeauMarque from "@/components/BandeauMarque";
 import BarreGerant from "@/components/BarreGerant";
+import RetourOrigine from "@/components/RetourOrigine";
 import auBesoin from "next/dynamic";
 import {
   ACCROCHE,
@@ -265,7 +265,17 @@ export default async function BrandPage({ params }: Props) {
         </div>
       )}
 
-      <BackLink href="/marques">Toutes les marques</BackLink>
+      {/* Le retour ramène là d'où l'on est venu (l'annuaire, les
+          pièces, le panel d'administration…), à la même hauteur. Sans
+          mémoire (lien ouvert directement), l'annuaire, ou le panel pour
+          un administrateur. */}
+      <RetourOrigine
+        repli={
+          profil?.role === "admin"
+            ? { href: "/admin/marques", label: "Admin · Marques" }
+            : { href: "/marques", label: "Toutes les marques" }
+        }
+      />
 
       {/*
         La page publique est le poste de commande.
@@ -290,6 +300,7 @@ export default async function BrandPage({ params }: Props) {
                à « est-ce SA marque ? », que le rôle ne suffit pas à
                trancher — un admin peut très bien en gérer une. */
             voix={insight.gerant ? "gerant" : "administration"}
+            peutPublier={profil?.role === "admin"}
           />
         </div>
       )}

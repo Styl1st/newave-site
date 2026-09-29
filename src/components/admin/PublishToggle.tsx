@@ -19,12 +19,24 @@ export default function PublishToggle({
   brandName,
   published,
   taille = "normale",
+  bloque = null,
 }: {
   brandId: string;
   brandName: string;
   published: boolean;
-  /** « compacte » pour une ligne de liste, sur fond clair. */
-  taille?: "normale" | "compacte";
+  /**
+   * « compacte » pour une ligne de liste, sur fond clair. « barre » pour
+   * la barre de la marque (`BarreGerant`), à côté de « Modifier la
+   * fiche » : même gabarit que ses autres boutons.
+   */
+  taille?: "normale" | "compacte" | "barre";
+  /**
+   * Ce qui empêche de publier, quand on le sait déjà (la phrase de
+   * `obstacleAPublication`). Le bouton se grise et la phrase passe en
+   * infobulle, plutôt que de laisser cliquer pour se faire refuser. Le
+   * serveur revérifie de toute façon.
+   */
+  bloque?: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -58,6 +70,60 @@ export default function PublishToggle({
   }
 
   const compacte = taille === "compacte";
+
+  /*
+   * DANS LA BARRE DE LA MARQUE : un seul bouton, sans phrase dessous.
+   *
+   * La barre aligne ses boutons sur une rangée ; un paragraphe de
+   * confirmation sous l'un d'eux la ferait grandir d'un coup. La
+   * conséquence du retrait est donc dans l'infobulle, et le libellé
+   * suffit à dire qu'un second appui est attendu.
+   */
+  if (taille === "barre") {
+    const empeche = !published && Boolean(bloque);
+    return (
+      <button
+        type="button"
+        disabled={pending || empeche}
+        onClick={basculer}
+        onBlur={desarmer}
+        title={
+          arme
+            ? `${brandName} redevient un brouillon : sa page quitte l'annuaire, rien n'est supprimé.`
+            : empeche
+              ? (bloque ?? undefined)
+              : undefined
+        }
+        className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[13px] px-3.5 py-2.5 text-[13px] transition active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-45 lg:min-h-0 lg:flex-none ${
+          published
+            ? `border font-bold ${
+                arme
+                  ? "border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white"
+                  : "border-white/20 bg-white/10 text-white/80 hover:bg-white/16 hover:text-white"
+              }`
+            : "font-black text-white"
+        }`}
+        style={
+          published
+            ? undefined
+            : {
+                backgroundImage:
+                  "linear-gradient(118deg, rgba(var(--accent-1),.7), rgba(var(--accent-2),.7))",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,.25)",
+              }
+        }
+      >
+        {published ? <IconEye /> : <IconCheck />}
+        {pending
+          ? "…"
+          : arme
+            ? "Confirmer le retrait"
+            : published
+              ? "Retirer"
+              : "Publier"}
+      </button>
+    );
+  }
 
   // La version compacte vit sur une carte claire : le contraste s'inverse.
   const styleBouton = compacte

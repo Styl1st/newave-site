@@ -1,4 +1,5 @@
 import BarreGerant from "@/components/BarreGerant";
+import RetourEspace from "@/components/RetourEspace";
 import { getBrandStats } from "@/lib/brand-stats";
 import { requireManagedBrand } from "@/lib/brand-space";
 import type { Jour, Ligne } from "@/lib/stats";
@@ -73,14 +74,16 @@ function Classement({ titre, lignes, vide }: { titre: string; lignes: Ligne[]; v
 
 export default async function BrandStatsPage({ params }: Props) {
   const { slug } = await params;
-  const { brand } = await requireManagedBrand(slug);
+  const { brand, isAdmin } = await requireManagedBrand(slug);
   const stats = await getBrandStats(brand.id, slug);
 
   return (
     <>
+      <RetourEspace slug={brand.slug} isAdmin={isAdmin} />
       <div className="mb-7">
         <BarreGerant
           brand={brand}
+          peutPublier={isAdmin}
           pieces={stats ? stats.piecesPubliees + stats.piecesBrouillon : undefined}
           stats={
             stats

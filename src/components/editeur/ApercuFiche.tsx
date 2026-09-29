@@ -32,6 +32,7 @@ import type { Brand } from "@/lib/types";
 export default function ApercuFiche({
   brand,
   valeurs,
+  sansAccroche = false,
 }: {
   /** La marque telle qu'elle est en base : sert de socle. */
   brand: Brand;
@@ -43,6 +44,12 @@ export default function ApercuFiche({
    * en ajoute un, et l'aperçu aurait alors ignoré le nouveau sans un mot.
    */
   valeurs: ValeursFiche;
+  /**
+   * Le formulaire n'a pas de champ d'accroche (la candidature n'en
+   * demande pas). On n'annonce alors pas « Pas encore d'accroche » :
+   * ce serait réclamer un champ qu'on ne peut pas remplir.
+   */
+  sansAccroche?: boolean;
 }) {
   const [onglet, setOnglet] = useState<"carte" | "page">("carte");
 
@@ -121,7 +128,7 @@ export default function ApercuFiche({
             <BrandCard brand={enCours} />
           </div>
         ) : (
-          <TeteDePage marque={enCours} message={message} />
+          <TeteDePage marque={enCours} message={message} sansAccroche={sansAccroche} />
         )}
       </div>
 
@@ -138,9 +145,11 @@ export default function ApercuFiche({
 function TeteDePage({
   marque,
   message,
+  sansAccroche,
 }: {
   marque: Brand;
   message: { titre: string; corps: string } | null;
+  sansAccroche: boolean;
 }) {
   const visuel = marque.cover_url ?? marque.logo_url;
   const origine =
@@ -177,9 +186,11 @@ function TeteDePage({
           </p>
         )}
 
-        <p className="m-0 mt-1.5 text-[15px] font-extrabold leading-snug tracking-[-0.02em] text-white">
-          {marque.tagline || "Pas encore d'accroche."}
-        </p>
+        {(marque.tagline || !sansAccroche) && (
+          <p className="m-0 mt-1.5 text-[15px] font-extrabold leading-snug tracking-[-0.02em] text-white">
+            {marque.tagline || "Pas encore d'accroche."}
+          </p>
+        )}
 
         {/* Trois lignes suffisent à voir si le texte tombe juste ; la
             démarche entière se lit dans le champ, à gauche. */}

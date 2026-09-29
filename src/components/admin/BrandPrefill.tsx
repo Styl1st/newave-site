@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { analyserSite } from "@/lib/site-actions";
+import type { Identite } from "@/lib/catalogue";
 import { IconCheck, IconDownload } from "@/components/Icons";
 import { FIELD } from "./fields";
 
@@ -26,12 +27,13 @@ export default function BrandPrefill({
 }: {
   modeCreation: boolean;
   /**
-   * Prévient qu'une lecture a réussi.
+   * Prévient qu'une lecture a réussi, avec ce qu'elle a trouvé.
    *
-   * Sert au parcours de création à n'afficher « Vérifier les
-   * informations » qu'une fois qu'il y a quelque chose à vérifier.
+   * Le parcours de création s'en sert pour déplier la fiche et son
+   * aperçu sur le même écran, et pour montrer les pièces lues en
+   * vignettes plutôt qu'en chiffre.
    */
-  onLu?: () => void;
+  onLu?: (identite: Identite) => void;
 }) {
   const [url, setUrl] = useState("");
   const [pending, lancer] = useTransition();
@@ -103,6 +105,12 @@ export default function BrandPrefill({
 
       const { identite } = res;
       const remplis: string[] = [];
+      let hote = "le site";
+      try {
+        hote = new URL(identite.shop_url).hostname.replace(/^www\./, "");
+      } catch {
+        // Adresse illisible : on garde « le site ».
+      }
 
       // ---- ce qui est LU sur le site ----
       if (modeCreation && ecrire("name", identite.name)) remplis.push("le nom");
@@ -124,34 +132,30 @@ export default function BrandPrefill({
       if (ecrire("founded_year", identite.founded_year ? String(identite.founded_year) : null)) {
         devines.push(`l'année (${identite.founded_year})`);
       }
-      if (ecrire("price_tier", identite.price_tier)) {
-        const medianeEuros = identite.indices.prixMedian
-          ? Math.round(identite.indices.prixMedian / 100)
-          : null;
-        devines.push(
-          medianeEuros
-            ? `la gamme de prix (médiane ${medianeEuros} €)`
-            : "la gamme de prix"
-        );
-      }
+      if (ecrire("price_tier", identite.price_tier)) devines.push("la gamme de prix");
       const coches = cocher("categories", identite.categories);
       if (coches > 0) devines.push(`${coches} catégorie${coches > 1 ? "s" : ""}`);
 
-      const phrases: string[] = [];
-      if (remplis.length) phrases.push(`Repris du site : ${remplis.join(", ")}.`);
-      if (devines.length) phrases.push(`Deviné, à vérifier : ${devines.join(", ")}.`);
-      if (identite.indices.pieces > 0) {
-        phrases.push(`${identite.indices.pieces} pièces lues pour établir ces suppositions.`);
-      }
-
+      /*
+       * UNE LIGNE, PAS UN COMPTE RENDU.
+       *
+       * On énumérait tout ce qui avait été repris, puis ce qui avait été
+       * deviné, puis « 42 pièces lues pour établir ces suppositions ».
+       * On lisait un rapport au lieu de voir le résultat. Le résultat,
+       * c'est l'aperçu : il est à côté. Ne reste ici que ce qui mérite
+       * un second regard, parce que c'est une supposition.
+       */
       setNote({
         ok: true,
-        texte: phrases.length
-          ? `${phrases.join(" ")} Rien n'est enregistré avant la fin.`
-          : "Rien d'exploitable sur ce site. Remplis les champs à la main.",
+        texte:
+          remplis.length || devines.length
+            ? `Fiche remplie depuis ${hote}.${
+                devines.length ? ` Deviné, à vérifier : ${devines.join(", ")}.` : ""
+              }`
+            : "Rien d'exploitable sur ce site. Remplis les champs à la main.",
       });
 
-      onLu?.();
+      onLu?.(identite);
     });
   }
 
@@ -219,10 +223,12 @@ export default function BrandPrefill({
           </p>
         )}
 
+        {/* Ce qui se passe réellement : `saveBrand` lit le catalogue dans
+            la foulée de la création, si la boutique se laisse lire. */}
         {modeCreation && (
           <p className="m-0 mt-3 text-[12px] leading-relaxed text-[#6a5a92]">
-            Les pièces s&apos;importent après, depuis l&apos;onglet Importer de la
-            marque : elle doit exister avant qu&apos;on puisse y rattacher un catalogue.
+            Les pièces s&apos;importent toutes seules à la création de la fiche, quand
+            la boutique se laisse lire. Sinon, depuis l&apos;onglet Importer de la marque.
           </p>
         )}
       </div>

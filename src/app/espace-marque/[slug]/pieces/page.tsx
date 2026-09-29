@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BarreGerant from "@/components/BarreGerant";
+import RetourEspace from "@/components/RetourEspace";
 import ProductBulkList from "@/components/admin/ProductBulkList";
 import { getBrandProducts, requireManagedBrand } from "@/lib/brand-space";
 
@@ -12,7 +13,7 @@ type Props = {
 export default async function BrandProducts({ params, searchParams }: Props) {
   const { slug } = await params;
   const { nouvelles, majs } = await searchParams;
-  const { brand } = await requireManagedBrand(slug);
+  const { brand, isAdmin } = await requireManagedBrand(slug);
   const products = await getBrandProducts(brand.id);
 
   const creees = Number(nouvelles ?? 0) || 0;
@@ -21,10 +22,11 @@ export default async function BrandProducts({ params, searchParams }: Props) {
 
   return (
     <>
+      <RetourEspace slug={brand.slug} isAdmin={isAdmin} />
       <div className="mb-7">
         {/* Le catalogue est déjà chargé ici : la barre peut donc dire ce
             qui manque avant publication sans une requête de plus. */}
-        <BarreGerant brand={brand} pieces={products.length} />
+        <BarreGerant brand={brand} pieces={products.length} peutPublier={isAdmin} />
       </div>
 
       <header className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">

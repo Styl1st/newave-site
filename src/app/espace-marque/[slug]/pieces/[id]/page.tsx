@@ -14,7 +14,7 @@ type Props = { params: Promise<{ slug: string; id: string }> };
 
 export default async function EditBrandProduct({ params }: Props) {
   const { slug, id } = await params;
-  const { brand } = await requireManagedBrand(slug);
+  const { brand, isAdmin } = await requireManagedBrand(slug);
 
   const isNew = id === "nouvelle";
   const product = isNew ? null : await getBrandProduct(id);
@@ -33,7 +33,7 @@ export default async function EditBrandProduct({ params }: Props) {
   return (
     <>
       <div className="mb-7">
-        <BarreGerant brand={brand} />
+        <BarreGerant brand={brand} peutPublier={isAdmin} />
       </div>
 
       <header className="mb-5 sm:mb-7 flex flex-wrap items-end justify-between gap-4">

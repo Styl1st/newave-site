@@ -5,6 +5,7 @@ import { useState } from "react";
 import DeleteButton from "@/components/admin/DeleteButton";
 import PublishToggle from "@/components/admin/PublishToggle";
 import { deleteBrand } from "@/app/admin/actions";
+import RetourOrigine from "@/components/RetourOrigine";
 import { vignette } from "@/lib/vignette";
 import type { Brand } from "@/lib/types";
 
@@ -49,6 +50,22 @@ export default function EnteteFiche({
   return (
     <header className="mb-4 sm:sticky sm:top-[70px] sm:z-30">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-[20px] border border-white/20 bg-[rgba(var(--voile),0.72)] px-3 py-2.5 backdrop-blur-[20px] sm:px-4">
+        {/* LE RETOUR EST UN BOUTON, PAS UN FIL D'ARIANE. Le seul chemin
+            vers la liste était le mot « Marques » en dix pixels, au-dessus
+            du nom : on ne le voyait pas, et l'on repartait par le
+            « précédent » du navigateur, qui ramène une liste d'avant les
+            modifications. Ce lien ramène à la page d'où l'on est entré
+            dans la marque (annuaire, panel…), à jour et à la même
+            hauteur. Voir `RetourOrigine`. */}
+        <RetourOrigine
+          variante="entete"
+          repli={
+            estAdmin
+              ? { href: "/admin/marques", label: "Admin · Marques" }
+              : { href: `/marques/${brand.slug}`, label: "Ma page" }
+          }
+        />
+
         {/* Le logo, sur une plaque claire : beaucoup de lettrages sont
             noirs, et posés à même le verre ils disparaissent. */}
         <span className="grid h-[46px] w-[46px] shrink-0 place-items-center overflow-hidden rounded-[13px] bg-white/90">

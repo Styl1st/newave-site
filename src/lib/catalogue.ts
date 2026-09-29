@@ -16,7 +16,14 @@
  * fait, et il nous sert de filet.
  */
 
-import type { CatalogueItem, Fermeture, Resultat, Source } from "./catalogue-commun";
+import {
+  piecesPourApercu,
+  type CatalogueItem,
+  type Fermeture,
+  type PieceLue,
+  type Resultat,
+  type Source,
+} from "./catalogue-commun";
 import { libelleSansInteret, type Rangement } from "./tags";
 
 export { cleLien, SOURCE_LABEL } from "./catalogue-commun";
@@ -1468,6 +1475,12 @@ export type Identite = {
   price_tier: "accessible" | "intermediaire" | "premium" | null;
   /** Ce qui a servi à deviner, pour pouvoir le dire honnêtement. */
   indices: { pieces: number; prixMedian: number | null };
+  /**
+   * Quelques pièces lues, avec leur photo, pour MONTRER ce que la fiche
+   * donnera plutôt que d'annoncer « 42 pièces lues ». Vide si la
+   * boutique ne se laisse pas lire rapidement.
+   */
+  apercu: PieceLue[];
 };
 
 /* ---------- déductions ----------
@@ -1790,6 +1803,7 @@ export async function fetchIdentite(entree: string): Promise<Identite | null> {
       pieces: pieces.length,
       prixMedian: prix.length > 1 ? [...prix].sort((a, b) => a - b)[Math.floor(prix.length / 2)] : null,
     },
+    apercu: piecesPourApercu(pieces),
   };
 }
 

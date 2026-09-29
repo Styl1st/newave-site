@@ -61,6 +61,44 @@ export type CatalogueItem = {
   rangement?: Rangement;
 };
 
+/**
+ * Une pièce vue en lisant le site, telle qu'on la montre en aperçu.
+ *
+ * Réduite à ce qu'une vignette affiche : la lecture du site ne sert
+ * qu'à préremplir une fiche, et renvoyer le catalogue entier au
+ * navigateur pour en montrer huit photos serait du poids pour rien.
+ */
+export type PieceLue = {
+  nom: string;
+  image: string;
+  /** En centimes, dans la devise de la boutique. */
+  prix: number | null;
+  devise: string;
+};
+
+/** Combien de pièces on renvoie pour l'aperçu, au plus. */
+export const PIECES_EN_APERCU = 8;
+
+/** Les premières pièces photographiées d'un catalogue lu, pour l'aperçu. */
+export function piecesPourApercu(items: CatalogueItem[]): PieceLue[] {
+  const vues = new Set<string>();
+  const retenues: PieceLue[] = [];
+  for (const item of items) {
+    const image = item.images.find(Boolean);
+    // Deux déclinaisons partagent souvent la même photo : une seule suffit.
+    if (!image || vues.has(image)) continue;
+    vues.add(image);
+    retenues.push({
+      nom: item.name,
+      image,
+      prix: item.price_cents,
+      devise: item.currency || "EUR",
+    });
+    if (retenues.length >= PIECES_EN_APERCU) break;
+  }
+  return retenues;
+}
+
 export type Resultat =
   | { ok: true; source: Source; items: CatalogueItem[] }
   | {

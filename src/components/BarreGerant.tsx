@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import PublishToggle from "./admin/PublishToggle";
 import { conditionsDePublication } from "./publication/conditions";
 import { useRetouche } from "./retouche/ContexteRetouche";
 import { vignette } from "@/lib/vignette";
@@ -64,13 +65,18 @@ export default function BarreGerant({
   /** Les trois chiffres d'une fiche en ligne. Absents = pas de bandeau. */
   stats?: { vues7: number; favoris: number; clics: number };
   /**
-   * Le bouton « Publier » ne s'affiche qu'à qui peut vraiment publier.
+   * Le bouton « Publier / Retirer » ne s'affiche qu'à qui peut vraiment
+   * publier : un administrateur (`toggleBrandStatus` le revérifie).
    *
-   * Dans ce dépôt, la mise en ligne passe par une action réservée aux
-   * administrateurs. Poser le bouton à tout le monde aurait donné un
-   * geste qui échoue en silence — pire qu'un bouton absent, parce qu'on
-   * croit avoir publié. Le gérant voit donc ce qui manque, et le geste
-   * qui lève l'obstacle, sans la promesse qu'il ne peut pas tenir.
+   * Poser le bouton à tout le monde aurait donné un geste qui échoue en
+   * silence, pire qu'un bouton absent, parce qu'on croit avoir publié.
+   * Le gérant voit donc ce qui manque, et le geste qui lève l'obstacle,
+   * sans la promesse qu'il ne peut pas tenir.
+   *
+   * Il vit dans la rangée du haut, à côté de « Modifier la fiche » :
+   * c'est là qu'on cherche les actions, que la fiche soit en ligne ou
+   * non. Il y avait un « Publier » dans le bandeau des brouillons, mais
+   * il n'était relié à rien.
    */
   peutPublier?: boolean;
   /**
@@ -94,7 +100,6 @@ export default function BarreGerant({
         appartenance: "Ton espace",
         onglets: ["Ma page", "Mes pièces", "Statistiques"],
         modifier: "Modifier ma fiche",
-        publier: "Publier ma marque",
         reste: "Il te reste",
         completer: "Compléter ma fiche",
         importer: "Importer depuis ma boutique",
@@ -103,7 +108,6 @@ export default function BarreGerant({
         appartenance: "Administration",
         onglets: ["Sa page", "Ses pièces", "Statistiques"],
         modifier: "Modifier la fiche",
-        publier: "Publier cette marque",
         reste: "Il reste",
         completer: "Compléter la fiche",
         importer: "Importer depuis la boutique",
@@ -299,6 +303,18 @@ export default function BarreGerant({
               {MOTS.modifier}
             </Link>
           )}
+          {peutPublier && (
+            <PublishToggle
+              taille="barre"
+              brandId={brand.id}
+              brandName={brand.name}
+              published={enLigne}
+              /* Grisé quand on sait déjà que ça sera refusé. Sans le
+                 compte des pièces (`conditions` à null), on laisse
+                 cliquer : le serveur tranchera et le dira. */
+              bloque={complet || !conditions ? null : (manquantes[0]?.obstacle ?? null)}
+            />
+          )}
           <Link
             href={`/espace-marque/${brand.slug}/pieces/ajouter`}
             className={`${base} order-first flex-1 bg-white text-center text-[var(--color-ink)] shadow-[0_4px_16px_-4px_rgba(var(--accent-1),0.6)] hover:opacity-90 sm:order-none lg:flex-none`}
@@ -422,20 +438,6 @@ export default function BarreGerant({
             </Link>
           )}
 
-          {peutPublier && (
-            <button
-              type="button"
-              disabled={!complet}
-              title={complet ? undefined : (manquantes[0]?.obstacle ?? undefined)}
-              className="inline-flex min-h-[44px] items-center rounded-full px-4 py-2 text-[12px] font-black text-white transition disabled:cursor-not-allowed disabled:opacity-40 lg:min-h-0"
-              style={{
-                background:
-                  "linear-gradient(118deg, rgba(var(--accent-1),.7), rgba(var(--accent-2),.7))",
-              }}
-            >
-              {MOTS.publier}
-            </button>
-          )}
         </div>
       )}
 

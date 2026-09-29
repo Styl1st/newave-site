@@ -1083,6 +1083,12 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
  * reformulation — et la phrase exacte de `obstacleAPublication` est dans
  * l'infobulle, là où il y a la place de l'écrire en entier.
  */
+const MANQUE: Record<string, string> = {
+  visuel: "Sans visuel",
+  texte: "Sans texte",
+  pieces: "Sans pièce",
+};
+
 function Publiable({ brand }: { brand: BrandAdmin }) {
   const fiche = {
     tagline: brand.tagline,
@@ -1106,9 +1112,16 @@ function Publiable({ brand }: { brand: BrandAdmin }) {
      qui est passée avant qu'on ne durcisse la règle, ou dont la
      boutique s'est vidée depuis. */
   const couleur = obstacle ? rouge : vert;
+  /*
+   * LE LIBELLÉ DIT CE QUI MANQUE, PAS CE QU'IL FAUT.
+   *
+   * On le tirait du titre de la condition en remplaçant « Un » ou « Du »
+   * par « Sans ». Ça marchait pour « Un visuel » et « Du texte », pas
+   * pour « Au moins une pièce » : la ligne affichait en rouge une phrase
+   * qui se lit comme une qualité. D'où une table, par clé de condition.
+   */
   const libelle = obstacle
-    ? (manquantes[0]?.titre.replace(/^Un(e)? /, "Sans ").replace(/^Du /, "Sans ") ??
-      "Incomplète")
+    ? (MANQUE[manquantes[0]?.cle ?? ""] ?? "Incomplète")
     : enLigne
       ? "Complète"
       : "Prête";

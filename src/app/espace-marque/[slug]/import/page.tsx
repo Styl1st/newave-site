@@ -1,4 +1,5 @@
 import BarreGerant from "@/components/BarreGerant";
+import RetourEspace from "@/components/RetourEspace";
 import FormulaireImport from "@/components/admin/FormulaireImport";
 import { requireManagedBrand } from "@/lib/brand-space";
 
@@ -14,12 +15,17 @@ type Props = { params: Promise<{ slug: string }> };
 
 export default async function ImportPage({ params }: Props) {
   const { slug } = await params;
-  const { brand } = await requireManagedBrand(slug);
+  const { brand, isAdmin } = await requireManagedBrand(slug);
 
   return (
     <>
+      <RetourEspace
+        slug={brand.slug}
+        isAdmin={isAdmin}
+        vers={{ href: `/espace-marque/${brand.slug}/pieces`, label: "Pièces" }}
+      />
       <div className="mb-7">
-        <BarreGerant brand={brand} />
+        <BarreGerant brand={brand} peutPublier={isAdmin} />
       </div>
 
       <header className="mb-5 sm:mb-7">

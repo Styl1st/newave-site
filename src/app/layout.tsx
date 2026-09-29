@@ -6,6 +6,7 @@ import Background from "@/components/Background";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Tracker from "@/components/Tracker";
+import MemoireNavigation from "@/components/MemoireNavigation";
 import PageTransition from "@/components/PageTransition";
 import ProgressionLecture from "@/components/ProgressionLecture";
 import Curseur from "@/components/Curseur";
@@ -143,6 +144,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="font-sans">
         <Background />
         <Tracker />
+        {/* Note la page d'où l'on part vers une marque, pour que ses
+            boutons retour y ramènent. Voir `lib/page-d-origine`. */}
+        <MemoireNavigation />
         <Reveal />
         {!nu && <Header />}
         {/* `min-w-0` : un élément de boîte flexible refuse par défaut de

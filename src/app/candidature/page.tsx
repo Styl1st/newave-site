@@ -12,7 +12,10 @@ export const maxDuration = 60;
 
 export default function CandidaturePage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-[var(--pad)] py-7 sm:py-11">
+    /* Plus large qu'un formulaire : la fiche se remplit à gauche, et
+       l'aperçu de la carte la suit à droite. Les paragraphes gardent
+       leur largeur de lecture (`max-w-2xl`). */
+    <div className="mx-auto w-full max-w-5xl px-[var(--pad)] py-7 sm:py-11">
       <header className="rise mb-9">
         <p className="eyebrow m-0">Candidature</p>
         <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">

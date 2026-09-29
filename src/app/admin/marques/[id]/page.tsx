@@ -30,9 +30,10 @@ type Props = { params: Promise<{ id: string }> };
  * champs vides, sans savoir par lequel commencer, pendant qu'un
  * créateur, lui, était pris par la main sur /candidature. Il n'y avait
  * aucune raison que celui qui tient l'annuaire soit le moins bien
- * servi : c'est donc le même chemin en quatre écrans, avec la seule
- * différence qui compte — au bout, une marque, pas une candidature en
- * attente d'examen. Voir `ParcoursNouvelleMarque`.
+ * servi : c'est donc le même chemin (un choix, puis la fiche avec son
+ * aperçu en direct), avec la seule différence qui compte : au bout, une
+ * marque, pas une candidature en attente d'examen. Voir
+ * `ParcoursNouvelleMarque`.
  *
  * CORRIGER A DÉMÉNAGÉ, ET C'ÉTAIT LA SUITE LOGIQUE. Il y avait ici un
  * panneau d'édition, puis un second formulaire pour les réglages

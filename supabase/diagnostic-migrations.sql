@@ -104,6 +104,12 @@ union all select
   'migration-39 : garde-fou de la photo de profil',
   case when exists (
     select 1 from pg_trigger where tgname = 'profiles_avatar_garde'
+  ) then 'OK' else 'MANQUE' end
+
+union all select
+  'migration-41 : fonction compter_les_pieces_par_marque (admin)',
+  case when exists (
+    select 1 from pg_proc where proname = 'compter_les_pieces_par_marque'
   ) then 'OK' else 'MANQUE' end;
 
 -- ------------------------------------------------------------

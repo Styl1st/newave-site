@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchIdentite, normalizeShopUrl } from "@/lib/catalogue";
+import type { PieceLue } from "@/lib/catalogue-commun";
 import { BRAND_CATEGORIES } from "@/lib/taxonomy";
 import { envoyerCandidatureRecue } from "@/lib/emails";
 
@@ -29,6 +30,8 @@ export type Trouvaille = {
   categories: string[];
   /** Combien de pièces on a vues, pour dire ce qu'on a lu. */
   pieces: number;
+  /** Quelques-unes, avec leur photo : l'aperçu les montre. */
+  apercu: PieceLue[];
 };
 
 export type Analyse =
@@ -120,6 +123,7 @@ export async function analyserLeSite(formData: FormData): Promise<Analyse> {
       annee: identite.founded_year,
       categories,
       pieces: identite.indices.pieces,
+      apercu: identite.apercu,
     },
   };
 }
