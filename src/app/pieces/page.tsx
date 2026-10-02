@@ -184,6 +184,9 @@ export default async function PiecesPage({ searchParams }: Props) {
         bornesDuCatalogue={catalogue?.prix}
         etatsDuCatalogue={catalogue?.etats}
         amorce={amorce}
+        /* La base n'a pas rendu la première page : la grille montre
+           l'échantillon et va chercher la vraie une fois montée. */
+        secours={premiere === null}
       />
     </div>
   );

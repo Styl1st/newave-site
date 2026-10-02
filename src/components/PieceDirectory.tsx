@@ -18,6 +18,7 @@ import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
 import type { Product } from "@/lib/types";
+import type { CompteDuCatalogue } from "@/lib/queries";
 
 /**
  * La vitrine : on cherche une pièce, pas une marque.
@@ -183,17 +184,66 @@ const RAYONS_HABILLES = ["Hauts", "Bas", "Vestes", "Maille", "Robes"];
 /** Dans cet ordre-là, et pas dans l'ordre des comptes : on lit une échelle. */
 const ORDRE_DES_TAILLES = ["XS", "S", "M", "L", "XL", "XXL"];
 
+/**
+ * UNE LECTURE QUI RETENTE QUAND LA BASE A EU UN RATÉ.
+ *
+ * La vitrine et les comptes du catalogue passent par des fonctions SQL
+ * qui parcourent toute la table des pièces. La plupart du temps elles
+ * répondent en quelques dizaines de millisecondes ; de temps en temps,
+ * base froide ou plusieurs comptages en même temps, l'une dépasse le
+ * délai et la route répond 503. Une seconde plus tard, la même requête
+ * passe. Abandonner au premier raté laissait la page dans son état de
+ * secours — colonne de filtres vide — jusqu'au prochain rechargement.
+ *
+ * On ne retente que ce qui peut changer : une coupure réseau ou une
+ * réponse 5xx. Une 4xx dira la même chose la fois suivante. Et une
+ * requête annulée s'arrête tout de suite : c'est qu'une autre l'a
+ * remplacée.
+ */
+async function chercherAvecReprises<T>(
+  url: string,
+  signal?: AbortSignal,
+  attentes: number[] = [800, 2500]
+): Promise<T> {
+  for (let essai = 0; ; essai++) {
+    let reponse: Response | null = null;
+    try {
+      reponse = await fetch(url, { signal });
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError" || essai >= attentes.length) throw e;
+    }
+    if (reponse?.ok) return (await reponse.json()) as T;
+    if (reponse && (reponse.status < 500 || essai >= attentes.length)) {
+      throw new Error(String(reponse.status));
+    }
+
+    await new Promise<void>((suite, arret) => {
+      if (signal?.aborted) return arret(new DOMException("Annulée", "AbortError"));
+      const minuteur = setTimeout(suite, attentes[essai]);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(minuteur);
+          arret(new DOMException("Annulée", "AbortError"));
+        },
+        { once: true }
+      );
+    });
+  }
+}
+
 export default function PieceDirectory({
   premierLot,
   totalDuPremierLot,
   graine,
-  rayonsDuCatalogue,
-  tagsDuCatalogue,
-  taillesDuCatalogue,
-  marquesDuCatalogue,
-  bornesDuCatalogue,
-  etatsDuCatalogue,
+  rayonsDuCatalogue: rayonsServeur,
+  tagsDuCatalogue: tagsServeur,
+  taillesDuCatalogue: taillesServeur,
+  marquesDuCatalogue: marquesServeur,
+  bornesDuCatalogue: bornesServeur,
+  etatsDuCatalogue: etatsServeur,
   amorce,
+  secours = false,
 }: {
   /**
    * LES VINGT-QUATRE PREMIÈRES PIÈCES, RENDUES PAR LE SERVEUR.
@@ -209,6 +259,12 @@ export default function PieceDirectory({
   premierLot: Product[];
   /** Ce que les filtres de départ retiennent EN TOUT, avant découpage. */
   totalDuPremierLot: number;
+  /**
+   * Le premier lot vient de l'ÉCHANTILLON et non de la base : la
+   * fonction `vitrine` n'a pas répondu au rendu. La grille redemande
+   * alors sa vraie première page dès qu'elle est montée.
+   */
+  secours?: boolean;
   /**
    * LA GRAINE DE L'ORDRE « AU HASARD », TIRÉE UNE FOIS PAR VISITE.
    *
@@ -301,6 +357,46 @@ export default function PieceDirectory({
    * qu'avant, personne ne perd le sien.
    */
   const { densite, choisir: choisirDensite, offertes } = useDensite("vitrine", "pieces");
+
+  /*
+   * LES COMPTES DU CATALOGUE, RATTRAPÉS QUAND LE SERVEUR NE LES A PAS EUS.
+   *
+   * Toute la colonne de filtres sort de `compterLeCatalogue`. Quand la
+   * base n'a pas répondu à temps au rendu, la page arrivait avec une
+   * colonne vide — l'intitulé « Filtres » et rien dessous — et le restait
+   * jusqu'au rechargement suivant. Elle les redemande maintenant à
+   * `/api/catalogue`, en retentant, et se remplit toute seule. Entre-temps
+   * la colonne montre qu'elle charge, plutôt que d'avoir l'air finie.
+   *
+   * Tout le reste du composant lit les mêmes noms qu'avant : ce sont
+   * eux qui choisissent entre la version du serveur et la version
+   * rattrapée.
+   */
+  const [rattrape, setRattrape] = useState<CompteDuCatalogue | null>(null);
+  const [filtresEnPanne, setFiltresEnPanne] = useState(false);
+  const [essaiFiltres, setEssaiFiltres] = useState(0);
+  const catalogueManquant = rayonsServeur === undefined && rattrape === null;
+
+  useEffect(() => {
+    if (!catalogueManquant) return;
+    const halte = new AbortController();
+    setFiltresEnPanne(false);
+
+    chercherAvecReprises<CompteDuCatalogue>("/api/catalogue", halte.signal, [1000, 3000, 8000])
+      .then(setRattrape)
+      .catch((e) => {
+        if ((e as Error)?.name !== "AbortError") setFiltresEnPanne(true);
+      });
+
+    return () => halte.abort();
+  }, [catalogueManquant, essaiFiltres]);
+
+  const rayonsDuCatalogue = rayonsServeur ?? rattrape?.rayons;
+  const tagsDuCatalogue = tagsServeur ?? rattrape?.tags;
+  const taillesDuCatalogue = taillesServeur ?? rattrape?.tailles;
+  const marquesDuCatalogue = marquesServeur ?? rattrape?.marquesListe;
+  const bornesDuCatalogue = bornesServeur ?? rattrape?.prix;
+  const etatsDuCatalogue = etatsServeur ?? rattrape?.etats;
 
   const [query, setQuery] = useState(amorce ?? "");
   /*
@@ -648,6 +744,23 @@ export default function PieceDirectory({
     return () => clearTimeout(minuteur);
   }, [prix]);
 
+  /*
+   * LES BORNES PEUVENT ARRIVER APRÈS COUP (voir le rattrapage du
+   * catalogue). Le rail démarrait alors sur [0, 0], ce qui se lisait
+   * « jusqu'à 0 € » et vidait la grille. On le pose sur toute l'étendue
+   * au moment où elles arrivent, et PENDANT le rendu plutôt que dans un
+   * effet : un effet laisserait passer un rendu avec le filtre à 0 €, et
+   * la requête qui va avec.
+   */
+  const [bornesConnues, setBornesConnues] = useState(bornes);
+  if (bornes !== bornesConnues) {
+    setBornesConnues(bornes);
+    if (bornes && !bornesConnues) {
+      setPrix([bornes.min, bornes.max]);
+      setPrixDiffere([bornes.min, bornes.max]);
+    }
+  }
+
   /* `prixActif` dit ce que la COLONNE affiche, celui-ci ce que la
      REQUÊTE demande. Les deux se rejoignent au repos ; entre les deux,
      la pastille est déjà posée et la grille n'a pas encore bougé. */
@@ -675,10 +788,24 @@ export default function PieceDirectory({
     tri,
   });
 
+  /*
+   * LA GRAINE EST FIGÉE AU PREMIER RENDU, ET LA PROP N'Y TOUCHE PLUS.
+   *
+   * Aimer une pièce passe par `toggleLike`, qui revalide `/populaires` :
+   * Next renvoie alors la page COURANTE rendue à neuf avec la réponse de
+   * l'action. Pour la vitrine, ça veut dire une nouvelle graine tirée au
+   * serveur, donc une nouvelle `adresse`, donc le premier lot redemandé
+   * dans un autre ordre : la grille se rebattait sous le doigt à chaque
+   * cœur, et l'on perdait tout ce qu'on avait chargé. La graine dure la
+   * visite, c'est sa raison d'être ; un rafraîchissement du serveur n'en
+   * fait pas une nouvelle visite.
+   */
+  const [graineDeLaVisite] = useState(graine);
+
   const adresse = useCallback(
     (depuis: number) => {
       const p = new URLSearchParams();
-      p.set("graine", graine);
+      p.set("graine", graineDeLaVisite);
       p.set("depuis", String(depuis));
       p.set("combien", String(LOT));
       if (qDifferee.trim()) p.set("q", qDifferee.trim());
@@ -696,13 +823,62 @@ export default function PieceDirectory({
       return `/api/pieces?${p}`;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [graine, signature]
+    [graineDeLaVisite, signature]
   );
 
   const [lot, setLot] = useState<Product[]>(premierLot);
   const [total, setTotal] = useState(totalDuPremierLot);
   const [enCours, setEnCours] = useState(false);
   const [panne, setPanne] = useState(false);
+
+  /*
+   * LES CŒURS, DEMANDÉS POUR CE QUI VIENT D'ARRIVER ET RIEN D'AUTRE.
+   *
+   * On ne pouvait aimer une pièce que depuis la fiche de sa marque, qui
+   * lit les coups de cœur au serveur avec la page. Ici les pièces
+   * arrivent par lots, à la demande : chaque lot redemande donc les
+   * siens à `/api/coeurs`, en une requête.
+   *
+   * Tant que la réponse n'est pas là, la pièce n'a PAS de bouton, plutôt
+   * qu'un cœur vide à zéro : un bouton qui passerait de « 0 » à « 12 »,
+   * ou de vide à plein, sous les yeux, se lirait comme un clic qui
+   * n'a pas pris. Le cœur arrive une fraction de seconde après la photo.
+   *
+   * CE QUI SORT DE LA GRILLE EST OUBLIÉ. Le bouton garde son état pour
+   * lui ; s'il revenait plus tard avec la réponse d'avant, une pièce
+   * aimée entre-temps reviendrait vide. Une pièce qui repasse à
+   * l'écran redemande donc son état, à jour.
+   */
+  type Coeur = { count: number; liked: boolean };
+  const [coeurs, setCoeurs] = useState<Record<string, Coeur>>({});
+  const demandes = useRef(new Set<string>());
+
+  useEffect(() => {
+    const presents = new Set(lot.map((p) => p.id));
+
+    for (const id of demandes.current) {
+      if (!presents.has(id)) demandes.current.delete(id);
+    }
+    setCoeurs((avant) => {
+      const gardes = Object.keys(avant).filter((id) => presents.has(id));
+      if (gardes.length === Object.keys(avant).length) return avant;
+      return Object.fromEntries(gardes.map((id) => [id, avant[id]]));
+    });
+
+    const manquants = [...presents].filter((id) => !demandes.current.has(id));
+    // Par paquets de quatre-vingt-seize, le plafond de la route.
+    for (let i = 0; i < manquants.length; i += 96) {
+      const paquet = manquants.slice(i, i + 96);
+      paquet.forEach((id) => demandes.current.add(id));
+
+      fetch(`/api/coeurs?ids=${paquet.join(",")}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((recus: Record<string, Coeur>) => setCoeurs((avant) => ({ ...avant, ...recus })))
+        /* Sans réponse, pas de bouton : mieux vaut pas de cœur qu'un
+           cœur qui ment. On les rend à la prochaine occasion. */
+        .catch(() => paquet.forEach((id) => demandes.current.delete(id)));
+    }
+  }, [lot]);
 
   /*
    * LE PREMIER LOT VIENT DU SERVEUR, ON NE LE REDEMANDE PAS.
@@ -714,19 +890,21 @@ export default function PieceDirectory({
    * faire, pour un résultat identique.
    */
   const premierRendu = useRef(true);
+  /* Sauf quand ce premier lot est celui du secours : là, il faut
+     justement le redemander. Lu une fois, au montage. */
+  const secoursAuMontage = useRef(secours);
 
   useEffect(() => {
     if (premierRendu.current) {
       premierRendu.current = false;
-      return;
+      if (!secoursAuMontage.current) return;
     }
 
     const halte = new AbortController();
     setEnCours(true);
 
-    fetch(adresse(0), { signal: halte.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((page: { pieces: Product[]; total: number }) => {
+    chercherAvecReprises<{ pieces: Product[]; total: number }>(adresse(0), halte.signal)
+      .then((page) => {
         setLot(page.pieces);
         setTotal(page.total);
         setPanne(false);
@@ -757,9 +935,8 @@ export default function PieceDirectory({
   const charger = useCallback(() => {
     if (enCours) return;
     setEnCours(true);
-    fetch(adresse(lot.length))
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((page: { pieces: Product[]; total: number }) => {
+    chercherAvecReprises<{ pieces: Product[]; total: number }>(adresse(lot.length))
+      .then((page) => {
         setLot((deja) => {
           /* Ceinture et bretelles : si deux clics passaient malgré le
              garde, une pièce reçue deux fois ferait une clé React en
@@ -1204,6 +1381,30 @@ export default function PieceDirectory({
             </button>
           )}
         </div>
+
+        {/* La colonne attend ses comptes : elle le montre, plutôt que
+            d'avoir l'air finie avec un intitulé et rien dessous. */}
+        {catalogueManquant && !filtresEnPanne && (
+          <div role="status" aria-label="Chargement des filtres" className="mt-5 flex flex-col gap-3">
+            {[72, 50, 64, 44, 58, 40, 54].map((largeur, i) => (
+              <div key={i} className="skeleton h-3 rounded-full" style={{ width: `${largeur}%` }} />
+            ))}
+          </div>
+        )}
+        {catalogueManquant && filtresEnPanne && (
+          <div className="mt-4">
+            <p className="m-0 text-[12px] leading-relaxed text-white/60">
+              Les filtres n&apos;ont pas répondu.
+            </p>
+            <button
+              type="button"
+              onClick={() => setEssaiFiltres((n) => n + 1)}
+              className="mt-1.5 text-[11.5px] font-bold text-white/80 underline underline-offset-2 transition hover:text-white"
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
 
         {rayonsDisponibles.length > 1 && (
           <Section titre="Type de pièce">
@@ -1944,6 +2145,7 @@ export default function PieceDirectory({
                     <ProductCard
                       product={p}
                       brandSlug={p.brand?.slug}
+                      likes={coeurs[p.id]}
                       nue
                       ratio={densite === "serre" ? "1/1" : RATIOS[i % 3]}
                       // Les huit premières sont dans le premier écran,

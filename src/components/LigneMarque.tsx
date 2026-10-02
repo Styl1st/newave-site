@@ -181,6 +181,34 @@ export default function LigneMarque({
 
   const vide = !cherche && pieces.length === 0;
 
+  /*
+   * AUTANT DE CASES QUE DE PHOTOS, PAS UNE DE PLUS.
+   *
+   * Une marque qui n'a que deux pièces affichait deux photos puis deux
+   * cases grises : la ligne avait l'air de ne pas avoir fini de charger.
+   * Une fois la réponse arrivée, on ne pose donc que les cases qui ont
+   * quelque chose à montrer. La grille reste à quatre colonnes, pour que
+   * les vignettes gardent la même taille et le même alignement d'une
+   * ligne à l'autre : la place restante est simplement laissée libre.
+   *
+   * Pendant le chargement, les quatre cases grises restent : là, elles
+   * annoncent bien quelque chose.
+   *
+   * Au doigt, le bouton d'aperçu prend la case qui suit la dernière
+   * photo (ou la quatrième quand la bande est pleine). Quand cette case
+   * n'existe que pour lui, elle disparaît à la souris, où le bouton
+   * « Aperçu » vit déjà à droite.
+   */
+  const caseBouton = !onApercu
+    ? -1
+    : cherche
+      ? CASES - 1
+      : Math.min(pieces.length, CASES - 1);
+  const nbCases = cherche ? CASES : Math.max(pieces.length, caseBouton + 1);
+  /* Le « +8 » ne parle que d'une bande pleine : avec moins de quatre
+     photos, il n'y a rien d'autre à voir. */
+  const reste = pieces.length === CASES ? total - CASES : 0;
+
   /* Les blocs laissent passer le clic vers le lien étalé sous la ligne ;
      seuls les boutons le reprennent. Même procédé que `BrandCard`. */
   const bloc = "pointer-events-none relative z-3";
@@ -313,9 +341,8 @@ export default function LigneMarque({
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-1.5">
-            {Array.from({ length: CASES }).map((_, i) => {
+            {Array.from({ length: nbCases }).map((_, i) => {
               const source = pieces[i];
-              const reste = total - CASES;
               const derniere = i === CASES - 1;
               /*
                * AU DOIGT, LA QUATRIÈME VIGNETTE EST LE BOUTON.
@@ -334,12 +361,16 @@ export default function LigneMarque({
                * menée à son terme. Trois photos suffisent à dire le
                * style.
                */
-              const enBouton = derniere && Boolean(onApercu);
+              const enBouton = i === caseBouton;
+              /* Une case qui ne porte que le bouton, sans photo dessous. */
+              const seulBouton = enBouton && !source && !cherche;
 
               return (
                 <div
                   key={i}
-                  className="relative aspect-square overflow-hidden rounded-[10px] bg-[rgba(23,10,51,0.05)]"
+                  className={`relative aspect-square overflow-hidden rounded-[10px] bg-[rgba(23,10,51,0.05)] ${
+                    seulBouton ? "sm:hidden" : ""
+                  }`}
                 >
                   {source && (
                     /* eslint-disable-next-line @next/next/no-img-element */
