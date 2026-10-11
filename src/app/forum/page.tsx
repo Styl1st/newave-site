@@ -4,6 +4,7 @@ import Fil from "@/components/forum/Fil";
 import OngletsForum from "@/components/forum/OngletsForum";
 import { lireLeFil, moiForum } from "@/lib/forum-queries";
 import { estUneRubrique, estUnTri, VILLES, type FiltresForum } from "@/lib/forum";
+import { ANNONCES_POUR_FILTRER, filtresUtiles } from "@/lib/seuils";
 
 export const metadata: Metadata = {
   title: "Le forum",
@@ -33,6 +34,21 @@ export default async function ForumPage({ searchParams }: { searchParams: Promis
 
   const [page, moi] = await Promise.all([lireLeFil(filtres), moiForum()]);
 
+  /*
+   * VILLES ET RUBRIQUES ATTENDENT UNE DIZAINE D'ANNONCES.
+   *
+   * Huit villes et sept rubriques au-dessus d'une seule annonce : les
+   * filtres prenaient plus de place que le fil, et disaient surtout
+   * qu'il n'y avait presque rien. Le tri et la recherche restent.
+   *
+   * Sans filtre posé, `page.total` est le nombre total d'annonces. Avec
+   * un filtre (un lien partagé), les filtres s'affichent de toute
+   * façon : il faut voir ce qui rétrécit la liste pour pouvoir le
+   * retirer. Voir `filtresUtiles`.
+   */
+  const dejaFiltre = Boolean(filtres.ville || filtres.rubrique || filtres.q.trim());
+  const filtresComplets = filtresUtiles(page?.total ?? 0, ANNONCES_POUR_FILTRER, dejaFiltre);
+
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 pb-28 sm:py-11 md:pb-11">
       <header className="rise mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 sm:mb-8">
@@ -55,7 +71,12 @@ export default async function ForumPage({ searchParams }: { searchParams: Promis
         </Link>
       </header>
 
-      <Fil premierePage={page} filtresInitiaux={filtres} moiId={moi?.id ?? null} />
+      <Fil
+        premierePage={page}
+        filtresInitiaux={filtres}
+        filtresComplets={filtresComplets}
+        moiId={moi?.id ?? null}
+      />
 
       {/* Au doigt, les quatre gestes du forum restent sous le pouce
           pendant qu'on descend le fil, « Publier » compris. */}

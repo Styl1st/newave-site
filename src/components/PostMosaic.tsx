@@ -19,6 +19,7 @@ import { sansMarquage } from "./TexteRiche";
 import type { Post, Recherche } from "@/lib/types";
 import Raccourci from "@/components/Raccourci";
 import { surtitrePost } from "@/lib/surtitre-post";
+import { POSTS_POUR_FILTRER, filtresUtiles } from "@/lib/seuils";
 
 /**
  * Les publications.
@@ -246,6 +247,25 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
   const [ordre, setOrdre] = useState<string[]>([]);
   const [combien, setCombien] = useState(LOT);
 
+  /*
+   * LA RECHERCHE, LES CRITÈRES ET LE TRI ATTENDENT UNE DOUZAINE DE POSTS.
+   *
+   * Une barre de recherche, des thèmes suggérés et trois tris au-dessus
+   * de cinq posts : les outils annonçaient un fil bien plus fourni que
+   * celui qu'on allait lire. Sous `POSTS_POUR_FILTRER`, la page montre
+   * les posts, sans rien au-dessus. Un lien partagé avec `?q=` ou `?f=`
+   * garde ses outils, pour qu'on voie ce qui rétrécit la liste et qu'on
+   * puisse le retirer. Décidé une fois, au montage, comme l'amorce.
+   */
+  const [outils] = useState(() =>
+    filtresUtiles(
+      posts.length,
+      POSTS_POUR_FILTRER,
+      query.trim() !== "" ||
+        depart.themes.length + depart.formats.length + depart.marques.length + depart.sources.length > 0
+    )
+  );
+
   const actifs = themes.length + formats.length + marques.length + sources.length;
 
   function reinitialiser() {
@@ -297,10 +317,12 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
 
   /* ⌘K met le curseur dans le champ depuis n'importe où dans le fil.
      La page porte son propre champ : le pop-up de la barre lui laisse
-     donc la touche. Voir `champLocal`. */
-  useEffect(() => declarerChampLocal(), []);
+     donc la touche. Voir `champLocal`. Sans les outils, il n'y a pas
+     de champ ici, et la touche revient à la recherche du site. */
+  useEffect(() => (outils ? declarerChampLocal() : undefined), [outils]);
 
   useEffect(() => {
+    if (!outils) return;
     const auClavierGlobal = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -311,7 +333,7 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
     };
     window.addEventListener("keydown", auClavierGlobal);
     return () => window.removeEventListener("keydown", auClavierGlobal);
-  }, []);
+  }, [outils]);
 
   /* Fermer en cliquant à côté, et pas au `blur` : le `blur` part avant
      le clic sur une suggestion, qui disparaîtrait sous le doigt. */
@@ -791,154 +813,161 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
       {/* ---------------- la barre de requête ----------------
 
           La même que l'annuaire et la vitrine : pas de caisson, une
-          loupe, les jetons devant le curseur, un trait de deux pixels. */}
-      <div ref={bloc} className="relative z-20 mb-4">
-        <div className="flex items-start gap-3">
-          <IconLoupe className="mt-[7px] h-[19px] w-[19px] shrink-0 text-white/85" />
+          loupe, les jetons devant le curseur, un trait de deux pixels.
+          Seulement quand le fil a de quoi être trié : voir `outils`. */}
+      {outils && (
+        <div ref={bloc} className="relative z-20 mb-4">
+          <div className="flex items-start gap-3">
+            <IconLoupe className="mt-[7px] h-[19px] w-[19px] shrink-0 text-white/85" />
 
-          {/* Le clic n'importe où dans la ligne va au champ : l'espace
-              entre deux jetons fait partie de la phrase. */}
-          <div
-            onClick={() => {
-              if (!auDoigt) champ.current?.focus();
-            }}
-            className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
-          >
-            {jetons.map((j) => (
-              <Jeton
-                key={j.cle}
-                critere={j}
-                vise={vise === j.cle}
-                onRetirer={() => retirer(j)}
+            {/* Le clic n'importe où dans la ligne va au champ : l'espace
+                entre deux jetons fait partie de la phrase. */}
+            <div
+              onClick={() => {
+                if (!auDoigt) champ.current?.focus();
+              }}
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
+            >
+              {jetons.map((j) => (
+                <Jeton
+                  key={j.cle}
+                  critere={j}
+                  vise={vise === j.cle}
+                  onRetirer={() => retirer(j)}
+                />
+              ))}
+
+              <input
+                ref={champ}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setVise(null);
+                  setPanneau(true);
+                }}
+                onPointerDown={ouvrirAuDoigt}
+                onFocus={(e) => {
+                  if (!ouvrirAuDoigt(e)) setPanneau(true);
+                }}
+                onKeyDown={toucheDansLeChamp}
+                placeholder={jetons.length > 0 ? "Affiner…" : "Chercher un post, une marque, un thème…"}
+                aria-label="Chercher un post"
+                autoComplete="off"
+                className="requete-champ"
               />
-            ))}
+            </div>
 
-            <input
-              ref={champ}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setVise(null);
-                setPanneau(true);
-              }}
-              onPointerDown={ouvrirAuDoigt}
-              onFocus={(e) => {
-                if (!ouvrirAuDoigt(e)) setPanneau(true);
-              }}
-              onKeyDown={toucheDansLeChamp}
-              placeholder={jetons.length > 0 ? "Affiner…" : "Chercher un post, une marque, un thème…"}
-              aria-label="Chercher un post"
-              autoComplete="off"
-              className="requete-champ"
-            />
+            {!query && (
+              <span className="requete-touche mt-[7px] hidden shrink-0 sm:block"><Raccourci /></span>
+            )}
           </div>
 
-          {!query && (
-            <span className="requete-touche mt-[7px] hidden shrink-0 sm:block"><Raccourci /></span>
+          <div
+            className="requete-trait mt-2.5"
+            style={{ "--remplissage": `${remplissage}%` } as React.CSSProperties}
+          />
+
+          {/* Les suggestions poussent le contenu au lieu de le recouvrir,
+              comme dans l'annuaire : c'est une liste qu'on lit dessous. */}
+          {panneau && garni && (
+            <div className="max-h-[320px] overflow-y-auto overscroll-contain border-b border-white/14 py-2">
+              <Suggestions
+                suggestions={suggestions ?? RIEN}
+                query={query}
+                surligne={surligne}
+                onSurligne={setSurligne}
+                onOuvrir={noterRecherche}
+                criteres={criteresProposes}
+                onPoser={poser}
+                uniteCompte="posts"
+              />
+            </div>
+          )}
+
+          {/*
+           * LA LIGNE DU BAS : à gauche ce qu'on peut ajouter à la requête,
+           * à droite l'ordre du fil. C'est la place du rail d'affichage
+           * dans l'annuaire ; un fil de lecture n'a pas de densité, mais il
+           * a un tri, et c'est le seul autre réglage de la page.
+           */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-white/14 py-2.5">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+              {!query && suggeres.length > 0 && (
+                <>
+                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/66">
+                    Suggéré
+                  </span>
+                  {suggeres.map((c) => (
+                    <button
+                      key={c.cle}
+                      type="button"
+                      onClick={() => poser(c)}
+                      className="text-[13px] font-semibold text-white/85 transition hover:text-white"
+                    >
+                      {c.valeur}
+                      <sup className="ml-[3px] text-[9px] font-bold text-white/50">{c.compte}</sup>
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {filtrable && (
+                <button
+                  type="button"
+                  onClick={() => setOuvert((v) => !v)}
+                  aria-expanded={ouvert}
+                  aria-controls="filtres-posts"
+                  className="text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
+                >
+                  Tous les critères
+                  {actifs > 0 && <span className="ml-1.5 text-white/50">({actifs})</span>}
+                </button>
+              )}
+            </div>
+
+            <div role="group" aria-label="Trier les posts" className="ml-auto flex items-center gap-x-3.5">
+              <span
+                aria-hidden
+                className="hidden text-[9px] font-black uppercase tracking-[0.18em] text-white/66 sm:block"
+              >
+                Tri
+              </span>
+              {TRIS.map(([cle, label]) => (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => setTri(cle)}
+                  aria-pressed={tri === cle}
+                  className={`py-1.5 text-[12.5px] font-bold transition ${
+                    tri === cle ? "text-white" : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <span className={tri === cle ? "border-b-[1.5px] border-white pb-[3px]" : ""}>
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Le dépli des critères, sous le filet. Au doigt, c'est la
+              feuille qui monte, plus bas. */}
+          {ouvert && !auDoigt && (
+            <div id="filtres-posts" className="border-b border-white/14 py-4">
+              {contenuFiltres}
+            </div>
           )}
         </div>
+      )}
 
-        <div
-          className="requete-trait mt-2.5"
-          style={{ "--remplissage": `${remplissage}%` } as React.CSSProperties}
-        />
-
-        {/* Les suggestions poussent le contenu au lieu de le recouvrir,
-            comme dans l'annuaire : c'est une liste qu'on lit dessous. */}
-        {panneau && garni && (
-          <div className="max-h-[320px] overflow-y-auto overscroll-contain border-b border-white/14 py-2">
-            <Suggestions
-              suggestions={suggestions ?? RIEN}
-              query={query}
-              surligne={surligne}
-              onSurligne={setSurligne}
-              onOuvrir={noterRecherche}
-              criteres={criteresProposes}
-              onPoser={poser}
-              uniteCompte="posts"
-            />
-          </div>
-        )}
-
-        {/*
-         * LA LIGNE DU BAS : à gauche ce qu'on peut ajouter à la requête,
-         * à droite l'ordre du fil. C'est la place du rail d'affichage
-         * dans l'annuaire ; un fil de lecture n'a pas de densité, mais il
-         * a un tri, et c'est le seul autre réglage de la page.
-         */}
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-white/14 py-2.5">
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-            {!query && suggeres.length > 0 && (
-              <>
-                <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/66">
-                  Suggéré
-                </span>
-                {suggeres.map((c) => (
-                  <button
-                    key={c.cle}
-                    type="button"
-                    onClick={() => poser(c)}
-                    className="text-[13px] font-semibold text-white/85 transition hover:text-white"
-                  >
-                    {c.valeur}
-                    <sup className="ml-[3px] text-[9px] font-bold text-white/50">{c.compte}</sup>
-                  </button>
-                ))}
-              </>
-            )}
-
-            {filtrable && (
-              <button
-                type="button"
-                onClick={() => setOuvert((v) => !v)}
-                aria-expanded={ouvert}
-                aria-controls="filtres-posts"
-                className="text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
-              >
-                Tous les critères
-                {actifs > 0 && <span className="ml-1.5 text-white/50">({actifs})</span>}
-              </button>
-            )}
-          </div>
-
-          <div role="group" aria-label="Trier les posts" className="ml-auto flex items-center gap-x-3.5">
-            <span
-              aria-hidden
-              className="hidden text-[9px] font-black uppercase tracking-[0.18em] text-white/66 sm:block"
-            >
-              Tri
-            </span>
-            {TRIS.map(([cle, label]) => (
-              <button
-                key={cle}
-                type="button"
-                onClick={() => setTri(cle)}
-                aria-pressed={tri === cle}
-                className={`py-1.5 text-[12.5px] font-bold transition ${
-                  tri === cle ? "text-white" : "text-white/60 hover:text-white"
-                }`}
-              >
-                <span className={tri === cle ? "border-b-[1.5px] border-white pb-[3px]" : ""}>
-                  {label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Le dépli des critères, sous le filet. Au doigt, c'est la
-            feuille qui monte, plus bas. */}
-        {ouvert && !auDoigt && (
-          <div id="filtres-posts" className="border-b border-white/14 py-4">
-            {contenuFiltres}
-          </div>
-        )}
-      </div>
-
-      <p className="m-0 mb-4 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
-        {resultats.length} post{resultats.length > 1 ? "s" : ""}
-      </p>
+      {/* Le compte des résultats ne sert qu'à côté des filtres : sans
+          eux, il répéterait celui de l'en-tête de la page. */}
+      {outils && (
+        <p className="m-0 mb-4 text-[12px] font-bold uppercase tracking-[0.16em] text-white/65">
+          {resultats.length} post{resultats.length > 1 ? "s" : ""}
+        </p>
+      )}
 
       {resultats.length === 0 ? (
         <div className="glass p-8 text-center">

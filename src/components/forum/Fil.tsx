@@ -28,11 +28,18 @@ type Page = { annonces: Annonce[]; total: number };
 export default function Fil({
   premierePage,
   filtresInitiaux,
+  filtresComplets = true,
   moiId,
 }: {
   /** null : la base n'a pas répondu (ou la migration 37 manque). */
   premierePage: Page | null;
   filtresInitiaux: Filtres;
+  /**
+   * Villes et rubriques, ou seulement le tri et la recherche. Décidé
+   * par la page à l'arrivée, et gardé tel quel ensuite : retirer un
+   * filtre ne doit pas faire disparaître les autres. Voir `lib/seuils`.
+   */
+  filtresComplets?: boolean;
   moiId: string | null;
 }) {
   const [filtres, setFiltres] = useState<Filtres>(filtresInitiaux);
@@ -144,7 +151,11 @@ export default function Fil({
 
   return (
     <>
-      <FiltresForum filtres={filtres} onChange={(f) => setFiltres((v) => ({ ...v, ...f }))} />
+      <FiltresForum
+        filtres={filtres}
+        complets={filtresComplets}
+        onChange={(f) => setFiltres((v) => ({ ...v, ...f }))}
+      />
 
       {panne && annonces.length === 0 ? (
         <div className="glass p-8 text-center">

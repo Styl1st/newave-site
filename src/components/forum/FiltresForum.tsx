@@ -25,12 +25,19 @@ import {
  * existent. On garde le segmenté (trois mots tiennent), la recherche
  * pleine largeur, puis deux menus natifs côte à côte : le téléphone
  * ouvre alors sa propre roue, faite pour le pouce.
+ *
+ * TANT QUE LE FIL EST COURT (`complets` faux), villes et rubriques ne
+ * s'affichent pas : le tri et la recherche tiennent sur une ligne. Voir
+ * `ANNONCES_POUR_FILTRER`.
  */
 export default function FiltresForum({
   filtres,
+  complets = true,
   onChange,
 }: {
   filtres: Filtres;
+  /** Faux : seulement le tri et la recherche. */
+  complets?: boolean;
   onChange: (f: Partial<Filtres>) => void;
 }) {
   const autresVilles = VILLES.filter((v) => !VILLES_EN_VUE.includes(v));
@@ -82,6 +89,17 @@ export default function FiltresForum({
       />
     </label>
   );
+
+  if (!complets) {
+    return (
+      <div className="rise rise-1 mb-6">
+        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between md:gap-6 md:border-b md:border-white/15 md:pb-4">
+          <div className="md:w-[300px]">{segmente}</div>
+          <div className="w-full md:max-w-[260px]">{recherche}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rise rise-1 mb-6">
