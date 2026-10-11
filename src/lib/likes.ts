@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "./supabase/server";
+import { pastilleMeritee } from "./seuils";
 import type { Product } from "./types";
 
 /** Nombre de likes par pièce, pour une liste d'identifiants. */
@@ -152,6 +153,29 @@ export async function getMostLiked(
 }
 
 /**
+ * Le total des coups de cœur sur les pièces depuis l'ouverture, plafonné.
+ *
+ * Il ne sert qu'à une question : le classement des pièces a-t-il passé
+ * son seuil ? Voir `SEUIL_PIECES`. On lit donc les `plafond` premières
+ * lignes de la vue des totaux, et rien d'autre : chaque ligne compte au
+ * moins un cœur (la vue regroupe des cœurs existants), si bien que
+ * `plafond` lignes suffisent à répondre oui. Pas besoin de descendre
+ * les fiches des pièces pour ça.
+ */
+export async function getTotalCoupsDeCoeur(plafond: number): Promise<number> {
+  const supabase = await createClient();
+  if (!supabase) return 0;
+
+  const { data } = await supabase
+    .from("product_like_counts_total")
+    .select("likes")
+    .order("likes", { ascending: false })
+    .limit(plafond);
+
+  return ((data ?? []) as { likes: number }[]).reduce((somme, r) => somme + r.likes, 0);
+}
+
+/**
  * Les coups de cœur de TOUJOURS, pour des pièces qu'on a déjà en main.
  *
  * C'est la seconde moitié de l'élan : la première, le compte de la
@@ -192,6 +216,13 @@ export async function getTotauxLikes(ids: string[]): Promise<Map<string, number>
  * On ne regarde que les premières places. Annoncer « 47ᵉ » ne flatte
  * personne et n'apprend rien ; au-delà d'une dizaine, le classement
  * cesse d'être une distinction pour devenir une liste.
+ *
+ * ET IL FAUT DES CŒURS POUR ÊTRE DANS LES PREMIÈRES. Sur un site jeune,
+ * un seul clic suffisait à décrocher « 2ᵉ coup de cœur de la
+ * communauté » : la pastille annonçait une distinction là où il n'y
+ * avait qu'une absence de concurrence. Elle attend maintenant que la
+ * pièce ait reçu `PASTILLE_COEURS_MIN` cœurs sur la fenêtre qu'elle
+ * cite. Voir `lib/seuils`.
  */
 export async function getRangDeLaPiece(
   productId: string,
@@ -218,8 +249,9 @@ export async function getRangDeLaPiece(
     const lignes = (data ?? []) as { product_id: string; likes: number }[];
     const rang = lignes.findIndex((l) => l.product_id === productId);
     // Un classement où tout le monde est à zéro coup de cœur n'en est
-    // pas un : on ne décerne pas une médaille pour une absence.
-    if (rang >= 0 && lignes[rang].likes > 0) {
+    // pas un, et un seul cœur n'en fait pas un non plus : on ne décerne
+    // pas une médaille pour une absence.
+    if (rang >= 0 && pastilleMeritee(lignes[rang].likes)) {
       return { place: rang + 1, likes: lignes[rang].likes, periode };
     }
   }

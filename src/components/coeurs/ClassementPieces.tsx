@@ -18,7 +18,9 @@ import type { PlacePiece } from "./classement";
  * l'atteste. Là où il n'y en a pas — et une pièce n'en a jamais eu — le
  * chiffre de la mesure suffit : il ne classe rien, il dit ce qui s'est
  * passé. Les médailles qui coiffaient les anciennes cartes ont disparu
- * pour cette raison, pas par simplification.
+ * pour cette raison, pas par simplification. Sous `SEUIL_PIECES`, même
+ * ce chiffre n'arrive pas jusqu'ici : la page le retire, voir
+ * `chiffresAffiches`.
  *
  * IL NE GARDE PAS SA PAGINATION. Le nombre de lignes visibles vient du
  * dessus, de `ClassementEnRayons`, parce que changer de rayon doit la

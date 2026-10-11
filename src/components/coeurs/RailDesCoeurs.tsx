@@ -55,6 +55,9 @@ export type EnTeteDuRail =
       total: number;
       pieces: number;
       fenetre: "semaine" | "toujours";
+      /** Faux sous le seuil : le bloc dit alors la règle, sans nombre. */
+      chiffres: boolean;
+      seuil: number;
     };
 
 export default function RailDesCoeurs({
@@ -228,54 +231,34 @@ export default function RailDesCoeurs({
 function EnTete({ entete }: { entete: EnTeteDuRail }) {
   if (entete.genre === "podium") {
     /*
-     * LE COMPTEUR N'A DE SENS QU'EN DESSOUS DU SEUIL. « 340 sur 100 »
-     * ne se lit pas, et une barre pleine à ras bord ne dit plus rien du
-     * tout. Passé le seuil, le podium est là pour répondre à sa place :
-     * le bloc s'efface au lieu de se contredire.
+     * CE BLOC N'EXISTE QU'EN DESSOUS DU SEUIL. Passé le seuil, le
+     * podium est là pour répondre à sa place : le bloc s'efface au lieu
+     * de se répéter.
      */
     if (entete.total >= entete.seuil) return null;
 
-    const { total, seuil } = entete;
-    const part = Math.min(100, Math.round((total / seuil) * 100));
-
+    /*
+     * LA RÈGLE, SANS LA JAUGE.
+     *
+     * Le bloc affichait « 4 sur 100 cœurs » au-dessus d'une barre
+     * remplie à quatre pour cent. C'était honnête, et c'était surtout
+     * la chose la plus visible de la colonne : la preuve chiffrée que le
+     * site venait d'ouvrir. Sous le seuil, la page ne montre plus aucun
+     * nombre de cœurs (voir `chiffresAffiches`), et ce bloc suit la même
+     * règle. Il garde l'essentiel, le pourquoi.
+     *
+     * L'EXPLICATION EN TOUTES LETTRES, ET PAS UNE INFOBULLE : c'est une
+     * précaution méthodologique, et cachée derrière un point
+     * d'interrogation, elle ne serait jamais lue.
+     */
     return (
-      <section className="glass p-5">
-        <p className="eyebrow m-0 text-white/50">Le classement complet</p>
-        <p className="m-0 mt-2 text-[19px] font-extrabold leading-tight tracking-[-0.02em] text-white">
-          {enChiffres(total)} sur {enChiffres(seuil)} cœurs
-        </p>
-
-        <div
-          role="progressbar"
-          aria-valuenow={total}
-          aria-valuemin={0}
-          aria-valuemax={seuil}
-          aria-label={`${total} cœurs sur les ${seuil} qui ouvriront le podium`}
-          className="mt-3 h-[6px] w-full overflow-hidden rounded-full bg-white/16"
-        >
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${part}%`,
-              background:
-                "linear-gradient(90deg, rgba(232,111,216,.95), rgba(180,122,234,.9))",
-            }}
-          />
-        </div>
-
-        {/*
-         * L'EXPLICATION EN TOUTES LETTRES, ET PAS UNE INFOBULLE. Une
-         * barre de progression sans motif ressemble à un objectif
-         * commercial — « aidez-nous à atteindre cent » — alors que
-         * c'est une précaution méthodologique. Écrite, elle se
-         * comprend ; cachée derrière un point d'interrogation, elle
-         * n'est jamais lue.
-         */}
-        <p className="m-0 mt-3 text-[12px] leading-relaxed text-white/60">
-          En dessous de cent cœurs, un podium ne veut rien dire : trois voix d&apos;écart
-          suffiraient à tout changer.
-        </p>
-      </section>
+      <AvantLeSeuil
+        surtitre="Le classement complet"
+        titre={`À partir de ${enChiffres(entete.seuil)} cœurs`}
+      >
+        Le podium et les chiffres arrivent à ce moment-là. En dessous, trois voix
+        d&apos;écart suffiraient à tout changer : la liste dit ce qui a plu, sans compter.
+      </AvantLeSeuil>
     );
   }
 
@@ -302,7 +285,18 @@ function EnTete({ entete }: { entete: EnTeteDuRail }) {
     );
   }
 
-  const { total, pieces, fenetre } = entete;
+  const { total, pieces, fenetre, chiffres, seuil } = entete;
+
+  /* Sous le seuil, même règle que pour les marques : la raison, pas le
+     nombre. Voir le bloc du podium plus haut. */
+  if (!chiffres) {
+    return (
+      <AvantLeSeuil surtitre="Ce que compte ce classement" titre="Depuis l'ouverture du site">
+        Les chiffres et les sept derniers jours arrivent à {enChiffres(seuil)} coups de
+        cœur. En dessous, un seul clic suffirait à réordonner la liste.
+      </AvantLeSeuil>
+    );
+  }
 
   return (
     <section className="glass p-5">
@@ -322,6 +316,27 @@ function EnTete({ entete }: { entete: EnTeteDuRail }) {
           ? "Les sept derniers jours. Les plus anciens vivent dans « tout temps »."
           : "Le total depuis l'ouverture du site."}
       </p>
+    </section>
+  );
+}
+
+/** Le premier bloc du rail tant que le classement n'a pas passé son seuil. */
+function AvantLeSeuil({
+  surtitre,
+  titre,
+  children,
+}: {
+  surtitre: string;
+  titre: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="glass p-5">
+      <p className="eyebrow m-0 text-white/50">{surtitre}</p>
+      <p className="m-0 mt-2 text-[19px] font-extrabold leading-tight tracking-[-0.02em] text-white">
+        {titre}
+      </p>
+      <p className="m-0 mt-3 text-[12px] leading-relaxed text-white/60">{children}</p>
     </section>
   );
 }

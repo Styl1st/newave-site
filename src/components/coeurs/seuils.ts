@@ -34,6 +34,55 @@
 export const SEUIL_PODIUM = 100;
 
 /**
+ * Le même seuil, côté pièces : combien de coups de cœur, toutes pièces
+ * confondues et depuis l'ouverture, avant que leur classement montre
+ * ses chiffres et propose « 7 jours ».
+ *
+ * Le même nombre que les marques, pour la même raison : en dessous, un
+ * seul clic réordonne la liste. Une constante à part quand même, parce
+ * que les deux ne se rempliront pas au même rythme.
+ */
+export const SEUIL_PIECES = 100;
+
+type QuoiClasse = "marques" | "pieces";
+type MesureClassee = "coeurs" | "elan" | "avis";
+type Fenetre = "semaine" | "mois" | "toujours";
+
+/**
+ * Les fenêtres de temps qu'un classement a le droit de proposer.
+ *
+ *   La note ne dépend pas du temps : jamais de fenêtre.
+ *   Les marques : semaine, mois et toujours, au-dessus de `SEUIL_PODIUM`.
+ *   Les pièces : semaine et toujours (les deux seules vues de la base),
+ *   au-dessus de `SEUIL_PIECES`.
+ *
+ * Sous le seuil, aucune : la page retombe alors sur « depuis toujours ».
+ * Découper un total déjà maigre en sept jours donnait « 2 pièces à
+ * 1 cœur », qui se lit comme un classement alors que c'est un hasard.
+ *
+ * `total` est le nombre de cœurs de TOUT ce qui peut être classé, pas
+ * de ce qui est affiché.
+ */
+export function fenetresDuClassement(quoi: QuoiClasse, mesure: MesureClassee, total: number): Fenetre[] {
+  if (mesure === "avis") return [];
+  if (quoi === "marques") return total >= SEUIL_PODIUM ? ["semaine", "mois", "toujours"] : [];
+  return total >= SEUIL_PIECES ? ["semaine", "toujours"] : [];
+}
+
+/**
+ * Les cœurs se comptent-ils à l'écran ?
+ *
+ * Sous le seuil, la page montre ce qui a plu, dans l'ordre, mais sans
+ * chiffre : « 1 » au bout de chaque ligne ne disait rien de la pièce,
+ * seulement que le site venait d'ouvrir. Les notes gardent les leurs,
+ * elles ont leur propre minimum (le nombre d'avis).
+ */
+export function chiffresAffiches(quoi: QuoiClasse, mesure: MesureClassee, total: number): boolean {
+  if (mesure === "avis") return true;
+  return total >= (quoi === "marques" ? SEUIL_PODIUM : SEUIL_PIECES);
+}
+
+/**
  * Combien de cœurs il faut à un rayon pour tenir dans la ligne
  * principale.
  *

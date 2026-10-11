@@ -17,12 +17,15 @@ import {
   MOT_DU_QUOI,
 } from "@/components/coeurs/classement";
 import {
+  chiffresAffiches,
+  fenetresDuClassement,
   MISES_DE_COTE_RECENTES,
   RESERVE_A_DECOUVRIR,
+  SEUIL_PIECES,
   SEUIL_PODIUM,
 } from "@/components/coeurs/seuils";
 import { enChiffres } from "@/components/chiffres";
-import { getMostLiked, getMyLikes, getTotauxLikes } from "@/lib/likes";
+import { getMostLiked, getMyLikes, getTotalCoupsDeCoeur, getTotauxLikes } from "@/lib/likes";
 import { getDerniersFavoris, getMyFavorites, getPaysageDesCoeurs } from "@/lib/favorites";
 import type { PaysageDesCoeurs, PeriodeCoeurs } from "@/lib/favorites";
 import { melanger } from "@/lib/melange";
@@ -108,7 +111,20 @@ export default async function PopulairesPage({ searchParams }: Props) {
     ? await getPaysageDesCoeurs()
     : { total: 0, classement: [], sansCoeur: [], rayons: [] };
 
-  const surLeSeuil = paysageComplet.total >= SEUIL_PODIUM;
+  /*
+   * LA MÊME QUESTION CÔTÉ PIÈCES, ET UNE LECTURE LÉGÈRE POUR Y RÉPONDRE.
+   *
+   * Les pièces ont maintenant leur seuil elles aussi : en dessous, ni
+   * « 7 jours » ni chiffres. Il faut donc savoir où en est le total
+   * depuis l'ouverture AVANT de choisir la fenêtre, exactement comme
+   * pour les marques. `getTotalCoupsDeCoeur` ne lit que des nombres, et
+   * pas plus de lignes qu'il n'en faut pour répondre.
+   */
+  const surDesCoupsDeCoeur = quoi === "pieces" && mesureVoulue !== "avis";
+  const totalPieces = surDesCoupsDeCoeur ? await getTotalCoupsDeCoeur(SEUIL_PIECES) : 0;
+
+  /** Les cœurs de tout ce qui peut être classé ici, marques ou pièces. */
+  const totalClassable = quoi === "marques" ? paysageComplet.total : totalPieces;
 
   /*
    * ------------------------------------------------------------------
@@ -127,21 +143,20 @@ export default async function PopulairesPage({ searchParams }: Props) {
    *   3. Les pièces n'ont que deux fenêtres, et c'est la base qui le
    *      dit : `product_like_counts` est une vue figée à sept jours,
    *      `product_like_counts_total` compte tout. Il n'existe aucune vue
-   *      à trente jours, donc « 30 jours » n'est pas dans le menu.
+   *      à trente jours, donc « 30 jours » n'est pas dans le menu. Et
+   *      comme les marques, elles n'en ont qu'au-dessus de leur seuil,
+   *      `SEUIL_PIECES` : c'est ce qui affichait « 2 pièces à 1 cœur »
+   *      sur sept jours.
+   *
+   * Les trois règles sont écrites dans `fenetresDuClassement`, avec
+   * leurs tests.
    *
    * L'élan, lui, a besoin d'une fenêtre pour vouloir dire quelque chose :
    * la part reçue « depuis toujours » vaut cent pour cent par
    * construction. Sans fenêtre disponible, il n'est pas proposé.
    * ------------------------------------------------------------------
    */
-  const fenetresPossibles: PeriodeCoeurs[] =
-    mesureVoulue === "avis"
-      ? []
-      : quoi === "marques"
-        ? surLeSeuil
-          ? ["semaine", "mois", "toujours"]
-          : []
-        : ["semaine", "toujours"];
+  const fenetresPossibles: PeriodeCoeurs[] = fenetresDuClassement(quoi, mesureVoulue, totalClassable);
 
   const elanTenable = fenetresPossibles.some((f) => f !== "toujours");
   const mesure: Mesure =
@@ -150,6 +165,17 @@ export default async function PopulairesPage({ searchParams }: Props) {
   /* L'élan retire « depuis toujours » du menu : cent pour cent par
      construction n'est pas un classement. */
   const fenetres = mesure === "elan" ? fenetresPossibles.filter((f) => f !== "toujours") : fenetresPossibles;
+
+  /*
+   * LES CHIFFRES, SEULEMENT AU-DESSUS DU SEUIL.
+   *
+   * En dessous, l'ordre reste celui des cœurs, mais aucun nombre ne
+   * s'affiche : ni au bout des lignes, ni dans le compteur du haut, ni
+   * dans le rail. « 1 » au bout de chaque ligne ne disait rien des
+   * pièces, seulement que le site venait d'ouvrir. Les notes gardent
+   * les leurs : elles ont leur propre minimum, le nombre d'avis.
+   */
+  const chiffres = chiffresAffiches(quoi, mesure, totalClassable);
 
   /*
    * SANS `?periode=`, C'EST SEPT JOURS ET NON « TOUJOURS ».
@@ -313,7 +339,9 @@ export default async function PopulairesPage({ searchParams }: Props) {
                   rayons: brand.categories ?? [],
                   ...(mesure === "elan"
                     ? { elan: { fenetre: favoris, total, part: partDe(favoris, total) } }
-                    : { coeurs: favoris }),
+                    : chiffres
+                      ? { coeurs: favoris }
+                      : {}),
                 })),
           suivies: [...mesFavoris],
           total: mesure === "avis" ? undefined : paysageComplet.total,
@@ -335,7 +363,9 @@ export default async function PopulairesPage({ searchParams }: Props) {
                     rayons: [rayonDe(product)],
                     ...(mesure === "elan"
                       ? { elan: { fenetre: likes, total, part: partDe(likes, total) } }
-                      : { coeurs: likes }),
+                      : chiffres
+                        ? { coeurs: likes }
+                        : {}),
                     aimee: myLikes.has(product.id),
                   };
                 }),
@@ -380,6 +410,8 @@ export default async function PopulairesPage({ searchParams }: Props) {
             total: classement.reduce((somme, c) => somme + c.likes, 0),
             pieces: classement.length,
             fenetre: periode === "toujours" ? "toujours" : "semaine",
+            chiffres,
+            seuil: SEUIL_PIECES,
           };
 
   const explication =
@@ -400,6 +432,17 @@ export default async function PopulairesPage({ searchParams }: Props) {
         <strong className="font-extrabold text-white">
           Rien n&apos;est acheté ici : c&apos;est le nombre de cœurs, et rien d&apos;autre,
           qui fait l&apos;ordre.
+        </strong>
+      </>
+    ) : !chiffres ? (
+      /* Sous le seuil. Le pourquoi de l'absence de chiffres est dans le
+         rail (voir `RailDesCoeurs`) : l'écrire ici aussi le ferait lire
+         deux fois côte à côte sur ordinateur. */
+      <>
+        Ce qui a le plus plu depuis l&apos;ouverture du site, dans l&apos;ordre des coups de
+        cœur.{" "}
+        <strong className="font-extrabold text-white">
+          Rien ne s&apos;achète pour figurer ici.
         </strong>
       </>
     ) : periode === "toujours" ? (
@@ -435,7 +478,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
    */
   const combien = contenu.entrees.length;
   const compteurs =
-    combien === 0
+    combien === 0 || !chiffres
       ? null
       : mesure === "avis"
         ? `${combien} ${quoi === "marques" ? "marques notées" : "pièces notées"} · ${seuil} avis minimum`

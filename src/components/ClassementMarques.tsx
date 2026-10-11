@@ -193,9 +193,11 @@ export default function ClassementMarques({
                * cœurs range huit marques que trois voix d'écart
                * suffiraient à réordonner. Le chiffre a l'air d'un fait
                * alors qu'il est un hasard, et il colle une place à
-               * quelqu'un qui n'a rien demandé. Le compte de cœurs, lui,
-               * reste : il ne prétend rien classer, il dit ce qui s'est
-               * passé.
+               * quelqu'un qui n'a rien demandé. Le compte de cœurs ne
+               * s'affiche pas non plus sous le seuil : la page le retire
+               * avant d'arriver ici (voir `chiffresAffiches`), parce
+               * que « 2 » au bout de chaque ligne disait surtout que le
+               * site venait d'ouvrir.
                *
                * Au-dessus du seuil, le rang revient de lui-même : le
                * podium existe, donc l'ordre veut dire quelque chose.
