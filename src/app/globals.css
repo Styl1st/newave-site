@@ -1766,14 +1766,19 @@ html[data-pied="forum"] { --pied: calc(58px + env(safe-area-inset-bottom, 0px));
 
    Deux déclarations, ce n'est pas une étourderie : `svh` est la hauteur
    visible quand les barres du navigateur mobile sont déployées, donc le
-   pire cas. Les navigateurs qui l'ignorent gardent `vh`. */
+   pire cas. Les navigateurs qui l'ignorent gardent `vh`.
+
+   EN GRAND SEULEMENT. Au téléphone, le manifeste prend la hauteur de
+   son contenu et c'est voulu : le ruban des marques doit entrer dans
+   le premier écran. Une hauteur forcée l'aurait repoussé dessous, et
+   le premier écran ne montrait alors aucune marque. */
 @media (min-width: 640px) {
   :root { --haut-entete: 76px; }
-}
 
-.premier-ecran {
-  min-height: calc(100vh - var(--haut-entete));
-  min-height: calc(100svh - var(--haut-entete));
+  .premier-ecran {
+    min-height: calc(100vh - var(--haut-entete));
+    min-height: calc(100svh - var(--haut-entete));
+  }
 }
 
 /* La flèche qui invite à descendre. Discrète, et immobile si la

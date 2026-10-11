@@ -101,32 +101,44 @@ export default async function HomePage() {
           Il occupe le premier écran à lui seul. Ce qui vient ensuite se
           mérite d'un coup de pouce : c'est la différence entre une page
           d'accueil et une liste. */}
-      <section className="premier-ecran relative flex flex-col items-center justify-center py-10 text-center sm:py-14">
+      <section className="premier-ecran relative flex flex-col items-center justify-center pb-1 pt-7 text-center sm:py-14">
+        {/*
+         * LE GRAND LOGO NE S'AFFICHE QU'EN GRAND.
+         *
+         * Au téléphone, l'en-tête le porte déjà, collé en haut de
+         * l'écran : le même logo une seconde fois, en très grand, prenait
+         * le tiers du premier écran et repoussait les marques sous la
+         * ligne de flottaison. On voyait l'univers, jamais ce qu'il y a à
+         * explorer. Sans lui, le ruban « Découvre de nouvelles marques »
+         * entre dans le premier écran, juste sous les deux boutons.
+         */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/logo-white.webp"
-          alt="NEWAVE SPHERE"
-          /* 212 px au doigt, 320 en grand : à quatre cents pixels de
-             large, soixante-dix pour cent font un logo qui touche les
-             deux bords et pousse la baseline sous la ligne de flottaison.
-             C'est la valeur du gabarit mobile. */
-          className="rise w-[min(62%,212px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:w-[min(70%,320px)]"
+          alt=""
+          aria-hidden="true"
+          className="rise hidden w-[min(70%,320px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:block"
         />
 
-        <p className="tagline rise rise-1 mt-6 text-[clamp(11px,2.9vw,13px)] leading-[1.9]">
-          Média de marques
-          <br />&<br />
+        {/* Le titre de la page, pour les lecteurs d'écran comme pour les
+            moteurs : c'est la promesse du site, et l'accueil était la
+            seule page sans titre principal. */}
+        <h1 className="tagline rise rise-1 m-0 text-[clamp(11px,2.9vw,13px)] leading-[1.9] sm:mt-6">
+          <span className="sr-only">NEWAVE SPHERE, </span>
+          {/* Les espaces avant les retours à la ligne ne se voient pas,
+              mais sans eux le titre se lit « marques&d'artistes ». */}
+          Média de marques <br />& <br />
           d&apos;artistes indépendants
-        </p>
+        </h1>
 
-        <p className="rise rise-2 mt-7 max-w-[620px] text-[clamp(15px,4vw,18px)] leading-[1.6] text-white/92">
+        <p className="rise rise-2 mt-4 max-w-[620px] text-[clamp(15px,4vw,18px)] leading-[1.6] text-white/92 sm:mt-7">
           Celles et ceux qui créent en dehors des circuits classiques : marques
           naissantes, pièces uniques, séries courtes.
         </p>
 
         {/* Le champ mène à une fiche ou à l'annuaire, jamais à une
             deuxième recherche maison. Voir `RechercheAccueil`. */}
-        <div className="rise rise-3 mt-8 w-full max-w-[640px]">
+        <div className="rise rise-3 mt-6 w-full max-w-[640px] sm:mt-8">
           <RechercheAccueil />
         </div>
 
@@ -161,7 +173,7 @@ export default async function HomePage() {
             libellé du premier — « Explorer les 136 marques » — passe sur
             deux lignes, et les deux hauteurs ne s'accordent plus. Empilés,
             ils gardent leur phrase entière et se visent sans regarder. */}
-        <div className="rise rise-4 mt-8 flex w-full max-w-[420px] flex-col items-stretch gap-[9px] sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3">
+        <div className="rise rise-4 mt-6 flex w-full max-w-[420px] flex-col items-stretch gap-[9px] sm:mt-8 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-3">
           <Link href="/marques" className="card-light px-6 py-3.5 text-center">
             <span className="relative z-3 text-[14px] font-extrabold tracking-[-0.01em]">
               {brands.length > 0
@@ -177,10 +189,12 @@ export default async function HomePage() {
           </Link>
         </div>
 
+        {/* En grand seulement : au téléphone, la suite est déjà à
+            l'écran, juste dessous. */}
         <a
           href="#la-suite"
           aria-label="Descendre vers la marque de la semaine"
-          className="mt-10 inline-flex flex-col items-center gap-1 text-white/85 transition hover:text-white sm:mt-14"
+          className="mt-14 hidden flex-col items-center gap-1 text-white/85 transition hover:text-white sm:inline-flex"
         >
           <span className="text-[10px] font-black uppercase tracking-[0.18em]">La suite</span>
           <IconChevron className="invite h-5 w-5" />
