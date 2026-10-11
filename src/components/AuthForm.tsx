@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ongletApresTouche } from "@/lib/onglets";
 import ConnexionFournisseurs from "./ConnexionFournisseurs";
 
 type Mode = "connexion" | "inscription" | "oubli";
+type Onglet = Exclude<Mode, "oubli">;
+const ONGLETS: readonly Onglet[] = ["connexion", "inscription"];
 
 // La matière des champs vit dans `globals.css`. Voir `.champ`.
 const FIELD = "champ";
@@ -198,6 +201,8 @@ export default function AuthForm({ suite }: { suite: string }) {
   }
 
   const tab = "flex-1 rounded-full py-2 text-[12px] font-extrabold uppercase tracking-[0.08em] transition";
+  /* « Mot de passe oublié » se range sous « J'ai un compte ». */
+  const ongletActif: Onglet = mode === "inscription" ? "inscription" : "connexion";
 
   return (
     <form onSubmit={onSubmit} className="glass flex flex-col gap-5 p-4 sm:p-7">
@@ -207,89 +212,117 @@ export default function AuthForm({ suite }: { suite: string }) {
           simplement oublié son mot de passe : le sujet est ailleurs. */}
       {mode !== "oubli" && <ConnexionFournisseurs suite={suite} />}
 
-      <div className="flex gap-1.5 rounded-full bg-white/10 p-1.5">
-        <button
-          type="button"
-          onClick={() => { setMode("connexion"); setNote(null); }}
-          className={`${tab} ${mode !== "inscription" ? "bg-white text-[var(--color-ink)]" : "text-white/75 hover:text-white"}`}
-        >
-          J&apos;ai un compte
-        </button>
-        <button
-          type="button"
-          onClick={() => { setMode("inscription"); setNote(null); }}
-          className={`${tab} ${mode === "inscription" ? "bg-white text-[var(--color-ink)]" : "text-white/75 hover:text-white"}`}
-        >
-          Créer un compte
-        </button>
+      {/* DE VRAIS ONGLETS POUR LES LECTEURS D'ÉCRAN.
+          Deux boutons sans rôle ne disaient pas lequel était choisi.
+          Motif ARIA « tabs » : `aria-selected`, un seul onglet dans
+          l'ordre de tabulation, les flèches pour passer de l'un à
+          l'autre. Voir `ongletApresTouche`. */}
+      <div
+        role="tablist"
+        aria-label="Se connecter ou créer un compte"
+        className="flex gap-1.5 rounded-full bg-white/10 p-1.5"
+      >
+        {ONGLETS.map((onglet) => {
+          const choisi = ongletActif === onglet;
+          return (
+            <button
+              key={onglet}
+              type="button"
+              role="tab"
+              id={`onglet-${onglet}`}
+              aria-selected={choisi}
+              aria-controls="panneau-compte"
+              tabIndex={choisi ? 0 : -1}
+              onClick={() => { setMode(onglet); setNote(null); }}
+              onKeyDown={(e) => {
+                const suivant = ongletApresTouche(ONGLETS, ongletActif, e.key);
+                if (!suivant) return;
+                e.preventDefault();
+                setMode(suivant);
+                setNote(null);
+                document.getElementById(`onglet-${suivant}`)?.focus();
+              }}
+              className={`${tab} ${choisi ? "bg-white text-[var(--color-ink)]" : "text-white/75 hover:text-white"}`}
+            >
+              {onglet === "connexion" ? <>J&apos;ai un compte</> : "Créer un compte"}
+            </button>
+          );
+        })}
       </div>
 
-      {mode === "inscription" && (
-        <div>
-          <label className={LABEL} htmlFor="display_name">Ton prénom ou pseudo</label>
-          <input className={FIELD} id="display_name" name="display_name" placeholder="Ton prénom, ou ton pseudo" />
-        </div>
-      )}
+      <div
+        role="tabpanel"
+        id="panneau-compte"
+        aria-labelledby={`onglet-${ongletActif}`}
+        className="flex flex-col gap-5"
+      >
+        {mode === "inscription" && (
+          <div>
+            <label className={LABEL} htmlFor="display_name">Ton prénom ou pseudo</label>
+            <input className={FIELD} id="display_name" name="display_name" placeholder="Ton prénom, ou ton pseudo" />
+          </div>
+        )}
 
-      <div>
-        <label className={LABEL} htmlFor="email">Email</label>
-        <input className={FIELD} id="email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.fr" />
+        <div>
+          <label className={LABEL} htmlFor="email">Email</label>
+          <input className={FIELD} id="email" name="email" type="email" required autoComplete="email" placeholder="toi@exemple.fr" />
+        </div>
+
+        {mode !== "oubli" && (
+          <div>
+            <label className={LABEL} htmlFor="password">Mot de passe</label>
+            <input
+              className={FIELD}
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete={mode === "inscription" ? "new-password" : "current-password"}
+              /* La consigne de longueur ne sert qu'à qui choisit son mot
+                 de passe : à la connexion, elle laissait croire qu'on en
+                 créait un nouveau. */
+              placeholder={mode === "inscription" ? "8 caractères minimum" : undefined}
+            />
+          </div>
+        )}
+
+        {note && (
+          <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] leading-relaxed text-white">
+            {note}
+          </p>
+        )}
+
+        <button type="submit" disabled={pending} className="card-light px-7 py-3.5 disabled:opacity-60">
+          <span className="relative z-3 text-[14px] font-extrabold">
+            {pending
+              ? "…"
+              : mode === "connexion"
+                ? "Se connecter"
+                : mode === "inscription"
+                  ? "Créer mon compte"
+                  : "Recevoir un lien"}
+          </span>
+        </button>
+
+        {mode === "connexion" ? (
+          <button
+            type="button"
+            onClick={() => { setMode("oubli"); setNote(null); }}
+            className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
+          >
+            Mot de passe oublié ?
+          </button>
+        ) : mode === "oubli" ? (
+          <button
+            type="button"
+            onClick={() => { setMode("connexion"); setNote(null); }}
+            className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
+          >
+            Retour à la connexion
+          </button>
+        ) : null}
       </div>
-
-      {mode !== "oubli" && (
-        <div>
-          <label className={LABEL} htmlFor="password">Mot de passe</label>
-          <input
-            className={FIELD}
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete={mode === "inscription" ? "new-password" : "current-password"}
-            /* La consigne de longueur ne sert qu'à qui choisit son mot
-               de passe : à la connexion, elle laissait croire qu'on en
-               créait un nouveau. */
-            placeholder={mode === "inscription" ? "8 caractères minimum" : undefined}
-          />
-        </div>
-      )}
-
-      {note && (
-        <p className="m-0 rounded-[13px] bg-white/12 px-4 py-3 text-[13.5px] leading-relaxed text-white">
-          {note}
-        </p>
-      )}
-
-      <button type="submit" disabled={pending} className="card-light px-7 py-3.5 disabled:opacity-60">
-        <span className="relative z-3 text-[14px] font-extrabold">
-          {pending
-            ? "…"
-            : mode === "connexion"
-              ? "Se connecter"
-              : mode === "inscription"
-                ? "Créer mon compte"
-                : "Recevoir un lien"}
-        </span>
-      </button>
-
-      {mode === "connexion" ? (
-        <button
-          type="button"
-          onClick={() => { setMode("oubli"); setNote(null); }}
-          className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
-        >
-          Mot de passe oublié ?
-        </button>
-      ) : mode === "oubli" ? (
-        <button
-          type="button"
-          onClick={() => { setMode("connexion"); setNote(null); }}
-          className="m-0 self-start text-[12.5px] font-semibold text-white/65 underline underline-offset-2 transition hover:text-white"
-        >
-          Retour à la connexion
-        </button>
-      ) : null}
     </form>
   );
 }

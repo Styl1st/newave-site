@@ -2,6 +2,7 @@ import Link from "next/link";
 import BarreDuHaut from "./BarreDuHaut";
 import LienNav from "./LienNav";
 import MobileMenu from "./MobileMenu";
+import BoutonConnexion from "./BoutonConnexion";
 import PastilleMessages from "./messages/PastilleMessages";
 import { IconCoeur } from "./Icons";
 import { getProfile } from "@/lib/auth";
@@ -255,12 +256,7 @@ export default async function Header() {
                * pas le proposer. La barre était de toute façon presque
                * vide à cet endroit.
                */
-              <Link
-                href="/connexion"
-                className="rounded-full bg-white px-3.5 py-2 text-[12px] font-black text-[var(--color-ink)] shadow-[0_3px_12px_rgba(var(--voile),0.3)] active:scale-95"
-              >
-                Connexion
-              </Link>
+              <BoutonConnexion />
             )}
             <MobileMenu
               liens={NAV.slice(0, 7)}
