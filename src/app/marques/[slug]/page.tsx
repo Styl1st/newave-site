@@ -24,6 +24,7 @@ import BandeauMarque from "@/components/BandeauMarque";
 import BarreGerant from "@/components/BarreGerant";
 import RetourOrigine from "@/components/RetourOrigine";
 import { lienInstagram } from "@/lib/instagram";
+import { libelleBoutique } from "@/lib/achat";
 import auBesoin from "next/dynamic";
 import {
   ACCROCHE,
@@ -341,7 +342,26 @@ export default async function BrandPage({ params }: Props) {
         ) : (
           <p className={ACCROCHE}>{brand.tagline}</p>
         )}
-        <div className="mt-5">
+        {/* LA BOUTIQUE D'ABORD, SOUS LE NOM.
+            C'est le geste qui apporte quelque chose à la marque, et il
+            n'existait qu'en petite pastille dans le coin de la
+            couverture, ou en grand après toutes les pièces. Même lien
+            que les deux autres (`/api/go/marque`, qui compte la
+            visite). */}
+        <div className="mt-5 flex flex-wrap items-start gap-2.5">
+          {(brand.shop_url || brand.website_url) && (
+            <a
+              href={`/api/go/marque/${brand.id}`}
+              target="_blank"
+              rel="noopener noreferrer sponsored nofollow"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-5 text-[13.5px] font-extrabold text-[var(--color-ink)] shadow-[0_6px_20px_-8px_rgba(var(--voile),0.6)] transition hover:opacity-90 active:scale-[.97]"
+            >
+              {libelleBoutique(plateforme)}
+              <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 17 17 7M9 7h8v8" />
+              </svg>
+            </a>
+          )}
           <FavoriteButton brandId={brand.id} initial={favorited} />
         </div>
       </header>

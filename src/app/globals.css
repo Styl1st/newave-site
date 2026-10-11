@@ -1730,6 +1730,12 @@ html[data-pied="admin"] { --pied: 90px; }
   html[data-pied="admin"] { --pied: 0px; }
 }
 
+/* La barre d'achat de la fiche pièce, au téléphone (`BarreAchat`). */
+html[data-pied="piece"] { --pied: calc(66px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 640px) {
+  html[data-pied="piece"] { --pied: 0px; }
+}
+
 /* La barre d'onglets du forum, au doigt (`OngletsForum`). */
 html[data-pied="forum"] { --pied: calc(58px + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 768px) {

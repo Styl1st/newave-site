@@ -14,6 +14,8 @@ import { getCatalogueInsight } from "@/lib/brand-space";
 import { getLikeCounts, getMyLikes, getRangDeLaPiece } from "@/lib/likes";
 import { IconPencil } from "@/components/Icons";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
+import { libelleAchat } from "@/lib/achat";
+import BarreAchat from "@/components/BarreAchat";
 import BackLink from "@/components/BackLink";
 
 type Props = { params: Promise<{ slug: string; piece: string }> };
@@ -59,6 +61,11 @@ export default async function PiecePage({ params }: Props) {
       : [];
 
   const prix = prixAffiche(product);
+  /* Une pièce retirée n'a plus de page chez la marque : on renvoie
+     vers la boutique en général. Le grand bouton et la barre du bas
+     partagent lien et libellé. */
+  const lienAchat = product.retired_at ? `/api/go/marque/${brand.id}` : `/api/go/piece/${product.id}`;
+  const achat = libelleAchat({ disponible: product.available, retiree: !!product.retired_at }, brand.name);
   const was = formatPrice(product.compare_at_cents, product.currency);
   const off = discountPercent(product);
 
@@ -302,19 +309,16 @@ export default async function PiecePage({ params }: Props) {
               renvoie vers la boutique en général plutôt que vers un
               lien qui finirait sur une erreur. */}
           <a
-            href={product.retired_at ? `/api/go/marque/${brand.id}` : `/api/go/piece/${product.id}`}
+            href={lienAchat}
             target="_blank"
             rel="noopener noreferrer sponsored nofollow"
             data-reveal
+            data-achat-principal
             className="card-light flex items-center justify-between gap-4 px-6 py-5"
           >
             <span className="relative z-3">
               <span className="block text-[15px] font-extrabold tracking-[-0.01em]">
-                {product.retired_at
-                  ? `Voir ce que propose ${brand.name} aujourd'hui`
-                  : product.available
-                    ? `Acheter chez ${brand.name}`
-                    : "Voir la fiche chez la marque"}
+                {achat}
               </span>
               <span className="mt-0.5 block text-[11.5px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
                 Tu quittes NEWAVE SPHERE
@@ -406,6 +410,10 @@ export default async function PiecePage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* Au téléphone, le prix et le bouton d'achat restent sous la
+          main pendant qu'on regarde les photos. Voir `BarreAchat`. */}
+      <BarreAchat href={lienAchat} libelle={achat} prix={prix.principal} />
     </div>
   );
 }
