@@ -206,11 +206,17 @@ export default async function Header() {
              * Deux `span` et non une chaîne calculée : en Tailwind v4 les
              * classes s'écrivent en toutes lettres pour être trouvées à la
              * compilation.
+             *
+             * EN CONTOUR, ET PLUS EN BLANC PLEIN. Blanc, il avait le même
+             * poids que « Explorer les marques » sur l'accueil : pour
+             * quelqu'un qui arrive d'Instagram, l'action la plus visible
+             * du site devenait « proposer une marque ». Il garde sa place
+             * et son libellé, avec le dessin de « Ma marque ».
              */}
             <Link
               href="/candidature"
               title="Proposer une marque"
-              className="cta-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-[12.5px] font-black text-[var(--color-ink)] transition active:scale-[.97]"
+              className="puce-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
             >
               <span className="xl:hidden">Proposer</span>
               <span className="hidden xl:inline">Proposer une marque</span>
