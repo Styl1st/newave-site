@@ -18,6 +18,7 @@ import { enSlugDeCategorie } from "@/lib/taxonomy";
 import { sansMarquage } from "./TexteRiche";
 import type { Post, Recherche } from "@/lib/types";
 import Raccourci from "@/components/Raccourci";
+import { surtitrePost } from "@/lib/surtitre-post";
 
 /**
  * Les publications.
@@ -1036,7 +1037,8 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
  */
 function ALaUne({ post }: { post: Post }) {
   const cover = couverture(post);
-  const surtitre = ["Le post de la semaine", post.brand?.name]
+  /* « de la semaine » seulement si c'est vrai : voir `surtitrePost`. */
+  const surtitre = [surtitrePost(post.published_at), post.brand?.name]
     .filter(Boolean)
     .join(" · ");
 
