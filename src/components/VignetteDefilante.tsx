@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 
 /**
@@ -52,6 +52,15 @@ export default function VignetteDefilante({
 }) {
   const [rang, setRang] = useState(0);
   const annoncees = useRef(new Set<number>());
+  const [chargee, setChargee] = useState(false);
+  const photo = useRef<HTMLImageElement | null>(null);
+
+  /* Une photo déjà en cache peut finir de charger avant que React ne
+     branche `onLoad` : on regarde aussi son état au montage. */
+  useEffect(() => {
+    const img = photo.current;
+    if (img?.complete && img.naturalWidth > 0) setChargee(true);
+  }, []);
 
   const total = images.length;
   const source = images[Math.min(rang, total - 1)];
@@ -100,8 +109,15 @@ export default function VignetteDefilante({
         fetchPriority={prioritaire ? "high" : "auto"}
         decoding="async"
         onMouseEnter={() => preparer(1)}
+        ref={photo}
+        onLoad={() => setChargee(true)}
+        onError={() => setChargee(true)}
         className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${className}`}
       />
+
+      {/* Tant que la première photo n'est pas arrivée, un aplat qui
+          respire plutôt qu'une case vide. */}
+      {!chargee && <span aria-hidden="true" className="attente-visuel pointer-events-none absolute inset-0" />}
 
       {total > 1 && (
         <div className="defile">

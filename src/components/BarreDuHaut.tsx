@@ -83,7 +83,7 @@ export default function BarreDuHaut({
   const [query, setQuery] = useState("");
   const [historique, setHistorique] = useState<string[]>([]);
 
-  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(query);
+  const { suggestions, surligne, setSurligne, garni, auClavier, enCours } = useRecherche(query);
 
   const [auDoigt, setAuDoigt] = useState(false);
   useEffect(() => {
@@ -323,6 +323,7 @@ export default function BarreDuHaut({
             onEffacerHistorique={() => setHistorique(oublierHistorique())}
             enCeMoment={enCeMoment}
             auDoigt={auDoigt}
+            enCours={enCours}
           />
         </div>
       )}

@@ -6,6 +6,7 @@ import { IconLoupe } from "@/components/Icons";
 import type { Recherche } from "@/lib/types";
 import { BandePieces, LigneMarque, Surligne } from "./Suggestions";
 import { MINIMUM } from "./useRecherche";
+import EnRecherche from "./EnRecherche";
 
 /**
  * Ce qui pend sous la barre quand la loupe est ouverte.
@@ -47,6 +48,7 @@ export default function PanneauRecherche({
   onEffacerHistorique,
   enCeMoment,
   auDoigt,
+  enCours = false,
 }: {
   /** Ce que le champ de la barre désigne par `aria-controls`. */
   id: string;
@@ -65,6 +67,8 @@ export default function PanneauRecherche({
   enCeMoment: { label: string; href: string }[];
   /** Mesuré par la barre, pas rendu deux fois : voir `BarreDuHaut`. */
   auDoigt: boolean;
+  /** Une réponse est en route : voir `useRecherche`. */
+  enCours?: boolean;
 }) {
   const chemin = usePathname();
   const mot = query.trim();
@@ -174,6 +178,8 @@ export default function PanneauRecherche({
             </div>
           )}
         </div>
+      ) : enCours && mot.length >= MINIMUM ? (
+        <EnRecherche mot={mot} />
       ) : mot.length >= MINIMUM && suggestions ? (
         /* Deux lettres tapées et rien en face : on le dit, plutôt que
            de laisser un panneau vide qui ressemble à une panne.

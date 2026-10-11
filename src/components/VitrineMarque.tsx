@@ -93,6 +93,11 @@ export default function VitrineMarque({
   const [cherche, setCherche] = useState(true);
   const [illisible, setIllisible] = useState(false);
   const [rang, setRang] = useState(0);
+  /* La première image est-elle arrivée ? Tant qu'elle ne l'est pas, la
+     carte montre le nom de la marque sur un aplat qui respire, au lieu
+     d'un rectangle vide pendant deux à cinq secondes. */
+  const [pret, setPret] = useState(false);
+  const premiere = useRef<HTMLImageElement | null>(null);
 
   // Charger, mais seulement quand la carte approche.
   useEffect(() => {
@@ -279,6 +284,13 @@ export default function VitrineMarque({
     };
   }, [total]);
 
+  /* Une image déjà en cache peut finir de charger avant que React ne
+     branche `onLoad` : on regarde donc aussi son état au montage. */
+  useEffect(() => {
+    const img = premiere.current;
+    if (img?.complete && img.naturalWidth > 0) setPret(true);
+  }, [vues.length]);
+
   const aller = (pas: number) => (e: React.MouseEvent) => {
     // Les flèches sont posées sur le lien de la carte : sans ça, tourner
     // une image ouvrirait aussi la fiche.
@@ -328,6 +340,7 @@ export default function VitrineMarque({
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              ref={i === 0 ? premiere : undefined}
               className="vitrine-nette"
               src={vignette(source, 400, { logo: estLaCouverture && estUnLogo })}
               alt={i === actuelle ? (estLaCouverture ? nom : `Une pièce de ${nom}`) : ""}
@@ -344,21 +357,28 @@ export default function VitrineMarque({
               /* Une photo de marque a le droit de remplir le cadre ; un
                  logo, jamais : on lui couperait le nom. */
               data-remplit={estLaCouverture && !estUnLogo ? "1" : undefined}
-              onLoad={
-                estLaCouverture
-                  ? (e) => {
-                      const img = e.currentTarget;
-                      if (!img.naturalWidth) return;
-                      if (Math.max(img.naturalWidth, img.naturalHeight) < TROP_PETITE) {
-                        setIllisible(true);
-                      }
-                    }
-                  : undefined
-              }
+              onLoad={(e) => {
+                if (i === 0) setPret(true);
+                if (!estLaCouverture) return;
+                const img = e.currentTarget;
+                if (!img.naturalWidth) return;
+                if (Math.max(img.naturalWidth, img.naturalHeight) < TROP_PETITE) {
+                  setIllisible(true);
+                }
+              }}
+              onError={i === 0 ? () => setPret(true) : undefined}
             />
           </div>
         );
       })}
+
+      {!pret && (
+        <div className="attente-visuel absolute inset-0 grid place-items-center" aria-hidden="true">
+          <span className="max-w-[85%] text-center text-[15px] font-black uppercase leading-tight tracking-[0.14em] text-[#3a2470]/45">
+            {nom}
+          </span>
+        </div>
+      )}
 
       {/* Les mêmes commandes que sur une vignette de pièce, et les mêmes
           classes : flèches au survol sur ordinateur, points pour dire

@@ -8,6 +8,7 @@ import Suggestions from "./Suggestions";
 import type { Critere } from "./Jeton";
 import { MINIMUM, useRecherche } from "./useRecherche";
 import { lireHistorique, noterRecherche, oublierHistorique } from "./historique";
+import EnRecherche from "./EnRecherche";
 
 /**
  * La recherche, au doigt : un écran entier plutôt qu'un panneau.
@@ -69,7 +70,7 @@ export default function FeuilleRecherche({
 }) {
   const router = useRouter();
   const champ = useRef<HTMLInputElement>(null);
-  const { suggestions, surligne, setSurligne, garni, auClavier } = useRecherche(query, criteres);
+  const { suggestions, surligne, setSurligne, garni, auClavier, enCours } = useRecherche(query, criteres);
   const [historique, setHistorique] = useState<string[]>([]);
 
   /*
@@ -229,6 +230,8 @@ export default function FeuilleRecherche({
               onPoser={onPoser}
               uniteCompte={uniteCompte}
             />
+          ) : query.trim().length >= MINIMUM && enCours ? (
+            <EnRecherche mot={query.trim()} />
           ) : query.trim().length >= MINIMUM ? (
             /* Deux lettres tapées et rien en face : on le dit, plutôt
                que de laisser un écran vide qui ressemble à une panne. */

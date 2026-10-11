@@ -37,14 +37,25 @@ const REPOS = 180;
 export function useRecherche(query: string, criteres: Critere[] = []) {
   const [suggestions, setSuggestions] = useState<Recherche | null>(null);
   const [surligne, setSurligne] = useState(0);
+  /*
+   * UNE RÉPONSE EST EN ROUTE.
+   *
+   * Sans cache, la recherche met deux à trois secondes à répondre. Le
+   * panneau montrait pendant ce temps « En ce moment », et la feuille
+   * du téléphone « Rien ne correspond » : on croyait la recherche vide
+   * ou cassée. `enCours` permet de dire qu'elle cherche.
+   */
+  const [enCours, setEnCours] = useState(false);
 
   useEffect(() => {
     const q = query.trim();
     if (q.length < MINIMUM) {
       setSuggestions(null);
+      setEnCours(false);
       return;
     }
 
+    setEnCours(true);
     const halte = new AbortController();
     const minuteur = setTimeout(() => {
       fetch(`/api/recherche?q=${encodeURIComponent(q)}`, { signal: halte.signal })
@@ -52,9 +63,13 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
         .then((json: Recherche) => {
           setSuggestions(json);
           setSurligne(0);
+          setEnCours(false);
         })
         .catch(() => {
-          /* Frappe suivante, ou réseau : le panneau garde ce qu'il a. */
+          /* Frappe suivante (la requête est abandonnée, une autre part) :
+             on reste en attente. Panne réseau : on arrête d'attendre, et
+             le panneau garde ce qu'il a. */
+          if (!halte.signal.aborted) setEnCours(false);
         });
     }, REPOS);
 
@@ -128,5 +143,5 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
     return false;
   }
 
-  return { suggestions, marques, surligne, setSurligne, garni, auClavier };
+  return { suggestions, marques, surligne, setSurligne, garni, auClavier, enCours };
 }

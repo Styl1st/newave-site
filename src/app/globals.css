@@ -1181,6 +1181,18 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
   0%, 100% { opacity: .55; }
   50% { opacity: .9; }
 }
+
+/* L'attente d'un visuel sur une carte claire : un aplat un peu plus
+   foncé que la carte, qui respire. `.skeleton`, blanc à 10 %, est fait
+   pour le fond violet et disparaît sur une carte lavande. Voir
+   `VitrineMarque` et `VignetteDefilante`. */
+.attente-visuel {
+  background: linear-gradient(135deg, rgba(58, 36, 112, .07), rgba(58, 36, 112, .15));
+  animation: pulseDoux 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .attente-visuel { animation: none; }
+}
 .skeleton {
   background: rgba(255,255,255,.10);
   border-radius: var(--radius);
