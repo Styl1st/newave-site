@@ -1842,6 +1842,103 @@ html[data-pied="forum"] { --pied: calc(58px + env(safe-area-inset-bottom, 0px));
   .ruban::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .62); }
 }
 
+/* ---------- la bande des logos, sans panneau ----------
+   Elle traverse l'écran d'un bord à l'autre, et ses deux extrémités
+   s'effacent en fondu : les logos arrivent de nulle part et y repartent,
+   au lieu d'être coupés net par le bord de la fenêtre.
+
+   `--k` règle la taille de tout ce qui est dedans, logos, noms et
+   espacements, d'un seul chiffre par palier d'écran. Les dimensions de
+   chaque logo (`--l`, `--h`) viennent de `tailleOptique`, en pixels de
+   référence. */
+.ruban-logos {
+  --k: .9;
+  --fondu: min(12vw, 120px);
+  height: calc(72px * var(--k) / .9);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fondu), #000 calc(100% - var(--fondu)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fondu), #000 calc(100% - var(--fondu)), transparent 100%);
+}
+@media (min-width: 640px) { .ruban-logos { --k: 1.1; } }
+@media (min-width: 1024px) { .ruban-logos { --k: 1.25; } }
+
+/* La barre de défilement des autres bandes n'a pas sa place ici : elle
+   traverserait tout l'écran sous les logos. On garde la prise à la
+   souris, et les deux flèches au-dessus. */
+@media (pointer: fine) {
+  .ruban.ruban-logos { scrollbar-width: none; padding-bottom: 0; }
+  .ruban.ruban-logos::-webkit-scrollbar { display: none; }
+}
+
+.marque-ruban {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-right: calc(42px * var(--k));
+  color: #fff;
+  text-decoration: none;
+  opacity: .94;
+  transition: opacity .2s ease;
+}
+.marque-ruban:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+  border-radius: 8px;
+  opacity: 1;
+}
+
+.logo-ruban {
+  display: block;
+  width: calc(var(--l) * var(--k) * 1px);
+  height: calc(var(--h) * var(--k) * 1px);
+  -webkit-user-drag: none;
+}
+/* En attendant de savoir si le logo se prête au blanc : l'image se
+   charge, mais ne prend aucune place. Pas de `display: none`, qui
+   l'empêcherait de charger sur certains navigateurs. */
+.logo-ruban-attente {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nom-ruban {
+  font-size: calc(17px * var(--k));
+  font-weight: 800;
+  letter-spacing: -.015em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.legende-ruban {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  translate: -50% 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, .82);
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}
+.marque-ruban:focus-visible .legende-ruban { opacity: 1; }
+
+/* Au survol, la bande s'arrête déjà (voir `Decouverte`) ; les autres
+   marques s'estompent et le nom apparaît sous celle qu'on vise. Rien de
+   tout ça au doigt, où le survol n'existe pas. */
+@media (hover: hover) {
+  .ruban-logos:hover .marque-ruban { opacity: .5; }
+  .ruban-logos .marque-ruban:hover { opacity: 1; }
+  .marque-ruban:hover .legende-ruban { opacity: 1; }
+}
+
 /* ---------- fond des visuels pendant leur chargement ----------
    Un carré blanc puis l'image qui surgit, c'est ce qui donne la
    sensation que le site rame. Ce dégradé, aux couleurs de la marque,

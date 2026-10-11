@@ -189,6 +189,28 @@ export function vignette(
 }
 
 /**
+ * Le logo d'une marque, détouré et passé en blanc, pour le ruban de
+ * l'accueil. Voir `servirEnBlanc` dans `app/api/img/route.ts`.
+ *
+ * Rien à demander quand il n'y a pas de logo, ou quand les images sont
+ * servies en direct (`NEXT_PUBLIC_IMAGES_DIRECTES=1`) : sans NEWAVE au
+ * milieu, personne ne passe le logo en blanc, et le ruban écrit alors
+ * le nom de la marque.
+ */
+export function logoBlanc(url: string | null | undefined): string | undefined {
+  if (!url || process.env.NEXT_PUBLIC_IMAGES_DIRECTES === "1") return undefined;
+
+  try {
+    const u = new URL(url);
+    u.protocol = "https:";
+    for (const cle of ["width", "height", "crop", "size"]) u.searchParams.delete(cle);
+    return `/api/img?b=1&u=${encodeURIComponent(u.toString())}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * La même adresse, mais demandée en tant que SONDE.
  *
  * UNE SONDE EST UNE IMAGE QU'ON LIT SANS JAMAIS L'AFFICHER. Deux

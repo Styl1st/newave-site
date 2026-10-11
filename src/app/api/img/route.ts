@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { hoteConnu } from "@/lib/hotes-images";
+import { blanchirLogo } from "@/lib/logo-blanc";
 
 /**
  * Les images des marques, servies depuis NEWAVE.
@@ -82,16 +83,17 @@ const PIXEL = new Uint8Array(
   )
 );
 
-function pixelVide() {
+function pixelVide(cache = "public, max-age=3600") {
   // Une copie par réponse : le corps est consommé au fil de l'eau, et
   // l'on ne prête pas deux fois le même tampon.
   return new NextResponse(new Uint8Array(PIXEL), {
     status: 200,
     headers: {
       "content-type": "image/png",
-      // Une heure, comme la redirection qu'il remplace : l'hébergeur
-      // qui nous refuse l'entrée nous la refusera encore tout à l'heure.
-      "cache-control": "public, max-age=3600",
+      // Une heure par défaut, comme la redirection qu'il remplace :
+      // l'hébergeur qui nous refuse l'entrée nous la refusera encore
+      // tout à l'heure.
+      "cache-control": cache,
       "access-control-allow-origin": "*",
       vary: "Sec-Fetch-Dest",
     },
@@ -165,7 +167,7 @@ export async function GET(requete: Request) {
     const params = new URL(requete.url).searchParams;
     // Même ici : une sonde ne suit pas la redirection de repli, elle s'y
     // casse le nez. Voir `pixelVide`.
-    if (params.get("s") === "1") return pixelVide();
+    if (params.get("s") === "1" || params.get("b") === "1") return pixelVide();
 
     const cible = adresseOuRien(params.get("u"));
     if (cible) return NextResponse.redirect(cible, 302);
@@ -237,8 +239,19 @@ async function servir(requete: Request) {
    */
   const sonde = params.get("s") === "1";
 
+  /*
+   * LE LOGO EN BLANC DU RUBAN (`b=1`) NE RETOMBE JAMAIS SUR L'ORIGINAL.
+   *
+   * Le repli habituel renvoie l'image telle quelle, et c'est ce qui
+   * rend cette route incassable. Ici, ce serait l'inverse : un logo noir
+   * ou sur fond blanc, posé tel quel dans une bande de logos blancs, est
+   * exactement ce qu'on veut éviter. Le ruban reçoit donc un pixel vide,
+   * et il écrit le nom de la marque à la place. Voir `servirEnBlanc`.
+   */
+  const blanc = params.get("b") === "1";
+
   const versLaSource = () =>
-    sonde
+    sonde || blanc
       ? pixelVide()
       : NextResponse.redirect(source.toString(), {
           status: 302,
@@ -353,7 +366,9 @@ async function servir(requete: Request) {
 
   // On le sait avant d'avoir lu un seul octet du corps : inutile de
   // télécharger une image qu'on va de toute façon renvoyer chez elle.
-  if (A_LA_SOURCE.includes(type)) return versLaSource();
+  // Le logo en blanc, lui, passe toujours par sharp, SVG compris : un
+  // SVG rasterisé puis blanchi vaut mieux que le nom écrit à sa place.
+  if (!blanc && A_LA_SOURCE.includes(type)) return versLaSource();
 
   const annonce = Number(reponse.headers.get("content-length"));
   if (annonce && annonce > POIDS_MAX) return versLaSource();
@@ -394,6 +409,8 @@ async function servir(requete: Request) {
    */
   try {
     const { default: sharp } = await import("sharp");
+
+    if (blanc) return await servirEnBlanc(sharp, octets, type, entetes);
 
     // Certaines photos de boutique portent leur orientation dans les
     // métadonnées. Sans ça, elles arrivent couchées.
@@ -648,5 +665,59 @@ async function detourer(
     return sharp(sortie, { raw: { width: l, height: h, channels: 4 } });
   } catch {
     return image;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Le logo d'une marque, détouré, passé en blanc et recadré : ce que
+ * montre le ruban de l'accueil (`b=1`).
+ *
+ * Tout le travail sur les pixels est dans `lib/logo-blanc`, testé à
+ * part. Ici, on décode, on lui passe les pixels, on réencode.
+ *
+ * DEUX ISSUES, ET AUCUNE NE CASSE LE RUBAN. Un logo qui se prête au
+ * blanc revient en WebP transparent, gardé un an comme le reste. Un
+ * logo qui ne s'y prête pas (une photo, un fond coloré, une icône
+ * minuscule) revient en pixel vide, gardé un jour : le ruban le
+ * reconnaît à sa taille et écrit le nom de la marque à la place. Le
+ * verdict ne dépend que du fichier, inutile de le refaire à chaque
+ * visite ; un jour suffit pour qu'un nouveau logo soit pris en compte.
+ *
+ * `b=1` est aussi la version de l'algorithme : le jour où il change, on
+ * passe à `b=2` et tous les caches repartent de zéro.
+ */
+async function servirEnBlanc(
+  sharp: typeof import("sharp"),
+  octets: Buffer,
+  type: string,
+  entetes: Record<string, string>
+): Promise<NextResponse> {
+  try {
+    // Un SVG se rasterise à 72 points par pouce : quatre fois plus pour
+    // qu'un petit `viewBox` donne assez de pixels à lire.
+    const { data, info } = await sharp(octets, type === "image/svg+xml" ? { density: 288 } : {})
+      .rotate()
+      .resize({ width: 640, height: 640, fit: "inside", withoutEnlargement: true })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const logo = blanchirLogo({ data, largeur: info.width, hauteur: info.height });
+    if (!logo.ok) return pixelVide("public, max-age=86400, s-maxage=86400");
+
+    const webp = await sharp(Buffer.from(logo.data.buffer, logo.data.byteOffset, logo.data.byteLength), {
+      raw: { width: logo.largeur, height: logo.hauteur, channels: 4 },
+    })
+      .resize({ width: 400, height: 160, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 88, alphaQuality: 100 })
+      .toBuffer();
+
+    return new NextResponse(new Uint8Array(webp), {
+      headers: { ...entetes, "content-type": "image/webp" },
+    });
+  } catch {
+    return pixelVide();
   }
 }

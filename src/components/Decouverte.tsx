@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Brand } from "@/lib/types";
 import { melanger } from "@/lib/melange";
-import VisuelAdaptatif from "./VisuelAdaptatif";
+import { logoBlanc } from "@/lib/vignette";
+import { tailleOptique } from "@/lib/logo-blanc";
 
 /**
  * « Découvre de nouvelles marques ! »
@@ -35,9 +36,21 @@ import VisuelAdaptatif from "./VisuelAdaptatif";
  * manifeste et le corps à deux colonnes. C'est la première chose qu'on
  * voit en passant le pli, et il faut que ce soit des marques : une
  * phrase, aussi juste soit-elle, ne prouve rien.
+ *
+ * DES LOGOS EN BLANC, ET PLUS DE BLOC. La bande était un panneau sombre
+ * rempli de cartes claires, un logo dans un carré blanc pour chaque
+ * marque. Elle est maintenant posée sur la page, d'un bord de l'écran à
+ * l'autre, et ne montre que les logos, détourés et passés en blanc par
+ * `/api/img` (voir `lib/logo-blanc`). Une marque sans logo net (une
+ * photo, un fond coloré, une icône minuscule, ou pas de logo du tout)
+ * a son nom écrit avec la police du site : la bande se lit comme une
+ * affiche de festival, où les noms et les logos se suivent.
  */
 
-const COMBIEN = 14;
+/** Plus que les quatorze cartes d'avant : un logo prend moins de place,
+    et la bande doit rester plus longue que l'écran le plus large pour
+    pouvoir boucler. */
+const COMBIEN = 20;
 
 /** Pixels par seconde. Assez vif pour vivre, assez lent pour lire un nom. */
 const VITESSE = 52;
@@ -46,77 +59,73 @@ const VITESSE = 52;
 const REPRISE_MS = 1800;
 
 
-function Vignette({ brand }: { brand: Brand }) {
-  /*
-   * Le logo d'abord, la couverture à défaut : même règle que dans
-   * l'annuaire. Une couverture importée d'une boutique est souvent la
-   * photo d'une pièce prise au hasard, et sur une vignette de
-   * découverte elle raconte cet article plutôt que la marque.
-   */
-  const visuel = brand.logo_url ?? brand.cover_url;
-  const estUnLogo = Boolean(brand.logo_url);
+/**
+ * Une marque dans la bande : son logo en blanc, ou son nom.
+ *
+ * LE NOM D'ABORD, LE LOGO ENSUITE. Le nom est écrit dès le premier
+ * rendu, celui du serveur : la bande n'est jamais vide, et un moteur de
+ * recherche lit des noms de marques plutôt que des images muettes.
+ * L'image se charge en même temps, invisible. Quand elle arrive, le logo
+ * prend la place du nom, à sa taille optique (voir `tailleOptique`).
+ *
+ * `/api/img` répond un pixel vide quand le logo ne se prête pas au
+ * blanc. Le nom reste alors, et c'est voulu : c'est ce pixel qui dit
+ * « écris plutôt le nom ».
+ */
+function MarqueDuRuban({ brand, copie = false }: { brand: Brand; copie?: boolean }) {
+  const src = logoBlanc(brand.logo_url);
+  const [taille, setTaille] = useState<{ largeur: number; hauteur: number } | null>(null);
+  const image = useRef<HTMLImageElement>(null);
+
+  const lire = useCallback((img: HTMLImageElement) => {
+    if (img.naturalWidth > 2 && img.naturalHeight > 2) {
+      setTaille(tailleOptique(img.naturalWidth, img.naturalHeight));
+    }
+  }, []);
+
+  /* Une image déjà en cache a pu finir de charger avant que React ne
+     branche `onLoad` : on la lit au montage. */
+  useEffect(() => {
+    const img = image.current;
+    if (img?.complete) lire(img);
+  }, [lire]);
 
   return (
     <Link
       href={`/marques/${brand.slug}`}
       data-no-reveal
-      className="card-light w-[38vw] max-w-[190px] shrink-0 overflow-hidden sm:w-[190px]"
+      aria-label={brand.name}
+      /* Dans la copie, hors du parcours au clavier : on n'y refait pas
+         le tour des mêmes marques. Voir plus bas, sur la copie. */
+      tabIndex={copie ? -1 : undefined}
+      className="marque-ruban"
     >
-      <span className="relative z-3 block">
-        {/*
-          PLUS DE CLASSE `visuel` ICI, ET C'EST VOLONTAIRE.
-          
-          Elle imposait un cadre PORTRAIT, quatre sur cinq, hors de
-          toute couche de style, donc plus fort que le rapport écrit
-          juste ici. Or une couverture de marque est presque toujours en
-          paysage : la rentrer de force dans un cadre plus haut que large
-          revenait à en couper la moitié gauche et la moitié droite.
-          C'était ça, l'impression de zoom.
-          
-          Le cadre reprend donc les proportions des cartes de
-          l'annuaire, où les mêmes images tombent juste. Le dégradé
-          d'attente est repris tel quel, c'est la seule chose qu'on perd
-          en se passant de `visuel`.
-        */}
-        <span
-          className={`flex aspect-16/10 w-full items-center justify-center overflow-hidden rounded-t-[var(--radius)] ${
-            estUnLogo
-              ? "plaque-logo p-4"
-              : "bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
-          }`}
-        >
-          {visuel && estUnLogo ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={visuel}
-              alt={brand.name}
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              /* Même traitement que dans l'annuaire : une plaque un peu
-                 soutenue et un liseré autour des formes, faute de quoi
-                 un logo blanc disparaît purement et simplement. */
-              className="h-auto max-h-[76%] w-full max-w-[124px] object-contain"
-            />
-          ) : visuel ? (
-            /* Une couverture peut être une photo comme un lettrage
-               large : c'est elle qui décide si on la recadre. */
-            <VisuelAdaptatif src={visuel} cadre={16 / 10} />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center px-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-[#a795c9]">
-              {brand.name}
-            </span>
-          )}
+      {src && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          ref={image}
+          src={src}
+          alt=""
+          decoding="async"
+          draggable={false}
+          onLoad={(e) => lire(e.currentTarget)}
+          className={taille ? "logo-ruban" : "logo-ruban logo-ruban-attente"}
+          style={
+            taille
+              ? ({ "--l": taille.largeur, "--h": taille.hauteur } as CSSProperties)
+              : undefined
+          }
+        />
+      )}
+      {taille ? (
+        /* Le nom sous le logo, au survol ou au clavier : un symbole seul
+           (un m dans un rond) ne dit pas toujours de qui il s'agit. */
+        <span className="legende-ruban" aria-hidden="true">
+          {brand.name}
         </span>
-        <span className="block p-3">
-          <span className="block truncate text-[13px] font-extrabold text-[var(--color-ink)]">
-            {brand.name}
-          </span>
-          <span className="mt-0.5 block truncate text-[11px] font-bold uppercase tracking-[0.1em] text-[#6a5a92]">
-            {[brand.city, brand.country].filter(Boolean).join(" · ") || "Indépendante"}
-          </span>
-        </span>
-      </span>
+      ) : (
+        <span className="nom-ruban">{brand.name}</span>
+      )}
     </Link>
   );
 }
@@ -293,83 +302,96 @@ export default function Decouverte({ brands }: { brands: Brand[] }) {
   }
 
   const bouton =
-    "hidden h-8 w-8 place-items-center rounded-full border border-white/30 bg-white/10 text-[15px] font-black text-white transition hover:bg-white/22 active:scale-95 sm:grid";
+    "hidden h-9 w-9 place-items-center rounded-full border border-white/30 bg-white/10 text-[15px] font-black text-white transition hover:bg-white/22 active:scale-95 sm:grid";
 
   return (
-    <section className="py-6">
-      <div className="glass overflow-hidden">
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 p-4 pb-3 sm:px-6 sm:pt-5">
-          {/* Œil-de-bœuf puis titre : la même tête de section que partout
-              ailleurs depuis la refonte. Une bande posée au milieu de la
-              page a besoin de dire ce qu'elle est avant de bouger. */}
-          <div className="min-w-0">
-            <p className="eyebrow m-0">Au fil de l&apos;annuaire</p>
-            <p className="m-0 mt-1.5 text-[clamp(15px,3.6vw,19px)] font-extrabold tracking-[-0.02em] text-white">
-              Découvre de nouvelles marques !
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Deux flèches, sur ordinateur seulement : au doigt on fait
-                simplement glisser, et un bouton de plus n'apprend rien. */}
-            <button type="button" onClick={() => pousser(-1)} aria-label="Marques précédentes" className={bouton}>
-              ‹
-            </button>
-            <button type="button" onClick={() => pousser(1)} aria-label="Marques suivantes" className={bouton}>
-              ›
-            </button>
-            <Link
-              href="/marques"
-              className="text-[12.5px] font-bold text-white/75 underline underline-offset-4 transition hover:text-white"
-            >
-              Tout l&apos;annuaire
-            </Link>
-          </div>
+    <section aria-labelledby="titre-ruban" className="py-6 sm:py-8">
+      {/* Plus de panneau autour : le titre se pose sur la page, aligné
+          sur la colonne comme les autres sections de l'accueil. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <p className="eyebrow m-0">Au fil de l&apos;annuaire</p>
+          <h2
+            id="titre-ruban"
+            className="m-0 mt-1.5 text-[clamp(18px,4vw,26px)] font-extrabold leading-[1.15] tracking-[-0.03em] text-white"
+          >
+            Découvre de nouvelles marques !
+          </h2>
         </div>
 
-        <div
-          ref={bande}
-          onPointerDown={(e) => {
-            suspendre();
-            prendre(e);
-          }}
-          onPointerMove={(e) => {
-            suspendre();
-            trainer(e);
-          }}
-          onPointerUp={lacher}
-          onPointerCancel={lacher}
-          onPointerEnter={suspendre}
-          onPointerLeave={lacher}
-          onWheel={suspendre}
-          onTouchStart={suspendre}
-          onFocusCapture={suspendre}
-          /* Les deux axes déclarés : le navigateur reconnaît la
-             direction dominante du geste, fait glisser la bande à
-             l'horizontale et laisse la page défiler à la verticale.
-             N'en déclarer qu'un seul revient à interdire l'autre. */
-          style={{ touchAction: "pan-x pan-y" }}
-          className="ruban flex gap-3 overflow-x-auto overscroll-x-contain px-4 pb-4 sm:px-6 sm:pb-5"
-        >
-          {/* Deux moitiés STRICTEMENT identiques : c'est la condition
-              du retour invisible expliqué plus haut.
-
-              `inert` ET NON `aria-hidden` SUR LA COPIE. Les deux la
-              cachent aux lecteurs d'écran ; seul `inert` la retire aussi
-              du parcours au clavier. Avec `aria-hidden` seul, la
-              tabulation entrait quand même dans la copie : on refaisait
-              le tour des mêmes marques, cette fois sans que rien ne soit
-              annoncé, le focus se posant sur des liens muets. C'était la
-              seule violation sérieuse que l'audit relevait sur le
-              site. */}
-          {[0, 1].map((copie) => (
-            <div key={copie} inert={copie === 1} className="flex shrink-0 gap-3">
-              {tirage.map((b) => (
-                <Vignette key={`${copie}-${b.id}`} brand={b} />
-              ))}
-            </div>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Deux flèches, sur ordinateur seulement : au doigt on fait
+              simplement glisser, et un bouton de plus n'apprend rien. */}
+          <button type="button" onClick={() => pousser(-1)} aria-label="Marques précédentes" className={bouton}>
+            ‹
+          </button>
+          <button type="button" onClick={() => pousser(1)} aria-label="Marques suivantes" className={bouton}>
+            ›
+          </button>
+          <Link
+            href="/marques"
+            className="ml-1 text-[13px] font-bold text-white/88 underline decoration-white/45 underline-offset-4 transition hover:text-white hover:decoration-white"
+          >
+            Tout l&apos;annuaire
+          </Link>
         </div>
+      </div>
+
+      <div
+        ref={bande}
+        onPointerDown={(e) => {
+          suspendre();
+          prendre(e);
+        }}
+        onPointerMove={(e) => {
+          suspendre();
+          trainer(e);
+        }}
+        onPointerUp={lacher}
+        onPointerCancel={lacher}
+        onPointerEnter={suspendre}
+        onPointerLeave={lacher}
+        onWheel={suspendre}
+        onTouchStart={suspendre}
+        onFocusCapture={suspendre}
+        /* Les deux axes déclarés : le navigateur reconnaît la
+           direction dominante du geste, fait glisser la bande à
+           l'horizontale et laisse la page défiler à la verticale.
+           N'en déclarer qu'un seul revient à interdire l'autre. */
+        style={{ touchAction: "pan-x pan-y" }}
+        /* D'UN BORD DE L'ÉCRAN À L'AUTRE. La bande sort de la colonne :
+           `w-screen` et une marge négative de la moitié de ce qui
+           dépasse. Le débord éventuel (la barre de défilement de la
+           page, sur ordinateur) est coupé par `main`, qui ne laisse
+           rien dépasser à l'horizontale. Les bords s'effacent en fondu,
+           voir `.ruban-logos`. */
+        className="ruban ruban-logos ml-[calc(50%-50vw)] mt-4 flex w-screen overflow-x-auto overscroll-x-contain sm:mt-5"
+      >
+        {/* Deux moitiés STRICTEMENT identiques : c'est la condition
+            du retour invisible expliqué plus haut. L'espace entre deux
+            marques est une marge à DROITE de chacune, et non un `gap` :
+            la seconde copie commence ainsi exactement une largeur de
+            copie plus loin, au pixel près.
+
+            LA COPIE EST CACHÉE AUX LECTEURS D'ÉCRAN ET AU CLAVIER, PAS
+            À LA SOURIS. `aria-hidden` la retire de ce qu'on annonce, et
+            chacun de ses liens sort du parcours à la tabulation
+            (`tabIndex={-1}`) : on ne refait pas le tour des mêmes
+            marques avec des liens muets, ce que l'audit relevait du
+            temps où seul `aria-hidden` était posé.
+
+            Elle était `inert`, ce qui réglait le clavier mais la rendait
+            aussi sourde au pointeur. Or la bande montre la copie une
+            bonne partie du temps, dès qu'elle a dérivé de plus d'un
+            écran : ses logos ne réagissaient alors ni au survol ni au
+            clic. */}
+        {[0, 1].map((copie) => (
+          <div key={copie} aria-hidden={copie === 1 ? true : undefined} className="flex shrink-0">
+            {tirage.map((b) => (
+              <MarqueDuRuban key={`${copie}-${b.id}`} brand={b} copie={copie === 1} />
+            ))}
+          </div>
+        ))}
       </div>
     </section>
   );
