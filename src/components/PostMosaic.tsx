@@ -17,6 +17,7 @@ import { vignette } from "@/lib/vignette";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
 import { sansMarquage } from "./TexteRiche";
 import type { Post, Recherche } from "@/lib/types";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * Les publications.
@@ -833,7 +834,7 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
           </div>
 
           {!query && (
-            <span className="requete-touche mt-[7px] hidden shrink-0 sm:block">⌘ K</span>
+            <span className="requete-touche mt-[7px] hidden shrink-0 sm:block"><Raccourci /></span>
           )}
         </div>
 

@@ -14,6 +14,7 @@ import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import type { Brand, Recherche } from "@/lib/types";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * LE PANNEAU NE PROPOSE PLUS QUE DES STYLES.
@@ -845,7 +846,7 @@ export default function BrandDirectory({
               Il ne s'affiche pas non plus au doigt, où il ne se tape
               pas — c'est la loupe de la feuille qui le remplace. */}
           {!query && (
-            <span className="requete-touche mt-[7px] hidden shrink-0 sm:block">⌘ K</span>
+            <span className="requete-touche mt-[7px] hidden shrink-0 sm:block"><Raccourci /></span>
           )}
         </div>
 

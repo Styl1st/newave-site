@@ -7,6 +7,7 @@ import { IconLoupe } from "./Icons";
 import { declarerChampLocal } from "./recherche/champLocal";
 import { vignette } from "@/lib/vignette";
 import type { Recherche } from "@/lib/types";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * Le champ de recherche du manifeste.
@@ -203,7 +204,7 @@ export default function RechercheAccueil() {
           badge mangerait la place du texte d'invite. */}
       {!query && (
         <span className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-[10.5px] font-extrabold tracking-[0.06em] text-white/40 sm:block">
-          ⌘ K
+          <Raccourci />
         </span>
       )}
 

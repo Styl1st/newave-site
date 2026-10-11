@@ -19,6 +19,7 @@ import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
 import type { Product } from "@/lib/types";
 import type { CompteDuCatalogue } from "@/lib/queries";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * La vitrine : on cherche une pièce, pas une marque.
@@ -1725,7 +1726,7 @@ export default function PieceDirectory({
                   geste, il n'a plus rien à dire une fois le curseur
                   dedans. Il ne revient pas dans le panneau. */}
               {!query && (
-                <span className="requete-touche mt-[7px] hidden shrink-0 sm:block">⌘ K</span>
+                <span className="requete-touche mt-[7px] hidden shrink-0 sm:block"><Raccourci /></span>
               )}
             </div>
 
@@ -2202,7 +2203,7 @@ export default function PieceDirectory({
                   >
                     {panne
                       ? "la suite n'a pas répondu, reclique pour réessayer"
-                      : "ou tape ⌘K pour chercher directement"}
+                      : <>ou tape <Raccourci colle /> pour chercher directement</>}
                   </p>
                 </div>
               ) : (
@@ -2225,7 +2226,7 @@ export default function PieceDirectory({
                     </Link>
 
                     <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
-                      ou tape ⌘K pour chercher directement
+                      ou tape <Raccourci colle /> pour chercher directement
                     </p>
                   </div>
                 )

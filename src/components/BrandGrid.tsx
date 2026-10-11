@@ -8,6 +8,7 @@ import LigneMarque from "./LigneMarque";
 import Grille from "./Grille";
 import type { Densite } from "./densite";
 import type { Brand } from "@/lib/types";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * Grille de marques avec aperçu des pièces.
@@ -404,7 +405,7 @@ export default function BrandGrid({
             Charger {Math.min(reste, LOT)} marque{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
           </button>
           <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
-            ou tape ⌘K pour chercher directement
+            ou tape <Raccourci colle /> pour chercher directement
           </p>
         </div>
       )}

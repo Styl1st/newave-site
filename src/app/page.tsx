@@ -11,6 +11,7 @@ import { getBrands, getPosts, getVitrine } from "@/lib/queries";
 import { getMyFavorites } from "@/lib/favorites";
 import { aUneIllustration } from "@/lib/medias";
 import { repartirParMarque } from "@/lib/melange";
+import Raccourci from "@/components/Raccourci";
 
 /**
  * L'accueil : dire ce qu'est le site en trois secondes, puis ouvrir
@@ -135,7 +136,7 @@ export default async function HomePage() {
           {brands.length > 0 && <>{enChiffres(brands.length)} marques</>}
           {brands.length > 0 && posts.length > 0 && " · "}
           {posts.length > 0 && <>{enChiffres(posts.length)} posts</>}
-          <span className="hidden sm:inline"> · ⌘K pour chercher d&apos;où que tu sois</span>
+          <span className="hidden sm:inline"> · <Raccourci colle /> pour chercher d&apos;où que tu sois</span>
         </p>
 
         {/*
