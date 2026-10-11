@@ -23,6 +23,7 @@ import Link from "next/link";
 import BandeauMarque from "@/components/BandeauMarque";
 import BarreGerant from "@/components/BarreGerant";
 import RetourOrigine from "@/components/RetourOrigine";
+import { lienInstagram } from "@/lib/instagram";
 import auBesoin from "next/dynamic";
 import {
   ACCROCHE,
@@ -156,11 +157,15 @@ export default async function BrandPage({ params }: Props) {
     getNotesMarques([brand.id]),
   ]);
 
-  const facts: [string, string | null][] = [
+  /* Le profil Instagram est un lien : c'est là que vit une marque
+     indépendante, et c'est le premier endroit où l'on va vérifier
+     qu'elle existe. Voir `lienInstagram` pour les formes acceptées. */
+  const insta = lienInstagram(brand.instagram);
+  const facts: [string, string | null, string?][] = [
     ["Origine", [brand.city, brand.country].filter(Boolean).join(", ") || null],
     ["Fondée en", brand.founded_year ? String(brand.founded_year) : null],
     ["Gamme de prix", PRICE_TIER_LABEL[brand.price_tier]],
-    ["Instagram", brand.instagram ? `@${brand.instagram}` : null],
+    ["Instagram", insta ? `@${insta.handle}` : null, insta?.url],
   ];
 
   /*
@@ -381,11 +386,24 @@ export default async function BrandPage({ params }: Props) {
                 brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
               }`}
             >
-              {facts.map(([label, value]) =>
+              {facts.map(([label, value, href]) =>
                 value ? (
                   <div key={label}>
                     <dt className="eyebrow m-0">{label}</dt>
-                    <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">{value}</dd>
+                    <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">
+                      {href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
+                        >
+                          {value}
+                        </a>
+                      ) : (
+                        value
+                      )}
+                    </dd>
                   </div>
                 ) : null
               )}
