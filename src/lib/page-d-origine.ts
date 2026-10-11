@@ -107,7 +107,7 @@ const PAGES_DU_SITE: [string, string][] = [
   ["/posts", "Posts"],
   ["/populaires", "Coups de cœur"],
   ["/forum", "Forum"],
-  ["/favoris", "Mes favoris"],
+  ["/favoris", "Marques suivies"],
   ["/messages", "Messages"],
   ["/compte", "Mon compte"],
   ["/espace-marque", "Mes marques"],

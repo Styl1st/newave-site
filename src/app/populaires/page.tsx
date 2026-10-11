@@ -493,7 +493,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
         : "Aucune pièce n'a encore reçu assez d'avis."
       : quoi === "marques"
         ? periode === "toujours"
-          ? "Aucune marque n'a encore été mise en favori."
+          ? "Personne ne suit encore de marque."
           : "Aucune marque n'a été mise de côté sur cette période."
         : "Personne n'a encore donné de coup de cœur.";
 

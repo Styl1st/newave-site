@@ -445,7 +445,7 @@ export default function BarreGerant({
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 bg-white/6 px-3.5 py-3 sm:px-[18px]">
           {[
             { valeur: stats.vues7, libelle: "vues sur 7 jours" },
-            { valeur: stats.favoris, libelle: "en favori" },
+            { valeur: stats.favoris, libelle: "abonnés" },
             { valeur: stats.clics, libelle: "clics vers la boutique" },
           ].map((chiffre) => (
             <p key={chiffre.libelle} className="m-0 flex items-baseline gap-1.5">

@@ -7,7 +7,7 @@ import { getFavoriteBrands } from "@/lib/favorites";
 import { getBrands } from "@/lib/queries";
 import { requireUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Mes favoris" };
+export const metadata: Metadata = { title: "Marques suivies" };
 export const dynamic = "force-dynamic";
 
 export default async function FavorisPage() {
@@ -29,7 +29,7 @@ export default async function FavorisPage() {
       <header className="rise mb-7">
         <p className="eyebrow m-0">{profile.display_name ?? profile.email}</p>
         <h1 className="m-0 mt-2 text-[clamp(24px,5.6vw,38px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
-          Mes favoris
+          Marques suivies
         </h1>
         <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
           Ta liste à toi. Elle ne se voit nulle part ailleurs.
@@ -49,7 +49,7 @@ export default async function FavorisPage() {
          * donc comme une impasse : on arrivait sur ses favoris, il n'y
          * avait rien, et il n'y avait rien à faire non plus. On garde la
          * page — y renvoyer automatiquement vers l'annuaire priverait de
-         * tout repère quelqu'un qui a cliqué exprès sur « Mes favoris » —
+         * tout repère quelqu'un qui a cliqué exprès sur « Marques suivies » —
          * mais on en fait une invitation.
          *
          * Trois sorties parce qu'on ne sait pas laquelle correspond :
@@ -63,8 +63,8 @@ export default async function FavorisPage() {
           </span>
 
           <p className="m-0 max-w-md text-[15px] leading-relaxed text-white/88">
-            Tu n&apos;as encore rien mis de côté. Le cœur, sur une carte de marque, la
-            range ici. C&apos;est ta liste à toi, elle ne se voit nulle part ailleurs.
+            Tu ne suis encore aucune marque. Le cœur, sur une carte de marque, la range
+            ici. C&apos;est ta liste à toi, elle ne se voit nulle part ailleurs.
           </p>
 
           {/* Empilés sur téléphone, côte à côte dès qu'il y a la place :

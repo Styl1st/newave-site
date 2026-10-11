@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { phraseConnexion } from "../src/lib/phrase-connexion.ts";
 
-const DEFAUT = "Ton compte garde tes favoris et t'ouvre le forum, les messages et les avis.";
+const DEFAUT =
+  "Ton compte garde les marques que tu suis et tes coups de cœur, et t'ouvre le forum, les messages et les avis.";
 
 test("sans page d'origine, la phrase dit tout ce que le compte ouvre", () => {
   assert.equal(phraseConnexion(undefined), DEFAUT);
@@ -24,9 +25,9 @@ test("un préfixe qui ressemble ne suffit pas : /forumx n'est pas le forum", () 
   assert.equal(phraseConnexion("/forumx"), DEFAUT);
 });
 
-test("messages, favoris et compte ont chacun leur phrase, paramètres ignorés", () => {
+test("messages, marques suivies et compte ont chacun leur phrase, paramètres ignorés", () => {
   assert.equal(phraseConnexion("/messages?avec=abc"), "Connecte-toi pour lire et envoyer tes messages.");
-  assert.equal(phraseConnexion("/favoris"), "Connecte-toi pour retrouver tes favoris.");
+  assert.equal(phraseConnexion("/favoris"), "Connecte-toi pour retrouver les marques que tu suis.");
   assert.equal(phraseConnexion("/compte#apparence"), "Connecte-toi pour accéder à ton compte.");
 });
 
@@ -35,12 +36,25 @@ test("côté marque : revendiquer et espace marque passent avant la fiche", () =
   assert.equal(phraseConnexion("/espace-marque/supram"), "Connecte-toi pour gérer la page de ta marque.");
 });
 
-test("depuis une fiche marque, une pièce ou le catalogue, on parle favoris et avis", () => {
-  const attendu = "Connecte-toi pour garder tes favoris et donner ton avis.";
+test("depuis l'annuaire ou une fiche marque, on parle de suivre la marque", () => {
+  const attendu = "Connecte-toi pour suivre des marques et donner ton avis.";
+  assert.equal(phraseConnexion("/marques"), attendu);
   assert.equal(phraseConnexion("/marques/supram"), attendu);
+  assert.equal(phraseConnexion("/marques/supram?onglet=avis"), attendu);
+});
+
+test("depuis une pièce ou le catalogue, on parle de coups de cœur", () => {
+  const attendu = "Connecte-toi pour garder tes coups de cœur et donner ton avis.";
   assert.equal(phraseConnexion("/marques/supram/longsleeve-star"), attendu);
   assert.equal(phraseConnexion("/pieces"), attendu);
-  assert.equal(phraseConnexion("/populaires"), attendu);
+  assert.equal(phraseConnexion("/pieces?type=hauts"), attendu);
+});
+
+test("depuis le classement, on parle des deux gestes", () => {
+  assert.equal(
+    phraseConnexion("/populaires?quoi=marques"),
+    "Connecte-toi pour suivre des marques et donner tes coups de cœur."
+  );
 });
 
 test("une adresse externe n'est jamais lue comme une page du site", () => {

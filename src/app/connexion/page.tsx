@@ -4,7 +4,8 @@ import { phraseConnexion } from "@/lib/phrase-connexion";
 
 export const metadata: Metadata = {
   title: "Connexion",
-  description: "Connecte-toi pour retrouver tes favoris, le forum et tes messages.",
+  description:
+    "Connecte-toi pour retrouver les marques que tu suis, tes coups de cœur, le forum et tes messages.",
 };
 
 type Props = { searchParams: Promise<{ suite?: string }> };

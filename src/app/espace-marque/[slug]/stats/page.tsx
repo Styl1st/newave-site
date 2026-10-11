@@ -140,7 +140,7 @@ export default async function BrandStatsPage({ params }: Props) {
           <Graphique jours={stats.jours} />
 
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <Chiffre label="En favori" valeur={stats.favoris} note="personnes qui te suivent" />
+            <Chiffre label="Abonnés" valeur={stats.favoris} note="personnes qui suivent ta marque" />
             <Chiffre label="Coups de cœur" valeur={stats.likes} note="sur l'ensemble de tes pièces" />
             <Chiffre
               label="Ton catalogue"

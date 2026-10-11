@@ -151,7 +151,9 @@ export default function LikeButton({
       >
         <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
       </svg>
-      {count > 0 ? count : compact || pastille ? "" : "J'aime"}
+      {/* « Coup de cœur » et non plus « J'aime » : un mot par geste, et
+          c'est celui du menu et du classement. */}
+      {count > 0 ? count : compact || pastille ? "" : "Coup de cœur"}
     </button>
   );
 }

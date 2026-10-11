@@ -11,6 +11,11 @@ import { toggleFavorite } from "@/lib/favorites";
  * l'étoile veut dire « voici ce que j'en pense ». La garder ici, où
  * elle voulait dire « je veux la suivre », mettait deux sens
  * différents derrière le même dessin.
+ *
+ * ET LE MOT EST « SUIVRE ». Le bouton disait « Mettre en favori », la
+ * pièce « J'aime », le menu « Coups de cœur » et le compte « Favoris » :
+ * quatre noms pour deux gestes. On suit une marque, on donne un coup
+ * de cœur à une pièce, et chaque bouton dit le sien.
  */
 function Coeur({ plein }: { plein: boolean }) {
   return (
@@ -101,13 +106,12 @@ export default function FavoriteButton({
       <button
         onClick={onClick}
         disabled={pending}
+        /* Un libellé fixe et l'état dans `aria-pressed` : c'est la
+           forme d'un bouton bascule. Un libellé qui change en plus de
+           l'état faisait annoncer « Retirer de mes favoris, enfoncé ». */
         aria-pressed={favorited}
-        aria-label={
-          favorited
-            ? `Retirer ${etiquette ?? "cette marque"} de mes favoris`
-            : `Mettre ${etiquette ?? "cette marque"} en favori`
-        }
-        title={favorited ? "En favori" : "Mettre en favori"}
+        aria-label={`Suivre ${etiquette ?? "cette marque"}`}
+        title={favorited ? "Tu suis cette marque" : "Suivre"}
         className={`grid ${className} place-items-center rounded-full text-[15px] transition active:scale-90 disabled:opacity-60 ${
           surClair
             ? favorited
@@ -136,7 +140,7 @@ export default function FavoriteButton({
         }`}
       >
         <Coeur plein={favorited} />
-        {favorited ? "En favori" : "Mettre en favori"}
+        {favorited ? "Suivie" : "Suivre"}
       </button>
       {note && <p className="m-0 mt-2 text-[12.5px] text-white/80">{note}</p>}
     </div>

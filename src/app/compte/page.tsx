@@ -43,7 +43,7 @@ export default async function ComptePage() {
     [
       {
         href: "/favoris",
-        label: "Mes favoris",
+        label: "Marques suivies",
         note: favorites.length
           ? `${favorites.length} marque${favorites.length > 1 ? "s" : ""}`
           : "Aucune pour l'instant",

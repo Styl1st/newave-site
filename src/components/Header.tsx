@@ -69,7 +69,7 @@ export default async function Header() {
             : []),
           { href: "/compte", label: "Mon compte" },
           { href: "/messages", label: "Messages" },
-          { href: "/favoris", label: "Mes favoris" },
+          { href: "/favoris", label: "Marques suivies" },
           ...(profile.role === "admin" ? [{ href: "/admin", label: "Administration" }] : []),
         ],
       }
@@ -167,8 +167,8 @@ export default async function Header() {
             {profile && (
               <Link
                 href="/favoris"
-                aria-label="Mes favoris"
-                title="Mes favoris"
+                aria-label="Marques suivies"
+                title="Marques suivies"
                 className="puce-barre ml-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/80 transition hover:text-white active:scale-95"
               >
                 <IconCoeur className="h-[17px] w-[17px]" />
