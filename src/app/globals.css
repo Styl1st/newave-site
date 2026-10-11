@@ -467,6 +467,26 @@ body {
 .c-br img { rotate: -166deg; animation: float1 17s ease-in-out infinite reverse; animation-delay: var(--phase, 0s); }
 
 @keyframes float1 { 0%,100% { translate: 0 0; } 50% { translate: 0 18px; } }
+
+/*
+   SUR LES PAGES DE CONTENU, LES BLOBS SE RETIRENT DANS LEURS COINS.
+
+   En grand, ils mordent sur la colonne de texte : le contenu passe
+   bien au-dessus d'eux (`main` est en z-10), mais un petit texte clair
+   posé sur leurs reflets clairs devient illisible (« 165 marques »,
+   « 5 posts », « Recompté à chaque visite »). Ailleurs que sur
+   l'accueil, on les réduit vers le coin de l'écran, hors champ : à
+   1280 px ils ne dépassent plus que d'une centaine de pixels, dans la
+   marge. Seul le décor de la page est visé, pas celui du menu de
+   téléphone (`[data-decor]`). Voir `decorPourChemin`. */
+.decor:not([data-decor]) .c-tl { transform-origin: 0 0; }
+.decor:not([data-decor]) .c-tr { transform-origin: 100% 0; }
+.decor:not([data-decor]) .c-bl { transform-origin: 0 100%; }
+.decor:not([data-decor]) .c-br { transform-origin: 100% 100%; }
+html[data-decor-page="discret"] .decor:not([data-decor]) .chrome { scale: .62; }
+@media (prefers-reduced-motion: no-preference) {
+  .decor:not([data-decor]) .chrome { transition: scale .7s cubic-bezier(.2, .7, .2, 1); }
+}
 @keyframes float2 { 0%,100% { translate: 0 0; } 50% { translate: 0 -20px; } }
 
 /* ---------- glyphes decoratifs verticaux ---------- */

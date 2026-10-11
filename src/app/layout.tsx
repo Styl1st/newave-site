@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 
 import Background from "@/components/Background";
+import DecorDePage from "@/components/DecorDePage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Tracker from "@/components/Tracker";
@@ -17,6 +18,7 @@ import Reveal from "@/components/Reveal";
 import Confirmations from "@/components/Confirmations";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
+import { decorPourChemin } from "@/lib/decor";
 import "./globals.css";
 
 /*
@@ -126,6 +128,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
          montrerait une fraction de seconde avant de les faire repartir
          de zéro. Voir globals.css, près de `pageIn`. */
       data-entree="a"
+      /* Blobs en grand sur l'accueil, retirés dans leurs coins
+         ailleurs. Voir `decorPourChemin` et `DecorDePage`. */
+      data-decor-page={decorPourChemin(chemin)}
       data-fige={apparence && apparence.mouvement.amplitude <= 0.02 ? "1" : undefined}
       /* LE DÉCOR EST IMMOBILE PAR DÉFAUT, ET C'EST LE SERVEUR QUI LE DIT.
 
@@ -165,6 +170,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="font-sans">
         <Background />
+        <DecorDePage />
         <Tracker />
         {/* Note la page d'où l'on part vers une marque, pour que ses
             boutons retour y ramènent. Voir `lib/page-d-origine`. */}
