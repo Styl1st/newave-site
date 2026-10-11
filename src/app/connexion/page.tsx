@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import AuthForm from "@/components/AuthForm";
+import { phraseConnexion } from "@/lib/phrase-connexion";
 
 export const metadata: Metadata = {
   title: "Connexion",
-  description: "Connecte-toi pour retrouver tes marques favorites.",
+  description: "Connecte-toi pour retrouver tes favoris, le forum et tes messages.",
 };
 
 type Props = { searchParams: Promise<{ suite?: string }> };
@@ -19,8 +20,9 @@ export default async function ConnexionPage({ searchParams }: Props) {
           Connexion
         </h1>
         <p className="m-0 mt-4 text-[14.5px] leading-relaxed text-white/82">
-          Un compte sert à garder tes marques favorites. C&apos;est tout. On n&apos;envoie
-          rien sans que tu le demandes.
+          {/* La phrase reprend le geste qui a mené ici (publier, écrire,
+              garder une marque). Voir `phraseConnexion`. */}
+          {phraseConnexion(suite)} On n&apos;envoie rien sans que tu le demandes.
         </p>
       </header>
 

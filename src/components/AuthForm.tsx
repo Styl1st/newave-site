@@ -247,7 +247,10 @@ export default function AuthForm({ suite }: { suite: string }) {
             required
             minLength={8}
             autoComplete={mode === "inscription" ? "new-password" : "current-password"}
-            placeholder="8 caractères minimum"
+            /* La consigne de longueur ne sert qu'à qui choisit son mot
+               de passe : à la connexion, elle laissait croire qu'on en
+               créait un nouveau. */
+            placeholder={mode === "inscription" ? "8 caractères minimum" : undefined}
           />
         </div>
       )}
