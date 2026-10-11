@@ -48,8 +48,12 @@
      possible sans recompiler quoi que ce soit. */
   --bg-1: #33217f;
   --bg-2: #4e5bc0;
-  --bg-3: #9e63d6;
-  --bg-4: #c255c4;
+  /* Les teintes 3 et 4 sont les plus claires du dégradé. Assombries
+     d'un cran (même teinte, même saturation) pour que le texte blanc
+     y tienne 4,5:1 : avant, même le blanc pur tombait à 4,0 et 3,9.
+     Garder `THEME_DEFAUT` (lib/theme.ts) identique. */
+  --bg-3: #9555d2;
+  --bg-4: #b841ba;
   --bg-5: #5a54c8;
   --bg-6: #31217c;
 
@@ -420,9 +424,11 @@ body {
     linear-gradient(180deg,
       rgba(var(--voile), .52) 0%, rgba(var(--voile), 0) 26%,
       rgba(var(--voile), 0) 72%, rgba(var(--voile), .60) 100%),
+    /* Un peu plus dense au centre qu'avant (.34 / .22 / .08) : c'est
+       là que se posent les textes de l'accueil et des en-têtes. */
     radial-gradient(ellipse 68% 58% at 50% 48%,
-      rgba(var(--voile), .34) 0%, rgba(var(--voile), .22) 45%,
-      rgba(var(--voile), .08) 75%, rgba(var(--voile), 0) 100%);
+      rgba(var(--voile), .42) 0%, rgba(var(--voile), .30) 45%,
+      rgba(var(--voile), .12) 75%, rgba(var(--voile), 0) 100%);
 }
 
 /* ---------- blobs chromes ---------- */
@@ -602,7 +608,9 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
 }
 .eyebrow {
   font-size: 10px; font-weight: 900; letter-spacing: .22em; text-transform: uppercase;
-  color: rgba(255,255,255,.72);
+  /* .86 et non .72 : un texte de 10 px en capitales n'a aucune marge,
+     il doit tenir le contraste par sa couleur. */
+  color: rgba(255,255,255,.86);
 }
 .badge {
   font-size: 9px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase;
@@ -4217,7 +4225,7 @@ html[data-allege] .bandeau-flou {
   font-size: 10px;
   line-height: 1;
   letter-spacing: .08em;
-  color: color-mix(in srgb, var(--color-white) 70%, transparent);
+  color: color-mix(in srgb, var(--color-white) 82%, transparent);
   white-space: nowrap;
 }
 

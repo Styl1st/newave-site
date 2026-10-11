@@ -132,7 +132,7 @@ export default async function HomePage() {
 
         {/* Ce qu'il y a à voir, et le geste pour le chercher. Aucun de
             ces deux nombres n'est écrit en dur : voir l'en-tête. */}
-        <p className="rise rise-3 mt-3.5 text-[11.5px] font-semibold tracking-[0.02em] text-white/55">
+        <p className="rise rise-3 mt-3.5 text-[11.5px] font-semibold tracking-[0.02em] text-white/85">
           {brands.length > 0 && <>{enChiffres(brands.length)} marques</>}
           {brands.length > 0 && posts.length > 0 && " · "}
           {posts.length > 0 && <>{enChiffres(posts.length)} posts</>}
@@ -180,7 +180,7 @@ export default async function HomePage() {
         <a
           href="#la-suite"
           aria-label="Descendre vers la marque de la semaine"
-          className="mt-10 inline-flex flex-col items-center gap-1 text-white/70 transition hover:text-white sm:mt-14"
+          className="mt-10 inline-flex flex-col items-center gap-1 text-white/85 transition hover:text-white sm:mt-14"
         >
           <span className="text-[10px] font-black uppercase tracking-[0.18em]">La suite</span>
           <IconChevron className="invite h-5 w-5" />

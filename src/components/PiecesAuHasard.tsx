@@ -95,7 +95,7 @@ export default function PiecesAuHasard({ pieces }: { pieces: Product[] }) {
         ))}
       </div>
 
-      <p className="m-0 mt-4 text-[12.5px] leading-[1.6] text-white/55">
+      <p className="m-0 mt-4 text-[12.5px] leading-[1.6] text-white/80">
         L&apos;achat se fait toujours directement chez la marque. NEWAVE SPHERE ne vend
         rien.
       </p>

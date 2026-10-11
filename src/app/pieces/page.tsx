@@ -162,7 +162,7 @@ export default async function PiecesPage({ searchParams }: Props) {
           </p>
         </div>
 
-        <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/55">
+        <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/82">
           {enChiffres(total)} pièce{total > 1 ? "s" : ""}
           {catalogue && " au catalogue"} · {enChiffres(marques)} marque
           {marques > 1 ? "s" : ""}

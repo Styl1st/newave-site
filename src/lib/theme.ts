@@ -56,7 +56,9 @@ export type Preferences = {
 };
 
 export const THEME_DEFAUT: Theme = {
-  bg: ["#33217f", "#4e5bc0", "#9e63d6", "#c255c4", "#5a54c8", "#31217c"],
+  /* Teintes 3 et 4 assombries pour le contraste du texte blanc :
+     voir `--bg-3` dans globals.css, les deux doivent rester égaux. */
+  bg: ["#33217f", "#4e5bc0", "#9555d2", "#b841ba", "#5a54c8", "#31217c"],
   accents: ["#e86fd8", "#5a72e0", "#b47aea"],
 };
 

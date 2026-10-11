@@ -503,7 +503,7 @@ export default async function BrandPage({ params }: Props) {
             )}
           />
 
-          <p className="m-0 mt-5 text-[12.5px] leading-relaxed text-white/55">
+          <p className="m-0 mt-5 text-[12.5px] leading-relaxed text-white/80">
             L&apos;achat se fait directement chez {brand.name}. NEWAVE SPHERE ne vend rien.
           </p>
         </section>

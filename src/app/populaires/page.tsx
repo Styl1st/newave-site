@@ -538,7 +538,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
           {explication}
         </p>
         {compteurs && (
-          <p className="m-0 mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/55">
+          <p className="m-0 mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/82">
             {compteurs}
           </p>
         )}
@@ -560,7 +560,7 @@ export default async function PopulairesPage({ searchParams }: Props) {
           les options seraient visibles mais pas cliquables. */}
       <div className="relative z-30 mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <PhraseDuClassement quoi={menuQuoi} mesure={menuMesure} periode={menuPeriode} />
-        <p className="m-0 shrink-0 text-[10.5px] font-black uppercase tracking-[0.18em] text-white/45">
+        <p className="m-0 shrink-0 text-[10.5px] font-black uppercase tracking-[0.18em] text-white/78">
           Recompté à chaque visite
         </p>
       </div>
