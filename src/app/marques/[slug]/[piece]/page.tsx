@@ -15,6 +15,7 @@ import { getLikeCounts, getMyLikes, getRangDeLaPiece } from "@/lib/likes";
 import { IconPencil } from "@/components/Icons";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 import { libelleAchat } from "@/lib/achat";
+import { repartirTailles } from "@/lib/tailles";
 import BarreAchat from "@/components/BarreAchat";
 import BackLink from "@/components/BackLink";
 
@@ -90,6 +91,7 @@ export default async function PiecePage({ params }: Props) {
     }, new Map<string, boolean>()),
     ([label, available]) => ({ label, available })
   );
+  const { enStock: taillesEnStock, epuisees: taillesEpuisees } = repartirTailles(tailles);
 
   // Les autres pièces de la marque, sans celle qu'on regarde.
   const [siblingsAll, insight] = await Promise.all([
@@ -280,26 +282,26 @@ export default async function PiecePage({ params }: Props) {
                 disponibles, un simple fond posé, et un curseur qui reste
                 celui du texte.
               */}
+              {/* TROISIÈME CORRECTION : PLUS DE PASTILLES DU TOUT.
+                  Même sans contour, une rangée de cases se lit comme un
+                  choix à faire. Deux phrases disent la même chose sans
+                  rien laisser à cliquer. Voir `repartirTailles`. */}
               <p className="eyebrow m-0">
-                {product.size_label} en stock chez {brand.name}
+                {product.size_label} chez {brand.name}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {tailles.map((size) => (
-                  <span
-                    key={size.label}
-                    className={
-                      size.available
-                        ? "rounded-[9px] bg-white/14 px-3 py-1.5 text-[13px] font-bold text-white"
-                        : "rounded-[9px] px-3 py-1.5 text-[13px] font-bold text-white/32 line-through"
-                    }
-                  >
-                    {size.label}
-                  </span>
-                ))}
-              </div>
-              <p className="m-0 mt-3 text-[12px] leading-relaxed text-white/55">
-                C&apos;est un état des stocks, pas une sélection : les tailles barrées
-                sont épuisées, et le choix se fait sur la boutique.
+              {taillesEnStock.length > 0 && (
+                <p className="m-0 mt-3 text-[15px] leading-relaxed text-white">
+                  <span className="font-extrabold">En stock :</span> {taillesEnStock.join(", ")}
+                </p>
+              )}
+              {taillesEpuisees.length > 0 && (
+                <p className={`m-0 text-[14px] leading-relaxed text-white/78 ${taillesEnStock.length > 0 ? "mt-1" : "mt-3"}`}>
+                  <span className="font-bold">{taillesEnStock.length > 0 ? "Épuisé :" : "Épuisé dans toutes les tailles :"}</span>{" "}
+                  <span className="line-through decoration-white/60">{taillesEpuisees.join(", ")}</span>
+                </p>
+              )}
+              <p className="m-0 mt-3 text-[12.5px] leading-relaxed text-white/75">
+                La taille se choisit sur la boutique de {brand.name}.
               </p>
             </section>
           )}

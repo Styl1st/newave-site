@@ -1407,6 +1407,43 @@ export default function PieceDirectory({
           </div>
         )}
 
+        {/* LE TRI EST ICI, ET SEULEMENT AU DOIGT, EN TÊTE DE FEUILLE.
+
+            Il vivait à côté du compte, dans une pilule collante qui
+            prenait cent pixels de haut pour trois mots : sa place est
+            avec les filtres. Il était rangé en dernier, sous le choix de
+            marque, il fallait faire défiler la feuille pour le trouver.
+            Sur plus de trente mille pièces présentées au hasard, trier
+            par prix est souvent le premier réglage qu'on cherche : il
+            passe en tête. */}
+        {auDoigt && (
+          <Section titre="Tri">
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["hasard", "Au hasard"],
+                  ["croissant", "Prix croissant"],
+                  ["decroissant", "Prix décroissant"],
+                ] as const
+              ).map(([cle, label]) => (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => setTri(cle)}
+                  aria-pressed={tri === cle}
+                  className={`inline-flex min-h-[44px] items-center rounded-[13px] px-3.5 text-[12.5px] font-bold transition active:scale-[.97] ${
+                    tri === cle
+                      ? "bg-white text-[var(--color-ink)]"
+                      : "bg-white/8 text-white/84 hover:bg-white/14"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {rayonsDisponibles.length > 1 && (
           <Section titre="Type de pièce">
             {auDoigt ? (
@@ -1619,41 +1656,6 @@ export default function PieceDirectory({
           </Section>
         )}
 
-        {/* LE TRI EST ICI, ET SEULEMENT AU DOIGT.
-
-            Il vivait à côté du compte, dans une pilule collante qui
-            prenait cent pixels de haut pour trois mots. Il est de la même
-            famille que ce qu'il y a au-dessus — on règle ce qu'on veut
-            voir, puis dans quel ordre — et on repart d'un seul geste avec
-            le bouton du pied. En dernier parce que c'est le réglage qu'on
-            change le moins : les rayons d'abord, l'ordre ensuite. */}
-        {auDoigt && (
-          <Section titre="Tri">
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["hasard", "Au hasard"],
-                  ["croissant", "Prix croissant"],
-                  ["decroissant", "Prix décroissant"],
-                ] as const
-              ).map(([cle, label]) => (
-                <button
-                  key={cle}
-                  type="button"
-                  onClick={() => setTri(cle)}
-                  aria-pressed={tri === cle}
-                  className={`inline-flex min-h-[44px] items-center rounded-[13px] px-3.5 text-[12.5px] font-bold transition active:scale-[.97] ${
-                    tri === cle
-                      ? "bg-white text-[var(--color-ink)]"
-                      : "bg-white/8 text-white/84 hover:bg-white/14"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Section>
-        )}
     </>
   );
 
