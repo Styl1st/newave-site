@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { Suspense } from "react";
 import { headers } from "next/headers";
 
@@ -18,7 +19,28 @@ import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
 import "./globals.css";
 
-const archivo = { variable: "--font-archivo" };
+/*
+ * ARCHIVO, SERVIE PAR LE SITE LUI-MÊME.
+ *
+ * Elle venait de Google Fonts au build (`next/font/google`). Un build
+ * sans accès à Google Fonts échouait, et le chargement avait été
+ * remplacé par un simple objet `{ variable }` : la classe posée sur
+ * <html> ne déclarait plus rien, et tout le site retombait sur la
+ * police du système (Segoe UI, San Francisco, Roboto selon l'appareil).
+ *
+ * Le fichier est maintenant dans le dépôt : Archivo variable en
+ * graisse (100 à 900), largeur normale, réduite au latin et à la
+ * ponctuation française. 44 Ko, aucun appel réseau au build. Licence
+ * OFL à côté du fichier.
+ */
+const archivo = localFont({
+  src: "./fonts/archivo-variable.woff2",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  variable: "--font-archivo",
+  adjustFontFallback: "Arial",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://newavesphere.fr";
 
