@@ -101,29 +101,33 @@ export default async function HomePage() {
           Il occupe le premier écran à lui seul. Ce qui vient ensuite se
           mérite d'un coup de pouce : c'est la différence entre une page
           d'accueil et une liste. */}
-      <section className="premier-ecran relative flex flex-col items-center justify-center pb-1 pt-7 text-center sm:py-14">
+      <section className="premier-ecran relative flex flex-col items-center justify-center pb-1 pt-5 text-center sm:py-14">
         {/*
-         * LE GRAND LOGO NE S'AFFICHE QU'EN GRAND.
+         * LE LOGO, PLUS PETIT AU TÉLÉPHONE.
          *
-         * Au téléphone, l'en-tête le porte déjà, collé en haut de
-         * l'écran : le même logo une seconde fois, en très grand, prenait
-         * le tiers du premier écran et repoussait les marques sous la
-         * ligne de flottaison. On voyait l'univers, jamais ce qu'il y a à
-         * explorer. Sans lui, le ruban « Découvre de nouvelles marques »
-         * entre dans le premier écran, juste sous les deux boutons.
+         * À 212 px de large, il prenait le tiers du premier écran et
+         * repoussait les marques sous la ligne de flottaison : on voyait
+         * l'univers, jamais ce qu'il y a à explorer. Il avait donc
+         * disparu du téléphone. Il revient à 120 px, ce qui suffit à
+         * l'identité tout en laissant le ruban « Découvre de nouvelles
+         * marques » dans le premier écran, juste sous les deux boutons.
+         * En grand, rien ne change.
+         *
+         * Décoratif pour les lecteurs d'écran : le nom du site est déjà
+         * dans le titre principal, juste dessous.
          */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/brand/logo-white.webp"
           alt=""
           aria-hidden="true"
-          className="rise hidden w-[min(70%,320px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:block"
+          className="rise w-[min(34%,120px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:w-[min(70%,320px)]"
         />
 
         {/* Le titre de la page, pour les lecteurs d'écran comme pour les
             moteurs : c'est la promesse du site, et l'accueil était la
             seule page sans titre principal. */}
-        <h1 className="tagline rise rise-1 m-0 text-[clamp(11px,2.9vw,13px)] leading-[1.9] sm:mt-6">
+        <h1 className="tagline rise rise-1 mt-4 text-[clamp(11px,2.9vw,13px)] leading-[1.9] sm:mt-6">
           <span className="sr-only">NEWAVE SPHERE, </span>
           {/* Les espaces avant les retours à la ligne ne se voient pas,
               mais sans eux le titre se lit « marques&d'artistes ». */}
