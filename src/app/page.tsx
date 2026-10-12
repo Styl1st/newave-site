@@ -8,6 +8,7 @@ import RechercheAccueil from "@/components/RechercheAccueil";
 import { enChiffres } from "@/components/chiffres";
 import { IconChevron } from "@/components/Icons";
 import { getBrands, getPosts, getVitrine } from "@/lib/queries";
+import { pourLAnnuaire } from "@/lib/fiche-annuaire";
 import { getMyFavorites } from "@/lib/favorites";
 import { aUneIllustration } from "@/lib/medias";
 import { repartirParMarque } from "@/lib/melange";
@@ -244,7 +245,7 @@ export default async function HomePage() {
               </div>
 
               <MarqueDeLaSemaine
-                brand={vedette}
+                brand={pourLAnnuaire(vedette)}
                 favori={{ initial: favoris.has(vedette.id) }}
               />
             </section>

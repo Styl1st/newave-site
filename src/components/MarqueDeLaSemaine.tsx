@@ -10,7 +10,7 @@ import Teinte from "./Teinte";
 import { IconExternal } from "./Icons";
 import { vignette } from "@/lib/vignette";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
-import type { Brand } from "@/lib/types";
+import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 
 /**
  * La marque mise en avant sur l'accueil, en grand.
@@ -34,7 +34,8 @@ export default function MarqueDeLaSemaine({
   brand,
   favori,
 }: {
-  brand: Brand;
+  /** Allégée pour le navigateur : voir `pourLAnnuaire`. */
+  brand: FicheDAnnuaire;
   /** Présent = on affiche le cœur, avec son état de départ. */
   favori?: { initial: boolean };
 }) {
