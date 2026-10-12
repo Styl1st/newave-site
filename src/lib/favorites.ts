@@ -111,38 +111,6 @@ export type PaysageDesCoeurs = {
 };
 
 /**
- * Le classement des marques les plus suivies, depuis toujours.
- *
- * On passe par une fonction en base plutôt que par une lecture
- * directe : la table des favoris n'est lisible que par son
- * propriétaire, et c'est très bien ainsi. La fonction ne rend que des
- * totaux, jamais qui a mis quoi en favori.
- */
-export async function getMostFavorited(
-  limite = 60
-): Promise<{ brand: Brand; favoris: number }[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
-
-  const { data: totaux } = await supabase.rpc("brand_favorite_counts");
-  const rows = ((totaux ?? []) as { brand_id: string; favoris: number }[]).slice(0, limite);
-  if (rows.length === 0) return [];
-
-  const { data: marques } = await supabase
-    .from("brands")
-    .select("*")
-    .in("id", rows.map((r) => r.brand_id))
-    .eq("status", "published");
-
-  const parId = new Map(((marques ?? []) as Brand[]).map((b) => [b.id, b]));
-
-  // On garde l'ordre du classement, pas celui de la seconde requête.
-  return rows
-    .map((r) => ({ brand: parId.get(r.brand_id), favoris: r.favoris }))
-    .filter((x): x is { brand: Brand; favoris: number } => Boolean(x.brand));
-}
-
-/**
  * L'état des cœurs sur tout l'annuaire, et pas seulement le haut du
  * classement.
  *

@@ -631,10 +631,6 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-@keyframes popIn {
-  from { opacity: 0; transform: translateY(12px) scale(.97); }
-  to   { opacity: 1; transform: none; }
-}
 
 /* Le panneau arrive de plus bas, de plus petit, et légèrement flou.
    C'est le flou qui fait la différence entre « un calque dont on monte
@@ -1037,21 +1033,6 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
   -ms-overflow-style: none;
 }
 .sans-ascenseur::-webkit-scrollbar { display: none; }
-
-/* Le dégradé qui dit « il y a une suite ».
-
-   `sans-ascenseur` cache la barre de défilement — c'est ce qu'on veut —
-   mais une rangée coupée net au bord de l'écran ressemble alors à une
-   rangée finie, et personne ne pense à la pousser. Le dégradé le dit
-   sans rien ajouter à lire. Au doigt seulement : en grand, la rangée
-   tient dans la largeur. Voir aussi `.rang-filtres`, qui fait les deux à
-   la fois pour les lignes de filtres. */
-@media (max-width: 639px) {
-  .bord-suite {
-    -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
-    mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
-  }
-}
 
 /* ---------- où l'on en est dans la page ----------
 
@@ -2074,41 +2055,6 @@ option {
   background-color: rgb(var(--voile));
   background-image: linear-gradient(165deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
   animation: feuilleMonte .34s cubic-bezier(.2, .85, .3, 1) both;
-}
-
-/* Une ligne de filtres qui DÉFILE plutôt que de s'enrouler.
-
-   Enroulée, une rangée de sept thèmes prend trois rangs et cent vingt
-   pixels de haut : sur un écran de huit cents, c'est un septième de la
-   page pour des pastilles qu'on ne lit qu'une fois. Et comme la barre
-   est collante, elle emporte cette hauteur partout où l'on descend.
-
-   Le dégradé de bord est ce qui dit qu'il y a une suite — sans lui, une
-   rangée coupée net ressemble à une rangée finie, et personne ne pense à
-   la pousser. Il est posé en permanence plutôt que mesuré : quand les
-   pastilles ne remplissent pas la ligne, il s'estompe sur du vide et ne
-   se voit pas.
-
-   Au-delà de `sm`, la place existe : elle reprend sa forme enroulée,
-   où tout se lit d'un coup d'œil. */
-.rang-filtres {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
-  mask-image: linear-gradient(90deg, #000 86%, transparent 100%);
-}
-.rang-filtres::-webkit-scrollbar { display: none; }
-
-@media (min-width: 640px) {
-  .rang-filtres {
-    flex-wrap: wrap;
-    overflow-x: visible;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
 }
 
 @keyframes feuilleMonte {
@@ -3206,16 +3152,6 @@ html[data-curseur="1"] :is(input:not([type="range"]), textarea, select, [content
   html:not([data-anim-choisi="1"]) .curseur-point > [data-glyphe] > svg { transition: none; }
 }
 [data-fige="1"] .curseur-point > [data-glyphe] > svg { transition: none; }
-
-/* Le détourage d'un logo posé sur son propre flou.
-   Sans lui, un logo blanc sur fond blanc disparaît dans son propre
-   agrandissement : le liseré sombre le fait ressortir sans toucher aux
-   logos foncés, sur lesquels il se confond. Voir `VisuelAdaptatif`. */
-.visuel-detoure {
-  filter:
-    drop-shadow(0 0 1px rgba(23, 10, 51, .5))
-    drop-shadow(0 2px 8px rgba(23, 10, 51, .28));
-}
 
 /* La vignette qu'on tient dans la main.
    Une ombre longue et une lumière au bord : c'est ce qui la décolle du

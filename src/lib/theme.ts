@@ -151,16 +151,6 @@ export function decrireApparence(prefs: Preferences): string {
   return `${connue?.nom ?? "Sur mesure"} · ${prefs.clair ? "Clair" : "Sombre"}`;
 }
 
-/** Une phrase qui décrit le réglage courant, pour ne pas laisser deux nombres nus. */
-export function decrire(m: Mouvement): string {
-  if (m.amplitude <= 0.02) return "Aucun mouvement. Le fond reste immobile.";
-  const vitesse =
-    m.vitesse < 0.6 ? "lentement" : m.vitesse > 1.5 ? "rapidement" : "à rythme normal";
-  const ampleur =
-    m.amplitude < 0.6 ? "de façon discrète" : m.amplitude > 1.2 ? "largement" : "franchement";
-  return `Le fond dérive ${vitesse}, ${ampleur}.`;
-}
-
 /** "#c255c4" -> "194, 85, 196", format attendu par rgba(). */
 export function versRgb(hex: string): string {
   const propre = hex.replace("#", "");

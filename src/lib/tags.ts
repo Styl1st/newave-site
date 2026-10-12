@@ -236,10 +236,6 @@ export const TAGS_CONNUS: { tag: string; famille: Famille | null }[] = LEXIQUE.f
 
 const FAMILLE_DU_TAG = new Map(TAGS_CONNUS.map((t) => [t.tag, t.famille]));
 
-export function familleDuTag(tag: string): Famille | null {
-  return FAMILLE_DU_TAG.get(tag) ?? null;
-}
-
 /**
  * Le rang d'un tag pour trier une liste : l'ordre du lexique, puis
  * l'alphabet pour les tags créés depuis l'admin.

@@ -140,22 +140,3 @@ export function exigeUnCatalogue(url: string | null | undefined): boolean {
   if (!url) return false;
   return plateformeDeVente(url) === null;
 }
-
-/**
- * Ce profil est-il celui d'un créateur plutôt que d'une marque ?
- *
- * Vendre sur Vinted, Depop ou Instagram n'est pas un choix de canal
- * comme un autre : c'est ce que fait quelqu'un qui coud lui-même, à
- * l'unité, sans stock ni site à entretenir. L'onglet « Artistes » de
- * l'annuaire les prend donc sans qu'on ait à cocher quoi que ce soit,
- * et la case « Artiste » reste là pour les cas que l'adresse ne dit
- * pas — un peintre qui a un vrai site marchand, par exemple.
- */
-export function estUnArtiste(marque: {
-  categories?: string[] | null;
-  shop_url?: string | null;
-  website_url?: string | null;
-}): boolean {
-  if (marque.categories?.includes("Artiste")) return true;
-  return plateformeDeVente(marque.shop_url ?? marque.website_url) !== null;
-}

@@ -83,28 +83,6 @@ export function chiffresAffiches(quoi: QuoiClasse, mesure: MesureClassee, total:
 }
 
 /**
- * Combien de cœurs il faut à un rayon pour tenir dans la ligne
- * principale.
- *
- * Un seul. Ce n'est pas un seuil de qualité, c'est la frontière entre
- * « il y a quelque chose à voir » et « le clic mène à une page vide » :
- * un rayon à zéro part dans la zone « Encore aucun cœur », et son lien
- * change de destination.
- */
-export const SEUIL_RAYON = 1;
-
-/**
- * Combien de rayons vides on affiche au plus.
- *
- * La taxonomie en compte près de trente, et sur un site jeune presque
- * tous sont à zéro. Trente pastilles en pointillé, sur un téléphone,
- * font huit rangs qui repoussent tout le reste hors de l'écran — et l'on
- * ne compare pas trente propositions, on en lit quelques-unes. Le reste
- * a déjà une page faite pour ça : l'annuaire.
- */
-export const RAYONS_VIDES_MAX = 12;
-
-/**
  * Combien de marques à découvrir dans le bloc « Le premier cœur est à
  * prendre ». Quatre, comme la maquette : une rangée sur ordinateur, deux
  * sur téléphone.

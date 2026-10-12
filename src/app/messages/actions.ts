@@ -99,21 +99,6 @@ export async function envoyerMessage(input: {
   return { ok: true, message: versMessage(data as unknown as LigneMessage) };
 }
 
-/** Ouvrir une conversation la marque comme lue, jusqu'à maintenant. */
-export async function marquerLu(conversationId: string): Promise<Resultat> {
-  const { supabase, user } = await session();
-  if (!supabase || !user) return { ok: false, raison: "non-connecte" };
-
-  const { error } = await supabase
-    .from("conversation_lus")
-    .upsert(
-      { conversation_id: conversationId, user_id: user.id, lu_at: new Date().toISOString() },
-      { onConflict: "conversation_id,user_id" }
-    );
-  if (error) return traduire(error, "");
-  return { ok: true };
-}
-
 /**
  * Bloquer : plus aucun message, dans un sens comme dans l'autre. La
  * personne bloquée n'en est pas prévenue ; elle voit seulement qu'elle

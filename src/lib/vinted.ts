@@ -296,25 +296,6 @@ function enPiece(brut: Brut, hote: string, devise: string): CatalogueItem | null
   };
 }
 
-/**
- * Les pièces d'une page de profil, à partir de son HTML.
- *
- * Séparé de la requête exprès : c'est la partie fragile, celle qui
- * dépend de la forme des pages de Vinted, et donc la seule qu'on ait
- * besoin d'éprouver sur un exemple sans aller sur le réseau.
- */
-export function piecesDeLaPage(
-  html: string,
-  hote: string,
-  devise: string
-): { items: CatalogueItem[]; methode: string } {
-  const decoupe = decouper(html);
-  const items = decoupe.vignettes
-    .map((v) => enPiece(v, hote, devise))
-    .filter((p): p is CatalogueItem => p !== null);
-  return { items, methode: decoupe.methode };
-}
-
 /** Le catalogue d'un profil Vinted, rangé comme celui d'une boutique. */
 export async function lireLeProfilVinted(url: string): Promise<Resultat> {
   const membre = membreVinted(url);
@@ -367,9 +348,4 @@ export async function lireLeProfilVinted(url: string): Promise<Resultat> {
   }
 
   return { ok: true, source: "vinted", items };
-}
-
-/** Ce qui a permis de lire, à écrire dans le compte rendu. */
-export function methodeLisible(nombre: number): string {
-  return `${nombre} pièce${nombre > 1 ? "s" : ""} lue${nombre > 1 ? "s" : ""} sur Vinted.`;
 }
