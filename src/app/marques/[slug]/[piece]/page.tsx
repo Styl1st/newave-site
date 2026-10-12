@@ -50,10 +50,27 @@ export default async function PiecePage({ params }: Props) {
 
   const { product, brand } = found;
 
-  const profilPiece = await getProfile();
-  const dejaSignalee = profilPiece
-    ? (await mesSignalements("piece", [product.id])).length > 0
-    : false;
+  /*
+   * TOUT CE QUI NE DÉPEND QUE DE LA PIÈCE PART D'UN COUP.
+   *
+   * Le profil, le signalement, les autres pièces de la marque, la gérance
+   * et le rang de la pièce attendaient chacun le précédent : jusqu'à cinq
+   * allers-retours vers Supabase à la suite pour quelqu'un de connecté,
+   * avant même d'écrire la page. Aucun n'a besoin de la réponse d'un
+   * autre, sauf le signalement, qui suit le profil dans sa propre file.
+   */
+  const [profilPiece, dejaSignalee, siblingsAll, insight, rang] = await Promise.all([
+    getProfile(),
+    // Déjà signalée par cette personne ? Le bouton doit le dire.
+    getProfile().then((profil) =>
+      profil
+        ? mesSignalements("piece", [product.id]).then((signales) => signales.length > 0)
+        : false
+    ),
+    getProductsByBrand(brand.id),
+    getCatalogueInsight(brand.id),
+    getRangDeLaPiece(product.id),
+  ]);
 
   const images = product.images?.length
     ? product.images
@@ -94,20 +111,15 @@ export default async function PiecePage({ params }: Props) {
   const { enStock: taillesEnStock, epuisees: taillesEpuisees } = repartirTailles(tailles);
 
   // Les autres pièces de la marque, sans celle qu'on regarde.
-  const [siblingsAll, insight] = await Promise.all([
-    getProductsByBrand(brand.id),
-    getCatalogueInsight(brand.id),
-  ]);
   const siblings = siblingsAll.filter((p) => p.id !== product.id).slice(0, 4);
   const canManage = Boolean(insight);
 
   // Le cœur manquait ici : on pouvait aimer une pièce depuis la fiche
   // de la marque, mais pas depuis les suggestions au bas d'une pièce.
   const idsCoeurs = [product.id, ...siblings.map((p) => p.id)];
-  const [coeurs, mesCoeurs, rang] = await Promise.all([
+  const [coeurs, mesCoeurs] = await Promise.all([
     getLikeCounts(idsCoeurs),
     getMyLikes(idsCoeurs),
-    getRangDeLaPiece(product.id),
   ]);
 
   return (

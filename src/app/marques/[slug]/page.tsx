@@ -106,11 +106,22 @@ export default async function BrandPage({ params }: Props) {
 
   const enApercu = brand.status !== "published";
 
-  const [tous, posts, favorited, insight] = await Promise.all([
+  /*
+   * LE PROFIL PART AVEC LE PREMIER LOT, ET NON APRÈS.
+   *
+   * Il ne dépend que de la session, pas des pièces : l'attendre une fois
+   * le catalogue arrivé ajoutait deux allers-retours vers Supabase à la
+   * suite (la session, puis le profil) sur chaque fiche ouverte par
+   * quelqu'un de connecté. Les autres lectures de la session dans ce lot
+   * (favori, gérance) partagent la même vérification : voir
+   * `lireUtilisateur`.
+   */
+  const [tous, posts, favorited, insight, profil] = await Promise.all([
     getProductsByBrand(brand.id),
     getPostsByBrand(brand.id),
     isFavorite(brand.id),
     getCatalogueInsight(brand.id),
+    getProfile(),
   ]);
 
   /*
@@ -144,18 +155,18 @@ export default async function BrandPage({ params }: Props) {
       ? null
       : { ...ACCES_MESSAGE[acces], etiquette: ACCES_ETIQUETTE[acces] };
 
-  const profil = await getProfile();
   // Déjà signalée par cette personne ? Le bouton doit le dire, plutôt
   // que de proposer de recommencer pour se faire refuser par la base.
-  const dejaSignalee = profil
-    ? (await mesSignalements("marque", [brand.id])).length > 0
-    : false;
-
-  const [likeCounts, myLikes, notesPieces, notesMarque] = await Promise.all([
+  // Lu en même temps que les cœurs et les notes plutôt qu'avant eux :
+  // rien ici n'attend la réponse d'un autre.
+  const [likeCounts, myLikes, notesPieces, notesMarque, dejaSignalee] = await Promise.all([
     getLikeCounts(ids),
     getMyLikes(ids),
     getNotesPieces(ids),
     getNotesMarques([brand.id]),
+    profil
+      ? mesSignalements("marque", [brand.id]).then((signales) => signales.length > 0)
+      : Promise.resolve(false),
   ]);
 
   /* Le profil Instagram est un lien : c'est là que vit une marque

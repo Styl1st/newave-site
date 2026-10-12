@@ -52,7 +52,7 @@ export default async function BrandsPage({ searchParams }: Props) {
    * marques à la une sont mélangées entre elles plutôt que figées.
    */
   const brands = ordonnerLAnnuaire(await getBrands());
-  const favoris = await getMyFavorites(brands.map((b) => b.id));
+  const ids = brands.map((b) => b.id);
 
   /*
    * Les moyennes en UNE requête pour toute la page.
@@ -65,8 +65,12 @@ export default async function BrandsPage({ searchParams }: Props) {
    * L'objet plutôt que la Map : ces données descendent jusqu'à un
    * composant client, et un objet simple traverse cette frontière sans
    * discussion.
+   *
+   * Lues EN MÊME TEMPS que les favoris : les deux ne dépendent que de la
+   * liste des marques, et l'un attendait l'autre pour rien.
    */
-  const notes = Object.fromEntries(await getNotesMarques(brands.map((b) => b.id)));
+  const [favoris, notesBrutes] = await Promise.all([getMyFavorites(ids), getNotesMarques(ids)]);
+  const notes = Object.fromEntries(notesBrutes);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
