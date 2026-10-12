@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "./supabase/server";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import type { Brand } from "./types";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
 
@@ -416,9 +416,8 @@ export async function getMyFavorites(brandIds: string[]): Promise<Set<string>> {
   const supabase = await createClient();
   if (!supabase) return vide;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return vide;
 
   const { data } = await supabase
@@ -435,9 +434,8 @@ export async function isFavorite(brandId: string): Promise<boolean> {
   const supabase = await createClient();
   if (!supabase) return false;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return false;
 
   const { data } = await supabase
@@ -493,9 +491,8 @@ export async function getFavoriteBrands(): Promise<Brand[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return [];
 
   const { data } = await supabase

@@ -1,4 +1,4 @@
-import { createClient } from "./supabase/server";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import {
   COLONNES_MESSAGE,
   versConversation,
@@ -57,9 +57,8 @@ export async function conversationSur(annonceId: string): Promise<string | null>
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return null;
 
   const { data, error } = await supabase

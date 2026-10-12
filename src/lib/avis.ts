@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "./supabase/server";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import type { Brand, Product } from "./types";
 
 /**
@@ -70,9 +70,8 @@ export async function getMonAvis(cible: Cible): Promise<Avis | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return null;
 
   const { data } = await supabase

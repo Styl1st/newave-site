@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "./supabase/server";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import { requireAdmin } from "./auth";
 import {
   estUneCible,
@@ -113,9 +113,8 @@ export async function mesSignalements(
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return [];
 
   const colonne = COLONNE[cible];

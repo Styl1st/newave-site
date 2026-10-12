@@ -1,15 +1,23 @@
 import { redirect } from "next/navigation";
-import { createClient } from "./supabase/server";
+import { cache } from "react";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import type { Profile } from "./types";
 
-/** Le profil de la personne connectee, ou null si personne ne l'est. */
-export async function getProfile(): Promise<Profile | null> {
+/**
+ * Le profil de la personne connectee, ou null si personne ne l'est.
+ *
+ * Lu UNE fois par page, quel que soit le nombre de composants qui le
+ * demandent : la barre, la page, la section des avis, le raccourci
+ * d'administration et l'espace marque l'appellent chacun de leur côté,
+ * et chaque appel coûtait deux allers-retours vers Supabase (la session,
+ * puis le profil). `cache` de React les fusionne le temps d'une requête,
+ * jamais au-delà. Voir `lireUtilisateur`.
+ */
+export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await lireUtilisateur();
   if (!user) return null;
 
   /*
@@ -25,7 +33,7 @@ export async function getProfile(): Promise<Profile | null> {
   if (error) ({ data, error } = await lire("id, email, display_name, role"));
 
   return (data as unknown as Profile) ?? null;
-}
+});
 
 /**
  * A appeler en haut de chaque page d'administration.

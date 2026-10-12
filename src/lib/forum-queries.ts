@@ -1,4 +1,5 @@
-import { createClient } from "./supabase/server";
+import { cache } from "react";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import { DEMO_ANNONCES, DEMO_COMMENTAIRES } from "./forum-demo";
 import {
   estUneRubrique,
@@ -150,7 +151,12 @@ export async function lireLeFil(
    Une annonce, ses commentaires, son auteur
    ------------------------------------------------------------------ */
 
-export async function lireAnnonce(id: string): Promise<Annonce | null> {
+/*
+ * Mémorisée le temps d'une requête : l'annonce et son titre sont lus par
+ * `generateMetadata` (le titre de l'onglet) ET par la page. Sans
+ * `cache`, la même ligne partait deux fois vers Supabase.
+ */
+export const lireAnnonce = cache(async (id: string): Promise<Annonce | null> => {
   const supabase = await createClient();
   if (!supabase) return DEMO_ANNONCES.find((a) => a.id === id) ?? null;
 
@@ -158,7 +164,7 @@ export async function lireAnnonce(id: string): Promise<Annonce | null> {
   signaler("annonce", error);
   const ligne = (data as LigneAnnonce[] | null)?.[0];
   return ligne ? versAnnonce(ligne) : null;
-}
+});
 
 type LigneCommentaire = {
   id: string;
@@ -260,9 +266,8 @@ export async function moiForum(): Promise<MoiForum | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return null;
 
   const { data, error } = await supabase
@@ -340,8 +345,12 @@ function profilDeDemo(handle: string): ProfilMembre | null {
  * base n'a pas répondu (migration 39 absente, surtout). Les deux
  * n'appellent pas la même page : une 404 dans le premier cas, une
  * phrase d'excuse dans le second.
+ *
+ * Mémorisée le temps d'une requête : le profil et son pseudo sont lus par
+ * `generateMetadata` (le titre de l'onglet) ET par la page. Sans
+ * `cache`, la même ligne partait deux fois vers Supabase.
  */
-export async function lireProfil(handle: string): Promise<ProfilMembre | null | "erreur"> {
+export const lireProfil = cache(async (handle: string): Promise<ProfilMembre | null | "erreur"> => {
   const supabase = await createClient();
   if (!supabase) return profilDeDemo(handle);
 
@@ -379,7 +388,7 @@ export async function lireProfil(handle: string): Promise<ProfilMembre | null | 
     reponses: Number(l.reponses) || 0,
     reponsesUtiles: Number(l.reponses_utiles) || 0,
   };
-}
+});
 
 /**
  * Ses annonces à son nom, de la plus récente à la plus ancienne. Celles

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, lireUtilisateur } from "@/lib/supabase/server";
 import { versRgb, type Preferences, type Theme } from "@/lib/theme";
 
 /**
@@ -54,9 +54,8 @@ export async function lireApparenceDuCompte(): Promise<Preferences | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Partagée avec la barre et la page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return null;
 
   const { data } = await supabase

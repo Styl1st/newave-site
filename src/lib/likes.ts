@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "./supabase/server";
+import { createClient, lireUtilisateur } from "./supabase/server";
 import { pastilleMeritee } from "./seuils";
 import type { Product } from "./types";
 
@@ -40,9 +40,8 @@ export async function getMyLikes(productIds: string[]): Promise<Set<string>> {
   const supabase = await createClient();
   if (!supabase) return vide;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Une seule vérification par page : voir `lireUtilisateur`.
+  const user = await lireUtilisateur();
   if (!user) return vide;
 
   const { data } = await supabase

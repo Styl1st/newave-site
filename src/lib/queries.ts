@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { createClient } from "./supabase/server";
 import { parTranches } from "./stats";
@@ -202,7 +203,12 @@ export async function categoriesEnVue(): Promise<string[]> {
   }
 }
 
-export async function getBrand(slug: string): Promise<Brand | null> {
+/*
+ * Mémorisée le temps d'une requête : la marque et son nom sont lus par
+ * `generateMetadata` (le titre de l'onglet) ET par la page. Sans
+ * `cache`, la même ligne partait deux fois vers Supabase.
+ */
+export const getBrand = cache(async (slug: string): Promise<Brand | null> => {
   const supabase = await createClient();
   if (!supabase) return DEMO_BRANDS.find((b) => b.slug === slug) ?? null;
 
@@ -215,7 +221,7 @@ export async function getBrand(slug: string): Promise<Brand | null> {
 
   if (error) return DEMO_BRANDS.find((b) => b.slug === slug) ?? null;
   return (data as Brand) ?? null;
-}
+});
 
 /**
  * La fiche d'une marque non publiée, pour son aperçu.
@@ -774,11 +780,17 @@ export async function getProducts(): Promise<Product[]> {
   return data as unknown as Product[];
 }
 
-/** Une piece precise, par son adresse au sein d'une marque. */
-export async function getProduct(
+/**
+ * Une piece precise, par son adresse au sein d'une marque.
+ *
+ * Mémorisée le temps d'une requête : la pièce et sa marque sont lues par
+ * `generateMetadata` (le titre de l'onglet) ET par la page. Sans
+ * `cache`, les mêmes lignes partaient deux fois vers Supabase.
+ */
+export const getProduct = cache(async (
   brandSlug: string,
   productSlug: string
-): Promise<{ product: Product; brand: Brand } | null> {
+): Promise<{ product: Product; brand: Brand } | null> => {
   const brand = await getBrand(brandSlug);
   if (!brand) return null;
 
@@ -803,7 +815,7 @@ export async function getProduct(
   // Ne sert qu'à reclasser : même raison que pour `getProductsByBrand`.
   delete (data as { rangement_boutique?: unknown }).rangement_boutique;
   return { product: data as Product, brand };
-}
+});
 
 /* ---------------- posts ---------------- */
 
@@ -824,7 +836,12 @@ export async function getPosts(limit?: number): Promise<Post[]> {
   return data as unknown as Post[];
 }
 
-export async function getPost(slug: string): Promise<Post | null> {
+/*
+ * Mémorisée le temps d'une requête : le post et son titre sont lus par
+ * `generateMetadata` (le titre de l'onglet) ET par la page. Sans
+ * `cache`, la même ligne partait deux fois vers Supabase.
+ */
+export const getPost = cache(async (slug: string): Promise<Post | null> => {
   const supabase = await createClient();
   if (!supabase) return DEMO_POSTS.find((p) => p.slug === slug) ?? null;
 
@@ -837,7 +854,7 @@ export async function getPost(slug: string): Promise<Post | null> {
 
   if (error) return DEMO_POSTS.find((p) => p.slug === slug) ?? null;
   return (data as unknown as Post) ?? null;
-}
+});
 
 export async function getPostsByBrand(brandId: string): Promise<Post[]> {
   const supabase = await createClient();
