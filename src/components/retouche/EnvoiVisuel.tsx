@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { clientDiffere } from "@/lib/supabase/client-differe";
 import { allegerImage, poids } from "@/lib/alleger-image";
 
 /**
@@ -68,7 +68,10 @@ export default function EnvoiVisuel({
       return;
     }
 
-    const supabase = createClient();
+    // Chargé au moment de l'envoi : la retouche fait partie du paquet de
+    // chaque fiche marque, et un visiteur n'a pas à télécharger Supabase
+    // pour un bouton qu'il ne verra jamais. Voir `lib/supabase/client-differe`.
+    const supabase = await clientDiffere();
     if (!supabase) {
       setNote("Supabase n'est pas configuré.");
       return;

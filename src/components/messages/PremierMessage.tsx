@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Portal from "@/components/Portal";
 import ChoixPseudo from "@/components/forum/ChoixPseudo";
-import { createClient } from "@/lib/supabase/client";
+import { clientDiffere } from "@/lib/supabase/client-differe";
 import { allegerImage } from "@/lib/alleger-image";
 import { envoyerMessage, ouvrirConversation } from "@/app/messages/actions";
 import { libelleDates, rubrique, type Annonce } from "@/lib/forum";
@@ -101,7 +101,8 @@ export default function PremierMessage({
 
     let pieceJointe: { chemin: string; nom: string; taille: number } | null = null;
     if (fichier) {
-      const supabase = createClient();
+      // Chargé ici et pas en tête : voir `lib/supabase/client-differe`.
+      const supabase = await clientDiffere();
       const envoye = fichier.type.startsWith("image/")
         ? (await allegerImage(fichier, { maxCote: 2000, qualite: 0.85 })).fichier
         : fichier;

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
+import { clientDiffere } from "@/lib/supabase/client-differe";
 import { EVENEMENT_LUS } from "@/lib/messages";
 
 /**
@@ -20,18 +20,27 @@ import { EVENEMENT_LUS } from "@/lib/messages";
  * l'icône reste, sans pastille.
  *
  * `useNonLus` sert aussi à la barre d'onglets du forum, au doigt.
+ *
+ * LE CLIENT SUPABASE EST CHARGÉ À LA DEMANDE. Ce fichier est importé
+ * par la barre du haut, donc par toutes les pages : un import direct de
+ * `@/lib/supabase/client` y mettait toute la bibliothèque Supabase, pour
+ * tout le monde, alors que seul un compte connecté s'en sert ici. Voir
+ * `lib/supabase/client-differe`. Le nombre arrive de toute façon après
+ * une requête : le morceau de plus se télécharge pendant ce temps.
  */
 export function useNonLus(actif = true): number {
-  const supabase = useMemo(() => createClient(), []);
   const chemin = usePathname();
   const [nombre, setNombre] = useState(0);
 
   const relire = useCallback(async () => {
-    // Sans compte, il n'y a rien à compter : on ne dérange pas la base.
-    if (!supabase || !actif) return;
+    // Sans compte, il n'y a rien à compter : on ne dérange pas la base,
+    // et on ne charge même pas son client.
+    if (!actif) return;
+    const supabase = await clientDiffere();
+    if (!supabase) return;
     const { data, error } = await supabase.rpc("messages_non_lus");
     if (!error && typeof data === "number") setNombre(data);
-  }, [supabase, actif]);
+  }, [actif]);
 
   useEffect(() => {
     void relire();
