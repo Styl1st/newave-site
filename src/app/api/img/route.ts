@@ -1,6 +1,15 @@
+import { createHash } from "node:crypto";
+import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 import { hoteConnu } from "@/lib/hotes-images";
 import { blanchirLogo } from "@/lib/logo-blanc";
+import {
+  aGarder,
+  cleDeMemoire,
+  depuisMemoire,
+  versMemoire,
+  type ImageEnMemoire,
+} from "@/lib/memoire-images";
 
 /**
  * Les images des marques, servies depuis NEWAVE.
@@ -162,7 +171,7 @@ function adresseOuRien(brute: string | null): string | null {
  */
 export async function GET(requete: Request) {
   try {
-    return await servir(requete);
+    return await servirAvecMemoire(requete);
   } catch {
     const params = new URL(requete.url).searchParams;
     // Même ici : une sonde ne suit pas la redirection de repli, elle s'y
@@ -175,7 +184,116 @@ export async function GET(requete: Request) {
   }
 }
 
-async function servir(requete: Request) {
+/**
+ * Combien de temps une image rangée est tenue pour fraîche : un jour.
+ *
+ * Passé ce délai elle n'est pas jetée : elle est encore servie, et
+ * recalculée en arrière-plan, sans faire attendre personne. Un jour,
+ * c'est le délai que la route s'accorde déjà pour qu'un logo remplacé à
+ * la même adresse soit pris en compte (voir `servirEnBlanc`).
+ */
+const GARDE = 86_400;
+
+/**
+ * LA VERSION DU CALCUL, POUR QUE LA MÉMOIRE NE SURVIVE PAS À UN CHANGEMENT.
+ *
+ * Une image rangée est tenue pour juste tant que la façon de la fabriquer
+ * n'a pas bougé. On prend donc l'empreinte du code qui la fabrique : une
+ * qualité WebP changée, un seuil du blanchiment déplacé, un rognage
+ * revu, et l'empreinte change, la clé avec, et tout est recalculé au fil
+ * des visites. Personne n'a à penser à vider quoi que ce soit.
+ *
+ * Les réglages écrits en dehors de ces fonctions (largeurs, seuils en
+ * tête de fichier) n'y entrent pas : en changer un sans toucher au reste,
+ * c'est monter `REVISION` d'un cran.
+ */
+const REVISION = 1;
+const VERSION = createHash("sha1")
+  .update(
+    [REVISION, servir, servirEnBlanc, detourer, pixelVide, blanchirLogo]
+      .map((f) => String(f))
+      .join("\n")
+  )
+  .digest("hex")
+  .slice(0, 16);
+
+/**
+ * `servir`, avec une mémoire qui survit aux déploiements.
+ *
+ * Voir `lib/memoire-images` pour le pourquoi. Ici, le branchement :
+ *
+ *   — la première demande d'une image la fabrique comme avant, et si le
+ *     résultat est durable (une vignette, un logo blanchi), il est rangé
+ *     dans le cache de données de Vercel ;
+ *   — les suivantes, y compris après un nouveau déploiement qui a vidé
+ *     le CDN, le ressortent tel quel : ni téléchargement chez la marque,
+ *     ni sharp, ni lecture de la liste des hébergeurs ;
+ *   — tout le reste (redirection vers la source, pixel « injoignable »,
+ *     refus d'une navigation, image trop lourde pour le cache) repart
+ *     exactement comme avant, sans être rangé.
+ *
+ * LA PROMESSE DE LA ROUTE TIENT TOUJOURS. Si le cache lui-même répond
+ * mal, on sert sans lui ; et toute erreur restante remonte jusqu'au
+ * filet de `GET`, comme avant.
+ */
+async function servirAvecMemoire(requete: Request): Promise<Response> {
+  const demande = lireLaDemande(requete);
+  const { params, destination } = demande;
+  const cle = cleDeMemoire(params, process.env.IMG_DETOURAGE === "1");
+
+  // Une navigation est refusée par `servir`, et ce refus ne se range pas.
+  const navigation = destination && destination !== "image" && destination !== "empty";
+  if (!cle || navigation) return servir(demande);
+
+  // Ce que `servir` a répondu quand ce n'était pas à ranger. Un objet
+  // plutôt qu'une variable : elle est remplie depuis l'intérieur du cache.
+  const sortie: { directe?: Response; fabriquee?: boolean } = {};
+
+  try {
+    const garde = await unstable_cache(
+      async (): Promise<ImageEnMemoire> => {
+        sortie.fabriquee = true;
+        const reponse = await servir(demande);
+        if (aGarder(reponse)) {
+          // Une copie pour la mémoire : l'original part tel quel si elle
+          // le refuse (trop lourd).
+          const rangee = await versMemoire(reponse.clone());
+          if (rangee) return rangee;
+        }
+        sortie.directe = reponse;
+        // Lever empêche `unstable_cache` de ranger quoi que ce soit.
+        throw new Error("Réponse à ne pas garder");
+      },
+      ["api-img", VERSION, cle],
+      { revalidate: GARDE }
+    )();
+    return depuisMemoire(garde);
+  } catch (erreur) {
+    if (sortie.directe) return sortie.directe;
+    // Le cache n'a pas répondu, et `servir` n'a même pas été appelée :
+    // on sert sans mémoire, comme avant que celle-ci existe.
+    if (!sortie.fabriquee) return servir(demande);
+    throw erreur;
+  }
+}
+
+/**
+ * Ce que `servir` lit de la requête, relevé AVANT le cache.
+ *
+ * Next refuse qu'une fonction mise en cache lise la requête elle-même
+ * (« Accessing Dynamic data sources inside a cache scope is not
+ * supported ») : `servir` reçoit donc l'adresse et l'en-tête déjà lus.
+ */
+type Demande = { params: URLSearchParams; destination: string | null };
+
+function lireLaDemande(requete: Request): Demande {
+  return {
+    params: new URL(requete.url).searchParams,
+    destination: requete.headers.get("sec-fetch-dest"),
+  };
+}
+
+async function servir({ params, destination }: Demande) {
   /*
    * CETTE ROUTE SERT DES IMAGES, PAS DES PAGES.
    *
@@ -196,7 +314,6 @@ async function servir(requete: Request) {
    * ne l'envoie pas doit voir le site ; c'est la navigation ANNONCÉE
    * qu'on bloque, pas l'anonymat.
    */
-  const destination = requete.headers.get("sec-fetch-dest");
   if (destination && destination !== "image" && destination !== "empty") {
     return new NextResponse("Cette adresse ne sert qu'à afficher des images.", {
       status: 400,
@@ -206,7 +323,6 @@ async function servir(requete: Request) {
     });
   }
 
-  const params = new URL(requete.url).searchParams;
   const brute = params.get("u");
   if (!brute) return new NextResponse("Adresse manquante", { status: 400 });
 
