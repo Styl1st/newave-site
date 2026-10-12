@@ -116,6 +116,24 @@ function withNoIndex(response: NextResponse, gated: boolean, path: string): Next
   return response;
 }
 
+/*
+ * `api/img` EST LAISSÉE DE CÔTÉ, COMME LES FICHIERS STATIQUES.
+ *
+ * Chaque visuel de marque passe par cette route : une page d'annuaire en
+ * demande plusieurs dizaines. Et le middleware s'exécute avant le cache
+ * du CDN, même quand l'image y est déjà : pour une personne connectée,
+ * chaque vignette coûtait donc une vérification de session auprès de
+ * Supabase (`getUser`, plus haut), soit des dizaines d'allers-retours
+ * par page pour servir des images publiques. La route n'a besoin ni de
+ * la session, ni de l'en-tête `x-chemin`, ni des anciennes adresses.
+ *
+ * Seule conséquence : si le verrou `SITE_PASSWORD` est un jour remis,
+ * le proxy d'images restera joignable sans le code. Il ne sert que des
+ * images déjà publiques chez les marques, d'hébergeurs connus de la
+ * base (voir la route), donc rien qui soit derrière le verrou.
+ */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|api/img|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)$).*)",
+  ],
 };
