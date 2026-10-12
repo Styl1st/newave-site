@@ -12,7 +12,8 @@ import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
-import type { Brand, Recherche } from "@/lib/types";
+import type { Recherche } from "@/lib/types";
+import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
 import Raccourci from "@/components/Raccourci";
 
@@ -128,7 +129,7 @@ function valeursDe(param: string | string[] | undefined): string[] {
  * des raisons suffisantes pour renvoyer quelqu'un ailleurs.
  */
 function categoriesDemandees(
-  brands: Brand[],
+  brands: FicheDAnnuaire[],
   param: string | string[] | undefined
 ): string[] {
   const demandees = valeursDe(param).map(enSlugDeCategorie);
@@ -162,7 +163,7 @@ function categoriesDemandees(
  * erreur. Même règle pour une famille inconnue ou une valeur de
  * travers : mieux vaut l'annuaire entier qu'une page qui a l'air cassée.
  */
-function stylesDemandes(brands: Brand[], param: string | string[] | undefined): string[] {
+function stylesDemandes(brands: FicheDAnnuaire[], param: string | string[] | undefined): string[] {
   const styles: string[] = [];
   for (const entree of valeursDe(param)) {
     const coupe = entree.indexOf(":");
@@ -196,7 +197,8 @@ export default function BrandDirectory({
   notes,
   amorce,
 }: {
-  brands: Brand[];
+  /** Allégées pour le navigateur : voir `pourLAnnuaire`. */
+  brands: FicheDAnnuaire[];
   /** Les marques déjà suivies, pour allumer la bonne étoile. */
   favoris?: string[];
   /** Les moyennes d'avis, par identifiant de marque. */

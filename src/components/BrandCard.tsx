@@ -5,7 +5,7 @@ import CouvertureAnimee from "./CouvertureAnimee";
 import IllustrationMarque from "./IllustrationMarque";
 import Teinte from "./Teinte";
 import { vignette } from "@/lib/vignette";
-import type { Brand } from "@/lib/types";
+import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 
 export default function BrandCard({
@@ -15,7 +15,8 @@ export default function BrandCard({
   note,
   prioritaire = false,
 }: {
-  brand: Brand;
+  /** Une fiche complète convient aussi : la carte n'en lit pas plus. */
+  brand: FicheDAnnuaire;
   /** Présent = on affiche le cœur, avec son état de départ. */
   favori?: { initial: boolean };
   /** Bouton d'aperçu, posé en bas à gauche du visuel. */

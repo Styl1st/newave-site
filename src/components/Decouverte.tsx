@@ -4,6 +4,22 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Brand } from "@/lib/types";
 import { melanger } from "@/lib/melange";
+
+/**
+ * CE QUE LE RUBAN SAIT D'UNE MARQUE, ET RIEN DE PLUS.
+ *
+ * Le ruban reçoit TOUTE la liste des marques publiées, pour en tirer une
+ * douzaine au hasard une fois dans le navigateur. Les fiches complètes
+ * (description, liens, dates de synchronisation, notes internes du
+ * catalogue…) étaient sérialisées dans la page pour n'en lire que ces
+ * quatre champs : environ 150 Ko de HTML en plus sur l'accueil, à
+ * télécharger puis à lire avant que la page ne réagisse. La page
+ * d'accueil fait le tri avant de passer la liste.
+ *
+ * Le type fermé fait qu'un champ dont le ruban aurait besoin un jour se
+ * signale à la compilation, plutôt que par une marque sans nom.
+ */
+export type FicheDuRuban = Pick<Brand, "id" | "slug" | "name" | "logo_url">;
 import { logoBlanc } from "@/lib/vignette";
 import { tailleOptique } from "@/lib/logo-blanc";
 
@@ -72,7 +88,7 @@ const REPRISE_MS = 1800;
  * blanc. Le nom reste alors, et c'est voulu : c'est ce pixel qui dit
  * « écris plutôt le nom ».
  */
-function MarqueDuRuban({ brand, copie = false }: { brand: Brand; copie?: boolean }) {
+function MarqueDuRuban({ brand, copie = false }: { brand: FicheDuRuban; copie?: boolean }) {
   const src = logoBlanc(brand.logo_url);
   const [taille, setTaille] = useState<{ largeur: number; hauteur: number } | null>(null);
   const image = useRef<HTMLImageElement>(null);
@@ -130,14 +146,14 @@ function MarqueDuRuban({ brand, copie = false }: { brand: Brand; copie?: boolean
   );
 }
 
-export default function Decouverte({ brands }: { brands: Brand[] }) {
+export default function Decouverte({ brands }: { brands: FicheDuRuban[] }) {
   /*
    * Le premier rendu est volontairement dans l'ordre reçu, identique
    * sur le serveur et dans le navigateur. Le tirage vient juste après,
    * une fois la page adoptée par React : un Math.random() joué des
    * deux côtés donnerait deux ordres différents.
    */
-  const [tirage, setTirage] = useState<Brand[]>(() => brands.slice(0, COMBIEN));
+  const [tirage, setTirage] = useState<FicheDuRuban[]>(() => brands.slice(0, COMBIEN));
   const bande = useRef<HTMLDivElement>(null);
   /** Instant après lequel la dérive a le droit de reprendre. */
   const repriseA = useRef(0);

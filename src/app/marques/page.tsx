@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import BrandDirectory, { type AmorceAnnuaire } from "@/components/BrandDirectory";
 import RaccourciAdmin from "@/components/RaccourciAdmin";
 import { getBrands } from "@/lib/queries";
+import { pourLAnnuaire } from "@/lib/fiche-annuaire";
 import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
 import { getNotesMarques } from "@/lib/avis";
@@ -94,7 +95,7 @@ export default async function BrandsPage({ searchParams }: Props) {
           entier : la liste de ce que l'annuaire accepte se lit ici,
           sans avoir à ouvrir le composant. */}
       <BrandDirectory
-        brands={brands}
+        brands={brands.map(pourLAnnuaire)}
         favoris={Array.from(favoris)}
         notes={notes}
         amorce={{ cat, q, f, lettre }}

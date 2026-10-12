@@ -7,7 +7,7 @@ import BrandPreview from "./BrandPreview";
 import LigneMarque from "./LigneMarque";
 import Grille from "./Grille";
 import type { Densite } from "./densite";
-import type { Brand } from "@/lib/types";
+import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 import Raccourci from "@/components/Raccourci";
 
 /**
@@ -70,7 +70,8 @@ export default function BrandGrid({
   auDoigt = false,
   selecteur = true,
 }: {
-  brands: Brand[];
+  /** Une fiche complète convient aussi : la grille n'en lit pas plus. */
+  brands: FicheDAnnuaire[];
   /** Sous quel nom retenir la densité choisie pour cette liste. */
   memoire?: string;
   aside?: React.ReactNode;
@@ -236,7 +237,7 @@ export default function BrandGrid({
   const visiblesAlpha = parLettre ?? alphabetique.slice(0, combien);
   const reste = parLettre ? 0 : brands.length - combien;
 
-  const boutonApercu = (b: Brand) => (
+  const boutonApercu = (b: FicheDAnnuaire) => (
     <button
       type="button"
       onClick={() => setOpen(b.slug)}

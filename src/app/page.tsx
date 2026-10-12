@@ -213,7 +213,11 @@ export default async function HomePage() {
           découvrir sans rien chercher. Sur téléphone, une bande qui se
           fait glisser du doigt vaut mieux qu'une grille de plus. */}
       <div id="la-suite" className="scroll-mt-24">
-        <Decouverte brands={brands} />
+        {/* Le ruban ne lit que le nom, l'adresse et le logo : on ne lui
+            envoie que ça. Voir `FicheDuRuban`. */}
+        <Decouverte
+          brands={brands.map(({ id, slug, name, logo_url }) => ({ id, slug, name, logo_url }))}
+        />
       </div>
 
       {/* ---------- B · le corps, à deux colonnes ----------

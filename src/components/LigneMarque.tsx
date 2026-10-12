@@ -9,7 +9,7 @@ import Notee from "./coeurs/Notee";
 import type { Elan } from "./coeurs/classement";
 import { vignette } from "@/lib/vignette";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
-import type { Brand } from "@/lib/types";
+import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 
 /**
  * Une marque sur une seule ligne, avec ce qu'elle fabrique posé dedans.
@@ -84,7 +84,8 @@ export default function LigneMarque({
   note,
   prioritaire = false,
 }: {
-  brand: Brand;
+  /** Une fiche complète convient aussi : la ligne n'en lit pas plus. */
+  brand: FicheDAnnuaire;
   /** Présent = on affiche le cœur, avec son état de départ. */
   favori?: { initial: boolean };
   /** Ouvre le panneau d'aperçu. Absent = le bouton mène à la fiche. */
