@@ -9,6 +9,7 @@ import { useConfirmationCle } from "@/lib/confirmation";
 import { obstacleAPublication, peutEtrePubliee, resumeDObstacle } from "@/lib/publication";
 import { conditionsDePublication } from "@/components/publication/conditions";
 import { doitAvoirDesPieces } from "@/lib/acces";
+import Portal from "@/components/Portal";
 import { StatusPill } from "./ListRow";
 import type { BrandAdmin } from "@/lib/admin-queries";
 
@@ -871,6 +872,17 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
            endroit depuis qu'elle est passée sous le pouce. La variable
            vaut zéro partout ailleurs, et zéro au grand écran : aucune
            condition à écrire ici. Voir `BarreAdmin`. */
+        /*
+         * RENDUE DANS `<body>`, COMME `BarreAdmin`, ET POUR LA MÊME RAISON.
+         *
+         * `main` porte `relative z-10` : son `z-40` ne valait qu'à
+         * l'intérieur de `main`, et le pied de page, voisin de même
+         * z-index mais plus bas dans le document, passait devant. Quand
+         * la liste est courte (la vue « Publiables » avec une seule
+         * fiche), le pied remonte sous la barre : ses liens se dessinaient
+         * PAR-DESSUS les boutons et interceptaient le clic sur « Publier ».
+         */
+        <Portal>
         <div className="fixed inset-x-0 bottom-[calc(16px_+_var(--pied,0px))] z-40 mx-auto flex w-[min(680px,calc(100%-2rem))] flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.72)] px-4 py-3 shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9)] backdrop-blur-[24px] sm:rounded-[999px] sm:px-5">
           <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
             {retenues.length} sélectionnée{retenues.length > 1 ? "s" : ""}
@@ -920,6 +932,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             </button>
           </div>
         </div>
+        </Portal>
       )}
 
       {note && <p className="glass m-0 mb-4 px-5 py-3 text-[13.5px] text-white">{note}</p>}
