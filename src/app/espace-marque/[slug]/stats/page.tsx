@@ -106,10 +106,10 @@ export default async function BrandStatsPage({ params }: Props) {
         </div>
       ) : brand.status !== "published" ? (
         <div className="glass p-8">
-          <h2 className="m-0 text-[17px] font-extrabold text-white">Ta page n&apos;est pas encore publiée</h2>
+          <h2 className="m-0 text-[17px] font-extrabold text-white">Ta page n&apos;est pas encore en ligne</h2>
           <p className="m-0 mt-3 text-[14.5px] leading-relaxed text-white/84">
             Il n&apos;y a donc rien à mesurer. Les chiffres apparaîtront dès que la
-            rédaction aura mis ta fiche en ligne.
+            rédaction aura mis ta page en ligne.
           </p>
         </div>
       ) : (
@@ -124,7 +124,7 @@ export default async function BrandStatsPage({ params }: Props) {
                   : `${stats.evolution >= 0 ? "+" : ""}${stats.evolution} % vs semaine avant`
               }
             />
-            <Chiffre label="Vues, 30 jours" valeur={stats.vues30} note="ta fiche et tes pièces" />
+            <Chiffre label="Vues, 30 jours" valeur={stats.vues30} note="ta page et tes pièces" />
             <Chiffre
               label="Clics vers ta boutique"
               valeur={stats.clics30}
@@ -143,9 +143,9 @@ export default async function BrandStatsPage({ params }: Props) {
             <Chiffre label="Abonnés" valeur={stats.favoris} note="personnes qui suivent ta marque" />
             <Chiffre label="Coups de cœur" valeur={stats.likes} note="sur l'ensemble de tes pièces" />
             <Chiffre
-              label="Ton catalogue"
+              label="Pièces en ligne"
               valeur={stats.piecesPubliees}
-              note={stats.piecesBrouillon > 0 ? `${stats.piecesBrouillon} en brouillon` : "tout est publié"}
+              note={stats.piecesBrouillon > 0 ? `${stats.piecesBrouillon} en brouillon` : "tout est en ligne"}
             />
           </div>
 

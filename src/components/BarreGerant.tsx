@@ -32,12 +32,19 @@ import type { Brand } from "@/lib/types";
  * « cette zone n'appartient qu'à toi ».
  *
  * ET C'EST D'ICI QU'ON ENTRE EN RETOUCHE. Sur la page publique de la
- * marque, « Modifier ma fiche » n'emmène plus nulle part : il allume un
+ * marque, « Modifier ma page » n'emmène plus nulle part : il allume un
  * ÉTAT, et la page devient modifiable là où elle est (voir
  * `retouche/SceneRetouche`). Ailleurs — « Mes pièces », « Statistiques »
  * —, il n'y a pas de page à retoucher : la barre ne trouve alors aucune
- * scène autour d'elle, et le bouton reste le lien vers l'éditeur. Ce
- * n'est pas deux barres, c'est la même qui répond à où elle se trouve.
+ * scène autour d'elle, et le bouton devient un lien.
+ *
+ * UN SEUL ÉDITEUR POUR LE GÉRANT. Ce lien menait à l'éditeur en trois
+ * colonnes, qui demande exactement les mêmes champs que la retouche :
+ * deux écrans pour un même geste, et la marque ne savait jamais lequel
+ * était « le vrai ». Il ramène donc sur sa page, retouche allumée
+ * (`?retouche=1`, lu par `SceneRetouche`). L'administration garde
+ * l'éditeur : il porte le nom, l'adresse, l'accès et les gérants, que
+ * la retouche ne montre pas.
  */
 
 /** Ce qui part. */
@@ -99,9 +106,9 @@ export default function BarreGerant({
     ? {
         appartenance: "Ton espace",
         onglets: ["Ma page", "Mes pièces", "Statistiques"],
-        modifier: "Modifier ma fiche",
+        modifier: "Modifier ma page",
         reste: "Il te reste",
-        completer: "Compléter ma fiche",
+        completer: "Compléter ma page",
         importer: "Importer depuis ma boutique",
       }
     : {
@@ -152,6 +159,11 @@ export default function BarreGerant({
   const complet = conditions !== null && manquantes.length === 0;
 
   const visuel = brand.logo_url ?? brand.cover_url;
+
+  /* Où l'on retouche quand on n'est pas déjà sur sa page : voir plus haut. */
+  const editer = peutPublier
+    ? `/espace-marque/${brand.slug}/modifier`
+    : `/marques/${brand.slug}?retouche=1`;
 
   /* `min-h-[44px]` au doigt : les onglets et les actions tombaient à
      quarante et quarante-deux pixels, sous la cible de la section
@@ -297,7 +309,7 @@ export default function BarreGerant({
             </button>
           ) : (
             <Link
-              href={`/espace-marque/${brand.slug}/modifier`}
+              href={editer}
               className={`${base} flex-1 border border-white/20 bg-white/10 text-center text-white/80 hover:bg-white/16 hover:text-white lg:flex-none`}
             >
               {MOTS.modifier}
@@ -316,7 +328,7 @@ export default function BarreGerant({
             />
           )}
           <Link
-            href={`/espace-marque/${brand.slug}/pieces/ajouter`}
+            href={`/espace-marque/${brand.slug}/import`}
             className={`${base} order-first flex-1 bg-white text-center text-[var(--color-ink)] shadow-[0_4px_16px_-4px_rgba(var(--accent-1),0.6)] hover:opacity-90 sm:order-none lg:flex-none`}
           >
             Ajouter des pièces
@@ -378,7 +390,9 @@ export default function BarreGerant({
 
           <p className="m-0 min-w-0 flex-1 text-[12.5px] font-semibold text-white/85">
             {manquantes.length === 0
-              ? "Tout est en règle. Cette fiche peut partir en ligne."
+              ? peutPublier
+                ? "Tout est en règle. Cette fiche peut partir en ligne."
+                : "Tout est prêt. La rédaction relit ta page, puis la met en ligne."
               : manquantes.length === 1
                 ? `${MOTS.reste} une chose avant de pouvoir publier.`
                 : `${MOTS.reste} ${manquantes.length} choses avant de pouvoir publier.`}
@@ -426,17 +440,30 @@ export default function BarreGerant({
               {MOTS.importer}
             </Link>
           )}
-          {manquantes[0] && manquantes[0].cle !== "pieces" && (
-            <Link
-              href={`/espace-marque/${brand.slug}/modifier`}
-              /* La cible du doigt : ce lien est le geste qui lève
-                 l'obstacle, il ne peut pas faire dix-sept pixels de
-                 haut. */
-              className="inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
-            >
-              {MOTS.completer}
-            </Link>
-          )}
+          {manquantes[0] &&
+            manquantes[0].cle !== "pieces" &&
+            /* Sur la page elle-même, compléter, c'est entrer en
+               retouche : un lien vers l'adresse où l'on est déjà ne
+               ferait rien. */
+            (retouche ? (
+              <button
+                type="button"
+                onClick={retouche.entrer}
+                className="inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
+              >
+                {MOTS.completer}
+              </button>
+            ) : (
+              <Link
+                href={editer}
+                /* La cible du doigt : ce lien est le geste qui lève
+                   l'obstacle, il ne peut pas faire dix-sept pixels de
+                   haut. */
+                className="inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
+              >
+                {MOTS.completer}
+              </Link>
+            ))}
 
         </div>
       )}

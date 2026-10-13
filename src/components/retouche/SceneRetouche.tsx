@@ -117,6 +117,21 @@ export default function SceneRetouche({
     return () => requete.removeEventListener("change", suivre);
   }, []);
 
+  /*
+   * `?retouche=1` : on arrive d'un écran de gestion par « Modifier ma
+   * page » (voir `BarreGerant`). La retouche s'allume une fois, puis le
+   * paramètre s'efface : recharger la page ou en copier l'adresse ne
+   * doit pas rouvrir l'éditeur.
+   */
+  useEffect(() => {
+    const adresse = new URL(window.location.href);
+    if (adresse.searchParams.get("retouche") !== "1") return;
+    adresse.searchParams.delete("retouche");
+    window.history.replaceState(null, "", adresse.pathname + adresse.search + adresse.hash);
+    setActif(true);
+    if (window.matchMedia("(max-width: 639px)").matches) setFeuille(true);
+  }, []);
+
   const definir = useCallback(
     <C extends ChampBrouillon>(champ: C, valeur: Brouillon[C]) => {
       setBrouillon((courant) => ({ ...courant, [champ]: valeur }) as Brouillon);

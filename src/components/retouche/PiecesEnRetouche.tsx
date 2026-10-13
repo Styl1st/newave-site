@@ -59,7 +59,7 @@ export default function PiecesEnRetouche() {
             {mots.importer}
           </Link>
           <Link
-            href={`/espace-marque/${slug}/pieces/ajouter`}
+            href={`/espace-marque/${slug}/pieces/nouvelle`}
             className="rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-[12.5px] font-bold text-white/85 transition hover:bg-white/18 hover:text-white active:scale-[.97]"
           >
             {mots.ajouterAlaMain}

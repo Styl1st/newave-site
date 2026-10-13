@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import EditeurFiche from "@/components/editeur/EditeurFiche";
 import { adminGetBrandManagers, adminGetVilles } from "@/lib/admin-queries";
 import { getCatalogueInsight, requireManagedBrand } from "@/lib/brand-space";
@@ -26,6 +27,14 @@ import type { Profile } from "@/lib/types";
  * `/admin/marques/[id]` renvoie ici en mode édition. Créer, en
  * revanche, reste là-bas : c'est un parcours en quatre écrans, pas un
  * formulaire, et les deux gestes n'ont rien à voir.
+ *
+ * LE GÉRANT, LUI, RETOUCHE SA PAGE EN PLACE. Pour lui, cet éditeur ne
+ * demandait rien de plus que la retouche (voir `enregistrerLaFiche` :
+ * sans le rôle administrateur, seuls les champs de présentation
+ * s'écrivent), et deux écrans pour un même geste laissaient la marque
+ * se demander lequel était le bon. On le renvoie donc sur sa page,
+ * retouche allumée. Les anciens liens et favoris continuent de mener
+ * quelque part.
  */
 
 /**
@@ -42,6 +51,7 @@ type Props = { params: Promise<{ slug: string }> };
 export default async function ModifierLaFiche({ params }: Props) {
   const { slug } = await params;
   const { brand, isAdmin } = await requireManagedBrand(slug);
+  if (!isAdmin) redirect(`/marques/${brand.slug}?retouche=1`);
 
   const [catalogue, gerants, villes] = await Promise.all([
     /*

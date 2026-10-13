@@ -304,14 +304,15 @@ export default async function BrandPage({ params }: Props) {
       */}
       {insight && (
         <div className="mt-4">
-          {/* `tous` et non `products` : la check-list de publication
-              compte les pièces DU CATALOGUE, alors que `products` a déjà
-              écarté celles qui n'ont pas de photo pour ne pas trouer la
-              grille. Deux comptes différents, deux usages différents —
-              et c'est le premier que `obstacleAPublication` regarde. */}
+          {/* `insight.total` et non `products` : la check-list de
+              publication compte les pièces DU CATALOGUE, brouillons
+              compris, comme `enregistrerLaFiche` avant de publier. C'est
+              aussi le chiffre de l'onglet « Mes pièces » sur les écrans
+              de gestion : la barre ne doit pas annoncer vingt-neuf ici
+              et trente-deux un clic plus loin. */}
           <BarreGerant
             brand={brand}
-            pieces={tous.length}
+            pieces={insight.total}
             /* Un admin voit la même barre sur n'importe quelle marque,
                mais elle ne lui dit pas « ton espace » : `gerant` répond
                à « est-ce SA marque ? », que le rôle ne suffit pas à
@@ -457,6 +458,8 @@ export default async function BrandPage({ params }: Props) {
           brandName={brand.name}
           brandPublished={brand.status === "published"}
           insight={insight}
+          voix={insight.gerant ? "gerant" : "administration"}
+          peutPublier={profil?.role === "admin"}
         />
       )}
 
@@ -647,10 +650,8 @@ export default async function BrandPage({ params }: Props) {
   return insight ? (
     <SceneRetouche
       brand={brand}
-      /* `tous` et non `products` : la check-list compte les pièces DU
-         CATALOGUE, alors que `products` a déjà écarté celles qui n'ont
-         pas de photo. */
-      pieces={tous.length}
+      /* Le catalogue entier, brouillons compris : voir la barre plus haut. */
+      pieces={insight.total}
       voix={insight.gerant ? "gerant" : "administration"}
     >
       {contenu}
