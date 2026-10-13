@@ -62,7 +62,9 @@ export function ordonnerLAnnuaire(marques: readonly Brand[]): Brand[] {
  * premiers écrans montrent alors autant de marques qu'il en existe, et
  * les grosses ne prennent le dessus qu'une fois les petites épuisées.
  */
-export function repartirParMarque<T extends { brand_id: string }>(pieces: readonly T[]): T[] {
+export function repartirParMarque<T extends { brand_id: string; featured?: boolean | null }>(
+  pieces: readonly T[]
+): T[] {
   const parMarque = new Map<string, T[]>();
   for (const piece of pieces) {
     const lot = parMarque.get(piece.brand_id) ?? [];
@@ -70,7 +72,13 @@ export function repartirParMarque<T extends { brand_id: string }>(pieces: readon
     parMarque.set(piece.brand_id, lot);
   }
 
-  const files = melanger([...parMarque.values()]).map((lot) => melanger(lot));
+  /* Dans chaque marque, ses pièces mises en avant passent d'abord (dans
+     un ordre tiré au sort), puis les autres. Le premier tour de table sert
+     donc ce que chaque marque a choisi de montrer. Voir `lib/en-avant`. */
+  const files = melanger([...parMarque.values()]).map((lot) => [
+    ...melanger(lot.filter((p) => p.featured)),
+    ...melanger(lot.filter((p) => !p.featured)),
+  ]);
   const sortie: T[] = [];
 
   // Tour de table : tant qu'une file a de quoi servir, on fait un tour.

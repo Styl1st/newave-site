@@ -11,6 +11,7 @@ import { enEuros, lireLesTaux } from "@/lib/devises";
 import { doitAvoirDesPieces, unAcces } from "@/lib/acces";
 import { uneAudience } from "@/lib/audience";
 import { obstacleAPublication } from "@/lib/publication";
+import { MAX_EN_AVANT, phraseDuMaximum } from "@/lib/en-avant";
 
 /**
  * Ecritures de l'espace marque.
@@ -45,6 +46,26 @@ function list(formData: FormData, name: string): string[] {
 }
 
 /** Le rang qui suit la dernière pièce d'une marque. */
+/**
+ * Combien de pièces de la marque sont déjà en avant, sans compter
+ * `sauf` (la pièce qu'on est en train d'enregistrer, ou la sélection).
+ * Les pièces retirées de la boutique ne comptent pas : elles ne se
+ * montrent plus nulle part. Voir `lib/en-avant`.
+ */
+async function dejaEnAvant(brandId: string, sauf: string[] = []): Promise<number> {
+  const supabase = await createClient();
+  if (!supabase) return 0;
+  let requete = supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("brand_id", brandId)
+    .eq("featured", true)
+    .is("retired_at", null);
+  if (sauf.length > 0) requete = requete.not("id", "in", `(${sauf.join(",")})`);
+  const { count } = await requete;
+  return count ?? 0;
+}
+
 async function rangSuivant(brandId: string): Promise<number> {
   const supabase = await createClient();
   if (!supabase) return 0;
@@ -388,6 +409,11 @@ export async function saveBrandProduct(formData: FormData): Promise<Result> {
    * Une pièce créée ici n'a jamais été lue chez la boutique : elle est
    * manuelle d'emblée.
    */
+  if (payload.featured) {
+    const deja = await dejaEnAvant(brand.id, id ? [id] : []);
+    if (deja >= MAX_EN_AVANT) return { ok: false, error: phraseDuMaximum(deja) };
+  }
+
   const tags = list(formData, "tags");
   let classementManuel = true;
   if (id) {
@@ -474,7 +500,8 @@ export async function deleteBrandProduct(formData: FormData): Promise<void> {
 /* ---------------- actions groupees ---------------- */
 
 /**
- * Publier, remettre en brouillon ou supprimer plusieurs pieces d'un coup.
+ * Publier, remettre en brouillon, mettre en avant, marquer épuisées ou
+ * supprimer plusieurs pièces d'un coup.
  *
  * Le filtre .eq("brand_id") en plus du .in("id") n'est pas redondant :
  * il garantit qu'un identifiant glisse dans le formulaire ne peut pas
@@ -503,6 +530,34 @@ export async function bulkProductAction(formData: FormData): Promise<Result> {
     ({ error } = await supabase
       .from("products")
       .update({ status: "draft" })
+      .in("id", ids)
+      .eq("brand_id", brand.id));
+  } else if (intent === "feature") {
+    // La limite se compte AVANT d'écrire : les pièces déjà en avant hors
+    // de la sélection, plus toute la sélection.
+    const deja = await dejaEnAvant(brand.id, ids);
+    if (deja + ids.length > MAX_EN_AVANT) return { ok: false, error: phraseDuMaximum(deja) };
+    ({ error } = await supabase
+      .from("products")
+      .update({ featured: true })
+      .in("id", ids)
+      .eq("brand_id", brand.id)
+      .is("retired_at", null));
+  } else if (intent === "unfeature") {
+    ({ error } = await supabase
+      .from("products")
+      .update({ featured: false })
+      .in("id", ids)
+      .eq("brand_id", brand.id));
+  } else if (intent === "available" || intent === "unavailable") {
+    /*
+     * Utile aux marques dont le catalogue ne se relit pas tout seul. Pour
+     * les autres, la relecture quotidienne reprend la disponibilité de la
+     * boutique : la page « Mes pièces » ne leur propose donc pas ce geste.
+     */
+    ({ error } = await supabase
+      .from("products")
+      .update({ available: intent === "available" })
       .in("id", ids)
       .eq("brand_id", brand.id));
   } else if (intent === "delete") {
@@ -540,6 +595,11 @@ export async function bulkProductAction(formData: FormData): Promise<Result> {
 
   revalidatePath(`/espace-marque/${slug}/pieces`);
   revalidatePath(`/marques/${slug}`);
+  // L'accueil et la vitrine rangent les pièces en avant d'abord.
+  if (intent === "feature" || intent === "unfeature") {
+    revalidatePath("/");
+    revalidatePath("/pieces");
+  }
   return { ok: true };
 }
 

@@ -5,6 +5,7 @@ import { parTranches } from "./stats";
 import { createPublicClient } from "./supabase/public";
 import { DEMO_BRANDS, DEMO_POSTS, DEMO_PRODUCTS } from "./demo-data";
 import { PRODUCT_CATEGORIES } from "./taxonomy";
+import { enAvantDabord } from "./en-avant";
 import type { Brand, Post, Product, Recherche } from "./types";
 
 /**
@@ -35,7 +36,7 @@ const BRAND_REF = "brand:brands(id,slug,name)";
 const CHAMPS_VITRINE =
   "id,brand_id,slug,name,price_cents,compare_at_cents,price_eur_cents," +
   "compare_at_eur_cents,currency,image_url,images,categories,available," +
-  "retired_at,position";
+  "retired_at,position,featured";
 
 /**
  * Combien de photos une tuile de vitrine a besoin de connaitre.
@@ -311,9 +312,17 @@ export async function getProductsByBrand(brandId: string): Promise<Product[]> {
    */
   for (const piece of data) delete (piece as { rangement_boutique?: unknown }).rangement_boutique;
 
-  return data
-    .slice()
-    .sort((a, b) => Number(Boolean(a.retired_at)) - Number(Boolean(b.retired_at)));
+  /*
+   * Puis, parmi ce qui est en vente, les pièces que la marque a mises en
+   * avant (au plus quatre, voir `lib/en-avant`). C'est le seul endroit où
+   * elle choisit ce qu'on voit en premier chez elle : sans ce tri, la case
+   * « Mettre en avant » ne faisait rien. Le tri est stable : le reste
+   * garde l'ordre de la boutique.
+   */
+  return [
+    ...enAvantDabord(data.filter((p) => !p.retired_at)),
+    ...data.filter((p) => p.retired_at),
+  ];
 }
 
 /**
@@ -378,27 +387,64 @@ const lireLaVitrine = unstable_cache(
      */
     const PLAFOND = 1500;
     const TRANCHE = 1000;
-    const tout: Product[] = [];
 
-    for (let de = 0; de < PLAFOND; de += TRANCHE) {
+    const lireLesPremieres = async () => {
+      const premieres: Product[] = [];
+      for (let de = 0; de < PLAFOND; de += TRANCHE) {
+        const { data, error } = await supabase
+          .from("products")
+          .select(`${CHAMPS_VITRINE}, ${BRAND_REF}`)
+          .eq("status", "published")
+          .is("retired_at", null)
+          .lt("position", parMarque)
+          .order("brand_id", { ascending: true })
+          .order("position", { ascending: true })
+          .order("id", { ascending: true })
+          .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
+
+        report("vitrine", error);
+        if (error) throw new LectureRatee("vitrine");
+        if (!data?.length) break;
+
+        premieres.push(...(data as unknown as Product[]));
+        if (data.length < TRANCHE) break;
+      }
+      return premieres;
+    };
+
+    /*
+     * PLUS LES PIÈCES MISES EN AVANT QUI SONT LOIN DANS LEUR BOUTIQUE.
+     *
+     * Une marque choisit au plus quatre pièces (voir `lib/en-avant`), et
+     * `repartirParMarque` les sert en premier. Celles qui ont un petit
+     * rang sont déjà dans la première lecture ; on va chercher les
+     * autres à part.
+     *
+     * DEUX LECTURES ET NON UN `or`. Écrit `position < 10 OU en avant`,
+     * le filtre ne passe plus par aucun index : mesuré sur la vraie
+     * base, la requête tombait sur le délai de trois secondes à chaque
+     * fois. Séparées, la première garde son index et la seconde a le
+     * sien (migration 43), et elles partent en même temps.
+     *
+     * Une panne de cette seconde lecture ne prive pas la vitrine : on
+     * s'en passe, comme avant que la mise en avant existe.
+     */
+    const lireLesEnAvant = async () => {
       const { data, error } = await supabase
         .from("products")
         .select(`${CHAMPS_VITRINE}, ${BRAND_REF}`)
         .eq("status", "published")
         .is("retired_at", null)
-        .lt("position", parMarque)
-        .order("brand_id", { ascending: true })
-        .order("position", { ascending: true })
+        .eq("featured", true)
+        .gte("position", parMarque)
         .order("id", { ascending: true })
-        .range(de, Math.min(de + TRANCHE, PLAFOND) - 1);
+        .limit(TRANCHE);
+      report("vitrine, pièces en avant", error);
+      return error || !data ? [] : (data as unknown as Product[]);
+    };
 
-      report("vitrine", error);
-      if (error) throw new LectureRatee("vitrine");
-      if (!data?.length) break;
-
-      tout.push(...(data as unknown as Product[]));
-      if (data.length < TRANCHE) break;
-    }
+    const [premieres, enAvant] = await Promise.all([lireLesPremieres(), lireLesEnAvant()]);
+    const tout = [...premieres, ...enAvant];
 
     /* Les photos au-delà de la quatrième ne seront jamais regardées et
        pèsent pourtant dans le HTML de la page. Voir `PHOTOS_VITRINE`. */
