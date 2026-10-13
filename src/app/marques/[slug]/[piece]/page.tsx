@@ -388,17 +388,21 @@ export default async function PiecePage({ params }: Props) {
         cibleId={product.id}
         nom={product.name}
         chemin={`/marques/${brand.slug}/${product.slug}`}
+        gerant={Boolean(insight?.gerant)}
       />
 
-      <div className="mt-9 border-t border-white/10 pt-5">
-        <BoutonSignaler
-          cible="piece"
-          cibleId={product.id}
-          chemin={`/marques/${brand.slug}/${product.slug}`}
-          connecte={Boolean(profilPiece)}
-          dejaFait={dejaSignalee}
-        />
-      </div>
+      {/* Ni à qui tient la marque : on ne signale pas sa propre pièce. */}
+      {!insight?.gerant && (
+        <div className="mt-9 border-t border-white/10 pt-5">
+          <BoutonSignaler
+            cible="piece"
+            cibleId={product.id}
+            chemin={`/marques/${brand.slug}/${product.slug}`}
+            connecte={Boolean(profilPiece)}
+            dejaFait={dejaSignalee}
+          />
+        </div>
+      )}
 
       {/* ---------- autres pièces ---------- */}
       {siblings.length > 0 && (

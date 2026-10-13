@@ -24,8 +24,13 @@ import type { Brand } from "@/lib/types";
  *
  * D'OÙ DEUX ÉTAGES. Le premier ne change jamais : à qui appartient cette
  * zone, où aller, quoi faire. Le second dépend de l'état de la fiche —
- * ce qui retient un brouillon, ce que rapporte une fiche en ligne — et
- * garde la même place pour que l'œil sache où regarder.
+ * ce qui retient un brouillon, la consigne de la retouche — et garde la
+ * même place pour que l'œil sache où regarder.
+ *
+ * Il portait aussi trois chiffres d'audience, mais seule la page
+ * Statistiques les lui passait : on les lisait donc juste au-dessus des
+ * mêmes chiffres en grand, avec un lien « Le détail » vers la page où
+ * l'on était déjà. Ils ont été retirés.
  *
  * PLUS OPAQUE QUE LA BARRE PUBLIQUE, volontairement : c'est un outil,
  * pas du décor. Le filet de couleur en haut est le seul signe qui dit
@@ -55,7 +60,6 @@ const AMBRE = "#f0c05a";
 export default function BarreGerant({
   brand,
   pieces,
-  stats,
   peutPublier = false,
   voix = "gerant",
 }: {
@@ -69,8 +73,6 @@ export default function BarreGerant({
    * nombre le passent ; les autres s'en passent.
    */
   pieces?: number;
-  /** Les trois chiffres d'une fiche en ligne. Absents = pas de bandeau. */
-  stats?: { vues7: number; favoris: number; clics: number };
   /**
    * Le bouton « Publier / Retirer » ne s'affiche qu'à qui peut vraiment
    * publier : un administrateur (`toggleBrandStatus` le revérifie).
@@ -121,18 +123,27 @@ export default function BarreGerant({
       };
 
   const onglets = [
-    { href: `/marques/${brand.slug}`, label: MOTS.onglets[0], exact: true, compte: null as number | null },
+    {
+      href: `/marques/${brand.slug}`,
+      label: MOTS.onglets[0],
+      exact: true,
+      compte: null as number | null,
+      aussi: null as string | null,
+    },
     {
       href: `/espace-marque/${brand.slug}/pieces`,
       label: MOTS.onglets[1],
       exact: false,
       compte: pieces ?? null,
+      /* L'import est une étape de ce même onglet, à une autre adresse. */
+      aussi: `/espace-marque/${brand.slug}/import`,
     },
     {
       href: `/espace-marque/${brand.slug}/stats`,
       label: MOTS.onglets[2],
       exact: true,
       compte: null,
+      aussi: null,
     },
   ];
 
@@ -252,7 +263,9 @@ export default function BarreGerant({
           {onglets.map((o) => {
             // « Mes pièces » couvre aussi l'ajout, l'import et la fiche
             // d'une pièce : ce sont des étapes de ce même onglet.
-            const actif = o.exact ? chemin === o.href : chemin.startsWith(o.href);
+            const actif =
+              (o.exact ? chemin === o.href : chemin.startsWith(o.href)) ||
+              (o.aussi !== null && chemin.startsWith(o.aussi));
             return (
               <Link
                 key={o.href}
@@ -468,31 +481,6 @@ export default function BarreGerant({
         </div>
       )}
 
-      {!retouche?.actif && enLigne && stats && (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 bg-white/6 px-3.5 py-3 sm:px-[18px]">
-          {[
-            { valeur: stats.vues7, libelle: "vues sur 7 jours" },
-            { valeur: stats.favoris, libelle: "abonnés" },
-            { valeur: stats.clics, libelle: "clics vers la boutique" },
-          ].map((chiffre) => (
-            <p key={chiffre.libelle} className="m-0 flex items-baseline gap-1.5">
-              <span className="text-[17px] font-extrabold tabular-nums text-white">
-                {chiffre.valeur}
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/55">
-                {chiffre.libelle}
-              </span>
-            </p>
-          ))}
-
-          <Link
-            href={`/espace-marque/${brand.slug}/stats`}
-            className="ml-auto inline-flex min-h-[44px] items-center text-[11.5px] font-bold text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-white lg:min-h-0"
-          >
-            Le détail
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

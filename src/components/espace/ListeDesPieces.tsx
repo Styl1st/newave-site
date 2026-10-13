@@ -274,7 +274,11 @@ export default function ListeDesPieces({
 
         {selection.size === 0 ? (
           <p className="m-0 text-[12.5px] font-semibold text-white/60">
-            Coche des pièces pour agir sur plusieurs à la fois.
+            {/* Des brouillons en attente : on dit le geste qui les publie,
+                c'est la question qu'on se pose en arrivant ici. */}
+            {comptes.brouillons > 0
+              ? "Pour publier tes brouillons, coche-les puis choisis « Mettre en ligne »."
+              : "Coche des pièces pour agir sur plusieurs à la fois."}
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-2">

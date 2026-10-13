@@ -239,6 +239,34 @@ export async function enregistrerAvis(formData: FormData): Promise<ResultatAvis>
   }
 
   /*
+   * PAS D'AVIS SUR SA PROPRE MARQUE, NI SUR SES PIÈCES.
+   *
+   * L'écran ne propose déjà plus le formulaire à un gérant (voir
+   * `SectionAvis`), mais un formulaire masqué se poste encore à la main.
+   * La règle est donc ici, relue en base à chaque envoi.
+   */
+  let marqueVisee = brandId;
+  if (!marqueVisee) {
+    const { data: piece } = await supabase
+      .from("products")
+      .select("brand_id")
+      .eq("id", productId)
+      .maybeSingle();
+    marqueVisee = (piece as { brand_id: string } | null)?.brand_id ?? "";
+  }
+  if (marqueVisee) {
+    const { data: gere } = await supabase
+      .from("brand_managers")
+      .select("brand_id")
+      .eq("brand_id", marqueVisee)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (gere) {
+      return { ok: false, error: "Tu gères cette marque : les avis viennent de ta communauté." };
+    }
+  }
+
+  /*
    * Un avis par personne et par cible : on remplace le sien plutôt que
    * d'en empiler un second. Changer d'avis est normal, en avoir deux
    * en même temps ne l'est pas.

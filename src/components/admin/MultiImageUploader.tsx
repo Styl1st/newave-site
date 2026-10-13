@@ -303,7 +303,7 @@ export default function MultiImageUploader({
     <div>
       <Label
         htmlFor={`${name}-file`}
-        hint="Photos et vidéos, dans l'ordre que tu veux. Les images sont compressées automatiquement. La première PHOTO sert de vignette : une vidéo ne peut pas jouer ce rôle dans les listes ni dans l'aperçu d'un lien partagé."
+        hint="Photos et vidéos, dans l'ordre de ton choix, compressées automatiquement. La première photo sert de vignette dans les listes et les liens partagés : une vidéo ne peut pas jouer ce rôle."
       >
         {label}
       </Label>
@@ -408,6 +408,17 @@ export default function MultiImageUploader({
         </div>
       )}
 
+      {/*
+        LE CHAMP NATIF EST CACHÉ, PAS RETIRÉ.
+
+        Laissé visible, il affichait les mots du navigateur (« Choose
+        files », « No file chosen » sur un système en anglais) au milieu
+        d'un formulaire en français, et un « aucun fichier » qui reste
+        affiché alors que trois photos sont déjà dans la grille. Le
+        bouton dessiné est son étiquette : il ouvre le même sélecteur, et
+        le champ reste atteignable au clavier, avec le même anneau de
+        focus que le reste du site.
+      */}
       <input
         id={`${name}-file`}
         type="file"
@@ -415,10 +426,18 @@ export default function MultiImageUploader({
         multiple
         onChange={onFiles}
         disabled={busy}
-        className="w-full text-[13px] font-semibold text-white/85 file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-[12px] file:font-extrabold file:uppercase file:tracking-[0.08em] file:text-[var(--color-ink)]"
+        className="peer sr-only"
       />
+      <label
+        htmlFor={`${name}-file`}
+        aria-hidden
+        className={`inline-flex min-h-[44px] cursor-pointer items-center rounded-full bg-white px-4 py-2 text-[12.5px] font-extrabold text-[var(--color-ink)] transition active:scale-[.97] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white lg:min-h-0 ${
+          busy ? "pointer-events-none opacity-60" : "hover:opacity-90"
+        }`}
+      >
+        {busy ? "Envoi en cours…" : urls.length > 0 ? "Ajouter d'autres visuels" : "Ajouter des photos ou des vidéos"}
+      </label>
 
-      {busy && <p className="m-0 mt-2 text-[12.5px] font-bold text-white/80">Envoi en cours…</p>}
       {note && <p className="m-0 mt-2 text-[12.5px] text-white">{note}</p>}
       {urls.length === 0 && <input type="hidden" name={name} value="" />}
     </div>

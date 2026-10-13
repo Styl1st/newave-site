@@ -134,6 +134,19 @@ export default async function BrandPage({ params }: Props) {
    */
   const products = tous.filter(aUneIllustration);
 
+  /*
+   * Le bandeau du gérant (`CatalogueNotice`) s'affiche-t-il ?
+   *
+   * Quand oui, il dit déjà pourquoi la grille est vide, et le dit à la
+   * bonne personne. Le message du visiteur, juste dessous (« le
+   * catalogue ne se lit pas d'ici »), le contredisait alors : la marque
+   * lisait qu'on ne savait pas lire sa boutique, sous un bandeau qui
+   * comptait ses cinq pièces en brouillon.
+   */
+  const noticeDuGerant = insight
+    ? !(insight.published > 0 && brand.status === "published")
+    : false;
+
   const ids = products.map((p) => p.id);
   /*
    * Vinted, Depop, Instagram : ce n'est pas une boutique, c'est un
@@ -469,7 +482,7 @@ export default async function BrandPage({ params }: Props) {
           liste que l'on puisse lire automatiquement. Sans un mot, le
           visiteur en conclut que la marque est vide et s'en va, ce qui
           est faux et injuste pour elle. */}
-      {products.length === 0 && (
+      {products.length === 0 && !noticeDuGerant && (
         <section className="glass rise rise-2 mt-8 p-5 sm:mt-11 sm:p-7">
           <p className="eyebrow m-0">Le catalogue</p>
           {/* Deux causes, deux messages. Une boutique fermée pour un
@@ -591,21 +604,25 @@ export default async function BrandPage({ params }: Props) {
         nom={brand.name}
         chemin={`/marques/${brand.slug}`}
         globale={notesMarque.get(brand.id)}
+        gerant={Boolean(insight?.gerant)}
       />
 
       {/* Discret, et tout en bas : un lien de signalement bien visible
           sous chaque fiche transformerait l'annuaire en tribunal, et
           donnerait l'idée à des gens qui n'y pensaient pas. Il faut
           qu'il soit trouvable, pas qu'il saute aux yeux. */}
-      <div className="mt-9 border-t border-white/10 pt-5">
-        <BoutonSignaler
-          cible="marque"
-          cibleId={brand.id}
-          chemin={`/marques/${brand.slug}`}
-          connecte={Boolean(profil)}
-          dejaFait={dejaSignalee}
-        />
-      </div>
+      {/* Ni à qui tient la marque : on ne signale pas sa propre page. */}
+      {!insight?.gerant && (
+        <div className="mt-9 border-t border-white/10 pt-5">
+          <BoutonSignaler
+            cible="marque"
+            cibleId={brand.id}
+            chemin={`/marques/${brand.slug}`}
+            connecte={Boolean(profil)}
+            dejaFait={dejaSignalee}
+          />
+        </div>
+      )}
 
       {/* ---------- posts lies ---------- */}
       {posts.length > 0 && (

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import AdminForm from "@/components/admin/AdminForm";
 import BarreGerant from "@/components/BarreGerant";
@@ -8,7 +9,7 @@ import { deleteBrandProduct, saveBrandProduct } from "../../../actions";
 import { getBrandProduct, requireManagedBrand } from "@/lib/brand-space";
 import { PRODUCT_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { TAGS_CONNUS, estUneFamille } from "@/lib/tags";
-import BackLink from "@/components/BackLink";
+import RetourEspace from "@/components/RetourEspace";
 import { suiviDuCatalogue } from "@/lib/suivi-catalogue";
 import { MAX_EN_AVANT } from "@/lib/en-avant";
 
@@ -38,19 +39,37 @@ export default async function EditBrandProduct({ params }: Props) {
 
   return (
     <>
+      {/* Le retour au-dessus de la barre, comme sur les autres écrans de
+          l'espace : il était ici le seul à le poser dessous. */}
+      <RetourEspace
+        slug={brand.slug}
+        isAdmin={isAdmin}
+        vers={{ href: `/espace-marque/${slug}/pieces`, label: "Mes pièces" }}
+      />
       <div className="mb-7">
         <BarreGerant brand={brand} peutPublier={isAdmin} />
       </div>
 
       <header className="mb-5 sm:mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <BackLink href={`/espace-marque/${slug}/pieces`}>Mes pièces</BackLink>
-          <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
+          <h1 className="m-0 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
             {isNew ? "Nouvelle pièce" : product!.name}
           </h1>
         </div>
         {!isNew && (
-          <DeleteButton action={deleteBrandProduct} id={product!.id} label="Supprimer" extra={{ slug }} />
+          <div className="flex flex-wrap items-start gap-3">
+            {/* Ce que voient les visiteurs, à un clic : on corrige une
+                pièce pour la page publique, on doit pouvoir y jeter un œil. */}
+            {product!.status === "published" && product!.slug && !product!.retired_at && (
+              <Link
+                href={`/marques/${brand.slug}/${product!.slug}`}
+                className="inline-flex min-h-[44px] items-center rounded-full border border-white/40 bg-white/8 px-4 text-[12.5px] font-bold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97] lg:min-h-[38px]"
+              >
+                Voir sur ma page
+              </Link>
+            )}
+            <DeleteButton action={deleteBrandProduct} id={product!.id} label="Supprimer" extra={{ slug }} />
+          </div>
         )}
       </header>
 

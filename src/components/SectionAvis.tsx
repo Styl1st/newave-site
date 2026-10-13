@@ -18,6 +18,7 @@ export default async function SectionAvis({
   nom,
   chemin,
   globale,
+  gerant = false,
 }: {
   cible: "marque" | "piece";
   cibleId: string;
@@ -33,6 +34,12 @@ export default async function SectionAvis({
    * carte et « aucun avis » sur la fiche.
    */
   globale?: { moyenne: number; avis: number };
+  /**
+   * Celui qui regarde tient cette marque. Il lit les avis, il n'en
+   * écrit pas : une note qu'on se donne à soi-même fausse la moyenne
+   * que tout le monde lit. `enregistrerAvis` le refuse aussi.
+   */
+  gerant?: boolean;
 }) {
   const filtre = cible === "marque" ? { brand_id: cibleId } : { product_id: cibleId };
   const [avis, mien, profile] = await Promise.all([
@@ -75,13 +82,19 @@ export default async function SectionAvis({
         )}
       </div>
 
-      <FormulaireAvis
-        cible={cible}
-        cibleId={cibleId}
-        nom={nom}
-        chemin={chemin}
-        mien={mien}
-      />
+      {gerant ? (
+        <p className="m-0 text-[13.5px] leading-relaxed text-white/62">
+          Les avis viennent de ta communauté : tu ne peux pas noter {cible === "marque" ? "ta propre marque" : "tes propres pièces"}.
+        </p>
+      ) : (
+        <FormulaireAvis
+          cible={cible}
+          cibleId={cibleId}
+          nom={nom}
+          chemin={chemin}
+          mien={mien}
+        />
+      )}
 
       {total === 0 ? (
         <p className="m-0 mt-4 text-[13.5px] leading-relaxed text-white/62">

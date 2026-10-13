@@ -10,15 +10,26 @@ function Chiffre({
   label,
   valeur,
   note,
+  className = "",
 }: {
   label: string;
   valeur: string | number;
   note?: string;
+  className?: string;
 }) {
+  /* Une phrase à la place d'un nombre (« Pas encore ») ne tient pas en
+     trente pixels dans une demi-largeur de téléphone. */
+  const enMots = typeof valeur === "string" && !/\d/.test(valeur);
   return (
-    <div className="glass p-5">
+    <div className={`glass p-4 sm:p-5 ${className}`}>
       <p className="eyebrow m-0">{label}</p>
-      <p className="m-0 mt-2 text-[30px] font-black leading-none text-white">{valeur}</p>
+      <p
+        className={`m-0 mt-2 font-black leading-none text-white ${
+          enMots ? "text-[17px] leading-tight" : "text-[26px] sm:text-[30px]"
+        }`}
+      >
+        {valeur}
+      </p>
       {note && <p className="m-0 mt-1.5 text-[12px] font-semibold text-white/55">{note}</p>}
     </div>
   );
@@ -85,11 +96,6 @@ export default async function BrandStatsPage({ params }: Props) {
           brand={brand}
           peutPublier={isAdmin}
           pieces={stats ? stats.piecesPubliees + stats.piecesBrouillon : undefined}
-          stats={
-            stats
-              ? { vues7: stats.vues7, favoris: stats.favoris, clics: stats.clics7 }
-              : undefined
-          }
         />
       </div>
 
@@ -114,7 +120,9 @@ export default async function BrandStatsPage({ params }: Props) {
         </div>
       ) : (
         <>
-          <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Deux par rangée dès le téléphone : empilés, les quatre
+              chiffres clés prenaient deux écrans à eux seuls. */}
+          <div className="mb-3 grid grid-cols-2 gap-3 sm:mb-4 sm:gap-4 lg:grid-cols-4">
             <Chiffre
               label="Vues, 7 jours"
               valeur={stats.vues7}
@@ -125,31 +133,34 @@ export default async function BrandStatsPage({ params }: Props) {
               }
             />
             <Chiffre label="Vues, 30 jours" valeur={stats.vues30} note="ta page et tes pièces" />
+            {/* Même forme que les deux libellés voisins : sur une ligne,
+                les quatre chiffres s'alignent. */}
             <Chiffre
-              label="Clics vers ta boutique"
+              label="Clics, 30 jours"
               valeur={stats.clics30}
-              note={`${stats.clics7} sur les 7 derniers jours`}
+              note={`vers ta boutique, ${stats.clics7} en 7 jours`}
             />
             <Chiffre
               label="Taux de sortie"
-              valeur={stats.tauxSortie === null ? "Pas encore de donnée" : `${stats.tauxSortie} %`}
+              valeur={stats.tauxSortie === null ? "Pas encore" : `${stats.tauxSortie} %`}
               note="visiteurs partis acheter chez toi"
             />
           </div>
 
           <Graphique jours={stats.jours} />
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:grid-cols-3 sm:gap-4">
             <Chiffre label="Abonnés" valeur={stats.favoris} note="personnes qui suivent ta marque" />
             <Chiffre label="Coups de cœur" valeur={stats.likes} note="sur l'ensemble de tes pièces" />
             <Chiffre
+              className="col-span-2 sm:col-span-1"
               label="Pièces en ligne"
               valeur={stats.piecesPubliees}
               note={stats.piecesBrouillon > 0 ? `${stats.piecesBrouillon} en brouillon` : "tout est en ligne"}
             />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-2">
             <Classement
               titre="Tes pièces les plus regardées"
               lignes={stats.topPieces}
