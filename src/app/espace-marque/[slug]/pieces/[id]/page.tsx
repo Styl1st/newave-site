@@ -9,6 +9,8 @@ import { getBrandProduct, requireManagedBrand } from "@/lib/brand-space";
 import { PRODUCT_CATEGORIES, withExisting } from "@/lib/taxonomy";
 import { TAGS_CONNUS, estUneFamille } from "@/lib/tags";
 import BackLink from "@/components/BackLink";
+import { suiviDuCatalogue } from "@/lib/suivi-catalogue";
+import { MAX_EN_AVANT } from "@/lib/en-avant";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -17,6 +19,10 @@ export default async function EditBrandProduct({ params }: Props) {
   const { brand, isAdmin } = await requireManagedBrand(slug);
 
   const isNew = id === "nouvelle";
+  /* Une pièce venue de la boutique d'une marque relue chaque jour : sa
+     disponibilité suit la boutique, et le dire évite de la cocher pour
+     rien. Voir `lib/suivi-catalogue`. */
+  const suitLaBoutique = suiviDuCatalogue(brand).auto;
   const product = isNew ? null : await getBrandProduct(id);
   if (!isNew && (!product || product.brand_id !== brand.id)) notFound();
 
@@ -38,7 +44,7 @@ export default async function EditBrandProduct({ params }: Props) {
 
       <header className="mb-5 sm:mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <BackLink href={`/espace-marque/${slug}/pieces`}>Pièces</BackLink>
+          <BackLink href={`/espace-marque/${slug}/pieces`}>Mes pièces</BackLink>
           <h1 className="m-0 mt-2 text-[clamp(20px,4.4vw,29px)] font-extrabold tracking-[-0.03em] text-white">
             {isNew ? "Nouvelle pièce" : product!.name}
           </h1>
@@ -165,18 +171,30 @@ export default async function EditBrandProduct({ params }: Props) {
           selected={product?.tags}
         />
 
-        <div className="flex flex-wrap gap-6">
-          <Check name="available" label="Disponible" defaultChecked={product?.available ?? true} />
-          <Check name="featured" label="Mettre en avant" defaultChecked={product?.featured} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <Check name="available" label="Disponible" defaultChecked={product?.available ?? true} />
+            {suitLaBoutique && product?.source_id && (
+              <p className="m-0 mt-1.5 text-[12.5px] leading-relaxed text-white/60">
+                Suit ta boutique : mis à jour chaque jour, ce que tu coches ici sera remplacé.
+              </p>
+            )}
+          </div>
+          <div>
+            <Check name="featured" label="Mettre en avant" defaultChecked={product?.featured} />
+            <p className="m-0 mt-1.5 text-[12.5px] leading-relaxed text-white/60">
+              En tête de ta page et de la vitrine. {MAX_EN_AVANT} pièces au plus.
+            </p>
+          </div>
         </div>
 
         <Select
           name="status"
           label="État"
-          hint="Un brouillon n'apparaît pas sur ta page publique."
+          hint="Un brouillon ne s'affiche nulle part sur le site."
           defaultValue={product?.status ?? "published"}
         >
-          <option value="published">Publiée</option>
+          <option value="published">En ligne</option>
           <option value="draft">Brouillon</option>
         </Select>
       </AdminForm>

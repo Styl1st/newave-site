@@ -89,6 +89,16 @@ export const IconChevron = (p: Props) => (
 export const IconDrapeau = (p: Props) => (
   <Svg {...p}><path d="M4 21V4" /><path d="M4 4h11l-1.6 3.5L15 11H4" /></Svg>
 );
+/* L'étoile de la mise en avant (espace marque). Pleine : la pièce est
+   en avant. En trait : elle peut l'être. Voir `lib/en-avant`. */
+export const IconEtoile = ({ pleine = false, ...p }: Props & { pleine?: boolean }) => (
+  <Svg {...p}>
+    <path
+      d="m12 3.6 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.62l-5.1 2.68.97-5.68L3.75 9.6l5.7-.83Z"
+      fill={pleine ? "currentColor" : "none"}
+    />
+  </Svg>
+);
 export const IconLoupe = (p: Props) => (
   <Svg {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.6-3.6" /></Svg>
 );
