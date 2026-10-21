@@ -4,6 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
+ * La page courante est-elle celle de ce lien ? Partagé avec le menu
+ * « Plus » (`LiensBarre`), qui doit allumer les mêmes repères.
+ *
+ * L'accueil ne correspond qu'à lui-même : sinon il resterait allumé sur
+ * toutes les pages du site.
+ */
+export function estActif(href: string, chemin: string) {
+  return href === "/" ? chemin === "/" : chemin.startsWith(href);
+}
+
+/**
  * Un lien de la barre, qui sait s'il est la page courante.
  *
  * Savoir où l'on se trouve est la première chose qu'on demande à une
@@ -29,11 +40,7 @@ export default function LienNav({
   children: React.ReactNode;
   className?: string;
 }) {
-  const chemin = usePathname();
-
-  // L'accueil ne correspond qu'à lui-même : sinon il resterait allumé
-  // sur toutes les pages du site.
-  const actif = href === "/" ? chemin === "/" : chemin.startsWith(href);
+  const actif = estActif(href, usePathname());
 
   return (
     <Link

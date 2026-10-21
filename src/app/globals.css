@@ -883,6 +883,7 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     & .rise,
     & .arrive,
     & .entree-menu,
+    & .plus-panneau,
     & .page-in,
     & .panneau-edition,
     & .panneau-apercu,
@@ -1689,6 +1690,59 @@ html[data-menu="1"] > body > footer {
   from { background-position: 0% 50%; }
   to   { background-position: 100% 50%; }
 }
+
+/* La rangée des liens de la barre, qui ne montre que sa première ligne.
+   ---------------------------------------------------------------------
+   Les liens ont le droit de passer à la ligne ; ce qui ne tient pas
+   descend sur la deuxième, et la deuxième est hors du cadre. C'est le
+   CSS seul qui replie : la barre est juste dès le premier affichage,
+   sans attendre le script. Le script, lui, range les liens descendus
+   dans le menu « Plus ». Voir `LiensBarre`.
+
+   POURQUOI CE REMBOURRAGE AUSSITÔT ANNULÉ PAR LA MARGE. `overflow:
+   hidden` coupe au bord de la boîte, et ce qui déborde légèrement des
+   liens serait rogné avec : l'ombre de la pastille active, le contour
+   du focus au clavier (trois pixels, décalés de trois). Douze pixels de
+   rembourrage tout autour leur laissent la place ; la marge négative
+   rend exactement la même mise en page qu'avant.
+
+   `overflow-clip-margin` ferait la même chose plus proprement, mais
+   Safari ne le connaît pas.
+
+   La hauteur vaut une rangée et ses deux rembourrages, et l'écart entre
+   deux rangées est assez grand pour que la seconde commence sous le
+   bord, ombre comprise. Les liens font 37,5 pixels ; on garde de la
+   marge pour une police qui se chargerait un peu plus haute. */
+.barre-liens {
+  --rang: 38px;
+  display: flex;
+  flex: 1 1 0%;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  justify-content: flex-end;
+  column-gap: 2px;
+  row-gap: 28px;
+  height: calc(var(--rang) + 24px);
+  margin: -12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+/* Le menu « Plus ». Il pend sous la barre comme le panneau de la
+   recherche, avec la même matière : un fond plein aux teintes du thème.
+   Pas de verre dépoli : posé dans `.barre`, qui en a déjà un, il ne
+   floute rien de ce qu'il y a dessous. */
+.plus-panneau {
+  z-index: 5;
+  animation: plusDescend .18s cubic-bezier(.2, .85, .3, 1) both;
+}
+@keyframes plusDescend {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+[data-fige="1"] .plus-panneau { animation: none; }
 
 /* Une `.barre` qui s'enroule sur deux étages.
    ------------------------------------------

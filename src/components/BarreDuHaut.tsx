@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconLoupe } from "./Icons";
+import LiensBarre from "./LiensBarre";
 import PanneauRecherche from "./recherche/PanneauRecherche";
 import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { aUnChampLocal } from "./recherche/champLocal";
@@ -26,10 +27,9 @@ import { lireHistorique, noterRecherche, oublierHistorique } from "./recherche/h
  * d'historique : refermer rend la page telle qu'on l'avait laissée.
  *
  * `Header` RESTE UN COMPOSANT SERVEUR et le demeure : c'est lui qui lit
- * la session, ses marques, son rôle. Il passe ici du JSX déjà rendu, en
- * deux morceaux, parce que la loupe se tient AU MILIEU de la barre — le
- * trait, la loupe, le cœur — et qu'un seul bloc ne laisserait pas la
- * place de l'y glisser.
+ * la session, ses marques, son rôle. Il passe ici les liens de pages en
+ * simple liste — c'est `LiensBarre` qui décide lesquels tiennent — et
+ * ce qui suit la loupe en JSX déjà rendu.
  *
  * LE VOILE EST POSÉ DANS LE `header` ET NON DANS `.barre`. Ce n'est pas
  * un détail de rangement : `.barre` porte un `backdrop-filter`, ce qui
@@ -62,14 +62,14 @@ const PANNEAU = "panneau-recherche-barre";
 
 export default function BarreDuHaut({
   logo,
-  navDebut,
+  liens,
   navFin,
   mobileFin,
   enCeMoment,
 }: {
   logo: React.ReactNode;
-  /** Les liens de pages, jusqu'au trait qui précède la loupe. */
-  navDebut: React.ReactNode;
+  /** Les liens de pages, dans l'ordre où ils se replient : par la fin. */
+  liens: { href: string; label: string }[];
   /** Ce qui suit la loupe : favoris, sa marque, l'appel, le compte. */
   navFin: React.ReactNode;
   /** Au doigt, ce qui suit la loupe : le compte et le menu. */
@@ -250,8 +250,13 @@ export default function BarreDuHaut({
         ) : (
           <>
             {/* ---------- ordinateur ---------- */}
-            <nav className="relative z-2 hidden items-center gap-0.5 md:flex">
-              {navDebut}
+            {/* `flex-1` : la rangée de liens prend toute la place que
+                le logo et les outils lui laissent, et c'est cette place
+                qui décide de ce qui s'y montre. Voir `LiensBarre`. */}
+            <nav className="relative z-2 hidden min-w-0 flex-1 items-center gap-0.5 md:flex">
+              <LiensBarre liens={liens} />
+
+              <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/18" />
 
               {/*
                * LA LOUPE N'EST PLUS UN LIEN, ET C'EST TOUT LE CHANTIER.

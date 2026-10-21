@@ -116,34 +116,18 @@ export default async function Header() {
             />
           </Link>
         }
-        navDebut={
+        /*
+         * Les liens de pages, dans l'ordre de la barre. Ceux de la fin
+         * sont les premiers à se replier dans « Plus » quand la place
+         * manque : « Admin », puis « À propos », puis « Forum ». Plus de
+         * seuils écrits à la main ici, voir `LiensBarre`.
+         */
+        liens={[
+          ...NAV.slice(0, 7),
+          ...(profile?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
+        ]}
+        navFin={
           <>
-            {/* Les derniers n'apparaissent qu'en grand : entre 768 et
-                1024 px la barre serait trop chargée, et ce sont les liens
-                les moins utiles. Le seuil a bougé avec l'arrivée des
-                pièces, sinon « À propos » disparaissait de la barre sans
-                que personne l'ait décidé. */}
-            {/* Le forum a rejoint la barre : « À propos », le moins
-                utile des liens, n'y revient qu'à partir de 1280 px
-                pour que « Connexion » ne soit pas poussé hors du cadre. */}
-            {NAV.slice(0, 7).map((item, i) => (
-              <LienNav
-                key={item.href}
-                href={item.href}
-                className={
-                  item.href === "/a-propos"
-                    ? "hidden xl:inline-block"
-                    : i >= 4
-                      ? "hidden lg:inline-block"
-                      : ""
-                }
-              >
-                {item.label}
-              </LienNav>
-            ))}
-
-            {profile?.role === "admin" && <LienNav href="/admin">Admin</LienNav>}
-
             {/*
              * DEUX RACCOURCIS RONDS, ET C'EST LEUR PLACE QUI COMPTE.
              *
@@ -159,11 +143,6 @@ export default async function Header() {
              * privée proposée à quelqu'un qui n'en a pas ne mène qu'à un
              * mur de connexion.
              */}
-            <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/18" />
-          </>
-        }
-        navFin={
-          <>
             {profile && (
               <Link
                 href="/favoris"
@@ -207,6 +186,11 @@ export default async function Header() {
              * classes s'écrivent en toutes lettres pour être trouvées à la
              * compilation.
              *
+             * QUI A DÉJÀ SA MARQUE N'A QUE LE MOT COURT. L'appel ne le
+             * concerne plus qu'à la marge, et sa barre porte déjà « Ma
+             * marque » : c'est elle qui débordait. Les cinquante pixels
+             * gagnés ici gardent tous les liens visibles en grand écran.
+             *
              * EN CONTOUR, ET PLUS EN BLANC PLEIN. Blanc, il avait le même
              * poids que « Explorer les marques » sur l'accueil : pour
              * quelqu'un qui arrive d'Instagram, l'action la plus visible
@@ -216,10 +200,17 @@ export default async function Header() {
             <Link
               href="/candidature"
               title="Proposer une marque"
+              aria-label="Proposer une marque"
               className="puce-barre ml-1.5 shrink-0 whitespace-nowrap rounded-full border border-white/30 px-4 py-2 text-[12.5px] font-bold text-white transition hover:border-white/60 active:scale-[.97]"
             >
-              <span className="xl:hidden">Proposer</span>
-              <span className="hidden xl:inline">Proposer une marque</span>
+              {maMarque ? (
+                "Proposer"
+              ) : (
+                <>
+                  <span className="xl:hidden">Proposer</span>
+                  <span className="hidden xl:inline">Proposer une marque</span>
+                </>
+              )}
             </Link>
 
             {/* Les messages privés du forum, à gauche de l'avatar, avec le
