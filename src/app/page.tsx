@@ -122,7 +122,12 @@ export default async function HomePage() {
           src="/brand/logo-white.webp"
           alt=""
           aria-hidden="true"
-          className="rise w-[min(34%,120px)] drop-shadow-[0_6px_20px_rgba(60,25,120,0.5)] sm:w-[min(70%,320px)]"
+          /* L'intro de l'accueil fait glisser son logo jusqu'ici : elle
+             retrouve celui-ci par cet attribut. Voir `IntroPortail`.
+             L'ombre prend la teinte du thème, comme celle des blobs :
+             un violet écrit en dur sur un fond vert se voyait. */
+          data-logo-accueil
+          className="rise w-[min(34%,120px)] drop-shadow-[0_6px_20px_rgba(var(--voile),0.5)] sm:w-[min(70%,320px)]"
         />
 
         {/* Le titre de la page, pour les lecteurs d'écran comme pour les

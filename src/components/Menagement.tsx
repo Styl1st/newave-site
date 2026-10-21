@@ -146,30 +146,51 @@ export default function Menagement() {
       boucle = requestAnimationFrame(tour);
     };
 
-    minuteur = window.setTimeout(() => {
-      compter((parSeconde) => {
-        // La machine suit : elle garde le site entier, curseur compris.
-        if (parSeconde >= SEUIL) return;
+    const mesurer = () => {
+      minuteur = window.setTimeout(() => {
+        compter((parSeconde) => {
+          // La machine suit : elle garde le site entier, curseur compris.
+          if (parSeconde >= SEUIL) return;
 
-        alleger();
-        retenir("1");
+          alleger();
+          retenir("1");
 
-        /*
-         * ON REMESURE, LA PAGE DÉPOUILLÉE, et c'est tout l'objet des
-         * deux paliers : savoir ce qu'il reste de lenteur une fois le
-         * coupable habituel écarté. Presque toujours, plus rien.
-         */
-        minuteur = window.setTimeout(() => {
-          compter((nu) => {
-            if (nu >= SEUIL_NU) return;
-            depouiller();
-            retenir("2");
-          });
-        }, REPRISE);
-      });
-    }, ATTENTE);
+          /*
+           * ON REMESURE, LA PAGE DÉPOUILLÉE, et c'est tout l'objet des
+           * deux paliers : savoir ce qu'il reste de lenteur une fois le
+           * coupable habituel écarté. Presque toujours, plus rien.
+           */
+          minuteur = window.setTimeout(() => {
+            compter((nu) => {
+              if (nu >= SEUIL_NU) return;
+              depouiller();
+              retenir("2");
+            });
+          }, REPRISE);
+        });
+      }, ATTENTE);
+    };
+
+    /*
+     * PAS DE MESURE PENDANT L'INTRO DE L'ACCUEIL.
+     *
+     * Le portail agrandit seize fois une scène plein écran pendant
+     * que la page finit de se charger : c'est le moment le plus chargé
+     * de toute la visite, et il ne dit rien de ce que la machine fera
+     * ensuite. Mesurer à ce moment-là allégerait le site pour toute la
+     * session chez des visiteurs dont le téléphone suit très bien. On
+     * attend donc la fin de l'intro pour commencer à compter. Voir
+     * `components/IntroPortail`.
+     */
+    const intro = racine.dataset.intro;
+    if (intro && intro !== "vu") {
+      window.addEventListener("newave:intro-fin", mesurer, { once: true });
+    } else {
+      mesurer();
+    }
 
     return () => {
+      window.removeEventListener("newave:intro-fin", mesurer);
       window.clearTimeout(minuteur);
       if (boucle) cancelAnimationFrame(boucle);
     };

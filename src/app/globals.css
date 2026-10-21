@@ -4685,3 +4685,376 @@ html[data-clair="1"] .colonne-filtres--deborde::after {
     box-shadow: 0 10px 30px rgba(60, 30, 120, .10), inset 0 1px 0 rgba(255, 255, 255, .9);
   }
 }
+
+/* =====================================================================
+   L'ENTRÉE SUR LE SITE : LE PORTAIL
+   =====================================================================
+
+   La même entrée que la page de liens : le logo apparaît en chrome sur
+   fond de nuit, un reflet coule dessus, l'intérieur de son ovale
+   s'allume et l'on y voit la page ; puis l'ovale se détache et grandit
+   jusqu'à sortir de l'écran. Ici, le logo reste au centre pendant tout
+   le passage, devient blanc, et glisse jusqu'à celui du manifeste.
+   Le principe est dans `lib/intro.ts`, le script dans
+   `components/IntroPortail.tsx`. Ici, le dessin.
+
+   Tout dépend de `data-intro` sur <html>, que le script de décision
+   pose avant le premier affichage :
+     « 1 »        la nuit, le logo en chrome, l'ovale qui s'allume ;
+     « entree »   on passe la porte, les blobs arrivent ;
+     « contenu »  le logo glisse, la barre du haut et le manifeste montent ;
+     « vu »       l'intro est cachée, plus rien ne bouge.
+   Sans l'attribut, aucune de ces règles ne s'applique : c'est le cas
+   sans JavaScript, au deuxième passage, et pour qui a demandé moins
+   d'animations.
+
+   Uniquement `transform` et `opacity` dans ce qui bouge, comme pour le
+   décor : la carte graphique déplace des calques déjà peints.
+
+   COMMENT LE PORTAIL EST CONSTRUIT. L'ovale du logo est exactement la
+   différence de deux ellipses (écart à l'ajustement inférieur à
+   0,2 %). Elles sont écrites plus bas en SVG : l'anneau, et le trou
+   qu'il entoure. Un voile de nuit plein écran est percé du trou ;
+   l'anneau est posé sur son bord. Les deux vivent dans la même scène,
+   qu'on agrandit d'un bloc : ils restent alignés au pixel. Le logo,
+   hors de la scène, est posé sur l'anneau de façon que son propre ovale
+   tombe exactement dessus. Les mesures viennent de la page de liens
+   (`src/extract_assets.py` dans le dépôt newave.links). */
+
+.intro-portail { display: none; }
+
+/* Le défilement reste en haut tant que l'intro joue : le logo doit
+   retrouver celui du manifeste là où il l'a mesuré. */
+html[data-intro]:not([data-intro="vu"]) { overflow: hidden; }
+
+html:is([data-intro="1"], [data-intro="entree"], [data-intro="contenu"]) .intro-portail {
+  display: block;
+  position: fixed;
+  inset: 0;
+  /* Au-dessus de la barre du haut (40) et de la ligne de lecture
+     (200), sous le curseur du site (9999). */
+  z-index: 300;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+
+  /* LE MINUTAGE DESSINÉ ICI. Il doit rester celui de `MINUTAGE` dans
+     lib/intro.ts, que le script suit pour la suite : un test compare
+     les deux. */
+  --allumage: 800ms;
+  --passage: 1150ms;
+  --duree-passage: 1050ms;
+
+  /* La largeur du logo. Le reste s'en déduit : l'anneau fait 0,9947
+     fois cette largeur et 0,4106 fois en hauteur, et le centre de
+     l'ovale tombe à 0,4948 et 0,2028 de la largeur depuis le coin
+     haut gauche du logo. Ne pas toucher à ces rapports sans les
+     fichiers d'origine. */
+  --w: min(70vw, 46svh, 440px);
+  /* Le centre de l'ovale, sur l'écran : un peu au-dessus du milieu,
+     pour que le nom, dessous, ne tombe pas trop bas. */
+  --centre: 44%;
+
+  /* LES COULEURS DE LA NUIT ET DU CHROME SUIVENT LE THÈME.
+
+     Elles étaient écrites en violet, celui du thème NEWAVE. Sur une
+     ambiance Forêt ou Braise, l'intro s'ouvrait donc sur un halo violet
+     qui n'existe nulle part ailleurs sur la page, et le passage vers le
+     site se voyait comme un changement de couleur. La nuit est
+     maintenant tirée de la teinte du haut du dégradé (`--voile`, celle
+     des surfaces sombres du site) et d'un peu de son cœur (`--bg-3`),
+     assombries ; le chrome est un gris neutre teinté du même voile dans
+     ses ombres et du troisième accent dans ses reflets. Sur le thème
+     NEWAVE, on retombe sur les violets d'origine.
+
+     Les valeurs simples d'abord, celles du thème NEWAVE : un navigateur
+     qui ne connaît pas `color-mix` les garde, au lieu de perdre la
+     règle entière. La version qui suit le thème est juste en dessous. */
+  --nuit-coeur: #1a0a44;
+  --nuit-milieu: #0f0529;
+  --nuit-bord: #08021a;
+  --chrome-ombre: #6e6888;
+  --chrome-creux: #5f5a7c;
+  --chrome-gris: #b9b3d3;
+  --chrome-reflet: #d9cdf9;
+  --nuit-degrade: radial-gradient(ellipse 80% 60% at 50% var(--centre),
+    var(--nuit-coeur) 0%, var(--nuit-milieu) 55%, var(--nuit-bord) 100%);
+  --chrome-coule: linear-gradient(112deg, var(--chrome-ombre) 0%, #f7f7fa 9%, var(--chrome-gris) 17%,
+    var(--chrome-creux) 26%, #ffffff 35%, var(--chrome-reflet) 43%, var(--chrome-gris) 52%,
+    #f6f6f9 61%, var(--chrome-ombre) 71%, #ececf1 81%, #ffffff 89%, var(--chrome-gris) 100%);
+  --anneau: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2030 838'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M22.71 627.65A1013.59 346.83 -11.908 1 0 2006.27 209.36A1013.59 346.83 -11.908 1 0 22.71 627.65ZM175.18 622.81A861.87 305.48 -13.710 1 0 1849.80 214.27A861.87 305.48 -13.710 1 0 175.18 622.81Z'/%3E%3C/svg%3E");
+  --trou: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2030 838'%3E%3Cpath fill='%23fff' d='M169.35 624.23A867.87 311.48 -13.710 1 0 1855.63 212.84A867.87 311.48 -13.710 1 0 169.35 624.23Z'/%3E%3C/svg%3E");
+}
+@supports (color: color-mix(in srgb, white 50%, black)) {
+  html:is([data-intro="1"], [data-intro="entree"], [data-intro="contenu"]) .intro-portail {
+    /* Mélangées à un noir à peine teinté : quelle que soit la couleur
+       qu'on s'est choisie, même pâle, la nuit reste une nuit. */
+    --nuit-coeur: color-mix(in srgb, color-mix(in srgb, var(--bg-3) 18%, rgb(var(--voile))) 62%, #030108);
+    --nuit-milieu: color-mix(in srgb, rgb(var(--voile)) 36%, #030108);
+    --nuit-bord: color-mix(in srgb, rgb(var(--voile)) 18%, #020105);
+    --chrome-ombre: color-mix(in srgb, #7a7a86 78%, rgb(var(--voile)));
+    --chrome-creux: color-mix(in srgb, #66666f 72%, rgb(var(--voile)));
+    --chrome-gris: color-mix(in srgb, #b4b4bf 82%, rgb(var(--accent-3)));
+    --chrome-reflet: color-mix(in srgb, #ffffff 65%, rgb(var(--accent-3)));
+  }
+}
+/* iOS avant 15.4 ne connaît pas `svh` : sans ce repli, la largeur du
+   logo serait invalide et il n'apparaîtrait pas. */
+@supports not (height: 1svh) {
+  html:is([data-intro="1"], [data-intro="entree"], [data-intro="contenu"]) .intro-portail {
+    --w: min(70vw, 440px);
+  }
+}
+/* Tout attend l'image du logo : le script pose `data-intro-pret` quand
+   elle est arrivée (au plus tard au bout d'une seconde). Sans cette
+   pause, la nuit tomberait et l'ovale s'ouvrirait avant que le logo
+   n'apparaisse. */
+html:not([data-intro-pret]) .intro-portail * { animation-play-state: paused !important; }
+/* Une fois la porte passée, la scène laisse passer les clics : on peut
+   déjà viser un bouton pendant que le manifeste monte. */
+html[data-intro="contenu"] .intro-portail { pointer-events: none; }
+
+/* ---------- le bouchon ----------
+   La même nuit que le voile, sous la scène : c'est elle qu'on voit à
+   travers le trou tant que l'ovale n'est pas allumé, et le trou se
+   confond donc avec le noir autour. Elle s'efface : on voit la page. */
+.intro-bouchon {
+  position: absolute;
+  inset: 0;
+  background: var(--nuit-degrade);
+  animation: intro-eteint .5s var(--allumage) ease both;
+}
+
+/* ---------- la scène ----------
+   Plus haute que l'écran, pour que son centre tombe sur celui de
+   l'ovale : c'est autour de ce point qu'on l'agrandit. */
+.intro-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--centre) * 2 - 100%);
+  bottom: 0;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  animation:
+    intro-passe var(--duree-passage) var(--passage) cubic-bezier(.6, 0, .25, 1) both,
+    intro-sortie .35s calc(var(--passage) + var(--duree-passage) - .35s) ease forwards;
+}
+.intro-voile {
+  position: absolute;
+  inset: 0;
+  background: var(--nuit-degrade);
+  -webkit-mask: var(--trou) center / calc(var(--w) * .9947) auto no-repeat, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: var(--trou) center / calc(var(--w) * .9947) auto no-repeat exclude, linear-gradient(#000 0 0);
+}
+/* La lumière qui sort de l'ovale quand il s'allume. */
+.intro-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--w) * 1.9);
+  height: calc(var(--w) * 1.1);
+  translate: -50% -50%;
+  rotate: -12deg;
+  background: radial-gradient(closest-side, rgba(var(--accent-3), .42), rgba(var(--accent-2), .16) 55%, transparent);
+  opacity: 0;
+  animation: intro-halo .7s calc(var(--allumage) - 50ms) ease both;
+}
+.intro-anneau {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--w) * .9947);
+  height: calc(var(--w) * .4106);
+  translate: -50% -50%;
+  background: var(--chrome-coule);
+  background-size: 280% 100%;
+  -webkit-mask: var(--anneau) 0 0 / 100% 100% no-repeat;
+  mask: var(--anneau) 0 0 / 100% 100% no-repeat;
+  /* Invisible jusqu'au passage : avant, l'ovale du logo est posé
+     exactement dessus et suffit. L'anneau ne se montre qu'au moment
+     où il se détache, ce qui évite aussi de le voir seul pendant que
+     l'image du logo arrive. */
+  opacity: 0;
+  animation:
+    intro-reflet 1.7s .1s cubic-bezier(.45, 0, .25, 1) both,
+    intro-allume .01s var(--passage) linear both;
+}
+
+/* ---------- le logo ----------
+   Posé sur l'anneau : son ovale tombe exactement dessus. D'abord en
+   chrome, le même que l'anneau, puis blanc au moment du passage. Il ne
+   bouge pas pendant que l'anneau s'envole ; c'est le script qui le
+   fait ensuite glisser jusqu'au manifeste. */
+.intro-logo {
+  position: absolute;
+  left: 50%;
+  top: var(--centre);
+  width: var(--w);
+  height: calc(var(--w) * .65536);
+  margin: calc(var(--w) * -.2028) 0 0 calc(var(--w) * -.4948);
+  /* L'ombre du voile, comme celle du logo du manifeste : les deux
+     échangent leur place à la fin, elles doivent être identiques. */
+  filter: drop-shadow(0 6px 20px rgba(var(--voile), .5));
+  /* `backwards` et non `both` : une fois arrivé, le logo doit pouvoir
+     s'effacer par une simple transition, au moment de l'échange. */
+  animation: intro-forme .8s .1s cubic-bezier(.2, .7, .2, 1) backwards;
+}
+.intro-chrome,
+.intro-logo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+.intro-chrome {
+  background: var(--chrome-coule);
+  background-size: 280% 100%;
+  -webkit-mask: url(/brand/logo-white.webp) 0 0 / 100% 100% no-repeat;
+  mask: url(/brand/logo-white.webp) 0 0 / 100% 100% no-repeat;
+  animation:
+    intro-reflet 1.7s .1s cubic-bezier(.45, 0, .25, 1) both,
+    intro-eteint .35s var(--passage) ease both;
+}
+.intro-logo img {
+  animation: intro-allume .35s var(--passage) ease both;
+}
+html[data-intro-logo="pose"] .intro-logo {
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+/* ---------- passer ----------
+   N'importe quel tap passe déjà l'intro ; le bouton le dit, c'est tout.
+   Hors de la tabulation : une touche du clavier passe aussi. */
+.intro-passer {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, .32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+  color: rgba(255, 255, 255, .86);
+  font: 800 10.5px/1 var(--font-sans);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: intro-allume .6s .6s ease backwards;
+}
+html:is([data-intro="entree"], [data-intro="contenu"]) .intro-passer {
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+@keyframes intro-forme {
+  from { opacity: 0; scale: .84; }
+  to   { opacity: 1; scale: 1; }
+}
+@keyframes intro-reflet {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0% 50%; }
+}
+@keyframes intro-halo {
+  0%   { opacity: 0; }
+  60%  { opacity: 1; }
+  100% { opacity: .8; }
+}
+@keyframes intro-allume {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes intro-eteint {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes intro-passe {
+  from { transform: scale(1); }
+  to   { transform: scale(16); }
+}
+@keyframes intro-sortie {
+  0%   { opacity: 1; }
+  99%  { opacity: 0; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* ---------- la page, pendant ce temps ----------
+
+   Elle attend sous la nuit, à une opacité de UN CENTIÈME et pas zéro.
+   Ce n'est pas un détail : le navigateur ignore un élément invisible
+   pour mesurer la vitesse d'affichage de la page (le « LCP » de Google),
+   et ne le compte qu'au moment où il apparaît, ici deux secondes plus
+   tard. À un centième, le manifeste est compté dès son arrivée, et
+   l'intro ne pèse pas sur la note de la page. */
+html:is([data-intro="1"], [data-intro="entree"]) body > header,
+html:is([data-intro="1"], [data-intro="entree"]) .premier-ecran ~ * {
+  opacity: .01;
+}
+html:is([data-intro="1"], [data-intro="entree"]) body > header {
+  translate: 0 -14px;
+}
+html[data-intro="contenu"] body > header {
+  transition: opacity .6s ease, translate .7s cubic-bezier(.2, .7, .3, 1);
+}
+html[data-intro="contenu"] .premier-ecran ~ * {
+  transition: opacity .8s .3s ease;
+}
+
+/* Le manifeste remplace son entrée habituelle par celle-ci, jouée au
+   signal « contenu ». Après l'intro, plus d'animation du tout : sans
+   cette dernière règle, retirer l'attribut relancerait l'entrée
+   habituelle et tout remonterait une seconde fois. */
+html:is([data-intro="1"], [data-intro="entree"]) .premier-ecran .rise {
+  animation: none;
+  opacity: .01;
+  transform: translateY(18px);
+}
+html[data-intro="contenu"] .premier-ecran .rise {
+  animation: intro-leve .8s cubic-bezier(.2, .7, .3, 1) both;
+}
+html[data-intro="contenu"] .premier-ecran .rise-1 { animation-delay: .07s; }
+html[data-intro="contenu"] .premier-ecran .rise-2 { animation-delay: .14s; }
+html[data-intro="contenu"] .premier-ecran .rise-3 { animation-delay: .21s; }
+html[data-intro="contenu"] .premier-ecran .rise-4 { animation-delay: .28s; }
+html[data-intro="vu"] .premier-ecran .rise { animation: none; }
+@keyframes intro-leve {
+  from { opacity: .01; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Le logo du manifeste reste caché pendant que celui de l'intro vient
+   le rejoindre, puis ils échangent. Ces règles viennent après celles du
+   manifeste et les emportent, à poids égal. */
+html[data-intro]:not([data-intro="vu"]) [data-logo-accueil] {
+  animation: none;
+  opacity: 0;
+  transform: none;
+}
+html[data-intro][data-intro-logo="pose"] [data-logo-accueil] {
+  opacity: 1;
+  transition: opacity .25s ease;
+}
+
+/* ---------- le décor, à l'arrivée ----------
+   On a passé la porte : les blobs viennent se poser dans leurs coins,
+   comme sur la page de liens, et les glyphes apparaissent. Seul le
+   décor de la page est visé, pas celui du menu de téléphone
+   (`[data-decor]`). */
+html:is([data-intro="1"], [data-intro="entree"], [data-intro="contenu"]) .decor:not([data-decor]) .glyphs {
+  animation: intro-allume .9s 1.7s ease both;
+}
+html:is([data-intro="entree"], [data-intro="contenu"]) .decor:not([data-decor]) .chrome {
+  animation: intro-atterrit 1.3s .3s cubic-bezier(.16, 1, .3, 1) both;
+}
+.decor .c-tl { --ix: -45%; --iy: -40%; --ir: -28deg; }
+.decor .c-tr { --ix: 45%;  --iy: -40%; --ir: 26deg; }
+.decor .c-bl { --ix: -45%; --iy: 40%;  --ir: 22deg; }
+.decor .c-br { --ix: 45%;  --iy: 40%;  --ir: -24deg; }
+@keyframes intro-atterrit {
+  from { opacity: 0; transform: translate(var(--ix, 0), var(--iy, 0)) rotate(var(--ir, 0deg)) scale(.7); }
+  35%  { opacity: 1; }
+  to   { opacity: 1; transform: none; }
+}

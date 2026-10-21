@@ -16,9 +16,11 @@ import Relief from "@/components/Relief";
 import Menagement from "@/components/Menagement";
 import Reveal from "@/components/Reveal";
 import Confirmations from "@/components/Confirmations";
+import IntroPortail from "@/components/IntroPortail";
 import { SCRIPT_ANTI_FLASH } from "@/lib/theme";
 import { lireApparenceDuCompte, styleDuCompte } from "@/lib/apparence";
 import { decorPourChemin } from "@/lib/decor";
+import { SCRIPT_DECISION_INTRO } from "@/lib/intro";
 import "./globals.css";
 
 /*
@@ -99,6 +101,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // renvoient tous vers elle-meme n'aide personne.
   const chemin = (await headers()).get("x-chemin") ?? "";
   const nu = chemin === "/acces";
+  /* L'entrée par le portail ne se joue que sur l'accueil. Voir `lib/intro`. */
+  const accueil = chemin === "/";
 
   /*
    * L'apparence choisie suit le compte.
@@ -167,8 +171,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="dns-prefetch" href="https://cdn.shopify.com" />
         {/* Sans compte, on relit ce que ce navigateur avait retenu. */}
         {!apparence && <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />}
+        {/* L'intro de l'accueil décide ici si elle se joue. Après
+            l'anti-flash et pas avant : elle lit `data-fige`, que
+            l'anti-flash vient d'écrire pour les visiteurs sans compte. */}
+        {accueil && <script dangerouslySetInnerHTML={{ __html: SCRIPT_DECISION_INTRO }} />}
       </head>
       <body className="font-sans">
+        {/* En tête de <body> : la nuit de l'intro doit être là dès le
+            premier affichage, avant que le reste de la page n'arrive. */}
+        {accueil && <IntroPortail />}
         <Background />
         <DecorDePage />
         <Tracker />

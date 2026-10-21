@@ -147,6 +147,32 @@ public/brand/             logo, marque, blobs chromés
 
 ---
 
+## L'intro de l'accueil
+
+La même entrée que la page de liens : le logo apparaît en chrome sur fond de nuit, un
+reflet coule dessus, l'intérieur de son ovale s'allume et l'on y voit déjà le site. Puis
+l'ovale se détache et grandit jusqu'à sortir de l'écran, comme une porte qu'on passe.
+Le logo, lui, reste au centre pendant tout le passage, devient blanc, et glisse jusqu'à
+sa place dans le manifeste pendant que la page monte.
+
+- **Une fois par onglet.** Pour la revoir : `https://newavesphere.fr/#intro`.
+- **Passable** d'un tap, d'un clic, de la molette ou d'une touche.
+- **Jamais jouée** pour qui a figé les animations ou demandé moins de mouvement,
+  pour les robots, ni sur un lien `/#la-suite`.
+- **Rien à télécharger de plus** : l'anneau et le trou sont deux ellipses écrites dans
+  le CSS, le logo est celui du manifeste.
+
+| Fichier | Rôle |
+|---|---|
+| `src/lib/intro.ts` | la décision et le minutage (testé : `tests/intro.test.mjs`) |
+| `src/components/IntroPortail.tsx` | la scène et le script, rendus par le layout sur l'accueil |
+| `src/app/globals.css`, section « l'entrée sur le site » | le dessin |
+
+Pour changer le rythme : `MINUTAGE` dans `lib/intro.ts`, et les trois variables du même
+nom en tête de la section CSS (un test vérifie qu'elles restent d'accord).
+
+---
+
 ## Déployer
 
 1. Pousse sur GitHub.
