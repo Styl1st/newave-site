@@ -885,6 +885,8 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
     & .entree-menu,
     & .plus-panneau,
     & .page-in,
+    & .page-in > :not(.chargement),
+    & .page-in > :not(.chargement) > *,
     & .panneau-edition,
     & .panneau-apercu,
     & .apercu-carreau {
@@ -915,52 +917,179 @@ a.card-light:active { transform: translateY(-1px) scale(.988); }
   }
 }
 
-/* ---------- transitions de page ----------
-   Un fondu seul, sans glissement.
+/* ---------- le passage d'une page à l'autre ----------
+   EN PROFONDEUR. L'ancienne page recule et s'efface ; la nouvelle
+   arrive en avant, d'un peu plus près, et se pose ; son titre puis ses
+   blocs suivent, l'un après l'autre. Ce qui part s'éloigne, ce qui
+   arrive vient vers soi : c'est la même direction pour toute la
+   visite, l'écran d'attente compris.
 
-   Le contenu montait de dix pixels en apparaissant. Sous une barre de
-   navigation translucide et collante, ce mouvement se lisait très mal :
-   on voyait le haut de la page traverser le verre par en dessous, et
-   la barre semblait se remplir. Le fondu seul ne traverse rien. */
+   UN FONDU SEUL SUR LE CADRE, ET LA PROFONDEUR SUR CE QU'IL CONTIENT.
+   `.page-in` enveloppe toute la page. Une transformation posée dessus
+   en ferait le repère de tout ce qui est en position fixe à
+   l'intérieur — les onglets du forum au doigt, la barre d'achat d'une
+   pièce, la barre d'administration — qui sauteraient le temps de
+   l'animation. Le cadre ne fait donc que s'allumer ; c'est son contenu
+   qui avance, sauf s'il porte justement un de ces éléments fixes.
+
+   Le contenu montait autrefois de dix pixels en apparaissant, et on
+   voyait le haut de la page traverser le verre de la barre par en
+   dessous. Ici rien ne monte vers la barre : la page se resserre vers
+   le haut (`transform-origin` en haut), elle ne glisse pas.
+
+   QUAND LA PAGE ARRIVE APRÈS UNE ATTENTE, c'est l'écran d'attente que
+   le cadre a allumé. La page qui le remplace est un NOUVEL élément :
+   ses animations d'entrée jouent à ce moment-là, pendant que le double
+   de l'écran d'attente recule par-dessus (voir `EcranChargement`). */
 @keyframes pageIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-.page-in { animation: pageIn .34s ease both; }
+/* L'écran d'attente a sa propre entrée, retardée pour ne pas
+   clignoter : il est écarté de tout ce qui suit. */
+.page-in > :not(.chargement, :has(.fixed, [data-fixe])) {
+  transform-origin: 50% 0;
+  animation:
+    page-avance .62s cubic-bezier(.2, .8, .2, 1) backwards,
+    page-allume .42s .12s ease backwards;
+}
+.page-in > :not(.chargement):has(.fixed, [data-fixe]) {
+  animation: pageIn .4s ease backwards;
+}
+/* Le mouvement et la lumière sont deux animations : la page avance
+   tout de suite, mais ne s'allume qu'au bout de cent vingt
+   millisecondes. C'est le temps que l'ancienne, en reculant, ait
+   presque fini de s'effacer ; sans ce délai, les deux pages se
+   superposaient en double exposition. */
+@keyframes page-avance {
+  from { transform: scale(1.022); }
+  to   { transform: none; }
+}
+/* .01 et non 0, comme l'intro : un élément tout à fait transparent
+   n'est pas candidat au « plus grand affichage » que mesure Chrome, et
+   le chargement de la page serait compté au moment où il s'allume. */
+@keyframes page-allume {
+  from { opacity: .01; }
+  to   { opacity: 1; }
+}
 
-/* La barre du haut et le pied entrent AVEC la page, pas avant elle.
-   ----------------------------------------------------------------
-   Ils vivent hors de `.page-in`, et c'est nécessaire : la barre est
-   collante, elle doit rester enfant direct de <body>, sinon le
-   `overflow-x-clip` de <main> lui vole son ancrage et elle cesse de
-   suivre le défilement.
+/* Puis les blocs, l'un après l'autre. Le titre a sa propre entrée
+   (plus bas, `glisseTitre`) ; les blocs qui le suivent se posent à
+   quatre-vingts millisecondes d'écart. Au-delà du cinquième, ils sont
+   sous le pli : c'est le défilement qui les fera entrer.
 
-   Mais du coup, ils ne sont pas remontés à chaque navigation : leur
-   animation d'entrée ne repartait jamais. Le contenu apparaissait en
-   fondu, la barre était déjà là. Deux temps au lieu d'un, exactement
-   ce qu'on avait corrigé pour le menu de téléphone.
+   On écarte ce qui a déjà sa chorégraphie (`.rise`, le manifeste de
+   l'accueil), ce qui contient un élément fixe, et les zones de travail
+   marquées `data-no-reveal` : un formulaire d'administration qui
+   arrive en cascade, c'est un formulaire qu'on attend. */
+.page-in > :not(.chargement) > :is(:nth-child(2), :nth-child(3), :nth-child(4), :nth-child(5)):not(header, .rise, .arrive, [data-reveal], .card-light, .glass, [data-no-reveal], :has(.fixed, [data-fixe])) {
+  animation: bloc-pose .6s cubic-bezier(.2, .8, .2, 1) backwards;
+}
+.page-in > :not(.chargement) > :nth-child(2) { animation-delay: .08s; }
+.page-in > :not(.chargement) > :nth-child(3) { animation-delay: .16s; }
+.page-in > :not(.chargement) > :nth-child(4) { animation-delay: .24s; }
+.page-in > :not(.chargement) > :nth-child(5) { animation-delay: .3s; }
 
-   D'où ces deux règles jumelles. `data-entree` alterne entre « a » et
-   « b » à chaque changement d'adresse : c'est le CHANGEMENT DE NOM de
-   l'animation qui la relance, une même animation reposée à l'identique
-   ne rejouerait pas. La valeur de départ est écrite par le serveur
-   dans layout.tsx, sans quoi le premier affichage montrerait la barre
-   avant de la faire clignoter.
+/* « Figé » dans Apparence : la page apparaît en fondu, sans avancer ni
+   se poser. */
+html[data-fige="1"] .page-in > :not(.chargement, :has(.fixed, [data-fixe])),
+html[data-fige="1"] .page-in > :not(.chargement) > :is(:nth-child(2), :nth-child(3), :nth-child(4), :nth-child(5)):not(header, .rise, .arrive, [data-reveal], .card-light, .glass, [data-no-reveal], :has(.fixed, [data-fixe])) {
+  animation-name: pageIn;
+}
+@keyframes bloc-pose {
+  from { opacity: .01; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Le pied entre AVEC la page, pas avant elle.
+   ------------------------------------------
+   Il vit hors de `.page-in` : rien ne le remonte à la navigation, et
+   son fondu ne repartirait pas tout seul. `data-entree` alterne entre
+   « a » et « b » à chaque changement d'adresse : c'est le CHANGEMENT
+   DE NOM de l'animation qui la relance, une même animation reposée à
+   l'identique ne rejouerait pas. La valeur de départ est écrite par le
+   serveur dans layout.tsx.
+
+   LA BARRE DU HAUT, ELLE, NE CLIGNOTE PLUS. Elle entrait aussi en
+   fondu à chaque page, pour ne pas être « déjà là » pendant que le
+   contenu apparaissait. Avec le passage en profondeur, c'est l'inverse
+   qu'on veut : la page recule et revient SOUS une barre immobile, qui
+   devient le cadre fixe de la visite. Une barre qui s'éteint et se
+   rallume à chaque clic donnerait l'impression de recharger le site.
 
    `backwards` et non `both` : une fois le fondu terminé, l'opacité
-   redevient celle des règles ordinaires. Avec `both`, l'animation
-   l'aurait figée à 1 pour toujours et le menu de téléphone n'aurait
-   plus jamais pu effacer la barre. */
-html[data-entree="a"] > body > header,
+   redevient celle des règles ordinaires. */
 html[data-entree="a"] > body > footer { animation: pageIn .34s ease backwards; }
-
-html[data-entree="b"] > body > header,
 html[data-entree="b"] > body > footer { animation: pageInBis .34s ease backwards; }
 
 @keyframes pageInBis {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ---------- la transition de vue ----------
+   Voir `PageTransition`. Le navigateur photographie l'écran au clic, le
+   routeur remplace la page, et c'est cette photographie qu'on anime ici.
+
+   L'ÉCRAN ENTIER, ET NON LE SEUL CONTENU. La première version
+   photographiait <main> seul, pour que le décor reste immobile. Mais
+   <main> fait toute la hauteur de la page, souvent plusieurs écrans, et
+   ses blocs penchés par le cylindre lui donnent un débordement en
+   perspective : Chromium rendait la photographie écrasée en hauteur et
+   décalée, la page reculait déformée. La photographie de l'écran, elle,
+   est exactement ce qu'on voyait, défilement compris.
+
+   Deux calques, nommés le temps du passage :
+     - la racine — tout l'écran sauf la barre. L'ancienne photographie
+       passe AU-DESSUS de la nouvelle page, recule vers le milieu de
+       l'écran et s'efface ; la nouvelle est déjà là dessous, vivante,
+       et fait sa propre entrée (`page-avance`, l'écran d'attente) ;
+     - `barre`, la barre du haut : immobile et au-dessus de tout. Elle
+       est le cadre fixe de la visite.
+
+   LES BORDS DE LA PHOTOGRAPHIE S'ESTOMPENT. Le décor est dedans : en
+   reculant, les blobs chromés des coins et les glyphes des côtés se
+   seraient dédoublés avec ceux, immobiles, de la nouvelle page. Le
+   dégradé du fond, lui, est trop doux pour qu'un dédoublement se voie ;
+   on n'efface donc que les bords, là où sont les formes nettes. */
+html[data-transition] body > header { view-transition-name: barre; }
+/* Voir `quittee` dans PageTransition : sans ça, une page dont un bloc
+   tourne avec le défilement bloque la photographie. */
+[data-depart],
+[data-depart] * { animation-play-state: paused !important; }
+
+::view-transition-group(root) { animation: none; }
+::view-transition-image-pair(root) { isolation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { mix-blend-mode: normal; }
+::view-transition-new(root) { animation: none; }
+/* Elle recule vite au début — c'est ce qu'on voit — et s'efface plus
+   tôt qu'elle ne finit de reculer, pour laisser la place à la nouvelle
+   qui s'allume. */
+::view-transition-old(root) {
+  z-index: 1;
+  animation:
+    page-recule .42s cubic-bezier(.2, .7, .3, 1) both,
+    page-efface .26s cubic-bezier(.4, 0, .6, 1) both;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%),
+    linear-gradient(transparent 0, #000 7%, #000 93%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%),
+    linear-gradient(transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask-composite: intersect;
+}
+@keyframes page-recule {
+  to { transform: scale(.935); }
+}
+@keyframes page-efface {
+  to { opacity: 0; }
+}
+
+::view-transition-group(barre) { animation: none; }
+::view-transition-old(barre) { display: none; }
+::view-transition-new(barre) { animation: none; }
 
 /* ---------- les barres de défilement ----------
 
@@ -1149,13 +1278,31 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
     drop-shadow(0 0 10px rgba(var(--accent-1), .65));
 }
 
-/* Barre de chargement en haut, pendant une navigation. */
+/* Barre de chargement en haut, pendant une navigation.
+   Elle était blanche ; elle prend les accents du thème, comme la
+   lumière qui tourne sur l'anneau de l'écran d'attente, et porte une
+   tête plus vive : c'est elle qu'on suit des yeux. */
 .progress {
-  position: fixed; top: 0; left: 0; z-index: 200; height: 2.5px;
-  background: linear-gradient(90deg, rgba(255,255,255,.4), #fff);
-  box-shadow: 0 0 12px rgba(255,255,255,.7);
+  position: fixed; top: 0; left: 0; z-index: 200; height: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg,
+    rgba(var(--accent-2), 0) 0%,
+    rgba(var(--accent-2), .85) 35%,
+    rgb(var(--accent-3)) 78%,
+    #fff 100%);
+  box-shadow: 0 0 10px rgba(var(--accent-3), .75);
   transition: width .25s ease, opacity .3s ease;
   pointer-events: none;
+}
+.progress::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 70px;
+  height: 12px;
+  translate: 0 -50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .9), rgba(var(--accent-3), .35) 60%, transparent);
 }
 
 /* ---------- squelettes de chargement ---------- */
@@ -1248,11 +1395,13 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
 /* Le titre et le chapeau d'une page entrent avant le reste. */
 .page-in > * > header,
 .page-in > * > * > header {
-  animation: glisseTitre .55s cubic-bezier(.19, .84, .3, 1) both;
+  animation: glisseTitre .55s .1s cubic-bezier(.19, .84, .3, 1) both;
 }
+html[data-fige="1"] .page-in > * > header,
+html[data-fige="1"] .page-in > * > * > header { animation-name: pageIn; }
 
 @keyframes glisseTitre {
-  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  from { opacity: .01; transform: translate3d(0, 18px, 0); }
   to   { opacity: 1; transform: none; }
 }
 
@@ -5112,3 +5261,221 @@ html:is([data-intro="entree"], [data-intro="contenu"]) .decor:not([data-decor]) 
   35%  { opacity: 1; }
   to   { opacity: 1; transform: none; }
 }
+
+/* ============================================================
+   L'ÉCRAN D'ATTENTE : LE LOGO EN CHROME
+   ============================================================
+
+   Voir `components/EcranChargement`. Le logo en chrome, un reflet qui
+   passe dessus d'un côté puis de l'autre, une lumière qui fait le tour
+   de son anneau, un halo du thème derrière, et la phrase en dessous.
+
+   IL ARRIVE APRÈS 180 MILLISECONDES. Une page prête en cent
+   millisecondes ne montre donc rien du tout ; une page qui se fait
+   attendre montre le logo, qui avance un peu en apparaissant.
+
+   Toutes les couleurs suivent le thème, comme celles de l'intro : le
+   chrome est teinté du voile dans ses creux et du troisième accent dans
+   ses reflets, la traînée de la lumière prend les accents. */
+.chargement {
+  /* La largeur du logo ; le reste s'en déduit (voir l'intro pour les
+     rapports de l'anneau). */
+  --w: clamp(168px, 44vw, 236px);
+
+  --chrome-ombre: #6e6888;
+  --chrome-creux: #5f5a7c;
+  --chrome-gris: #b9b3d3;
+  --chrome-reflet: #d9cdf9;
+  --chrome-vif: #f7f7fa;
+  --etincelle: #ffffff;
+
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 30px;
+  /* Centré dans ce qu'il reste d'écran sous la barre : le pied de
+     page reste sous le pli, il n'a pas à clignoter pendant l'attente. */
+  min-height: max(380px, calc(100svh - var(--haut-entete) - 64px));
+  padding: 40px var(--pad) 72px;
+  text-align: center;
+  animation: chargement-arrive .5s .18s cubic-bezier(.2, .8, .2, 1) both;
+}
+@supports (color: color-mix(in srgb, white 50%, black)) {
+  .chargement {
+    --chrome-ombre: color-mix(in srgb, #7a7a86 78%, rgb(var(--voile)));
+    --chrome-creux: color-mix(in srgb, #66666f 72%, rgb(var(--voile)));
+    --chrome-gris: color-mix(in srgb, #b4b4bf 82%, rgb(var(--accent-3)));
+    --chrome-reflet: color-mix(in srgb, #ffffff 65%, rgb(var(--accent-3)));
+  }
+  /* En mode clair, le chrome blanc disparaîtrait dans le fond pâle :
+     il passe au métal sombre, et la lumière prend la couleur vive. */
+  html[data-clair="1"] .chargement {
+    --chrome-ombre: color-mix(in srgb, #221046 88%, rgb(var(--accent-1)));
+    --chrome-creux: #160a30;
+    --chrome-gris: color-mix(in srgb, #5d5287 80%, rgb(var(--accent-3)));
+    --chrome-reflet: color-mix(in srgb, #8a7cc0 60%, rgb(var(--accent-3)));
+    --chrome-vif: color-mix(in srgb, #4a3d78 70%, rgb(var(--accent-2)));
+    --etincelle: rgb(var(--accent-1));
+  }
+}
+
+.chargement-scene {
+  position: relative;
+  width: var(--w);
+  height: calc(var(--w) * .65536);
+}
+
+/* Le halo, centré sur l'anneau et penché comme lui. Il respire :
+   c'est la seule chose qui bouge autour du logo. */
+.chargement-halo {
+  position: absolute;
+  left: 49.48%;
+  top: 30.95%;
+  width: calc(var(--w) * 1.9);
+  height: calc(var(--w) * 1.05);
+  translate: -50% -50%;
+  rotate: -12deg;
+  background: radial-gradient(closest-side, rgba(var(--accent-3), .55), rgba(var(--accent-2), .22) 55%, transparent);
+  pointer-events: none;
+  animation: chargement-respire 3.6s ease-in-out infinite;
+}
+
+.chargement-logo {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(0 6px 20px rgba(var(--voile), .5));
+}
+
+/* Le logo lui-même : un dégradé de chrome découpé par l'image du logo,
+   le même que l'intro. Il glisse d'un bord à l'autre, puis revient. */
+.chargement-chrome {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg, var(--chrome-ombre) 0%, var(--chrome-vif) 9%, var(--chrome-gris) 17%,
+    var(--chrome-creux) 26%, var(--chrome-vif) 35%, var(--chrome-reflet) 43%, var(--chrome-gris) 52%,
+    var(--chrome-vif) 61%, var(--chrome-ombre) 71%, var(--chrome-vif) 81%, var(--chrome-vif) 89%, var(--chrome-gris) 100%);
+  background-size: 280% 100%;
+  -webkit-mask: url(/brand/logo-white.webp) 0 0 / 100% 100% no-repeat;
+  mask: url(/brand/logo-white.webp) 0 0 / 100% 100% no-repeat;
+  animation: chargement-reflet 2.8s cubic-bezier(.45, 0, .25, 1) infinite alternate;
+}
+
+/* L'orbite, posée sur l'anneau du logo. Le repère du SVG est celui de
+   l'anneau ; l'anneau déborde à peine du coin haut gauche du logo et
+   occupe 99,47 % de sa largeur, 62,65 % de sa hauteur. */
+.chargement-orbite {
+  position: absolute;
+  left: -.26%;
+  top: -.38%;
+  width: 99.47%;
+  height: 62.65%;
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 4px rgba(255, 255, 255, .9))
+    drop-shadow(0 0 14px rgba(var(--accent-3), .95));
+}
+.chargement-orbite ellipse {
+  fill: none;
+  stroke-linecap: round;
+  animation: chargement-orbite 1.9s linear infinite;
+}
+/* Trois traits qui partent du même point : la lumière devant, deux
+   traînées de plus en plus longues et pâles derrière elle. Ils
+   avancent à l'envers du sens du tracé, ce qui met les traînées
+   derrière et fait passer la lumière de gauche à droite sur le devant
+   de l'anneau. */
+.chargement-etincelle {
+  stroke: var(--etincelle);
+  stroke-width: 46;
+  stroke-dasharray: 26 974;
+}
+.chargement-trainee {
+  stroke: rgb(var(--accent-3));
+  stroke-width: 36;
+  stroke-dasharray: 110 890;
+  opacity: .9;
+}
+.chargement-trainee-longue {
+  stroke: rgb(var(--accent-2));
+  stroke-width: 28;
+  stroke-dasharray: 260 740;
+  opacity: .5;
+}
+
+.chargement-phrase {
+  display: grid;
+  margin: 0;
+  min-height: 1.5em;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  color: color-mix(in srgb, var(--color-white) 80%, transparent);
+  text-shadow: 0 1px 14px rgba(var(--voile), .55);
+}
+html[data-clair="1"] .chargement-phrase { text-shadow: none; }
+.chargement-phrase > span { grid-area: 1 / 1; }
+.chargement-entrante { animation: chargement-phrase-entre .5s cubic-bezier(.2, .8, .2, 1) both; }
+.chargement-sortante { animation: chargement-phrase-sort .32s ease both; }
+
+/* Le double qui s'efface quand la page arrive. Il reprend l'écran tel
+   quel, au même endroit : son entrée ne doit pas rejouer. */
+.chargement-fantome {
+  position: fixed;
+  z-index: 15;
+  margin: 0;
+  min-height: 0;
+  pointer-events: none;
+  animation: none;
+}
+
+@keyframes chargement-arrive {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes chargement-apparait {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes chargement-respire {
+  0%, 100% { opacity: .62; scale: .96; }
+  50%      { opacity: 1;   scale: 1.04; }
+}
+@keyframes chargement-reflet {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0% 50%; }
+}
+@keyframes chargement-orbite {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: 1000; }
+}
+@keyframes chargement-phrase-entre {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes chargement-phrase-sort {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-7px); }
+}
+
+/* Une machine qui peine (voir `Menagement`) garde tout, sauf les
+   lueurs : un flou redessiné à chaque image est ce qui coûte. */
+html[data-allege] .chargement-logo,
+html[data-allege] .chargement-orbite { filter: none; }
+
+/* Moins de mouvement : le logo reste en chrome, immobile, sans orbite ;
+   l'écran et les phrases apparaissent en fondu, sans bouger. Le délai
+   d'apparition reste : c'est lui qui évite le clignotement. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) .chargement { animation-name: chargement-apparait; }
+  html:not([data-anim-choisi="1"]) :is(.chargement-halo, .chargement-chrome) { animation: none; }
+  html:not([data-anim-choisi="1"]) .chargement-chrome { background-position: 50% 50%; }
+  html:not([data-anim-choisi="1"]) .chargement-orbite { display: none; }
+  html:not([data-anim-choisi="1"]) :is(.chargement-entrante, .chargement-sortante) { animation-name: chargement-apparait; }
+  html:not([data-anim-choisi="1"]) .chargement-sortante { display: none; }
+}
+html[data-fige="1"] .chargement { animation-name: chargement-apparait; }
+html[data-fige="1"] :is(.chargement-halo, .chargement-chrome) { animation: none; }
+html[data-fige="1"] .chargement-chrome { background-position: 50% 50%; }
+html[data-fige="1"] .chargement-orbite { display: none; }
+html[data-fige="1"] :is(.chargement-entrante, .chargement-sortante) { animation-name: chargement-apparait; }
+html[data-fige="1"] .chargement-sortante { display: none; }

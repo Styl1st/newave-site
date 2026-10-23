@@ -1,19 +1,13 @@
+import EcranChargement from "@/components/EcranChargement";
+
 /**
- * Affiché pendant qu'une page se prépare.
- * Un squelette qui reprend la silhouette du contenu rassure davantage
- * qu'une roue qui tourne : on voit que quelque chose arrive.
+ * Affiché pendant qu'une page se prépare, c'est-à-dire à presque chaque
+ * navigation : les pages du site sont lues à la demande.
+ *
+ * C'était un squelette de six cartes. Il rassurait sur l'annuaire, et
+ * mentait partout ailleurs : une fiche de marque, un post, le forum
+ * n'ont pas cette silhouette. Voir `EcranChargement`.
  */
 export default function Loading() {
-  return (
-    <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
-      <div className="skeleton mb-4 h-4 w-32" />
-      <div className="skeleton mb-8 h-10 w-2/3 max-w-md" />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="skeleton" style={{ height: 260, animationDelay: `${i * 90}ms` }} />
-        ))}
-      </div>
-    </div>
-  );
+  return <EcranChargement />;
 }

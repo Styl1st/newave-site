@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { cibleDeTraversee } from "@/lib/traversee";
 
 /**
  * Deux choses qui donnent au site l'air d'être vivant :
@@ -27,7 +28,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * composant qui enveloppe toutes les pages du site. On lit donc
  * `location` au clic puis à chaque battement du minuteur qui existe
  * déjà : il ne coûte rien de plus.
+ *
+ * LE PASSAGE EN PROFONDEUR. Quand on change de page, l'ancienne recule
+ * et s'efface pendant que la nouvelle arrive, puis son titre et ses
+ * blocs se posent l'un après l'autre (voir « le passage d'une page à
+ * l'autre » dans globals.css).
+ *
+ * Faire reculer l'ancienne page, c'est la difficulté : Next la retire
+ * du document dès que la suivante (ou son écran d'attente) est prête,
+ * en général dans l'image qui suit le clic. Il n'en reste rien à
+ * animer. On passe donc par les transitions de vue du navigateur
+ * (`document.startViewTransition`) : il photographie l'écran tel
+ * qu'on le voit, on laisse le routeur remplacer la page, et c'est la
+ * photographie qui recule. La barre du haut est photographiée à part
+ * et ne bouge pas : elle reste le cadre fixe de la visite.
+ *
+ * Sans ces transitions (anciens navigateurs), avec moins de mouvement
+ * demandé, ou pendant l'intro, on laisse faire le lien : la nouvelle
+ * page arrive quand même en avant, seule.
  */
+
+/**
+ * Le temps qu'on accorde au routeur pour poser la page suivante.
+ *
+ * Pendant ce temps, le navigateur fige l'écran sur la photographie. La
+ * page suivante (ou son écran d'attente) est presque toujours déjà
+ * préchargée et arrive en une ou deux images. Si elle tarde — un lien
+ * que le routeur n'avait pas vu venir —, on renonce à la transition
+ * plutôt que de laisser un écran figé : la page arrivera seule.
+ */
+const PATIENCE = 220;
+
+/** Le temps qu'on accorde au navigateur pour photographier la page. */
+const DELAI_PHOTO = 250;
 
 /**
  * Le filet, en millisecondes.
@@ -42,6 +75,10 @@ const BUTOIR = 8000;
 
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  /* Ce qui attend que la page suivante soit posée pour libérer la
+     transition en cours. */
+  const arrivee = useRef<(() => void) | null>(null);
   const [largeur, setLargeur] = useState(0);
   const [actif, setActif] = useState(false);
   const minuteur = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -90,6 +127,12 @@ export default function PageTransition({ children }: { children: React.ReactNode
       setLargeur(12);
       arreter();
 
+      const cible = cibleDeTraversee(href, window.location);
+      if (cible && !lien.hasAttribute("download") && !lien.closest("[data-sans-transition]") && peutTraverser()) {
+        e.preventDefault();
+        traverser(cible);
+      }
+
       // On avance sans jamais atteindre la fin : la barre ne doit pas
       // promettre une arrivée qu'elle ne contrôle pas.
       minuteur.current = setInterval(() => {
@@ -106,24 +149,102 @@ export default function PageTransition({ children }: { children: React.ReactNode
       butoir.current = setTimeout(terminer, BUTOIR);
     }
 
+    /** Le navigateur sait faire, et personne n'a demandé le calme. */
+    function peutTraverser(): boolean {
+      if (typeof document.startViewTransition !== "function") return false;
+      const racine = document.documentElement;
+      if (racine.dataset.fige === "1") return false;
+      /* Une machine qui peinait déjà sans verre dépoli ne gagnera rien à
+         photographier l'écran (voir `Menagement`). */
+      if (racine.dataset.allege === "2") return false;
+      if (racine.dataset.intro && racine.dataset.intro !== "vu") return false;
+      if (racine.dataset.animChoisi !== "1" && matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+      return true;
+    }
+
+    function traverser(cible: string) {
+      const racine = document.documentElement;
+      racine.dataset.transition = "1";
+
+      /* La page qu'on quitte se fige le temps d'être photographiée. Les
+         blocs animés au défilement (le cylindre) empêchaient Chromium
+         de prendre la photographie tant qu'ils tournaient : il attendait
+         jusqu'à son délai de quatre secondes. Figés à l'endroit exact où
+         ils sont, ils ne changent rien à l'image. La page suivante est
+         un nouvel élément, elle n'est pas concernée. */
+      const quittee = document.querySelector<HTMLElement>("main .page-in");
+      quittee?.setAttribute("data-depart", "");
+
+      let trop = false;
+      let photographiee = false;
+      let delai = 0;
+      let liberer!: () => void;
+      const posee = new Promise<void>((r) => (liberer = r));
+      arrivee.current = liberer;
+
+      const transition = document.startViewTransition(() => {
+        photographiee = true;
+        router.push(cible);
+        delai = window.setTimeout(() => {
+          trop = true;
+          arrivee.current = null;
+          liberer();
+        }, PATIENCE);
+        return posee;
+      });
+
+      /*
+       * LA PHOTOGRAPHIE ELLE-MÊME PEUT TARDER. Le navigateur la prend à
+       * l'image suivante, en général en quelques millisecondes ; mais une
+       * page lourde sur une machine sans carte graphique peut le faire
+       * attendre bien plus, et l'on a vu Chromium y rester jusqu'à son
+       * délai de quatre secondes. On ne laisse pas le clic sans réponse :
+       * passé ce délai, on renonce à la transition, et le routeur part
+       * aussitôt.
+       */
+      const garde = window.setTimeout(() => {
+        if (!photographiee) transition.skipTransition();
+      }, DELAI_PHOTO);
+
+      transition.ready.then(
+        () => trop && transition.skipTransition(),
+        () => {}
+      );
+      transition.finished.finally(() => {
+        window.clearTimeout(delai);
+        window.clearTimeout(garde);
+        delete racine.dataset.transition;
+        quittee?.removeAttribute("data-depart");
+      });
+    }
+
     document.addEventListener("click", auClic, true);
     return () => {
       document.removeEventListener("click", auClic, true);
       arreter();
     };
-  }, [arreter, terminer]);
+  }, [arreter, terminer, router]);
+
+  /* La page suivante est posée (ou son écran d'attente) : on libère la
+     transition. En effet de mise en page, pour que le navigateur la
+     photographie dans l'image même où elle apparaît. */
+  useLayoutEffect(() => {
+    const liberer = arrivee.current;
+    arrivee.current = null;
+    liberer?.();
+  }, [pathname]);
 
   /*
-   * La barre du haut et le pied de page entrent avec le contenu.
+   * Le pied de page entre avec le contenu.
    *
-   * Ils sont hors de ce composant — la barre doit rester enfant direct
-   * de <body> pour rester collante — donc rien ne les remonte à la
-   * navigation et leur fondu ne repartait pas tout seul. On bascule
-   * l'attribut d'une valeur à l'autre : c'est le changement de nom
-   * d'animation qui la relance côté CSS.
+   * Il est hors de ce composant, donc rien ne le remonte à la navigation
+   * et son fondu ne repartait pas tout seul. On bascule l'attribut d'une
+   * valeur à l'autre : c'est le changement de nom d'animation qui le
+   * relance côté CSS. (La barre du haut, elle, ne clignote plus : voir
+   * globals.css.)
    *
    * Le premier passage est ignoré : le serveur a déjà écrit « a » sur
-   * <html>, et le rejouer ici ferait clignoter la barre au chargement.
+   * <html>, et le rejouer ici ferait clignoter le pied au chargement.
    */
   const premierRendu = useRef(true);
   useEffect(() => {

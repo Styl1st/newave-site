@@ -171,6 +171,35 @@ sa place dans le manifeste pendant que la page monte.
 Pour changer le rythme : `MINUTAGE` dans `lib/intro.ts`, et les trois variables du même
 nom en tête de la section CSS (un test vérifie qu'elles restent d'accord).
 
+## Les changements de page
+
+**En profondeur.** On clique : l'ancienne page recule et s'efface, la barre du haut ne
+bouge pas, la nouvelle arrive d'un peu plus près et se pose, son titre puis ses blocs
+suivent l'un après l'autre.
+
+**L'écran d'attente.** Presque toutes les pages sont lues à la demande, donc on attend à
+chaque clic. Si ça dure plus de 180 ms, le logo apparaît en chrome, une lumière fait le
+tour de son anneau, et une phrase dit ce qu'on prépare (« On ouvre l'annuaire des
+marques… », puis « On repasse les cols… » si ça traîne). Il s'efface en reculant quand la
+page arrive.
+
+- Le recul de l'ancienne page passe par les transitions de vue du navigateur (Chrome,
+  Edge, Safari 18, Firefox récent). Ailleurs, la nouvelle page arrive quand même, seule.
+- Rien de tout ça pour qui a figé les animations ou demandé moins de mouvement : les
+  pages apparaissent en fondu, l'écran d'attente est immobile.
+- Un lien peut refuser le passage avec `data-sans-transition`.
+
+| Fichier | Rôle |
+|---|---|
+| `src/components/PageTransition.tsx` | le recul de l'ancienne page, la barre de progression |
+| `src/lib/traversee.ts` | quels liens y ont droit (testé : `tests/traversee.test.mjs`) |
+| `src/components/EcranChargement.tsx`, `src/app/loading.tsx` | l'écran d'attente |
+| `src/lib/phrases-attente.ts` | les phrases (testé : `tests/phrases-attente.test.mjs`) |
+| `src/app/globals.css`, sections « le passage d'une page à l'autre » et « l'écran d'attente » | le dessin |
+
+Pour ajouter une phrase : la liste `PHRASES` (le vestiaire) ou `CONTEXTE` (une par page)
+dans `lib/phrases-attente.ts`.
+
 ---
 
 ## Déployer
