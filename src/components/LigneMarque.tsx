@@ -14,6 +14,13 @@ import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 /**
  * Une marque sur une seule ligne, avec ce qu'elle fabrique posé dedans.
  *
+ * DEUX HABITS. `carte` (par défaut) : la ligne claire, dans sa carte,
+ * celle des classements et des favoris. `halo` : la ligne de l'annuaire,
+ * posée à même le fond entre deux filets, qu'un halo aux couleurs de
+ * l'ambiance éclaire sous la souris (voir `Halo` et `.ligne-halo`). Au
+ * doigt, il n'y a pas de survol : c'est la ligne qui passe au milieu de
+ * l'écran qui s'allume, pendant qu'on fait défiler.
+ *
  * POURQUOI CETTE FORME EXISTE À CÔTÉ DE LA CARTE. Une grille de cartes
  * est faite pour flâner : de grandes images, peu d'entrées à l'écran,
  * et l'on descend jusqu'à ce que quelque chose accroche. Passé une
@@ -83,6 +90,7 @@ export default function LigneMarque({
   elan,
   note,
   prioritaire = false,
+  variante = "carte",
 }: {
   /** Une fiche complète convient aussi : la ligne n'en lit pas plus. */
   brand: FicheDAnnuaire;
@@ -114,7 +122,10 @@ export default function LigneMarque({
    * au lieu d'attendre la mise en page comme une image `lazy`.
    */
   prioritaire?: boolean;
+  /** L'habit de la ligne. Voir l'en-tête du fichier. */
+  variante?: "carte" | "halo";
 }) {
+  const halo = variante === "halo";
   const ancre = useRef<HTMLDivElement>(null);
   const [pieces, setPieces] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
@@ -161,6 +172,34 @@ export default function LigneMarque({
     };
   }, [brand.slug]);
 
+  /*
+   * AU DOIGT, LA LUMIÈRE SUIT LE DÉFILEMENT.
+   *
+   * Sans souris, le halo n'a rien à suivre. La ligne qui traverse le
+   * milieu de l'écran s'allume donc à sa place : une bande de quelques
+   * pour cent, au centre, que guette un `IntersectionObserver`. Pas
+   * d'écouteur de défilement, pas de calcul à chaque image : c'est le
+   * navigateur qui prévient quand une ligne entre ou sort de la bande.
+   * L'état est posé en attribut, sans rendu React.
+   */
+  useEffect(() => {
+    const el = ancre.current;
+    if (!el || !halo) return;
+    if (!window.matchMedia("(hover: none)").matches) return;
+
+    const guetteur = new IntersectionObserver(
+      (entrees) => {
+        for (const e of entrees) {
+          if (e.isIntersecting) el.dataset.centre = "1";
+          else delete el.dataset.centre;
+        }
+      },
+      { rootMargin: "-46% 0px -46% 0px" }
+    );
+    guetteur.observe(el);
+    return () => guetteur.disconnect();
+  }, [halo]);
+
   const visuel = brand.logo_url ?? brand.cover_url;
   const estUnLogo = Boolean(brand.logo_url);
 
@@ -174,11 +213,11 @@ export default function LigneMarque({
    * une ligne de mille pixels comme sur un téléphone.
    */
   const sousLigne = [
-    [brand.city, brand.country].filter(Boolean).join(" · "),
+    [brand.city, brand.country].filter(Boolean).join(halo ? ", " : " · "),
     ...brand.categories.slice(0, 2),
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(halo ? ", " : " · ");
 
   const vide = !cherche && pieces.length === 0;
 
@@ -236,13 +275,17 @@ export default function LigneMarque({
   const serree =
     rang !== undefined || coeurs !== undefined || elan !== undefined || note !== undefined;
 
-  const rangee = serree
-    ? "card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:gap-4 sm:p-4 lg:flex-nowrap"
-    : "card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:flex-nowrap sm:gap-4 sm:p-4";
+  const rangee = halo
+    ? "ligne-halo group relative flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-5"
+    : serree
+      ? "card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:gap-4 sm:p-4 lg:flex-nowrap"
+      : "card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:flex-nowrap sm:gap-4 sm:p-4";
 
   const identite = serree
     ? `${bloc} min-w-0 flex-1 lg:w-[240px] lg:flex-none`
-    : `${bloc} min-w-0 flex-1 sm:w-[240px] sm:flex-none`;
+    : halo
+      ? `${bloc} ligne-halo-identite min-w-0 flex-1 sm:w-[260px] sm:flex-none`
+      : `${bloc} min-w-0 flex-1 sm:w-[240px] sm:flex-none`;
 
   const bande = serree
     ? `${bloc} order-last w-full lg:order-none lg:w-auto lg:min-w-0 lg:flex-1`
@@ -253,7 +296,15 @@ export default function LigneMarque({
     : `${bloc} ml-auto flex shrink-0 items-center gap-2 sm:ml-0`;
 
   return (
-    <div ref={ancre} className={rangee}>
+    <div ref={ancre} className={rangee} data-halo={halo ? "" : undefined}>
+      {/* Le décor de la ligne : les deux filets, le halo et les traits
+          qu'il allume. Tout est en CSS, voir `.ligne-halo`. */}
+      {halo && (
+        <span className="ligne-halo-decor" aria-hidden="true">
+          <span className="ligne-halo-trait" />
+        </span>
+      )}
+
       {/*
        * Le lien passe DERRIÈRE la ligne, en calque. Un <button> ne peut
        * pas vivre dans un <a> — le navigateur refuse cette imbrication —
@@ -291,7 +342,11 @@ export default function LigneMarque({
              son cadre : lui couper le nom serait lui retirer ce qui
              sert justement à la reconnaître. */}
       <div
-        className={`${bloc} grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[rgba(23,10,51,0.06)] sm:h-[62px] sm:w-[62px]`}
+        className={
+          halo
+            ? `${bloc} ligne-halo-logo grid h-[54px] w-[54px] shrink-0 place-items-center overflow-hidden rounded-[16px] sm:h-[64px] sm:w-[64px] ${estUnLogo ? "est-un-logo" : ""}`
+            : `${bloc} grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[rgba(23,10,51,0.06)] sm:h-[62px] sm:w-[62px]`
+        }
       >
         {visuel ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -313,18 +368,36 @@ export default function LigneMarque({
       {/* 2. L'identité. */}
       <div className={identite}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="m-0 min-w-0 truncate text-[15px] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[16px]">
+          <h3
+            className={
+              halo
+                ? "m-0 min-w-0 truncate text-[20px] font-black leading-[1.08] tracking-[-0.04em] text-white sm:text-[24px]"
+                : "m-0 min-w-0 truncate text-[15px] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[16px]"
+            }
+          >
             {brand.name}
           </h3>
           {brand.featured && <span className="badge shrink-0">À la une</span>}
           {etiquetteAcces && (
-            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white">
+            <span
+              className={
+                halo
+                  ? "shrink-0 rounded-full bg-white/12 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white ring-1 ring-white/25"
+                  : "shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white"
+              }
+            >
               {etiquetteAcces}
             </span>
           )}
         </div>
         {sousLigne && (
-          <p className="m-0 mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
+          <p
+            className={
+              halo
+                ? "m-0 mt-1.5 truncate text-[12.5px] font-semibold text-white/72 sm:text-[13px]"
+                : "m-0 mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]"
+            }
+          >
             {sousLigne}
           </p>
         )}
@@ -335,13 +408,25 @@ export default function LigneMarque({
              un logo et deux boutons ne montreraient plus rien. */}
       <div className={bande}>
         {vide ? (
-          <div className="grid h-[52px] place-items-center rounded-[10px] bg-[rgba(23,10,51,0.05)] sm:h-[58px]">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#8a7bab]">
+          <div
+            className={
+              halo
+                ? "grid h-[52px] place-items-center rounded-[12px] bg-white/6 sm:h-[58px]"
+                : "grid h-[52px] place-items-center rounded-[10px] bg-[rgba(23,10,51,0.05)] sm:h-[58px]"
+            }
+          >
+            <span
+              className={
+                halo
+                  ? "text-[12px] font-semibold text-white/60"
+                  : "text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#8a7bab]"
+              }
+            >
               Pas encore de pièces
             </span>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className={halo ? "grid grid-cols-4 gap-1.5 sm:gap-2" : "grid grid-cols-4 gap-1.5"}>
             {Array.from({ length: nbCases }).map((_, i) => {
               const source = pieces[i];
               const derniere = i === CASES - 1;
@@ -369,9 +454,11 @@ export default function LigneMarque({
               return (
                 <div
                   key={i}
-                  className={`relative aspect-square overflow-hidden rounded-[10px] bg-[rgba(23,10,51,0.05)] ${
-                    seulBouton ? "sm:hidden" : ""
-                  }`}
+                  className={`relative aspect-square overflow-hidden ${
+                    halo
+                      ? "ligne-halo-vignette rounded-[12px] bg-white/8"
+                      : "rounded-[10px] bg-[rgba(23,10,51,0.05)]"
+                  } ${seulBouton ? "sm:hidden" : ""}`}
                 >
                   {source && (
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -380,7 +467,10 @@ export default function LigneMarque({
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className={`h-full w-full object-cover ${enBouton ? "hidden sm:block" : ""}`}
+                      /* En habit `halo`, la photo reste sous le bouton,
+                         assombrie : une case pleine d'encre pesait plus
+                         lourd que les trois photos d'à côté. */
+                      className={`h-full w-full object-cover ${enBouton && !halo ? "hidden sm:block" : ""}`}
                     />
                   )}
                   {derniere && reste > 0 && source && (
@@ -402,7 +492,11 @@ export default function LigneMarque({
                       type="button"
                       onClick={onApercu}
                       aria-label={`Aperçu des pièces de ${brand.name}`}
-                      className="pointer-events-auto absolute inset-0 grid place-items-center gap-0.5 bg-[var(--color-ink)] text-white transition active:scale-95 sm:hidden"
+                      className={`pointer-events-auto absolute inset-0 grid place-items-center gap-0.5 transition active:scale-95 sm:hidden ${
+                        halo
+                          ? "bg-[rgba(var(--voile),0.68)] text-[#fff]"
+                          : "bg-[var(--color-ink)] text-white"
+                      }`}
                     >
                       <IconEye className="h-4 w-4" />
                       {reste > 0 && (
@@ -466,7 +560,11 @@ export default function LigneMarque({
            */
           <Link
             href={`/marques/${brand.slug}`}
-            className="pointer-events-auto hidden shrink-0 rounded-full bg-[rgba(23,10,51,0.1)] px-3.5 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--color-ink)] transition hover:bg-[rgba(23,10,51,0.18)] active:scale-95 sm:inline-block"
+            className={
+              halo
+                ? "bouton-halo pointer-events-auto hidden shrink-0 sm:inline-flex"
+                : "pointer-events-auto hidden shrink-0 rounded-full bg-[rgba(23,10,51,0.1)] px-3.5 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--color-ink)] transition hover:bg-[rgba(23,10,51,0.18)] active:scale-95 sm:inline-block"
+            }
           >
             Voir la fiche
           </Link>
@@ -478,7 +576,11 @@ export default function LigneMarque({
             /* Au doigt, c'est la dernière vignette qui porte le geste :
                deux boutons pour la même chose sur une ligne de quatre
                cents pixels, c'est un de trop. */
-            className="pointer-events-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-white transition hover:opacity-90 active:scale-95 sm:inline-flex sm:px-3.5"
+            className={
+              halo
+                ? "bouton-halo pointer-events-auto hidden shrink-0 sm:inline-flex"
+                : "pointer-events-auto hidden shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-ink)] px-3 py-2 text-[10.5px] font-black uppercase tracking-[0.1em] text-white transition hover:opacity-90 active:scale-95 sm:inline-flex sm:px-3.5"
+            }
           >
             <IconEye className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Aperçu</span>
@@ -486,12 +588,12 @@ export default function LigneMarque({
         )}
 
         {favori && (
-          <div className="pointer-events-auto">
+          <div className={halo ? "coeur-halo pointer-events-auto" : "pointer-events-auto"}>
             <FavoriteButton
               brandId={brand.id}
               initial={favori.initial}
               etiquette={brand.name}
-              taille="claire"
+              taille={halo ? "compacte" : "claire"}
               /* Quarante-quatre pixels au doigt, trente-six à la souris :
                  c'est la cible minimale de la section mobile, et le cœur
                  est le seul bouton qui reste sur la première ligne. */

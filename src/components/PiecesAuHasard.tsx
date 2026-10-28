@@ -18,14 +18,27 @@ const COMBIEN = 3;
  * envoie donc une réserve déjà mélangée et déjà répartie entre les
  * marques (voir `repartirParMarque`), et l'on n'a plus qu'à y avancer.
  *
- * « Rafraîchir » prend les suivantes de la réserve plutôt que d'en
- * retirer trois au sort. Deux avantages, et le second est le vrai : on
- * ne retombe jamais sur les mêmes qu'à l'instant d'avant, ce qui est
- * précisément ce qu'un tirage aléatoire fait une fois sur dix et qui
- * donne l'impression que le bouton ne marche pas.
+ * « Nouveau tirage » prend les suivantes de la réserve plutôt que d'en
+ * retirer trois au sort : on ne retombe jamais sur les mêmes qu'à
+ * l'instant d'avant, ce qu'un tirage aléatoire fait une fois sur dix et
+ * qui donne l'impression que le bouton ne marche pas.
+ *
+ * LES PIÈCES SONT POSÉES COMME SUR LA PAGE DES PIÈCES. La variante
+ * « nue » de `ProductCard` : la photo à même le fond, le texte dessous,
+ * sans carte blanche. Les cartes faisaient trois grands rectangles
+ * clairs au milieu d'une page violette ; posées nues, ce sont les
+ * photos qui se voient, et c'est ce que la section veut montrer.
+ *
+ * AU TÉLÉPHONE, UN CARROUSEL. Trois pièces dans une grille de deux
+ * colonnes laissaient la troisième seule sur sa ligne. Elles défilent
+ * maintenant du doigt, la suivante dépassant du bord pour dire qu'il y
+ * en a d'autres.
  */
 export default function PiecesAuHasard({ pieces }: { pieces: Product[] }) {
   const [depart, setDepart] = useState(0);
+  /* Compte les tirages, pour rejouer l'entrée des cartes même quand la
+     réserve, en faisant le tour, ramène des pièces déjà vues. */
+  const [tirage, setTirage] = useState(0);
 
   if (pieces.length === 0) return null;
 
@@ -39,7 +52,7 @@ export default function PiecesAuHasard({ pieces }: { pieces: Product[] }) {
 
   return (
     <section>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p className="eyebrow m-0">Au hasard</p>
           <h2 className="m-0 mt-2 text-[clamp(18px,4.2vw,23px)] font-extrabold leading-[1.15] tracking-[-0.03em] text-white">
@@ -57,41 +70,44 @@ export default function PiecesAuHasard({ pieces }: { pieces: Product[] }) {
         {rejouable && (
           <button
             type="button"
-            onClick={() => setDepart((d) => (d + COMBIEN) % pieces.length)}
-            className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border border-white/40 bg-white/8 px-4 text-[12.5px] font-extrabold text-white transition hover:border-white/70 hover:bg-white/20 active:scale-[.97]"
+            onClick={() => {
+              setDepart((d) => (d + COMBIEN) % pieces.length);
+              setTirage((t) => t + 1);
+            }}
+            className="nouveau-tirage"
           >
-            {/* Les deux flèches qui se croisent : le dessin universel du
-                tirage. Il n'est pas dans `Icons.tsx`, qui n'en a pas
-                l'usage ailleurs ; le trait suit les mêmes réglages. */}
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.1}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M16 3h5v5" />
-              <path d="M4 20 21 3" />
-              <path d="M21 16v5h-5" />
-              <path d="M15 15l6 6" />
-              <path d="M4 4l5 5" />
-            </svg>
-            Rafraîchir
+            {/* La pastille a le même dessin que le cœur posé sur les
+                photos de la page des pièces : un rond sombre, un trait
+                clair. Le bouton se fond dans la page au lieu d'en
+                sortir comme une pilule de plus. */}
+            <span className="nouveau-tirage-pastille" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M16 3h5v5" />
+                <path d="M4 20 21 3" />
+                <path d="M21 16v5h-5" />
+                <path d="M15 15l6 6" />
+                <path d="M4 4l5 5" />
+              </svg>
+            </span>
+            Nouveau tirage
           </button>
         )}
       </div>
 
-      {/* `aria-live` : le bouton change trois cartes d'un coup, et rien
+      {/* `aria-live` : le bouton change trois pièces d'un coup, et rien
           d'autre ne le signale à qui ne voit pas la page. */}
-      <div
-        aria-live="polite"
-        className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4"
-      >
+      <div aria-live="polite" className="tirage-rangee">
         {montrees.map((p) => (
-          <ProductCard key={p.id} product={p} showBrand />
+          <div key={`${tirage}-${p.id}`} className="tirage-piece">
+            <ProductCard product={p} showBrand nue />
+          </div>
         ))}
       </div>
 

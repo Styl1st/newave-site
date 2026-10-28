@@ -9,6 +9,7 @@ import Grille from "./Grille";
 import type { Densite } from "./densite";
 import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 import Raccourci from "@/components/Raccourci";
+import Halo from "./Halo";
 
 /**
  * Grille de marques avec aperçu des pièces.
@@ -285,6 +286,9 @@ export default function BrandGrid({
               {/* L'index, posé en tête de la pile : c'est là que le
                   gabarit le veut, juste sous les filtres et au-dessus
                   de la première ligne. */}
+              {/* Un seul écouteur de souris pour toutes les lignes.
+                  Voir `Halo`. */}
+              <Halo />
               <IndexAlphabet
                 pleines={lettresPleines}
                 active={lettreActive}
@@ -317,20 +321,24 @@ export default function BrandGrid({
                   <Fragment key={b.id}>
                     {premiere && (
                       /*
-                       * LE COMPTE DU GROUPE À DROITE DU TITRE, et il a
+                       * LE COMPTE DU GROUPE À CÔTÉ DE LA LETTRE, et il a
                        * une raison : le rail parti, plus rien ne dit
                        * l'épaisseur d'une lettre pendant qu'on descend.
                        * On lisait « M » sans savoir s'il y en avait
                        * trois ou trente.
+                       *
+                       * La lettre est en grand et en contour : on la voit
+                       * passer en faisant défiler, sans qu'elle pèse plus
+                       * que les noms qu'elle range.
                        */
                       <h2
                         id={`lettre-${lettre}`}
-                        className={`m-0 mb-1 flex items-baseline justify-between gap-3 scroll-mt-24 text-[26px] font-extrabold leading-none tracking-[-0.03em] text-white/42 ${
-                          i === 0 ? "" : "mt-4"
+                        className={`m-0 mb-1 flex items-baseline gap-4 scroll-mt-24 ${
+                          i === 0 ? "mt-2" : "mt-8"
                         }`}
                       >
-                        {lettre}
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">
+                        <span className="lettre-contour">{lettre}</span>
+                        <span className="text-[13px] font-semibold text-white/72">
                           {parLettreCompte.get(lettre) ?? 0} marque
                           {(parLettreCompte.get(lettre) ?? 0) > 1 ? "s" : ""}
                         </span>
@@ -345,6 +353,7 @@ export default function BrandGrid({
                         favori={favoris ? { initial: suivies.has(b.id) } : undefined}
                         onApercu={() => setOpen(b.slug)}
                         prioritaire={i < 10}
+                        variante="halo"
                       />
                     </div>
                   </Fragment>
@@ -665,11 +674,11 @@ function IndexAlphabet({
                * se voit que sur la lettre courante ; la boîte, elle,
                * existe pour les vingt-six autres.
                */
-              className={`grid min-w-[26px] shrink-0 place-items-center rounded-[6px] px-2 pb-[5px] pt-[4px] text-[15px] font-extrabold transition ${
+              className={`lettre-index grid min-w-[26px] shrink-0 place-items-center rounded-[8px] px-2 pb-[5px] pt-[4px] text-[15px] font-extrabold transition ${
                 active === l
                   ? "bg-white text-[var(--color-ink)]"
                   : dispo
-                    ? "text-white hover:text-[rgb(var(--accent-1))]"
+                    ? "text-white"
                     : "cursor-default text-white/32"
               }`}
             >

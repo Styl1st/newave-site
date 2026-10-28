@@ -314,7 +314,7 @@ export default async function HomePage() {
             lire n'ajoute rien et allonge la page pour rien. */}
         <ColonneAccueil
           marques={suite}
-          slugs={brands.map((b) => b.slug)}
+          tirage={brands.map(({ slug, name }) => ({ slug, name }))}
           posts={posts.slice(3, 6)}
         />
       </div>

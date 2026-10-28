@@ -5479,3 +5479,496 @@ html[data-fige="1"] .chargement-chrome { background-position: 50% 50%; }
 html[data-fige="1"] .chargement-orbite { display: none; }
 html[data-fige="1"] :is(.chargement-entrante, .chargement-sortante) { animation-name: chargement-apparait; }
 html[data-fige="1"] .chargement-sortante { display: none; }
+
+/* ============================================================
+   LE PANNEAU DE L'ACCUEIL (la colonne de droite)
+   ============================================================
+
+   Quatre parties posées à même le fond, sans cadre, reliées par un fil
+   lumineux qui descend le long de la colonne. Voir `ColonneAccueil`.
+
+   TOUT CE QUI EST BLANC PASSE PAR `--color-white`, et jamais par un
+   `#fff` écrit en dur : c'est la variable que le mode clair retourne
+   en encre. Les lueurs prennent les accents du thème (`--accent-1`…),
+   pour suivre l'ambiance choisie dans « Apparence ». */
+.panneau-accueil {
+  position: relative;
+  padding-left: 26px;
+  color: var(--color-white);
+}
+.panneau-fil {
+  position: absolute; left: 0; top: 8px; bottom: 24px; width: 1px;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-white) 40%, transparent) 5%,
+    rgba(var(--accent-1), .62) 42%,
+    rgba(var(--accent-2), .50) 78%,
+    transparent 100%);
+}
+.panneau-partie { position: relative; margin-bottom: 48px; }
+.panneau-partie:last-child { margin-bottom: 8px; }
+/* Le point posé sur le fil, en face du titre de chaque partie. Il
+   s'allume quand on survole sa partie : c'est le seul mouvement du
+   panneau qui ne réponde pas à un clic. */
+.panneau-noeud {
+  position: absolute; left: -31px; top: 4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(var(--accent-1), .22), 0 0 12px 2px rgba(var(--accent-1), .50);
+  transform: scale(.75);
+  transition: transform .35s cubic-bezier(.25,1.3,.4,1), box-shadow .35s;
+}
+@media (hover: hover) {
+  .panneau-partie:hover .panneau-noeud {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(var(--accent-1), .32), 0 0 22px 6px rgba(var(--accent-1), .75);
+  }
+}
+.panneau-tete {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin-bottom: 16px;
+}
+.panneau-titre {
+  margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.015em;
+  color: var(--color-white);
+}
+.panneau-lien {
+  padding: 10px 0; margin: -10px 0;
+  font-size: 12.5px; font-weight: 700; text-decoration: none;
+  color: color-mix(in srgb, var(--color-white) 74%, transparent);
+  transition: color .2s;
+}
+.panneau-lien:hover { color: var(--color-white); text-decoration: underline; text-underline-offset: 3px; }
+.panneau-texte {
+  margin: -6px 0 6px; font-size: 13px; line-height: 1.55;
+  color: color-mix(in srgb, var(--color-white) 80%, transparent);
+}
+
+/* ---------- « Aussi à la une » : les bulles ----------
+   L'anneau est un dégradé conique découpé en couronne par un masque :
+   l'espace entre l'anneau et le logo est donc VIDE, et non peint de la
+   couleur du fond, ce qui le rend juste sur tous les thèmes. */
+.bulles { display: flex; gap: 12px; }
+.bulle {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: 72px; color: var(--color-white); text-decoration: none;
+}
+.bulle-anneau {
+  position: relative; display: block; width: 72px; height: 72px;
+  transition: transform .35s cubic-bezier(.25,1.3,.4,1);
+}
+.bulle-anneau::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 200deg, #ffd6f5, rgb(var(--accent-1)), rgb(var(--accent-3)), rgb(var(--accent-2)), #ffd6f5);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  transition: transform 1.4s cubic-bezier(.2,.8,.2,1);
+}
+.bulle-rond {
+  position: absolute; inset: 6px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  background: #f6f2ff;
+}
+/* Un liseré sombre d'un demi-pixel autour du logo : invisible sur un
+   logo noir, il suffit à faire exister un logo BLANC sur le fond
+   clair de la bulle. */
+.bulle-rond img {
+  display: block; max-width: 66%; max-height: 46%; object-fit: contain;
+  filter: drop-shadow(0 0 .6px rgba(23,10,51,.85)) drop-shadow(0 0 .6px rgba(23,10,51,.85));
+}
+.bulle-photo img { max-width: none; max-height: none; width: 100%; height: 100%; object-fit: cover; filter: none; }
+.bulle-initiale { font-size: 22px; font-weight: 900; color: #7a68a8; }
+.bulle-nom {
+  max-width: 78px; font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (hover: hover) {
+  .bulle:hover .bulle-anneau { transform: scale(1.05); }
+  .bulle:hover .bulle-anneau::before { transform: rotate(220deg); }
+}
+.bulle:active .bulle-anneau::before { transform: rotate(220deg); }
+.bulle-annuaire .bulle-anneau::before {
+  background: none; -webkit-mask: none; mask: none;
+  border: 1.5px dashed color-mix(in srgb, var(--color-white) 60%, transparent);
+}
+.bulle-annuaire .bulle-rond {
+  inset: 0; background: color-mix(in srgb, var(--color-white) 8%, transparent);
+  color: var(--color-white);
+}
+.bulle-annuaire .bulle-rond svg { width: 22px; height: 22px; }
+/* Sous 1024 pixels le panneau passe sous la page, en pleine largeur :
+   les bulles défilent alors du doigt, et la dernière dépasse du bord
+   pour dire qu'il y en a d'autres. */
+@media (max-width: 1023px) {
+  .bulles {
+    overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity;
+    margin-right: calc(var(--pad) * -1); padding-right: var(--pad);
+  }
+  .bulles::-webkit-scrollbar { display: none; }
+  .bulle { scroll-snap-align: start; }
+}
+
+/* ---------- « Au hasard » : la roue ---------- */
+.roue { position: relative; height: 138px; margin: 0 0 16px; }
+.roue-focus {
+  position: absolute; left: -14px; right: -10px; top: 46px; height: 46px;
+  border-radius: 14px; pointer-events: none;
+  background: radial-gradient(90% 160% at 0% 50%, rgba(var(--accent-1), .34), rgba(var(--accent-3), .12) 55%, transparent 80%);
+}
+.roue-fenetre {
+  position: relative; height: 100%; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.55) 18%, #000 36%, #000 64%, rgba(0,0,0,.55) 82%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.55) 18%, #000 36%, #000 64%, rgba(0,0,0,.55) 82%, transparent 100%);
+}
+.roue-nom {
+  height: 46px; line-height: 46px;
+  font-size: 23px; font-weight: 900; letter-spacing: -.035em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--color-white);
+}
+.roue-lien { position: absolute; left: 0; right: 0; top: 46px; height: 46px; border-radius: 12px; }
+.bouton-tirer {
+  display: inline-flex; align-items: center; gap: 12px;
+  min-height: 48px; padding: 0 20px 0 6px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 800;
+  color: var(--color-white);
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 30%, transparent);
+  transition: background .25s, box-shadow .25s;
+}
+.bouton-tirer:disabled { opacity: .5; cursor: default; }
+.bouton-tirer-de {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--color-white); color: var(--color-ink);
+  transition: transform .7s cubic-bezier(.25,1.3,.4,1);
+}
+html[data-clair="1"] .bouton-tirer-de { color: var(--sur-plein); }
+.bouton-tirer-de svg { width: 17px; height: 17px; }
+@media (hover: hover) {
+  .bouton-tirer:hover {
+    background: color-mix(in srgb, var(--color-white) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 55%, transparent), 0 0 26px -4px rgba(var(--accent-1), .75);
+  }
+  .bouton-tirer:hover .bouton-tirer-de { transform: rotate(180deg); }
+}
+.bouton-tirer:active .bouton-tirer-de { transform: rotate(180deg) scale(.9); }
+@media (max-width: 1023px) {
+  .bouton-tirer { width: 100%; justify-content: center; min-height: 52px; font-size: 15px; }
+}
+
+/* ---------- « Derniers posts » ---------- */
+.post-halo {
+  position: relative; isolation: isolate;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 12px; margin: 0 -12px 2px; border-radius: 16px;
+  color: var(--color-white); text-decoration: none;
+}
+.post-halo::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: radial-gradient(220px circle at var(--x, 50%) var(--y, 50%),
+    rgba(var(--accent-1), .30), rgba(var(--accent-3), .14) 45%, transparent 75%);
+  opacity: 0; transition: opacity .3s;
+}
+.post-halo:hover::before, .post-halo:focus-visible::before, .post-halo:active::before { opacity: 1; }
+.post-halo-vignette {
+  flex: none; width: 54px; height: 66px; border-radius: 10px; overflow: hidden;
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  box-shadow: 0 10px 20px -12px rgba(var(--voile), .9);
+  transition: transform .35s cubic-bezier(.25,1.3,.4,1);
+}
+.post-halo-vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (hover: hover) {
+  .post-halo:hover .post-halo-vignette { transform: rotate(-3deg) scale(1.04); }
+}
+.post-halo-marque {
+  display: block; font-size: 12px; font-weight: 700;
+  color: color-mix(in srgb, var(--color-white) 72%, transparent);
+}
+.post-halo-titre {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 2px; font-size: 14px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em;
+}
+
+/* ---------- l'appel aux marques ----------
+   Sans carte : une lueur aux accents du thème. */
+.panneau-appel { padding: 22px 0 6px; isolation: isolate; }
+.panneau-appel .panneau-noeud { top: 30px; }
+.panneau-appel::before {
+  content: ''; position: absolute; z-index: -2; pointer-events: none;
+  left: -70px; right: -60px; top: -40px; bottom: -50px;
+  /* `closest-side` : chaque lueur s'éteint AVANT le bord de la boîte.
+     Une taille en pourcentage la coupait net sur le côté gauche, et
+     l'on voyait un rectangle plus clair autour de l'appel. */
+  background:
+    radial-gradient(closest-side at 36% 52%, rgba(var(--accent-1), .42), transparent),
+    radial-gradient(closest-side at 78% 34%, rgba(var(--accent-2), .36), transparent);
+}
+html[data-clair="1"] .panneau-appel::before { opacity: .55; }
+.panneau-appel-titre {
+  margin: 0; max-width: 210px;
+  font-size: 24px; font-weight: 900; line-height: 1.08; letter-spacing: -.04em;
+  color: var(--color-white);
+}
+.panneau-appel-texte {
+  margin: 12px 0 0; max-width: 260px; font-size: 13.5px; line-height: 1.6;
+  color: color-mix(in srgb, var(--color-white) 84%, transparent);
+}
+.panneau-appel-lien {
+  display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin-top: 14px;
+  font-size: 15px; font-weight: 900; letter-spacing: -.015em; text-decoration: none;
+  color: var(--color-white);
+}
+/* Le soulignement s'étire au survol, du rose au bleu de l'ambiance. */
+.panneau-appel-mot {
+  padding-bottom: 3px;
+  background-image: linear-gradient(90deg, #ffd6f5, rgb(var(--accent-2)));
+  background-size: 28% 2px; background-repeat: no-repeat; background-position: 0 100%;
+  transition: background-size .45s cubic-bezier(.2,.8,.2,1);
+}
+.panneau-appel-lien:hover .panneau-appel-mot,
+.panneau-appel-lien:focus-visible .panneau-appel-mot { background-size: 100% 2px; }
+.panneau-appel-fleche {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--color-white); color: var(--color-ink);
+  box-shadow: 0 8px 20px -8px rgba(var(--accent-1), .9);
+  transition: transform .35s cubic-bezier(.25,1.3,.4,1);
+}
+html[data-clair="1"] .panneau-appel-fleche { color: var(--sur-plein); }
+.panneau-appel-fleche svg { width: 17px; height: 17px; }
+@media (hover: hover) {
+  .panneau-appel-lien:hover .panneau-appel-fleche { transform: translateX(5px); }
+}
+@media (max-width: 1023px) {
+  .panneau-appel-mot { background-size: 100% 2px; }
+  .panneau-appel-titre { font-size: 26px; max-width: 230px; }
+}
+
+/* ============================================================
+   « UN APERÇU, TIRÉ AU SORT » : les pièces nues
+   ============================================================ */
+.nouveau-tirage {
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 0 4px; border: 0; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  color: color-mix(in srgb, var(--color-white) 86%, transparent);
+  transition: color .2s;
+}
+/* Même pastille que le cœur posé sur les photos : sombre en toutes
+   circonstances, parce qu'elle vit à côté des photos. */
+.nouveau-tirage-pastille {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(var(--voile), .55); color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
+  transition: transform .7s cubic-bezier(.25,1.3,.4,1), box-shadow .3s;
+}
+.nouveau-tirage-pastille svg { width: 15px; height: 15px; }
+@media (hover: hover) {
+  .nouveau-tirage:hover { color: var(--color-white); }
+  .nouveau-tirage:hover .nouveau-tirage-pastille {
+    transform: rotate(180deg);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), 0 0 18px -2px rgba(var(--accent-1), .8);
+  }
+}
+.nouveau-tirage:active .nouveau-tirage-pastille { transform: rotate(180deg) scale(.92); }
+
+/* Au téléphone, un carrousel qui va jusqu'aux bords de l'écran ; à
+   partir de 640 pixels, la rangée de trois. */
+.tirage-rangee {
+  display: flex; gap: 14px;
+  margin: 0 calc(var(--pad) * -1); padding: 0 var(--pad);
+  overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--pad);
+  scrollbar-width: none;
+}
+.tirage-rangee::-webkit-scrollbar { display: none; }
+.tirage-piece {
+  flex: 0 0 62%; min-width: 0; scroll-snap-align: start;
+  animation: tirage-entre .5s cubic-bezier(.2,.8,.2,1) both;
+}
+.tirage-piece:nth-child(2) { animation-delay: .07s; }
+.tirage-piece:nth-child(3) { animation-delay: .14s; }
+@media (min-width: 640px) {
+  .tirage-rangee {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+    margin: 0; padding: 0; overflow: visible;
+  }
+}
+@keyframes tirage-entre {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   L'ANNUAIRE EN LISTE : LA LIGNE AU HALO
+   ============================================================
+
+   Pas de carte : la ligne est posée sur le fond, entre deux filets.
+   Elle déborde dans la marge de la page, et ses filets comme son halo
+   s'éteignent en fondu sur les côtés : on n'est pas dans une case, on
+   éclaire une bande de la page. Le halo suit la souris (`Halo` pose
+   `--x` et `--y`) ; au doigt, c'est la ligne au milieu de l'écran qui
+   s'allume (`data-centre`, posé par `LigneMarque`). */
+.ligne-halo {
+  --filet: color-mix(in srgb, var(--color-white) 16%, transparent);
+  isolation: isolate;
+  margin-inline: calc(var(--pad) * -1);
+  padding: 14px calc(var(--pad) + 4px);
+  color: var(--color-white);
+}
+@media (min-width: 640px) {
+  .ligne-halo { padding: 14px calc(var(--pad) + 16px); }
+}
+.ligne-halo-decor {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 72px, #000 calc(100% - 72px), transparent 100%);
+}
+.ligne-halo-decor::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(440px 150px at var(--x, 40%) var(--y, 50%),
+    rgba(var(--accent-1), .32), rgba(var(--accent-3), .15) 45%, transparent 76%);
+  opacity: 0; transition: opacity .45s ease;
+}
+/* Les filets au repos : un sous chaque ligne, et un au-dessus de la
+   première ligne de chaque lettre. */
+.ligne-halo-decor::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(var(--filet), var(--filet)) bottom / 100% 1px no-repeat;
+}
+h2 + .ligne-eco .ligne-halo-decor::after {
+  background:
+    linear-gradient(var(--filet), var(--filet)) top / 100% 1px no-repeat,
+    linear-gradient(var(--filet), var(--filet)) bottom / 100% 1px no-repeat;
+}
+/* Les filets qui s'allument autour de la souris. */
+.ligne-halo-trait {
+  position: absolute; inset: 0;
+  background: radial-gradient(320px circle at var(--x, 40%) var(--y, 50%),
+    color-mix(in srgb, var(--color-white) 95%, transparent),
+    rgba(var(--accent-1), .50) 40%, transparent 72%);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% 1px no-repeat, linear-gradient(#000 0 0) bottom / 100% 1px no-repeat;
+          mask: linear-gradient(#000 0 0) top / 100% 1px no-repeat, linear-gradient(#000 0 0) bottom / 100% 1px no-repeat;
+  opacity: 0; transition: opacity .45s ease;
+}
+@media (hover: hover) {
+  .ligne-halo:hover .ligne-halo-decor::before,
+  .ligne-halo:hover .ligne-halo-trait { opacity: 1; }
+}
+.ligne-halo:has(:focus-visible) .ligne-halo-decor::before,
+.ligne-halo:has(:focus-visible) .ligne-halo-trait,
+.ligne-halo[data-centre] .ligne-halo-decor::before,
+.ligne-halo[data-centre] .ligne-halo-trait { opacity: 1; }
+
+.ligne-halo-logo {
+  background: #f6f2ff;
+  box-shadow: 0 12px 24px -16px rgba(var(--voile), .9);
+}
+html[data-clair="1"] .ligne-halo-logo {
+  box-shadow: 0 0 0 1px rgba(34,16,70,.08), 0 10px 20px -14px rgba(60,30,120,.35);
+}
+/* Même liseré que les bulles de l'accueil, pour les logos blancs. */
+.ligne-halo-logo.est-un-logo img {
+  filter: drop-shadow(0 0 .6px rgba(23,10,51,.8)) drop-shadow(0 0 .6px rgba(23,10,51,.8));
+}
+.ligne-halo-identite { transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+/* Les vignettes se soulèvent l'une après l'autre. */
+.ligne-halo-vignette { transition: transform .45s cubic-bezier(.25,1.3,.4,1), box-shadow .45s; }
+.ligne-halo-vignette:nth-child(2) { transition-delay: .04s; }
+.ligne-halo-vignette:nth-child(3) { transition-delay: .08s; }
+.ligne-halo-vignette:nth-child(4) { transition-delay: .12s; }
+@media (hover: hover) {
+  .ligne-halo:hover .ligne-halo-identite { transform: translateX(4px); }
+  .ligne-halo:hover .ligne-halo-vignette {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 22px -14px rgba(var(--voile), .9);
+  }
+}
+.ligne-halo[data-centre] .ligne-halo-vignette { transform: translateY(-3px); }
+/* Au doigt, le halo ne suit rien : il est posé un peu à gauche, sur le
+   nom, et un peu plus fort, parce qu'on le voit en passant. */
+.ligne-halo[data-centre] .ligne-halo-decor::before {
+  background: radial-gradient(520px 190px at 32% 50%,
+    rgba(var(--accent-1), .48), rgba(var(--accent-3), .22) 45%, transparent 78%);
+}
+
+/* « Aperçu » et « Voir la fiche » : discrets au repos, pleins quand
+   la ligne est éclairée. */
+.bouton-halo {
+  align-items: center; gap: 7px; height: 40px; padding: 0 15px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 800; white-space: nowrap; text-decoration: none;
+  color: var(--color-white);
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 26%, transparent);
+  transition: background .25s, color .25s, box-shadow .25s, transform .15s;
+}
+.bouton-halo svg { width: 15px; height: 15px; }
+.bouton-halo:active { transform: scale(.96); }
+@media (hover: hover) {
+  .ligne-halo:hover .bouton-halo {
+    background: var(--color-white); color: var(--color-ink);
+    box-shadow: 0 8px 18px -10px rgba(var(--voile), .9);
+  }
+  html[data-clair="1"] .ligne-halo:hover .bouton-halo { color: var(--sur-plein); }
+}
+/* Le cœur, tant qu'on ne suit pas la marque : le même verre que les
+   boutons d'à côté, au lieu de la pastille sombre faite pour les
+   photos. Une fois suivie, il garde son aplat plein. */
+.coeur-halo > button[aria-pressed="false"] {
+  color: var(--color-white);
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 22%, transparent);
+}
+.coeur-halo > button[aria-pressed="false"]:hover {
+  background: color-mix(in srgb, var(--color-white) 18%, transparent);
+}
+
+/* La lettre de chaque groupe, en grand et en contour. */
+.lettre-contour {
+  font-size: clamp(48px, 9vw, 64px); font-weight: 900; letter-spacing: -.04em; line-height: .95;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-white);
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--color-white) 85%, transparent);
+}
+
+/* L'index de A à Z : la lettre survolée s'éclaire, un point lumineux
+   dessous. La lettre choisie garde son aplat, et le point. */
+.lettre-index { position: relative; }
+.lettre-index::after {
+  content: ''; position: absolute; left: 50%; bottom: -4px;
+  width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+  background: #ffd6f5; box-shadow: 0 0 10px 2px rgba(var(--accent-1), .9);
+  opacity: 0; transform: scale(.4);
+  transition: opacity .2s, transform .3s cubic-bezier(.25,1.3,.4,1);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .lettre-index:not(:disabled):not([aria-current]):hover { text-shadow: 0 0 14px rgba(var(--accent-1), .95); }
+  .lettre-index:not(:disabled):hover::after { opacity: 1; transform: none; }
+}
+.lettre-index[aria-current]::after { opacity: 1; transform: none; }
+
+/* ---------- moins de mouvement ----------
+   Les lueurs restent (ce sont des fondus), les déplacements partent. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) .tirage-piece { animation: none; }
+  html:not([data-anim-choisi="1"]) .bulle-anneau,
+  html:not([data-anim-choisi="1"]) .bulle-anneau::before,
+  html:not([data-anim-choisi="1"]) .bouton-tirer-de,
+  html:not([data-anim-choisi="1"]) .post-halo-vignette,
+  html:not([data-anim-choisi="1"]) .panneau-appel-fleche,
+  html:not([data-anim-choisi="1"]) .panneau-noeud,
+  html:not([data-anim-choisi="1"]) .nouveau-tirage-pastille,
+  html:not([data-anim-choisi="1"]) .ligne-halo-identite,
+  html:not([data-anim-choisi="1"]) .ligne-halo-vignette { transition: none; transform: none; }
+}
+html[data-fige="1"] .tirage-piece { animation: none; }
+html[data-fige="1"] .bulle-anneau,
+html[data-fige="1"] .bulle-anneau::before,
+html[data-fige="1"] .bouton-tirer-de,
+html[data-fige="1"] .post-halo-vignette,
+html[data-fige="1"] .panneau-appel-fleche,
+html[data-fige="1"] .panneau-noeud,
+html[data-fige="1"] .nouveau-tirage-pastille,
+html[data-fige="1"] .ligne-halo-identite,
+html[data-fige="1"] .ligne-halo-vignette { transition: none; transform: none; }

@@ -44,7 +44,9 @@ export const CLASSES: Record<Variante, Partial<Record<Densite, string>>> = {
   marques: {
     confort: "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3",
     serre: "grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4",
-    liste: "flex flex-col gap-2.5",
+    /* Pas d'écart : les lignes de l'annuaire se partagent leurs filets
+       (voir `.ligne-halo`). */
+    liste: "flex flex-col",
   },
 };
 
