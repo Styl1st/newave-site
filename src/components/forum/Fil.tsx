@@ -190,21 +190,22 @@ export default function Fil({
 
           <div ref={sentinelle} aria-hidden className="h-px" />
 
+          {/* Le pied de la vitrine des pièces : le compte d'abord, puis le
+              bouton. Une carte claire en bas d'un fil sans cartes aurait
+              été la seule de la page. */}
           {reste > 0 && (
-            <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="barre barre-pied mt-8 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
+              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
+                {annonces.length} sur {total} affichées
+              </p>
               <button
                 type="button"
                 onClick={charger}
                 disabled={enCours}
-                className="card-light px-7 py-3.5 disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97] disabled:opacity-60"
               >
-                <span className="relative z-3 text-[14px] font-extrabold">
-                  {enCours ? "Chargement…" : `Voir ${Math.min(reste, LOT_FORUM)} annonces de plus`}
-                </span>
+                {enCours ? "Chargement…" : `Charger ${Math.min(reste, LOT_FORUM)} annonces de plus`}
               </button>
-              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/45">
-                {annonces.length} sur {total}
-              </p>
             </div>
           )}
           {panne && annonces.length > 0 && (

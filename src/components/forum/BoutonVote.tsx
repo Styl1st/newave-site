@@ -29,8 +29,12 @@ export default function BoutonVote({
   votes: number;
   aVote: boolean;
   estAuteur?: boolean;
-  /** `carte` et `grand` sur fond clair, `sombre` sur les commentaires. */
-  habit?: "carte" | "grand" | "sombre";
+  /**
+   * `carte` et `grand` sur fond clair, `sombre` sur les commentaires.
+   * `trait` : la flèche et le chiffre seuls, sans pastille, pour une
+   * annonce posée à même le fond (le fil, comme la vitrine des pièces).
+   */
+  habit?: "carte" | "grand" | "sombre" | "trait";
   /** Dans l'aperçu du formulaire : un dessin, pas un bouton. */
   apercu?: boolean;
 }) {
@@ -75,6 +79,7 @@ export default function BoutonVote({
     sombre: etat.aVote
       ? "bg-white text-[var(--color-ink)]"
       : "bg-white/14 text-white hover:bg-white/22",
+    trait: etat.aVote ? "text-white" : "text-white/60 hover:text-white",
   }[habit];
 
   const taille =
@@ -82,7 +87,11 @@ export default function BoutonVote({
       ? "min-h-[44px] gap-2 px-4 text-[14px]"
       : habit === "sombre"
         ? "min-h-[30px] gap-1.5 px-2.5 text-[12px]"
-        : "min-h-[34px] gap-1.5 px-3 text-[12.5px]";
+        : habit === "trait"
+          ? /* La cible garde 32 px pour le doigt ; la marge négative recale
+               la flèche sur le bord du texte au-dessus. */
+            "-ml-1.5 min-h-8 gap-1.5 px-1.5 text-[12.5px]"
+          : "min-h-[34px] gap-1.5 px-3 text-[12.5px]";
 
   const libelle = estAuteur
     ? `${etat.votes} vote${etat.votes > 1 ? "s" : ""}`

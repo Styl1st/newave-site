@@ -14,18 +14,26 @@ import { IconBulle } from "./icones";
 /**
  * Une annonce dans le fil.
  *
- * DEUX FORMES SELON QU'IL Y A UNE PHOTO. Avec : l'image d'abord, en
- * 4:3, la rubrique posée dessus, comme les cartes de l'annuaire. Sans :
- * la rubrique en tête et deux ou trois lignes du texte. C'est cet
- * extrait qui empêche une carte sans image d'avoir l'air vide, et qui
- * donne aux « Idées » et aux « Discussions » (rarement illustrées) de
- * quoi se lire d'un coup d'œil.
+ * POSÉE À MÊME LE FOND, COMME LES PIÈCES. Le fil était une mosaïque de
+ * cartes blanches couvertes de pastilles (rubrique, vote, rémunération,
+ * marque) : chaque annonce était une petite interface. Elle prend
+ * maintenant le parti de la vitrine des pièces (`ProductCard`, variante
+ * `nue`) : la photo en rayon 4 avec son ombre portée, et le texte
+ * dessous, sur le fond, sans conteneur. Les pastilles sont devenues du
+ * texte : la rubrique et la rémunération sur une petite ligne au-dessus
+ * du titre, le vote en flèche et chiffre, les réponses à côté.
  *
- * TOUTE LA CARTE EST UN LIEN, SAUF LE VOTE ET LE NOM DE L'AUTEUR. Le lien est posé en calque
- * sous le contenu (`data-calque`, comme les lignes de l'annuaire) et le
- * pied passe au-dessus : voter ne doit pas ouvrir l'annonce.
+ * SANS PHOTO, UN FILET MARQUE LE DÉBUT. Une annonce de texte seule
+ * (« Idées », « Discussions ») n'a pas d'image pour dire où elle
+ * commence : un trait fin au-dessus de sa rubrique s'en charge, et
+ * l'extrait de deux ou trois lignes lui donne de quoi se lire d'un coup
+ * d'œil.
  *
- * `apercu` : la carte telle qu'elle apparaîtra, dans le formulaire de
+ * TOUTE L'ANNONCE EST UN LIEN, SAUF LE VOTE ET LE NOM DE L'AUTEUR. Le
+ * lien est posé en calque sous le contenu (`data-calque`) et ces deux-là
+ * passent au-dessus : voter ne doit pas ouvrir l'annonce.
+ *
+ * `apercu` : l'annonce telle qu'elle apparaîtra, dans le formulaire de
  * publication. Ni lien ni vote actif.
  */
 export default function CarteAnnonce({
@@ -43,68 +51,69 @@ export default function CarteAnnonce({
   const versAuteur = apercu ? null : lienAuteur(a);
 
   return (
-    <article className="card-light flex flex-col">
+    <article className="group relative flex flex-col">
       {!apercu && (
         <Link
           href={lienAnnonce(a)}
           data-calque
           aria-label={a.titre}
-          className="absolute inset-0 z-[3] rounded-[inherit]"
+          className="absolute inset-0 z-[3]"
         />
       )}
 
       {photo && (
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[rgba(123,82,232,0.12)]">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo}
             alt=""
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
           />
-          <PastilleRubrique cle={a.rubrique} habit="photo" className="absolute left-3 top-3" />
-          {a.cloturee && <Cloturee className="absolute right-3 top-3" />}
+          {/* « Clôturée » reste sur la photo, comme « Épuisé » sur une
+              pièce : c'est un état qu'on doit lire avant tout le reste. */}
+          {a.cloturee && <Cloturee className="absolute left-2.5 top-2.5" />}
         </div>
       )}
 
-      <div className="flex flex-1 flex-col p-4 sm:p-[18px]">
-        {!photo && (
-          <div className="mb-3 flex items-center gap-2">
-            <PastilleRubrique cle={a.rubrique} habit="carte" />
-            {a.cloturee && <Cloturee />}
-          </div>
-        )}
+      <div className={photo ? "mt-3" : "border-t border-white/20 pt-3.5"}>
+        {/* La rubrique et ce qui la précise, en une ligne de texte. */}
+        <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/65">
+          <PastilleRubrique cle={a.rubrique} habit="texte" />
+          {payee && <span>· {payee}</span>}
+          {!photo && a.cloturee && <span>· Clôturée</span>}
+        </p>
 
-        <h3 className="m-0 text-[16px] font-extrabold leading-snug tracking-[-0.02em] text-[var(--color-ink)] [overflow-wrap:anywhere] sm:text-[16.5px]">
+        <h3 className="m-0 mt-1.5 text-[15.5px] font-bold leading-snug tracking-[-0.01em] text-white [overflow-wrap:anywhere] sm:text-[16px]">
           {a.titre || "Votre titre apparaîtra ici"}
         </h3>
 
         {!photo && a.texte && (
-          <p className="m-0 mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-[#4a3a78] [overflow-wrap:anywhere]">
+          <p className="m-0 mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-white/72 [overflow-wrap:anywhere]">
             {a.texte}
           </p>
         )}
 
-        <p className="m-0 mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-semibold text-[#6a5a92]">
+        <p className="m-0 mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-semibold text-white/55">
           {/* Au-dessus du calque, comme le vote : le nom mène à l'auteur. */}
           {versAuteur ? (
             <Link
               href={versAuteur}
-              className="relative z-[4] font-extrabold text-[var(--color-ink)] underline-offset-4 hover:underline"
+              className="relative z-[4] font-bold text-white/85 underline-offset-4 transition hover:text-white hover:underline"
             >
               {signature(a)}
             </Link>
           ) : (
-            <span className="font-extrabold text-[var(--color-ink)]">{signature(a)}</span>
+            <span className="font-bold text-white/85">{signature(a)}</span>
           )}
-          {a.marque && <BadgeMarque />}
+          {a.marque && <BadgeMarque sombre />}
           {a.ville && <span>· {a.ville}</span>}
           <span suppressHydrationWarning>· {ilYA(a.created_at)}</span>
         </p>
 
         {/* Au-dessus du calque : le vote reste un bouton. */}
-        <div className="pointer-events-none relative z-[4] mt-3.5 flex items-center gap-3">
+        <div className="pointer-events-none relative z-[4] mt-1.5 flex items-center gap-3">
           <span className="pointer-events-auto">
             <BoutonVote
               cible="annonce"
@@ -112,19 +121,15 @@ export default function CarteAnnonce({
               votes={a.votes}
               aVote={a.aVote}
               estAuteur={Boolean(moiId) && moiId === a.auteur.id}
+              habit="trait"
               apercu={apercu}
             />
           </span>
-          <span className="inline-flex items-center gap-1 text-[12px] font-bold tabular-nums text-[#6a5a92]">
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-extrabold tabular-nums text-white/60">
             <IconBulle />
             {a.commentaires}
             <span className="sr-only"> réponse{a.commentaires > 1 ? "s" : ""}</span>
           </span>
-          {payee && (
-            <span className="ml-auto rounded-full bg-[#dff5e8] px-2.5 py-1 text-[10.5px] font-extrabold text-[#1f7a45]">
-              {payee}
-            </span>
-          )}
         </div>
       </div>
     </article>

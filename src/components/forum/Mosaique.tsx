@@ -18,7 +18,12 @@ import { Children, useEffect, useRef } from "react";
  */
 
 const PAS = 8;
-const ECART = 18;
+/*
+ * L'écart vertical est plus grand que l'horizontal. Les annonces n'ont
+ * plus de carte (voir `CarteAnnonce`) : c'est ce vide qui dit où l'une
+ * finit et où la suivante commence, comme dans la vitrine des pièces.
+ */
+const ECART = 30;
 
 export default function Mosaique({ children }: { children: React.ReactNode }) {
   const boite = useRef<HTMLDivElement>(null);
@@ -53,7 +58,7 @@ export default function Mosaique({ children }: { children: React.ReactNode }) {
   return (
     <div
       ref={boite}
-      className="grid grid-cols-1 items-start gap-x-[18px] gap-y-[18px] sm:grid-cols-2 lg:grid-cols-3"
+      className="grid grid-cols-1 items-start gap-x-5 gap-y-[30px] sm:grid-cols-2 lg:grid-cols-3"
     >
       {Children.map(children, (enfant) => (
         <div>{enfant}</div>
