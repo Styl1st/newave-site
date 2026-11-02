@@ -1,4 +1,5 @@
 import type { Brand } from "@/lib/types";
+import { bioPublique } from "@/lib/bio";
 
 /**
  * Le brouillon : ce qu'on a changé, tant que ce n'est pas parti.
@@ -83,7 +84,12 @@ export function brouillonDuServeur(brand: Brand): Brouillon {
 
   return {
     tagline: propre(brand.tagline),
-    description: propre(brand.description),
+    /*
+     * Une note de recherche restée dans la bio (voir `lib/bio`) ne
+     * s'ouvre pas dans le champ comme si la marque l'avait écrite : le
+     * gérant part d'une bio vide, et l'enregistrer efface la note.
+     */
+    description: bioPublique(brand.description),
     cover_url: propre(brand.cover_url),
     cover_video_url: propre(brand.cover_video_url),
     logo_url: propre(brand.logo_url),

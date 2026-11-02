@@ -35,7 +35,13 @@ export default function LikeButton({
    * Ici le chiffre est à gauche, il vient du serveur, et il est le même
    * pour tout le monde. Le bouton ne dit qu'une chose : c'est fait.
    */
-  taille?: "normal" | "compact" | "pastille" | "claire";
+  /*
+   * `trait` : le cœur seul, en trait fin, SANS PASTILLE. Celui des
+   * pièces posées à même le fond (vitrine et catalogue d'une marque),
+   * rangé sous la photo à droite du nom. Il se remplit quand on l'a
+   * donné, et le nombre le suit en petit s'il y en a.
+   */
+  taille?: "normal" | "compact" | "pastille" | "claire" | "trait";
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
@@ -92,6 +98,37 @@ export default function LikeButton({
           fill={liked ? "currentColor" : "none"}
           stroke="currentColor"
           strokeWidth="2.2"
+        >
+          <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
+        </svg>
+      </button>
+    );
+  }
+
+  if (taille === "trait") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        aria-pressed={liked}
+        aria-label={liked ? "Retirer mon coup de cœur" : "Ajouter à mes coups de cœur"}
+        title={liked ? "Mon coup de cœur" : "Coup de cœur"}
+        /* La cible fait 32 px pour le doigt, le cœur seize : la marge
+           négative le recale sur la première ligne de texte. */
+        className={`-mr-1.5 -mt-1.5 inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 px-1.5 text-[11px] font-bold transition active:scale-90 disabled:opacity-60 ${
+          liked ? "text-white" : "text-white/55 hover:text-white"
+        }`}
+      >
+        {count > 0 && <span className="tabular-nums">{count}</span>}
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-4 w-4"
+          fill={liked ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
         >
           <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
         </svg>

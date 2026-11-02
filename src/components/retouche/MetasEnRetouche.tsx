@@ -2,7 +2,7 @@
 
 import PastillesCategories from "./PastillesCategories";
 import { useRetouche } from "./ContexteRetouche";
-import { PASTILLE } from "./apparence";
+import { FAIT_ETIQUETTE, FAIT_VALEUR } from "./apparence";
 import { PRICE_TIER_LABEL, type PriceTier } from "@/lib/types";
 import type { ChampBrouillon } from "./brouillon";
 
@@ -10,7 +10,7 @@ import type { ChampBrouillon } from "./brouillon";
  * Les métadonnées de la fiche, cliquables une à une.
  *
  * CE QUI CHANGE POUR LE VISITEUR : RIEN. La page publique garde son
- * `<dl>` et ses pastilles ; ce fichier en rend une seconde version,
+ * `<dl>` ; ce fichier en rend une seconde version,
  * réservée à qui gère la marque, avec exactement la même grille et la
  * même typographie. C'est le prix de la règle « hors retouche, pas un
  * pixel ne bouge » : deux rendus, jamais un composant client livré à
@@ -38,6 +38,7 @@ export default function MetasEnRetouche({ classeGrille }: { classeGrille: string
   const ouvertIci = (champ: ChampBrouillon) => actif && !etroit && champOuvert === champ;
 
   const origine = [brouillon.city, brouillon.country].filter(Boolean).join(", ");
+  const styleEcrit = brouillon.categories.join(" · ");
 
   /** Ce que la page publique montre : hors retouche, on n'en dévie pas. */
   const faits: { champ: ChampBrouillon; label: string; valeur: string; invite: string }[] = [
@@ -72,16 +73,16 @@ export default function MetasEnRetouche({ classeGrille }: { classeGrille: string
 
           return (
             <div key={fait.label} className="min-w-0">
-              <dt className="eyebrow m-0">{fait.label}</dt>
+              <dt className={FAIT_ETIQUETTE}>{fait.label}</dt>
 
               {ouvertIci(fait.champ) ? (
-                <div className="mt-1.5">
+                <div className="mt-1">
                   <EditeurDeFait champ={fait.champ} />
                 </div>
               ) : !actif ? (
-                <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">{fait.valeur}</dd>
+                <dd className={FAIT_VALEUR}>{fait.valeur}</dd>
               ) : (
-                <dd className="m-0 mt-1.5">
+                <dd className="m-0 mt-1">
                   <button
                     type="button"
                     onClick={() => ouvrir(fait.champ)}
@@ -108,27 +109,43 @@ export default function MetasEnRetouche({ classeGrille }: { classeGrille: string
             </div>
           );
         })}
-      </dl>
 
-      {/* ---------- les catégories ---------- */}
-      <div className="mt-7 flex flex-wrap gap-1.5">
-        {brouillon.categories.map((categorie) => (
-          <span key={categorie} className={PASTILLE}>
-            {categorie}
-          </span>
-        ))}
-
-        {actif && !ouvertIci("categories") && (
-          <button
-            type="button"
-            onClick={() => ouvrir("categories")}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/40 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/70 transition hover:border-white/80 hover:text-white active:scale-[.97]"
-          >
-            <span aria-hidden>+</span>
-            {brouillon.categories.length === 0 ? "Tes catégories" : "Modifier"}
-          </button>
+        {/* ---------- le style ----------
+            Les catégories, en toutes lettres comme sur la page publique,
+            et cliquables comme les autres faits. */}
+        {(actif || styleEcrit) && (
+          <div className="min-w-0">
+            <dt className={FAIT_ETIQUETTE}>Style</dt>
+            {!actif || ouvertIci("categories") ? (
+              <dd className={FAIT_VALEUR}>{styleEcrit}</dd>
+            ) : (
+              <dd className="m-0 mt-1">
+                <button
+                  type="button"
+                  onClick={() => ouvrir("categories")}
+                  className={
+                    styleEcrit
+                      ? "inline-flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-[14px] font-bold text-white transition hover:bg-white/14"
+                      : "inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/40 px-2.5 py-1 text-[12px] font-bold text-white/70 transition hover:border-white/80 hover:text-white"
+                  }
+                >
+                  {styleEcrit ? (
+                    <>
+                      {styleEcrit}
+                      <Crayon />
+                    </>
+                  ) : (
+                    <>
+                      <span aria-hidden>+</span>
+                      Tes catégories
+                    </>
+                  )}
+                </button>
+              </dd>
+            )}
+          </div>
         )}
-      </div>
+      </dl>
 
       {ouvertIci("categories") && (
         <div

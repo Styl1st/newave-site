@@ -168,11 +168,11 @@ function Chevron({ sens = "gauche" }: { sens?: "gauche" | "droite" }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2.6}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      className="h-4 w-4"
+      className="h-[18px] w-[18px]"
       style={sens === "droite" ? { transform: "scaleX(-1)" } : undefined}
     >
       <path d="M15 5 8 12l7 7" />

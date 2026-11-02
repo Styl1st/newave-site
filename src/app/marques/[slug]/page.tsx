@@ -25,6 +25,7 @@ import BarreGerant from "@/components/BarreGerant";
 import RetourOrigine from "@/components/RetourOrigine";
 import { lienInstagram } from "@/lib/instagram";
 import { libelleBoutique } from "@/lib/achat";
+import { bioPublique } from "@/lib/bio";
 import auBesoin from "next/dynamic";
 import {
   ACCROCHE,
@@ -32,7 +33,10 @@ import {
   ACCROCHE_TEXTE,
   DEMARCHE,
   DEMARCHE_TEXTE,
-  PASTILLE,
+  FAITS,
+  FAITS_FILET,
+  FAIT_ETIQUETTE,
+  FAIT_VALEUR,
   SCENE,
 } from "@/components/retouche/apparence";
 
@@ -186,6 +190,12 @@ export default async function BrandPage({ params }: Props) {
      indépendante, et c'est le premier endroit où l'on va vérifier
      qu'elle existe. Voir `lienInstagram` pour les formes acceptées. */
   const insta = lienInstagram(brand.instagram);
+  /*
+   * La bio telle qu'un visiteur la lit : sans les notes de recherche
+   * restées dans le champ lors de l'import en lot. Voir `lib/bio`.
+   */
+  const bio = bioPublique(brand.description);
+
   const facts: [string, string | null, string?][] = [
     ["Origine", [brand.city, brand.country].filter(Boolean).join(", ") || null],
     ["Fondée en", brand.founded_year ? String(brand.founded_year) : null],
@@ -396,7 +406,9 @@ export default async function BrandPage({ params }: Props) {
           pas. Il revient dès qu'on quitte le mode. */}
       {insight ? <CouvertureEnRetouche>{couverture}</CouvertureEnRetouche> : couverture}
 
-      <div className="glass rise rise-1 mt-6 p-4 sm:p-7">
+      {/* ---------- la démarche et les faits, à même le fond ----------
+          Plus de bloc de verre : voir `DEMARCHE` dans `apparence.ts`. */}
+      <section className="rise rise-1 mt-9 sm:mt-11">
         {/* Une description peut manquer : une marque tout juste importée
             n'en a pas encore, et son site n'en donnait peut-être aucune.
             Mieux vaut passer directement aux faits que réserver une
@@ -406,64 +418,58 @@ export default async function BrandPage({ params }: Props) {
             champ="description"
             classe={DEMARCHE}
             classeSaisie={DEMARCHE_TEXTE}
+            classeCadre="max-w-[62ch]"
             lignes={9}
             riche
             masquerSiVide
           />
         ) : (
-          brand.description.trim() && (
+          bio && (
             <p className={DEMARCHE}>
-              <TexteRiche texte={brand.description} />
+              <TexteRiche texte={bio} />
             </p>
           )
         )}
 
         {insight ? (
           <MetasEnRetouche
-            classeGrille={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
-              brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
-            }`}
+            classeGrille={`${FAITS} ${bio ? FAITS_FILET : ""}`}
           />
         ) : (
-          <>
-            <dl
-              className={`grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4 ${
-                brand.description.trim() ? "mt-7 border-t border-white/15 pt-6" : ""
-              }`}
-            >
-              {facts.map(([label, value, href]) =>
-                value ? (
-                  <div key={label}>
-                    <dt className="eyebrow m-0">{label}</dt>
-                    <dd className="m-0 mt-1.5 text-[14px] font-bold text-white">
-                      {href ? (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
-                        >
-                          {value}
-                        </a>
-                      ) : (
-                        value
-                      )}
-                    </dd>
-                  </div>
-                ) : null
-              )}
-            </dl>
+          <dl className={`${FAITS} ${bio ? FAITS_FILET : ""}`}>
+            {facts.map(([label, value, href]) =>
+              value ? (
+                <div key={label}>
+                  <dt className={FAIT_ETIQUETTE}>{label}</dt>
+                  <dd className={FAIT_VALEUR}>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline decoration-white/35 underline-offset-4 transition hover:decoration-white"
+                      >
+                        {value}
+                      </a>
+                    ) : (
+                      value
+                    )}
+                  </dd>
+                </div>
+              ) : null
+            )}
 
-            <div className="mt-7 flex flex-wrap gap-1.5">
-              {brand.categories.map((c) => (
-                <span key={c} className={PASTILLE}>
-                  {c}
-                </span>
-              ))}
-            </div>
-          </>
+            {/* Les catégories ne sont plus des pastilles : une ligne de
+                plus dans la rangée, écrite en toutes lettres. */}
+            {brand.categories.length > 0 && (
+              <div>
+                <dt className={FAIT_ETIQUETTE}>Style</dt>
+                <dd className={FAIT_VALEUR}>{brand.categories.join(" · ")}</dd>
+              </div>
+            )}
+          </dl>
         )}
-      </div>
+      </section>
 
       {insight && (
         <CatalogueNotice

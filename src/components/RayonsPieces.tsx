@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Grille from "./Grille";
-import ProductCard from "./ProductCard";
+import ProductCard, { CADRES_VITRINE, DECALAGES_VITRINE } from "./ProductCard";
 import { compterLesRayons, rayonDe } from "@/lib/rayons";
 import type { Product } from "@/lib/types";
 
@@ -263,16 +263,28 @@ export default function RayonsPieces({
           </p>
         }
       >
-        {visibles.map((p) => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            brandSlug={brandSlug}
-            canManage={canManage}
-            note={notes[p.id]}
-            likes={likes[p.id] ?? { count: 0, liked: false }}
-          />
-        ))}
+        {/* LA MÊME GRILLE QUE LA VITRINE. Les pièces posées à même le
+            fond, cadres alternés et léger décalage, et rien en grille
+            serrée, où l'on compare d'un coup d'œil. Voir `PieceDirectory`. */}
+        {(densite) =>
+          visibles.map((p, i) => (
+            <div
+              key={p.id}
+              data-reveal
+              className={densite === "serre" ? "" : DECALAGES_VITRINE[i % 5]}
+            >
+              <ProductCard
+                product={p}
+                brandSlug={brandSlug}
+                canManage={canManage}
+                note={notes[p.id]}
+                likes={likes[p.id] ?? { count: 0, liked: false }}
+                nue
+                ratio={densite === "serre" ? "1/1" : CADRES_VITRINE[i % 3]}
+              />
+            </div>
+          ))
+        }
       </Grille>
 
       {reste > 0 && (

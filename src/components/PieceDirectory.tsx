@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import CurseurPrix from "./CurseurPrix";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
-import ProductCard, { type RatioPiece } from "./ProductCard";
+import ProductCard, { CADRES_VITRINE, DECALAGES_VITRINE } from "./ProductCard";
 import { IconCheck, IconChevron, IconFiltre, IconLoupe } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
@@ -126,37 +126,12 @@ const PLACE_COLONNE = 104;
 const useEffetDePose = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
- * Les cadres, et le décalage qui fait respirer la grille.
- *
- * TROIS RAPPORTS CONTRE QUATRE COLONNES, CINQ DÉCALAGES CONTRE TROIS
- * RAPPORTS : aucune de ces périodes ne tombe sur une autre, donc aucun
- * motif ne se répète d'une rangée à la suivante. C'est ce qui distingue
- * une grille qui respire d'une grille en damier.
- *
- * ILS VALENT AUSSI À DEUX COLONNES, ET C'EST UN REVIREMENT ASSUMÉ. On
- * les éteignait sous `sm` en craignant qu'à deux colonnes ils creusent
- * un trou en haut d'une colonne sur deux. C'est vrai d'un décalage qui
- * tomberait une fois sur deux — il se rangerait toujours du même côté.
- * Celui-ci a une période de CINQ : sur deux colonnes, la gauche reçoit
- * les rangs 0, 2 et 4, la droite les rangs 1 et 3, et aucune des deux ne
- * garde le même retrait d'une rangée à l'autre. Le motif ne se referme
- * jamais, et c'est exactement ce qu'on lui demande.
- *
- * Les valeurs du téléphone sont un peu plus courtes : à quatre cents
- * pixels de large, vingt-six pixels de retrait sur une tuile qui en fait
- * deux cents se voient comme un décrochement, pas comme une respiration.
- *
- * Les classes sont écrites en toutes lettres : Tailwind lit le fichier
- * tel quel, une classe composée à la volée ne produirait aucune règle.
+ * Les cadres et le décalage de la grille : écrits une seule fois dans
+ * `ProductCard`, parce que le catalogue d'une marque reprend exactement
+ * la même grille. Voir `CADRES_VITRINE`.
  */
-const RATIOS: RatioPiece[] = ["3/4", "1/1", "4/5"];
-const DECALAGES = [
-  "",
-  "mt-[14px] sm:mt-[14px]",
-  "",
-  "mt-[22px] sm:mt-[26px]",
-  "mt-[8px] sm:mt-[8px]",
-];
+const RATIOS = CADRES_VITRINE;
+const DECALAGES = DECALAGES_VITRINE;
 
 /** Le prix qui sert à comparer : en euros quand on a su convertir. */
 

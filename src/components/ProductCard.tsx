@@ -24,6 +24,39 @@ const RATIOS: Record<RatioPiece, string> = {
 };
 
 /**
+ * Les cadres, et le décalage qui fait respirer la grille.
+ *
+ * Partagés par la vitrine (`PieceDirectory`) et le catalogue d'une
+ * marque (`RayonsPieces`) : les deux grilles doivent se ressembler
+ * trait pour trait, on ne les écrit donc qu'une fois.
+ *
+ * TROIS RAPPORTS CONTRE QUATRE COLONNES, CINQ DÉCALAGES CONTRE TROIS
+ * RAPPORTS : aucune de ces périodes ne tombe sur une autre, donc aucun
+ * motif ne se répète d'une rangée à la suivante. C'est ce qui distingue
+ * une grille qui respire d'une grille en damier.
+ *
+ * ILS VALENT AUSSI À DEUX COLONNES. Le décalage a une période de CINQ :
+ * sur deux colonnes, la gauche reçoit les rangs 0, 2 et 4, la droite
+ * les rangs 1 et 3, et aucune des deux ne garde le même retrait d'une
+ * rangée à l'autre.
+ *
+ * Les valeurs du téléphone sont un peu plus courtes : à quatre cents
+ * pixels de large, vingt-six pixels de retrait sur une tuile qui en fait
+ * deux cents se voient comme un décrochement, pas comme une respiration.
+ *
+ * Les classes sont écrites en toutes lettres : Tailwind lit le fichier
+ * tel quel, une classe composée à la volée ne produirait aucune règle.
+ */
+export const CADRES_VITRINE: RatioPiece[] = ["3/4", "1/1", "4/5"];
+export const DECALAGES_VITRINE = [
+  "",
+  "mt-[14px] sm:mt-[14px]",
+  "",
+  "mt-[22px] sm:mt-[26px]",
+  "mt-[8px] sm:mt-[8px]",
+];
+
+/**
  * La remise et l'état, posés sur la photo.
  *
  * Sortis du corps de la carte le jour où il a fallu en dessiner deux :
@@ -61,15 +94,13 @@ function EtatsSurLaPhoto({ product, off }: { product: Product; off: number | nul
  * directement vers la boutique — plutôt que de fabriquer un lien mort.
  */
 /*
- * L'ŒIL PLUTÔT QUE LA FLÈCHE, sur toute la vignette.
+ * LA FLÈCHE ORDINAIRE, ET PLUS L'ŒIL « VOIR ».
  *
- * Une pièce ne s'ouvre pas comme une page : on va la REGARDER, et c'est
- * ce que dit l'œil. Le curseur du site lit cet attribut sur la cible de
- * l'évènement, il n'a donc rien à connaître de ce composant. Voir
- * `Curseur.tsx`.
+ * La vignette entière portait un curseur en forme d'œil avec le mot
+ * « Voir ». Sur une grille de photos, c'était un gadget de plus posé
+ * sur l'image : la flèche du site grossit déjà au survol d'un lien, ça
+ * suffit à dire que la pièce s'ouvre.
  */
-const ZONE = { "data-curseur-zone": "piece", "data-curseur-mot": "Voir" } as const;
-
 function ProductLink({
   href,
   external,
@@ -94,14 +125,13 @@ function ProductLink({
         rel="noopener noreferrer sponsored"
         className={className}
         aria-label={etiquette}
-        {...ZONE}
       >
         {children}
       </a>
     );
   }
   return (
-    <Link href={href} className={className} aria-label={etiquette} {...ZONE}>
+    <Link href={href} className={className} aria-label={etiquette}>
       {children}
     </Link>
   );
@@ -136,7 +166,8 @@ export default function ProductCard({
    */
   note?: { moyenne: number; avis: number };
   /**
-   * LA PIÈCE SANS SA CARTE. Réservé à la vitrine (`/pieces`).
+   * LA PIÈCE SANS SA CARTE. La vitrine (`/pieces`) et le catalogue
+   * d'une marque, les deux seuls écrans qui ne montrent QUE des pièces.
    *
    * C'est le parti pris de cet écran-là, et c'est ce qui le distingue
    * de tous les autres : la photo est posée à même le fond violet, en
@@ -229,28 +260,11 @@ export default function ProductCard({
 
           <EtatsSurLaPhoto product={product} off={off} />
 
-          {likes && (
-            <div className="absolute bottom-2.5 right-2.5 z-3">
-              <LikeButton
-                productId={product.id}
-                initialLiked={likes.liked}
-                initialCount={likes.count}
-                taille="pastille"
-              />
-            </div>
-          )}
-
-          {canManage && brandSlug && (
-            <Link
-              href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
-              aria-label={`Modifier ${product.name}`}
-              title="Modifier cette pièce"
-              className="absolute right-2.5 top-2.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.95)] active:scale-95"
-            >
-              <IconPencil className="h-4 w-4" />
-            </Link>
-          )}
-
+          {/* LA PHOTO NE PORTE PLUS AUCUN BOUTON. Le cœur et le crayon y
+              étaient posés dans des pastilles sombres, aux quatre coins,
+              et sur une grille de quarante pièces cela faisait quatre-
+              vingts ronds par-dessus les vêtements. Ils sont descendus
+              dans le texte, juste en dessous. */}
           <ProductLink
             href={href}
             external={!internal}
@@ -263,41 +277,66 @@ export default function ProductCard({
 
         {/* Le texte à même le fond. Rien ne l'encadre, donc rien ne le
             rembourre : c'est l'alignement sur le bord gauche de la photo
-            qui dit à quelle tuile il appartient. */}
-        <div className="mt-2.5">
-          {showBrand && product.brand && (
-            <Link
-              href={`/marques/${product.brand.slug}`}
-              className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60 transition hover:text-white"
-            >
-              {product.brand.name}
-            </Link>
-          )}
-
-          <ProductLink href={href} external={!internal}>
-            <h3 className="m-0 mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-white">
-              {product.name}
-            </h3>
-          </ProductLink>
-
-          {note && note.avis > 0 && (
-            <span className="mt-1.5 flex items-center gap-1.5">
-              <Etoiles note={note.moyenne} taille="petite" />
-              <span className="text-[11px] font-bold text-white/60">({note.avis})</span>
-            </span>
-          )}
-
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[13px] font-extrabold text-white">
-              {prix.principal ?? "Prix sur la boutique"}
-            </span>
-            {prix.origine && (
-              <span className="text-[12px] font-semibold text-white/55">{prix.origine}</span>
+            qui dit à quelle tuile il appartient. Le cœur se range à
+            droite, en simple trait, comme sur la fiche d'un magasin. */}
+        <div className="mt-2.5 flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            {showBrand && product.brand && (
+              <Link
+                href={`/marques/${product.brand.slug}`}
+                className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60 transition hover:text-white"
+              >
+                {product.brand.name}
+              </Link>
             )}
-            {was && off !== null && (
-              <span className="text-[12px] font-semibold text-white/50 line-through">{was}</span>
+
+            <ProductLink href={href} external={!internal}>
+              <h3 className="m-0 mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-white">
+                {product.name}
+              </h3>
+            </ProductLink>
+
+            {note && note.avis > 0 && (
+              <span className="mt-1.5 flex items-center gap-1.5">
+                <Etoiles note={note.moyenne} taille="petite" />
+                <span className="text-[11px] font-bold text-white/60">({note.avis})</span>
+              </span>
+            )}
+
+            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-[13px] font-extrabold text-white">
+                {prix.principal ?? "Prix sur la boutique"}
+              </span>
+              {prix.origine && (
+                <span className="text-[12px] font-semibold text-white/55">{prix.origine}</span>
+              )}
+              {was && off !== null && (
+                <span className="text-[12px] font-semibold text-white/50 line-through">{was}</span>
+              )}
+            </div>
+
+            {/* Le crayon devient un mot. Seuls l'admin et les gérants le
+                voient, et un mot se lit sans qu'on ait à deviner ce que
+                fait l'icône. */}
+            {canManage && brandSlug && (
+              <Link
+                href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
+                aria-label={`Modifier ${product.name}`}
+                className="mt-1.5 inline-block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/50 underline-offset-[3px] transition hover:text-white hover:underline"
+              >
+                Modifier
+              </Link>
             )}
           </div>
+
+          {likes && (
+            <LikeButton
+              productId={product.id}
+              initialLiked={likes.liked}
+              initialCount={likes.count}
+              taille="trait"
+            />
+          )}
         </div>
       </div>
     );

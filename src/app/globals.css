@@ -3190,7 +3190,6 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
 }
 
 .curseur-point > [data-glyphe="fleche"] { top: 0; left: 0; }
-.curseur-point > [data-glyphe="piece"] { top: -8px; left: -11px; }
 .curseur-point > [data-glyphe="zoom"] { top: -10px; left: -10px; }
 .curseur-point > [data-glyphe="main"],
 .curseur-point > [data-glyphe="poing"] { top: -10px; left: -10px; }
@@ -3248,7 +3247,6 @@ html:not([data-curseur-etat]) .curseur-point > [data-glyphe="fleche"],
 html[data-curseur-etat=""] .curseur-point > [data-glyphe="fleche"],
 html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="fleche"],
 html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="fleche"],
-html[data-curseur-etat="piece"] .curseur-point > [data-glyphe="piece"],
 html[data-curseur-etat="zoom"] .curseur-point > [data-glyphe="zoom"],
 html[data-curseur-etat="regler"] .curseur-point > [data-glyphe="regler"],
 html[data-curseur-etat="inactif"] .curseur-point > [data-glyphe="inactif"],
@@ -3928,19 +3926,19 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   width: 30px;
   height: 30px;
   margin-top: -15px;
-  border-radius: 50%;
   color: #fff;
-  /* La même matière que le reste du site : un verre sombre teinté par
-     l'ambiance, et non un rond gris de lecteur vidéo. */
-  background: rgba(var(--voile), .62);
-  border: 1px solid rgba(255, 255, 255, .28);
-  box-shadow: 0 6px 16px -6px rgba(var(--voile), .95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* LE CHEVRON SEUL, SANS ROND DE VERRE. La pastille sombre floutée
+     faisait gadget, posée sur chaque photo. Il ne reste qu'un trait
+     blanc, tenu lisible sur un vêtement blanc par une ombre douce
+     plutôt que par un fond. La cible, elle, garde ses trente pixels. */
+  background: none;
+  border: 0;
+  filter: drop-shadow(0 0 1px rgba(var(--voile), .9))
+    drop-shadow(0 1px 3px rgba(var(--voile), .55));
 }
 
-.defile-gauche { left: 8px; transform: translateX(-6px); }
-.defile-droite { right: 8px; transform: translateX(6px); }
+.defile-gauche { left: 4px; transform: translateX(-6px); }
+.defile-droite { right: 4px; transform: translateX(6px); }
 
 .defile-points {
   position: absolute;
@@ -3980,8 +3978,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 
   .defile-fleche:hover {
-    background: rgba(var(--voile), .85);
-    border-color: rgba(255, 255, 255, .55);
+    scale: 1.12;
   }
 
   .defile-fleche:active {
@@ -4001,8 +3998,9 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 
    ELLES SONT DONC POSÉES EN PERMANENCE, MAIS EN RETRAIT. À pleine
    opacité sur chaque carte d'une grille, elles tireraient l'œil autant
-   que les photos ; à 72 %, on les voit quand on les cherche et elles
-   s'effacent quand on regarde la marque. Les points, eux, restent
+   que les photos ; à 85 %, et sans leur ancien rond de verre, on les
+   voit quand on les cherche et elles s'effacent quand on regarde la
+   marque. Les points, eux, restent
    pleins : ils ne demandent rien, ils disent seulement combien il
    reste à voir.
 
@@ -4010,7 +4008,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
    sont là pour dire qu'il existe. */
 @media (hover: none), (pointer: coarse) {
   .defile-fleche {
-    opacity: .72;
+    opacity: .85;
     transform: none;
     pointer-events: auto;
     /* Trente pixels se visent ; trente-quatre se touchent. */

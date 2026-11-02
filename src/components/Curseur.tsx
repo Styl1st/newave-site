@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Le curseur du site : une flèche aux couleurs de l'ambiance, et sept
+ * Le curseur du site : une flèche aux couleurs de l'ambiance, et six
  * autres dessins pour les endroits où une flèche ne dit pas assez.
  *
  * POURQUOI UNE FLÈCHE ET NON UN POINT. Un point rond ne dit pas où il
@@ -95,7 +95,7 @@ const MOT = "[data-curseur-mot]";
  * un attribut ferait autrement disparaître le curseur, sans rien dans
  * la console pour le dire.
  */
-const ETATS = new Set(["piece", "zoom", "doigt", "regler", "danger", "saisir", "actif", "inactif"]);
+const ETATS = new Set(["zoom", "doigt", "regler", "danger", "saisir", "actif", "inactif"]);
 
 /**
  * Le temps d'arrêt avant que l'étiquette paraisse.
@@ -438,17 +438,17 @@ export default function Curseur() {
   }, [allege]);
 
   /*
-   * LES HUIT DESSINS SONT TOUS DANS LA PAGE, EN PERMANENCE.
+   * LES SEPT DESSINS SONT TOUS DANS LA PAGE, EN PERMANENCE.
    *
    * Le CSS décide lequel se montre, à partir de l'état écrit sur
    * <html>. Les fabriquer à la volée obligerait à un rendu React à
    * chaque survol d'une vignette, pour des images qui ne changent
-   * jamais : huit `<svg>` de quelques nœuds, c'est gratuit ; un rendu
+   * jamais : sept `<svg>` de quelques nœuds, c'est gratuit ; un rendu
    * par mouvement de souris ne l'est pas.
    *
    * Chacun est enveloppé dans un `<span>` qui porte son décalage. La
-   * flèche mord par son coin haut gauche ; les glyphes centrés — l'œil,
-   * la loupe, les mains, le rond barré — doivent tomber par leur milieu
+   * flèche mord par son coin haut gauche ; les glyphes centrés — la
+   * loupe, les mains, le rond barré — doivent tomber par leur milieu
    * sur le pixel visé, sans quoi on aurait l'impression de cliquer à
    * côté. Le décalage est sur le span et l'agrandissement sur le svg :
    * mis au même endroit, le glyphe se déplacerait en grossissant.
@@ -462,19 +462,6 @@ export default function Curseur() {
             strokeWidth="2.4"
             d="M1 1.2 L1 13.6 L4.35 10.35 L6.5 15 L8.75 13.9 L6.6 9.4 L11 9.4 Z"
           />
-        </svg>
-      </span>
-
-      {/* L'œil d'une vignette de pièce : on va la REGARDER, pas
-          l'ouvrir dans un nouvel écran. */}
-      <span data-glyphe="piece">
-        <svg viewBox="0 0 22 16" width="22" height="16">
-          <path
-            className="curseur-trait"
-            strokeWidth="2.6"
-            d="M1.6 8 C5 2.6 17 2.6 20.4 8 C17 13.4 5 13.4 1.6 8 Z"
-          />
-          <circle cx="11" cy="8" r="3.1" fill="#fff" />
         </svg>
       </span>
 

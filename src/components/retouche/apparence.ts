@@ -31,13 +31,32 @@ export const ACCROCHE = `m-0 mt-3 max-w-2xl ${ACCROCHE_TEXTE}`;
  */
 export const ACCROCHE_IDEALE = 70;
 
-/** La démarche, en tête du bloc de verre. */
-export const DEMARCHE_TEXTE = "text-[15.5px] leading-[1.7] text-white/92";
-export const DEMARCHE = `m-0 ${DEMARCHE_TEXTE}`;
+/**
+ * La démarche, posée à même le fond sous l'en-tête.
+ *
+ * ELLE N'A PLUS DE BLOC DE VERRE. Le cadre violet donnait le même poids
+ * à deux lignes de texte qu'à dix, et une bio courte flottait dans une
+ * grande boîte presque vide. Sans cadre, le texte prend la place qu'il
+ * a, ni plus ni moins, comme les pièces juste en dessous. La largeur est
+ * bornée à une soixantaine de signes : au-delà, l'œil perd la ligne
+ * suivante en revenant à gauche.
+ */
+export const DEMARCHE_TEXTE = "text-[16px] leading-[1.75] text-white/92";
+export const DEMARCHE = `m-0 max-w-[62ch] ${DEMARCHE_TEXTE}`;
 
-/** Une pastille de catégorie. */
-export const PASTILLE =
-  "rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/85";
+/**
+ * Les faits sous la démarche : une seule rangée, sous un filet.
+ *
+ * Origine, année, gamme, Instagram, puis le style en toutes lettres
+ * (« Minimalisme · Maille · Bijoux ») à la place des anciennes
+ * pastilles. Le filet n'est tracé que s'il y a un texte au-dessus à
+ * séparer.
+ */
+export const FAITS = "m-0 flex flex-wrap gap-x-10 gap-y-4";
+export const FAITS_FILET = "mt-7 border-t border-white/15 pt-5";
+export const FAIT_ETIQUETTE =
+  "m-0 text-[10px] font-black uppercase tracking-[0.2em] text-white/60";
+export const FAIT_VALEUR = "m-0 mt-1 text-[14px] font-bold text-white";
 
 /** Ce qui part. */
 export const VERT = "#57d99a";
