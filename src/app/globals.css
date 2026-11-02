@@ -5970,3 +5970,73 @@ html[data-fige="1"] .panneau-noeud,
 html[data-fige="1"] .nouveau-tirage-pastille,
 html[data-fige="1"] .ligne-halo-identite,
 html[data-fige="1"] .ligne-halo-vignette { transition: none; transform: none; }
+
+/* ---------- le podium des pièces ----------
+
+   Trois marches qui montent dans l'ordre d'une remise de prix — la
+   troisième, la deuxième, puis la première — et chaque pièce qui se
+   pose sur la sienne une fois celle-ci en place. Le décalage vient de
+   `--delai`, posé par colonne dans `PodiumPieces`.
+
+   UNE ENTRÉE, ET RIEN QUI TOURNE ENSUITE. La marche se découvre par
+   `clip-path` plutôt que par un `scaleY` : son texte n'est jamais
+   écrasé pendant qu'elle monte. Une fois en place, plus rien ne bouge :
+   une animation continue repeindrait la zone en permanence, et c'est
+   exactement le genre de dépense qui avait fait grimper le processeur
+   (voir les animations de `filter` retirées du décor). */
+.podium-marche {
+  animation: podium-monte .75s cubic-bezier(.2, .85, .25, 1) var(--delai, 0s) both;
+}
+
+.podium-piece {
+  animation: podium-pose .6s cubic-bezier(.2, .9, .3, 1.15) calc(var(--delai, 0s) + .42s) both;
+}
+
+@keyframes podium-monte {
+  from { clip-path: inset(100% 0 0 0 round 12px 12px 0 0); }
+  to   { clip-path: inset(0 0 0 0 round 12px 12px 0 0); }
+}
+
+@keyframes podium-pose {
+  from { opacity: 0; transform: translateY(-22px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* La première marche prend les accents du thème, et non un violet
+   écrit en dur : elle doit suivre une ambiance verte ou graphite. */
+.podium-marche-or {
+  background-image: linear-gradient(
+    160deg,
+    rgba(var(--accent-3), .55),
+    rgba(var(--accent-1), .32)
+  );
+}
+
+/* Le liseré chromé de la première photo : la même matière que la
+   première place du podium des marques, immobile. */
+.podium-chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 2px;
+  background-image: var(--chrome-edge);
+  background-size: 240% 240%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Sans mouvement : le podium est là d'emblée, dans son état final. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) :is(.podium-marche, .podium-piece) {
+    animation: none;
+  }
+}
+
+html[data-fige="1"] :is(.podium-marche, .podium-piece),
+html[data-allege] :is(.podium-marche, .podium-piece) {
+  animation: none;
+}

@@ -2,6 +2,7 @@
 
 import LignePiece from "./LignePiece";
 import PiedDeClassement from "./PiedDeClassement";
+import PodiumPieces from "./PodiumPieces";
 import type { PlacePiece } from "./classement";
 
 /**
@@ -12,15 +13,23 @@ import type { PlacePiece } from "./classement";
  * — du moment, tout temps, mieux notées — passent tous les trois par
  * ici ; c'est ce qui garantit qu'ils ne divergeront pas.
  *
- * PAS DE PODIUM, DONC PAS DE NUMÉRO DE RANG. C'est la règle du site, et
- * elle vient de `ClassementMarques` : un rang affiché prétend que
- * l'ordre veut dire quelque chose, et le podium est justement ce qui
- * l'atteste. Là où il n'y en a pas — et une pièce n'en a jamais eu — le
- * chiffre de la mesure suffit : il ne classe rien, il dit ce qui s'est
- * passé. Les médailles qui coiffaient les anciennes cartes ont disparu
- * pour cette raison, pas par simplification. Sous `SEUIL_PIECES`, même
- * ce chiffre n'arrive pas jusqu'ici : la page le retire, voir
- * `chiffresAffiches`.
+ * UN PODIUM POUR LES TROIS PREMIÈRES, PUIS LA LISTE NUMÉROTÉE.
+ *
+ * Il n'y en avait pas : un rang affiché prétend que l'ordre veut dire
+ * quelque chose, et le site s'en gardait tant que les cœurs étaient
+ * rares. Mais une ligne à vignette de soixante pixels ne montrait pas
+ * les vêtements, alors que c'est l'image qui fait le coup de cœur. Les
+ * trois premières montent donc sur un podium, en grand (voir
+ * `PodiumPieces`), et la suite garde ses lignes, numérotées à partir
+ * de 4.
+ *
+ * Le chiffre de la mesure, lui, suit toujours la règle de la page :
+ * sous `SEUIL_PIECES`, il ne descend pas jusqu'ici (voir
+ * `chiffresAffiches`). Le podium montre alors les pièces dans l'ordre,
+ * sans compter les cœurs.
+ *
+ * Il faut trois pièces pour en faire un. En dessous, la liste seule,
+ * sans rang : deux marches ne font pas un podium.
  *
  * IL NE GARDE PAS SA PAGINATION. Le nombre de lignes visibles vient du
  * dessus, de `ClassementEnRayons`, parce que changer de rayon doit la
@@ -29,6 +38,9 @@ import type { PlacePiece } from "./classement";
  * plus » disparaît sans qu'on comprenne pourquoi il était là juste
  * avant.
  */
+/** Trois marches. Au-delà ce n'est plus un podium, c'est une liste. */
+const MARCHES = 3;
+
 export default function ClassementPieces({
   pieces,
   rayon,
@@ -43,41 +55,50 @@ export default function ClassementPieces({
   combien: number;
   onVoirPlus: () => void;
 }) {
-  const visibles = pieces.slice(0, combien);
+  const podium = pieces.length >= MARCHES ? pieces.slice(0, MARCHES) : [];
+  const suite = pieces.slice(podium.length);
+  const visibles = suite.slice(0, combien);
 
   return (
     <>
-      <p className="eyebrow m-0 mb-2.5 text-white/50">
-        Le classement
-        {/* Le rayon dans le titre, parce que la pastille cliquée est loin
-            au-dessus dès qu'on a descendu quelques lignes : sans ça, on
-            lit une liste courte sans se souvenir qu'on l'a soi-même
-            rétrécie. Même précaution que dans `ClassementMarques`. */}
-        {rayon && <span className="text-white/40"> · {rayon}</span>}
-      </p>
+      {podium.length > 0 && <PodiumPieces places={podium} />}
 
-      <div className="flex flex-col gap-2.5">
-        {visibles.map((place) => (
-          /* `ligne-eco` met de côté ce qui est hors écran sur téléphone :
-             le navigateur cesse de peindre — et surtout de décoder les
-             visuels — des lignes qu'on ne regarde pas. C'est ce décodage
-             qui faisait recharger la page sur un téléphone, et ce
-             classement-ci descend jusqu'à cent vingt pièces. Voir
-             globals.css. */
-          <div key={place.product.id} className="ligne-eco">
-            <LignePiece
-              product={place.product}
-              coeurs={place.coeurs}
-              elan={place.elan}
-              note={place.note}
-              aimee={place.aimee}
-            />
+      {suite.length > 0 && (
+        <div className={podium.length > 0 ? "mt-9 sm:mt-11" : ""}>
+          <p className="eyebrow m-0 mb-2.5 text-white/50">
+            {podium.length > 0 ? "La suite du classement" : "Le classement"}
+            {/* Le rayon dans le titre, parce que la pastille cliquée est loin
+                au-dessus dès qu'on a descendu quelques lignes : sans ça, on
+                lit une liste courte sans se souvenir qu'on l'a soi-même
+                rétrécie. Même précaution que dans `ClassementMarques`. */}
+            {rayon && <span className="text-white/40"> · {rayon}</span>}
+          </p>
+
+          <div className="flex flex-col gap-2.5">
+            {visibles.map((place, i) => (
+              /* `ligne-eco` met de côté ce qui est hors écran sur téléphone :
+                 le navigateur cesse de peindre — et surtout de décoder les
+                 visuels — des lignes qu'on ne regarde pas. C'est ce décodage
+                 qui faisait recharger la page sur un téléphone, et ce
+                 classement-ci descend jusqu'à cent vingt pièces. Voir
+                 globals.css. */
+              <div key={place.product.id} className="ligne-eco">
+                <LignePiece
+                  product={place.product}
+                  rang={podium.length > 0 ? podium.length + i + 1 : undefined}
+                  coeurs={place.coeurs}
+                  elan={place.elan}
+                  note={place.note}
+                  aimee={place.aimee}
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <PiedDeClassement
-        affichees={visibles.length}
+        affichees={podium.length + visibles.length}
         total={pieces.length}
         onVoirPlus={onVoirPlus}
       />

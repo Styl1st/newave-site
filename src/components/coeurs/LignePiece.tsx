@@ -43,12 +43,18 @@ import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
 export default function LignePiece({
   product,
+  rang,
   coeurs,
   elan,
   note,
   aimee,
 }: {
   product: Product;
+  /**
+   * Place au classement, posée avant la photo. Seulement sous le podium :
+   * les trois premières y sont déjà, en grand. Absent = pas de rang.
+   */
+  rang?: number;
   /** Coups de cœur reçus. Absent sur les autres mesures. */
   coeurs?: number;
   /** La part reçue sur la fenêtre, À LA PLACE des cœurs. Jamais avec. */
@@ -140,6 +146,18 @@ export default function LignePiece({
   return (
     <div className="card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:flex-nowrap sm:gap-4 sm:p-4">
       {calque}
+
+      {/* 0. Le rang, en chiffres nus, comme sur une ligne de marque :
+             même largeur, même couleur, pour que les deux classements
+             se lisent pareil. Voir `LigneMarque`. */}
+      {rang !== undefined && (
+        <div
+          className={`${bloc} w-[22px] shrink-0 text-[15px] font-extrabold leading-none tracking-[-0.02em] tabular-nums text-[#8a7bab] sm:w-[26px] sm:text-[17px] lg:w-[34px] lg:text-[20px]`}
+        >
+          <span className="sr-only">{`${rang}ᵉ`} place du classement</span>
+          <span aria-hidden="true">{rang}</span>
+        </div>
+      )}
 
       {/* 1. La photo. Demandée à la taille où on l'affiche : c'est le
              décodage des images, et non leur poids, qui fait recharger

@@ -329,13 +329,17 @@ export default function ProductCard({
             )}
           </div>
 
+          {/* La marge négative recale la cible de 32 px du cœur sur la
+              première ligne de texte. */}
           {likes && (
-            <LikeButton
-              productId={product.id}
-              initialLiked={likes.liked}
-              initialCount={likes.count}
-              taille="trait"
-            />
+            <div className="-mr-1.5 -mt-1.5 shrink-0">
+              <LikeButton
+                productId={product.id}
+                initialLiked={likes.liked}
+                initialCount={likes.count}
+                taille="trait"
+              />
+            </div>
           )}
         </div>
       </div>

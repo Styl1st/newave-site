@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toggleLike } from "@/lib/likes";
+import { enChiffres } from "./chiffres";
 
 /**
  * Coup de cœur sur une pièce.
@@ -16,6 +17,7 @@ export default function LikeButton({
   initialLiked,
   initialCount,
   taille = "normal",
+  muet = false,
 }: {
   productId: string;
   initialLiked: boolean;
@@ -42,6 +44,12 @@ export default function LikeButton({
    * donné, et le nombre le suit en petit s'il y en a.
    */
   taille?: "normal" | "compact" | "pastille" | "claire" | "trait";
+  /**
+   * N'écrit jamais de compte, même après le clic. Pour un classement
+   * dont les chiffres sont encore masqués (voir `chiffresAffiches`) :
+   * un « 1 » qui apparaît au premier clic se lirait comme un compteur.
+   */
+  muet?: boolean;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
@@ -114,13 +122,13 @@ export default function LikeButton({
         aria-pressed={liked}
         aria-label={liked ? "Retirer mon coup de cœur" : "Ajouter à mes coups de cœur"}
         title={liked ? "Mon coup de cœur" : "Coup de cœur"}
-        /* La cible fait 32 px pour le doigt, le cœur seize : la marge
-           négative le recale sur la première ligne de texte. */
-        className={`-mr-1.5 -mt-1.5 inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 px-1.5 text-[11px] font-bold transition active:scale-90 disabled:opacity-60 ${
+        /* La cible fait 32 px pour le doigt, le cœur seize : c'est à
+           celui qui le pose de le recaler, voir `ProductCard`. */
+        className={`inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 px-1.5 text-[11px] font-bold transition active:scale-90 disabled:opacity-60 ${
           liked ? "text-white" : "text-white/55 hover:text-white"
         }`}
       >
-        {count > 0 && <span className="tabular-nums">{count}</span>}
+        {!muet && count > 0 && <span className="tabular-nums">{enChiffres(count)}</span>}
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
