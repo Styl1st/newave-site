@@ -83,6 +83,7 @@ export function BadgeMedia({ post }: { post: Post }) {
 export default function PostCard({
   post,
   accroche,
+  nue = false,
 }: {
   post: Post;
   /**
@@ -94,8 +95,63 @@ export default function PostCard({
    * module derrière elle.
    */
   accroche?: string;
+  /**
+   * LE POST SANS SA CARTE, comme une pièce de la vitrine : la photo posée
+   * sur le fond en rayon 4, le texte dessous. Pour les pages qui sont
+   * déjà dans ce parti (la fiche d'une marque).
+   */
+  nue?: boolean;
 }) {
   const cover = couverture(post);
+
+  if (nue) {
+    return (
+      <Link href={`/posts/${post.slug}`} className="group block">
+        <div className="relative aspect-4/5 w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)]">
+          {cover ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={vignette(cover, 480)}
+                srcSet={jeuDeVignettes(cover, 480)}
+                sizes="(max-width: 640px) 100vw, 360px"
+                alt={post.image_alt || post.title}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              />
+              <BadgeMedia post={post} />
+            </>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
+                Visuel à venir
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-2.5">
+          {post.brand && (
+            <p className="m-0 text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60">
+              {post.brand.name}
+            </p>
+          )}
+          <h3 className="m-0 mt-1 text-[14.5px] font-bold leading-snug text-white">{post.title}</h3>
+          {accroche && (
+            <p className="m-0 mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-white/72">
+              {accroche}
+            </p>
+          )}
+          {post.keywords.length > 0 && (
+            <p className="m-0 mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/55">
+              {post.keywords.slice(0, 3).join(" · ")}
+            </p>
+          )}
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link href={`/posts/${post.slug}`} className="card-light group block overflow-hidden">

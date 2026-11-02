@@ -640,9 +640,9 @@ export default async function BrandPage({ params }: Props) {
               la grille se fabrique une colonne `auto` taillée sur son
               enfant le plus large, et un titre de post un peu long fait
               déborder toute la page. */}
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-x-4 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => (
-              <PostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} nue />
             ))}
           </div>
         </section>

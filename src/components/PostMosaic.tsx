@@ -994,27 +994,28 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
         <>
           {aLaUne && <ALaUne post={aLaUne} />}
 
-          <div className="flex flex-col gap-4">
+          {/* Les filets séparent les posts : il n'y a plus de carte pour
+              le faire. Voir `LignePost`. */}
+          <div className="flex flex-col divide-y divide-white/15">
             {visibles.map((p) => (
               <LignePost key={p.id} post={p} accroche={sansMarquage(p.caption)} />
             ))}
           </div>
 
+          {/* Le pied de la vitrine des pièces : le compte d'abord, puis
+              le bouton. */}
           {reste > 0 && (
-            <div className="mt-7 flex flex-col items-center gap-2">
+            <div className="barre barre-pied mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
+              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
+                {visibles.length} sur {fil.length} affichés
+              </p>
               <button
                 type="button"
                 onClick={() => setCombien((n) => n + LOT)}
-                className="card-light px-7 py-3.5"
+                className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97]"
               >
-                <span className="relative z-3 text-[14px] font-extrabold">
-                  Voir {Math.min(reste, LOT)} post{Math.min(reste, LOT) > 1 ? "s" : ""} de
-                  plus
-                </span>
+                Charger {Math.min(reste, LOT)} post{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
               </button>
-              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/45">
-                {visibles.length} sur {fil.length}
-              </p>
             </div>
           )}
         </>
@@ -1087,7 +1088,10 @@ function ALaUne({ post }: { post: Post }) {
     "linear-gradient(74deg, rgba(var(--voile),0.92) 0%, rgba(var(--voile),0.5) 54%, rgba(var(--voile),0) 82%)";
 
   return (
-    <article className="rise rise-2 relative mb-4 overflow-hidden rounded-[22px] shadow-[0_24px_60px_-26px_rgba(20,6,50,0.9)]">
+    /* `hors-pivot` : le texte est posé sur un voile qui reste sombre dans
+       les deux modes. Sans lui, le mode clair le passait en encre, sur
+       une photo assombrie, et la une devenait illisible. */
+    <article className="hors-pivot rise rise-2 relative mb-2 overflow-hidden rounded-[4px] shadow-[0_24px_60px_-26px_rgba(20,6,50,0.9)]">
       <Link href={`/posts/${post.slug}`} className="group block">
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(var(--voile),0.5)] sm:aspect-[16/9] lg:aspect-[21/9]">
           {cover && (
@@ -1126,21 +1130,13 @@ function ALaUne({ post }: { post: Post }) {
               </p>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {post.keywords.slice(0, 3).map((k) => (
-                <span
-                  key={k}
-                  className="rounded-full bg-white/14 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.07em] text-white/90"
-                >
-                  {k}
-                </span>
-              ))}
-              {post.published_at && (
-                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-white/60">
-                  {dateCourte(post.published_at)}
-                </span>
-              )}
-            </div>
+            {/* Les mots-clés en texte, comme dans le fil : plus de
+                pastilles sur la photo. */}
+            <p className="m-0 mt-4 text-[10.5px] font-bold uppercase tracking-[0.12em] text-white/70">
+              {[...post.keywords.slice(0, 3), dateCourte(post.published_at)]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
           </div>
         </div>
       </Link>

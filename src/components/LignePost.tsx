@@ -79,14 +79,17 @@ export default function LignePost({
     /* La colonne du premier palier est écrite et non implicite : une
        colonne implicite se dimensionne en `auto`, donc à la largeur de
        son contenu le plus large, et un mot-clé un peu long suffirait à
-       pousser la carte hors de l'écran. Voir `CompteEcran`. */
-    <article className="card-light group relative grid grid-cols-[minmax(0,1fr)] gap-3.5 p-3.5 sm:gap-4 sm:p-4 md:grid-cols-[240px_minmax(0,1fr)] md:items-center md:gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-[26px] lg:p-[18px]">
-      {/*
-       * Le lien passe DERRIÈRE la ligne, en calque : « Voir la marque »
-       * est un lien lui aussi, et un <a> ne peut pas en contenir un
-       * autre. Le calque doit rester un enfant direct de la carte,
-       * sinon `.card-light:has(> a[data-calque]:hover)` ne s'allume plus.
-       */}
+       pousser la ligne hors de l'écran. Voir `CompteEcran`.
+
+       PLUS DE CARTE, COMME LES PIÈCES ET LE FORUM. La photo est posée
+       sur le fond en rayon 4 avec son ombre, le texte à côté, et ce sont
+       les filets du fil (`divide-y`, dans `PostMosaic`) qui séparent un
+       post du suivant. Les mots-clés ne sont plus des pastilles : une
+       ligne de texte. */
+    <article className="group relative grid grid-cols-[minmax(0,1fr)] gap-3.5 py-5 sm:gap-4 sm:py-6 md:grid-cols-[240px_minmax(0,1fr)] md:items-center md:gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-[26px]">
+      {/* Le lien passe DERRIÈRE la ligne, en calque : « Voir la marque »
+          est un lien lui aussi, et un <a> ne peut pas en contenir un
+          autre. */}
       <Link
         href={`/posts/${post.slug}`}
         aria-label={post.title}
@@ -98,7 +101,7 @@ export default function LignePost({
           768px : une colonne de 280px et un paragraphe côte à côte sur
           un téléphone ne laissent au titre que cinq caractères. */}
       <div
-        className={`${bloc} aspect-[16/10] overflow-hidden rounded-[14px] bg-[rgba(23,10,51,0.06)] md:aspect-[4/3]`}
+        className={`${bloc} aspect-[16/10] overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)] md:aspect-[4/3]`}
       >
         {cover ? (
           <>
@@ -116,7 +119,7 @@ export default function LignePost({
           </>
         ) : (
           <div className="grid h-full w-full place-items-center">
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#8a7bab]">
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/50">
               Visuel à venir
             </span>
           </div>
@@ -125,41 +128,36 @@ export default function LignePost({
 
       <div className={`${bloc} flex min-w-0 flex-col`}>
         {meta && (
-          <p className="m-0 truncate text-[11px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
+          <p className="m-0 truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60">
             {meta}
           </p>
         )}
 
-        <h3 className="m-0 mt-1.5 text-[17px] font-extrabold leading-tight tracking-[-0.025em] text-[var(--color-ink)] sm:text-[19px] lg:text-[21px]">
+        <h3 className="m-0 mt-1.5 text-[17px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[19px] lg:text-[21px]">
           {post.title}
         </h3>
 
         {accroche && (
-          <p className="m-0 mt-2 line-clamp-3 text-[13.5px] font-medium leading-relaxed text-[#4a3a78] sm:text-[14px] md:line-clamp-2 lg:line-clamp-3">
+          <p className="m-0 mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-white/72 sm:text-[14px] md:line-clamp-2 lg:line-clamp-3">
             {accroche}
           </p>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          {post.keywords.slice(0, 3).map((k) => (
-            <span
-              key={k}
-              className="rounded-full bg-[rgba(23,10,51,0.07)] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.07em] text-[#4a3a78]"
-            >
-              {k}
-            </span>
-          ))}
-
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {post.keywords.length > 0 && (
+            <p className="m-0 min-w-0 text-[10.5px] font-bold uppercase tracking-[0.12em] text-white/55">
+              {post.keywords.slice(0, 3).join(" · ")}
+            </p>
+          )}
           {/*
            * Le renvoi vers la marque est le seul endroit de la ligne où
            * l'on va ailleurs que dans le post. Sans marque rattachée, on
-           * n'affiche rien plutôt qu'un lien mort : la ligne entière mène
-           * déjà au post, et le répéter en petit ne l'ouvre pas mieux.
+           * n'affiche rien plutôt qu'un lien mort.
            */}
           {post.brand && (
             <Link
               href={`/marques/${post.brand.slug}`}
-              className="pointer-events-auto ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-[#3a2470] transition hover:bg-[rgba(23,10,51,0.07)] active:scale-95"
+              className="pointer-events-auto ml-auto inline-flex shrink-0 items-center gap-1.5 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/75 underline-offset-4 transition hover:text-white hover:underline"
             >
               <span className="hidden sm:inline">Voir la marque</span>
               <span className="sm:hidden">La marque</span>
