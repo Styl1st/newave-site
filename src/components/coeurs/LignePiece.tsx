@@ -1,46 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import LikeButton from "../LikeButton";
-import { CoeurPlein } from "../LigneMarque";
 import { enChiffres } from "../chiffres";
-import Notee from "./Notee";
+import { enEtoiles } from "../Etoiles";
 import type { Elan } from "./classement";
 import type { NoteAffichee } from "./classement";
 import { estUneVideo } from "@/lib/medias";
-import { rayonDe } from "@/lib/rayons";
 import { vignette } from "@/lib/vignette";
 import type { Product } from "@/lib/types";
 import { discountPercent, formatPrice, prixAffiche } from "@/lib/types";
 
 /**
- * Une pièce sur une seule ligne, jumelle de `LigneMarque`.
+ * Une pièce du classement, sous le podium.
  *
- * POURQUOI ELLE EXISTE. La page des coups de cœur montrait ses pièces en
- * grille de cartes et ses marques en lignes : changer d'onglet changeait
- * de page, et la forme la plus lisible — celle qui met dix entrées à
- * l'écran là où la grille en met trois — était réservée à un seul des
- * cinq classements. Cette ligne est ce qui met les cinq d'accord.
+ * ELLE A QUITTÉ SA CARTE BLANCHE POUR L'HABIT DE L'ANNUAIRE DE A À Z.
+ * Une pile de cartes claires sous un podium posé à même le fond
+ * coupait la page en deux matières. La ligne est maintenant celle de la
+ * liste des marques (`LigneMarque`, variante `halo`) : posée sur le
+ * fond, entre deux filets qui s'éteignent en fondu sur les côtés, et
+ * éclairée par un halo aux couleurs de l'ambiance sous la souris — au
+ * doigt, c'est la ligne au milieu de l'écran qui s'allume. Le décor vit
+ * dans `globals.css` (`.ligne-halo`), le suivi de la souris dans `Halo`.
  *
- * ELLE COPIE LE GABARIT DE `LigneMarque` AU PIXEL, ET C'EST VOLONTAIRE.
- * Même `.card-light`, même vignette de 52 puis 62 pixels, mêmes
- * gouttières, même repli en `flex-wrap` sous 640. Ce n'est pas de la
- * coquetterie : deux lignes qui se ressemblent presque se remarquent
- * beaucoup plus qu'une différence franche, et l'on passe d'un onglet à
- * l'autre sur cette page.
+ * CE QU'ELLE MONTRE, ET RIEN DE PLUS : le rang en chiffres détourés
+ * (comme les lettres de l'annuaire), la photo, le nom, la marque et le
+ * prix sur une seule sous-ligne, puis le cœur, qui porte le compte. Le
+ * rayon, la pastille sombre et le rond du bouton sont partis.
  *
- * CE QU'ELLE NE COPIE PAS : la bande de quatre vignettes. Une marque a
- * besoin qu'on montre ce qu'elle fabrique — c'est la question qu'on se
- * pose devant un annuaire. Une pièce EST déjà ce qu'elle montre ; la
- * place de la bande revient donc au prix, qui est la seule chose qu'on
- * cherche ensuite.
- *
- * ⚠️ UNE SEULE MESURE PAR LIGNE. `coeurs` ou `note`, jamais les deux :
- * le coup de cœur dit ce qui plaît, l'avis dit ce qui est bon, et les
- * afficher côte à côte inviterait à les additionner. Voir le commentaire
- * d'`ONGLETS` dans la page.
+ * ⚠️ UNE SEULE MESURE PAR LIGNE. `coeurs`, `elan` ou `note`, jamais
+ * deux : le coup de cœur dit ce qui plaît, l'avis dit ce qui est bon,
+ * et les afficher côte à côte inviterait à les additionner.
  */
-
 export default function LignePiece({
   product,
   rang,
@@ -55,7 +47,7 @@ export default function LignePiece({
    * les trois premières y sont déjà, en grand. Absent = pas de rang.
    */
   rang?: number;
-  /** Coups de cœur reçus. Absent sur les autres mesures. */
+  /** Coups de cœur reçus. Absent sur les autres mesures, et sous le seuil. */
   coeurs?: number;
   /** La part reçue sur la fenêtre, À LA PLACE des cœurs. Jamais avec. */
   elan?: Elan;
@@ -64,15 +56,38 @@ export default function LignePiece({
   /** Le geste de la personne connectée, et rien que le sien. */
   aimee: boolean;
 }) {
+  const ancre = useRef<HTMLDivElement>(null);
+
+  /*
+   * AU DOIGT, LA LUMIÈRE SUIT LE DÉFILEMENT. Même procédé que
+   * `LigneMarque` : la ligne qui traverse le milieu de l'écran s'allume,
+   * guettée par un `IntersectionObserver`, sans écouteur de défilement
+   * ni rendu React.
+   */
+  useEffect(() => {
+    const el = ancre.current;
+    if (!el || !window.matchMedia("(hover: none)").matches) return;
+
+    const guetteur = new IntersectionObserver(
+      (entrees) => {
+        for (const e of entrees) {
+          if (e.isIntersecting) el.dataset.centre = "1";
+          else delete el.dataset.centre;
+        }
+      },
+      { rootMargin: "-46% 0px -46% 0px" }
+    );
+    guetteur.observe(el);
+    return () => guetteur.disconnect();
+  }, []);
+
   const prix = prixAffiche(product);
   const barre = formatPrice(product.compare_at_cents, product.currency);
   const remise = discountPercent(product);
 
   /*
-   * La première PHOTO, et pas le premier média. Une pièce peut porter
-   * une vidéo en tête de carrousel : la fiche sait la lire, une balise
-   * `img` non, et la ligne afficherait un cadre cassé. Même précaution
-   * que `ProductCard`.
+   * La première PHOTO, et pas le premier média : une vidéo en tête de
+   * carrousel donnerait un cadre cassé dans une balise `img`.
    */
   const visuel =
     (product.images ?? []).find((m) => Boolean(m) && !estUneVideo(m)) ??
@@ -82,52 +97,22 @@ export default function LignePiece({
   const interne = Boolean(slug && product.slug);
   /* Sans fiche interne, on sort par le compteur de clics plutôt que de
      fabriquer un lien mort. Même règle que `ProductCard`. */
-  const href = interne
-    ? `/marques/${slug}/${product.slug}`
-    : `/api/go/piece/${product.id}`;
+  const href = interne ? `/marques/${slug}/${product.slug}` : `/api/go/piece/${product.id}`;
 
-  /*
-   * La sous-ligne : la marque, puis le rayon. La marque d'abord parce
-   * que c'est elle qu'on cherche dans un classement de pièces — savoir
-   * QUI fait ce qui plaît est la moitié de l'intérêt de la page.
-   *
-   * « Autres » ne s'écrit pas : `rayonDe` le rend pour les pièces qu'on
-   * n'a pas su ranger, et l'afficher reviendrait à coller une étiquette
-   * dépréciative sur une pièce dont le seul tort est un nom que nos
-   * règles ne reconnaissent pas. Le rayon reste dans la ligne du haut,
-   * où il sert à filtrer.
-   */
-  const rayon = rayonDe(product);
-  const sousLigne = [product.brand?.name, rayon === "Autres" ? null : rayon]
-    .filter(Boolean)
-    .join(" · ");
+  /* Retirée l'emporte sur épuisée : une pièce qui n'est plus sur la
+     boutique ne reviendra pas en stock. */
+  const etat = product.retired_at ? "Retirée" : product.available ? null : "Épuisé";
 
   /* Les blocs laissent passer le clic vers le lien étalé sous la ligne ;
-     seul le cœur le reprend. Même procédé que `LigneMarque`. */
+     seul le cœur le reprend. */
   const bloc = "pointer-events-none relative z-3";
 
   /*
-   * Le lien passe DERRIÈRE la ligne, en calque. Un <button> ne peut pas
-   * vivre dans un <a> — le navigateur refuse cette imbrication — et le
-   * cœur doit garder son propre clic.
-   *
-   * Il reste un ENFANT DIRECT de la carte, sinon la règle
-   * `.card-light:has(> a[data-calque]:hover)` ne s'allume plus et la
-   * ligne cesse de réagir au survol.
-   *
-   * Écrit en deux fois plutôt qu'en composant partagé avec
-   * `ProductCard` : celui-ci est un composant serveur, et l'importer
-   * ici — dans un module qui vit forcément côté navigateur — ferait
-   * descendre toute la carte, son carrousel et sa teinte dans le paquet
-   * de la page, pour quinze lignes de balisage.
+   * Le lien passe DERRIÈRE la ligne, en calque : un <button> ne peut pas
+   * vivre dans un <a>, et le cœur doit garder son propre clic.
    */
   const calque = interne ? (
-    <Link
-      href={href}
-      aria-label={product.name}
-      data-calque=""
-      className="absolute inset-0 z-2"
-    />
+    <Link href={href} aria-label={product.name} data-calque="" className="absolute inset-0 z-2" />
   ) : (
     <a
       href={href}
@@ -139,31 +124,31 @@ export default function LignePiece({
     />
   );
 
-  /* Retirée l'emporte sur épuisée : une pièce qui n'est plus sur la
-     boutique ne reviendra pas en stock. Même arbitrage que `ProductCard`. */
-  const etat = product.retired_at ? "Retirée" : product.available ? null : "Épuisé";
-
   return (
-    <div className="card-light group relative flex flex-wrap items-center gap-3 overflow-hidden p-3.5 sm:flex-nowrap sm:gap-4 sm:p-4">
+    <div
+      ref={ancre}
+      data-halo=""
+      className="ligne-halo group relative flex items-center gap-3 sm:gap-5"
+    >
+      {/* Les deux filets, le halo et les traits qu'il allume. */}
+      <span className="ligne-halo-decor" aria-hidden="true">
+        <span className="ligne-halo-trait" />
+      </span>
+
       {calque}
 
-      {/* 0. Le rang, en chiffres nus, comme sur une ligne de marque :
-             même largeur, même couleur, pour que les deux classements
-             se lisent pareil. Voir `LigneMarque`. */}
+      {/* 0. Le rang, détouré comme les lettres de l'annuaire : on le
+             voit passer en descendant sans qu'il pèse plus que la pièce. */}
       {rang !== undefined && (
-        <div
-          className={`${bloc} w-[22px] shrink-0 text-[15px] font-extrabold leading-none tracking-[-0.02em] tabular-nums text-[#8a7bab] sm:w-[26px] sm:text-[17px] lg:w-[34px] lg:text-[20px]`}
-        >
+        <div className={`${bloc} rang-contour w-[30px] shrink-0 text-center sm:w-[46px]`}>
           <span className="sr-only">{`${rang}ᵉ`} place du classement</span>
           <span aria-hidden="true">{rang}</span>
         </div>
       )}
 
-      {/* 1. La photo. Demandée à la taille où on l'affiche : c'est le
-             décodage des images, et non leur poids, qui fait recharger
-             la page sur un téléphone. Voir `vignette`. */}
+      {/* 1. La photo, demandée à la taille où on l'affiche. */}
       <div
-        className={`${bloc} grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[rgba(23,10,51,0.06)] sm:h-[62px] sm:w-[62px]`}
+        className={`${bloc} ligne-halo-logo grid h-[54px] w-[54px] shrink-0 place-items-center overflow-hidden rounded-[16px] sm:h-[64px] sm:w-[64px]`}
       >
         {visuel ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -183,109 +168,69 @@ export default function LignePiece({
         )}
       </div>
 
-      {/* 2. L'identité. */}
-      <div className={`${bloc} min-w-0 flex-1`}>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="m-0 min-w-0 truncate text-[15px] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[16px]">
+      {/* 2. Le nom, puis la marque et le prix sur une seule ligne. */}
+      <div className={`${bloc} ligne-halo-identite min-w-0 flex-1`}>
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="m-0 min-w-0 truncate text-[16px] font-black leading-[1.1] tracking-[-0.03em] text-white sm:text-[20px]">
             {product.name}
           </h3>
           {etat && (
-            <span className="shrink-0 rounded-full bg-[var(--color-ink)] px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white">
+            <span className="shrink-0 rounded-full bg-white/12 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.08em] text-white ring-1 ring-white/25">
               {etat}
             </span>
           )}
         </div>
-        {sousLigne && (
-          <p className="m-0 mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.05em] text-[#6a5a92]">
-            {sousLigne}
-          </p>
-        )}
+        <p className="m-0 mt-1.5 flex min-w-0 items-baseline gap-x-2 text-[12.5px] font-semibold text-white/72 sm:text-[13px]">
+          {product.brand?.name && <span className="min-w-0 truncate">{product.brand.name}</span>}
+          {product.brand?.name && (
+            <span aria-hidden="true" className="text-white/35">
+              ·
+            </span>
+          )}
+          <span className="shrink-0 font-extrabold text-white">
+            {prix.principal ?? "Prix sur la boutique"}
+          </span>
+          {/* Le prix réellement demandé, quand il n'est pas en euros. */}
+          {prix.origine && <span className="hidden shrink-0 sm:inline">{prix.origine}</span>}
+          {barre && remise !== null && (
+            <span className="shrink-0 text-white/50 line-through">{barre}</span>
+          )}
+        </p>
       </div>
 
-      {/* 3. Le prix. Il prend la place et le comportement de la bande de
-             vignettes de `LigneMarque` : sur téléphone il passe à la
-             ligne et prend toute la largeur, plutôt que de disputer
-             quarante pixels au nom de la pièce et au cœur. */}
+      {/* 3. La mesure quand ce n'est pas un compte de cœurs, puis le
+             cœur, qui porte le compte. Sous le seuil des chiffres, il
+             reste muet : voir `chiffresAffiches`. */}
       <div
-        className={`${bloc} order-last flex w-full flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:order-none sm:w-auto sm:flex-none sm:justify-end`}
+        className={`${bloc} flex shrink-0 items-center gap-1 text-[13px] font-extrabold text-white sm:text-[15px]`}
       >
-        <span className="text-[13.5px] font-extrabold text-[var(--color-ink)] sm:text-[14px]">
-          {prix.principal ?? "Prix sur la boutique"}
-        </span>
-        {/* Le prix réellement demandé par la marque, quand il n'est pas
-            en euros. Notre conversion aide à comparer, elle ne remplace
-            pas ce qui sera payé. */}
-        {prix.origine && (
-          <span className="text-[11.5px] font-semibold text-[#8a7bab]">{prix.origine}</span>
-        )}
-        {barre && remise !== null && (
-          <span className="text-[11.5px] font-semibold text-[#8a7bab] line-through">
-            {barre}
-          </span>
-        )}
-      </div>
-
-      {/* 4 et 5. La mesure, puis le geste. Sur téléphone ils restent au
-             bout de la première ligne, à droite du nom. */}
-      <div className={`${bloc} ml-auto flex shrink-0 items-center gap-2 sm:ml-0`}>
-        {coeurs !== undefined && (
-          /*
-           * Le chiffre porte son cœur, et c'est ce qui le rend lisible
-           * sans en-tête de colonne : la ligne est une bande souple, pas
-           * une grille, et un intitulé posé au-dessus se décalerait de sa
-           * colonne dès que la largeur change. Même dessin que
-           * `LigneMarque`.
-           */
-          <span
-            title={`${enChiffres(coeurs)} coup${coeurs > 1 ? "s" : ""} de cœur`}
-            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-extrabold tabular-nums text-[var(--color-ink)] sm:mr-1 sm:text-[17px]"
-          >
-            <CoeurPlein className="h-3 w-3 text-[#8a7bab] sm:h-3.5 sm:w-3.5" />
-            {enChiffres(coeurs)}
-          </span>
-        )}
-
-        {/*
-          L'ÉLAN S'ÉCRIT EN POUR CENT, ET SANS CŒUR À CÔTÉ.
-          Un cœur suivi de « 18 » se lit « dix-huit cœurs » ; ici c'est
-          une part, et le signe pour cent est ce qui l'empêche d'être
-          confondue avec un volume. Les deux nombres qui la fabriquent
-          sont dans l'infobulle : une part sans son total ne se vérifie
-          pas.
-        */}
         {elan && (
           <span
             title={`${enChiffres(elan.fenetre)} sur ${enChiffres(elan.total)} cœurs`}
-            className="inline-flex shrink-0 items-baseline gap-0.5 text-[13px] font-extrabold tabular-nums text-[var(--color-ink)] sm:mr-1 sm:text-[17px]"
+            className="tabular-nums"
           >
-            {elan.part}
-            <span className="text-[9px] font-black sm:text-[11px]">%</span>
+            {elan.part} %
           </span>
         )}
-
-        {/* La même note que sur une ligne de marque, au même endroit et
-            avec le même dessin. Voir `Notee`. */}
-        {note && <Notee note={note} />}
-
+        {note && (
+          <span
+            title={`Noté ${enEtoiles(note.moyenne)} sur 5 par ${note.avis} personne${note.avis > 1 ? "s" : ""}`}
+            className="inline-flex items-baseline gap-1 tabular-nums"
+          >
+            <span aria-hidden="true" className="text-[#f5c73c]">
+              ★
+            </span>
+            {enEtoiles(note.moyenne)}
+            <span className="text-[11px] font-bold text-white/60">({note.avis})</span>
+          </span>
+        )}
         <div className="pointer-events-auto">
-          {/*
-           * LE BOUTON PART À ZÉRO, ET CE N'EST PAS UN OUBLI.
-           *
-           * En taille `claire`, `LikeButton` n'écrit AUCUN compte : c'est
-           * la même pastille ronde de 36 px que le cœur au bout d'une
-           * `LigneMarque`, et les cinq onglets ont donc la même fin de
-           * ligne — un chiffre en encre, puis un geste.
-           *
-           * Le chiffre qui compte est celui d'à gauche : il vient du
-           * serveur, il est le même pour tout le monde, et c'est lui qui
-           * fait le classement. Le bouton, lui, ne répond que d'une
-           * chose — c'est fait — et il le dit en se remplissant.
-           */}
           <LikeButton
             productId={product.id}
             initialLiked={aimee}
-            initialCount={0}
-            taille="claire"
+            initialCount={coeurs ?? 0}
+            taille="trait"
+            muet={coeurs === undefined}
           />
         </div>
       </div>

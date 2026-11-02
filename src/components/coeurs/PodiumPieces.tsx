@@ -143,14 +143,19 @@ function Marche({ place, entree }: { place: number; entree: PlacePiece }) {
           deux lignes, le prix toujours la sienne — et c'est un socle
           ajouté sous le contenu qui fait les trois hauteurs. Avec de
           simples hauteurs minimales, un nom sur deux lignes suffisait à
-          rendre la troisième marche plus haute que la première. */}
+          rendre la troisième marche plus haute que la première.
+
+          LE BAS S'EFFACE EN FONDU, sans trait de sol : le fond de la
+          marche se dissout dans la page au lieu de s'arrêter net sur
+          une ligne. Le fondu est porté par le fond seul (voir
+          `.podium-marche::before`), le texte reste net. */}
       <div
-        className={`podium-marche relative mt-2.5 flex flex-col items-center rounded-t-[12px] border-t border-white/25 px-1.5 pt-2 text-center sm:mt-3.5 sm:px-3 ${
+        className={`podium-marche relative mt-2.5 flex flex-col items-center rounded-t-[12px] px-1.5 pt-2 text-center sm:mt-3.5 sm:px-3 ${
           premier
-            ? "podium-marche-or pb-14 sm:pb-20"
+            ? "podium-marche-or pb-16 sm:pb-24"
             : place === 2
-              ? "bg-white/10 pb-8 sm:pb-11"
-              : "bg-white/[0.07] pb-3 sm:pb-4"
+              ? "podium-marche-2 pb-10 sm:pb-14"
+              : "pb-5 sm:pb-6"
         }`}
       >
         <span

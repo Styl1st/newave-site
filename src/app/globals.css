@@ -6002,14 +6002,38 @@ html[data-fige="1"] .ligne-halo-vignette { transition: none; transform: none; }
   to   { opacity: 1; transform: none; }
 }
 
+/* LE FOND DE LA MARCHE S'EFFACE VERS LE BAS. Il est peint sur un
+   pseudo-élément masqué, et non sur la marche elle-même : un masque sur
+   la marche effacerait aussi son texte et son cœur, posés près du bas
+   sur la troisième. Pas de bordure basse, pas de sol : la marche se
+   dissout dans la page. Son filet du haut est une ombre intérieure,
+   pour s'effacer avec elle sur les côtés. */
+.podium-marche {
+  --fond-marche: color-mix(in srgb, var(--color-white) 7%, transparent);
+  isolation: isolate;
+}
+.podium-marche-2 {
+  --fond-marche: color-mix(in srgb, var(--color-white) 11%, transparent);
+}
 /* La première marche prend les accents du thème, et non un violet
    écrit en dur : elle doit suivre une ambiance verte ou graphite. */
 .podium-marche-or {
-  background-image: linear-gradient(
+  --fond-marche: linear-gradient(
     160deg,
     rgba(var(--accent-3), .55),
     rgba(var(--accent-1), .32)
   );
+}
+.podium-marche::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--fond-marche);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-white) 28%, transparent);
+  -webkit-mask-image: linear-gradient(#000 35%, transparent 100%);
+          mask-image: linear-gradient(#000 35%, transparent 100%);
 }
 
 /* Le liseré chromé de la première photo : la même matière que la
@@ -6039,4 +6063,27 @@ html[data-fige="1"] .ligne-halo-vignette { transition: none; transform: none; }
 html[data-fige="1"] :is(.podium-marche, .podium-piece),
 html[data-allege] :is(.podium-marche, .podium-piece) {
   animation: none;
+}
+
+/* ---------- la suite du classement, en lignes au halo ----------
+
+   Les pièces sous le podium portent l'habit de l'annuaire de A à Z
+   (`.ligne-halo`, plus haut). Deux ajouts seulement : le rang détouré,
+   et le filet du haut sur la première ligne, que l'annuaire tient de
+   son titre de lettre (`h2 + .ligne-eco`). */
+.liste-halo > .ligne-eco:first-child .ligne-halo-decor::after {
+  background:
+    linear-gradient(var(--filet), var(--filet)) top / 100% 1px no-repeat,
+    linear-gradient(var(--filet), var(--filet)) bottom / 100% 1px no-repeat;
+}
+
+/* Le rang, en chiffres détourés comme les lettres de l'annuaire : on le
+   voit passer en descendant sans qu'il pèse plus que la pièce. */
+.rang-contour {
+  font-size: clamp(24px, 5vw, 34px);
+  font-weight: 900;
+  letter-spacing: -.04em;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-white) 80%, transparent);
 }

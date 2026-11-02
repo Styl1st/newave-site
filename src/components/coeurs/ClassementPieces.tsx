@@ -3,6 +3,7 @@
 import LignePiece from "./LignePiece";
 import PiedDeClassement from "./PiedDeClassement";
 import PodiumPieces from "./PodiumPieces";
+import Halo from "../Halo";
 import type { PlacePiece } from "./classement";
 
 /**
@@ -74,7 +75,9 @@ export default function ClassementPieces({
             {rayon && <span className="text-white/40"> · {rayon}</span>}
           </p>
 
-          <div className="flex flex-col gap-2.5">
+          {/* Un seul écouteur de souris pour toutes les lignes. Voir `Halo`. */}
+          <Halo />
+          <div className="liste-halo flex flex-col">
             {visibles.map((place, i) => (
               /* `ligne-eco` met de côté ce qui est hors écran sur téléphone :
                  le navigateur cesse de peindre — et surtout de décoder les
