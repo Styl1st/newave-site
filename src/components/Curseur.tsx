@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Le curseur du site : une flèche à l'encre du site, une main qui pointe
- * sur tout ce qui se clique, et cinq autres dessins pour les endroits où
- * ni l'une ni l'autre ne disent assez.
+ * Le curseur du site : une flèche aux couleurs du fond choisi, une main
+ * qui pointe sur tout ce qui se clique, et cinq autres dessins pour les
+ * endroits où ni l'une ni l'autre ne disent assez.
  *
  * POURQUOI UNE FLÈCHE ET NON UN POINT. Un point rond ne dit pas où il
  * pointe : son centre, sa pointe et son bord se valent, et l'on vise
@@ -495,6 +495,22 @@ export default function Curseur() {
    */
   return (
     <div ref={fleche} className="curseur-point" aria-hidden>
+      {/*
+        LE DÉGRADÉ DU FOND, défini une fois pour tous les dessins. Ses
+        trois arrêts lisent les couleurs de l'apparence choisie (voir
+        `.curseur-arret-*` dans globals.css) : le curseur change avec
+        l'ambiance, sans une ligne de JavaScript.
+      */}
+      <svg className="curseur-degrade" focusable="false">
+        <defs>
+          <linearGradient id="curseur-degrade" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" className="curseur-arret-1" />
+            <stop offset="0.55" className="curseur-arret-2" />
+            <stop offset="1" className="curseur-arret-3" />
+          </linearGradient>
+        </defs>
+      </svg>
+
       <span data-glyphe="fleche">
         <svg viewBox="0 0 12 16" width="11" height="15">
           <path

@@ -3265,32 +3265,60 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
    dessus en couleur. `paint-order: stroke` fait le même effet avec un
    seul tracé — le contour est peint sous le remplissage au lieu d'être
    centré sur le bord — ce qui divise par deux le nombre de nœuds à
-   peindre. */
+   peindre.
+
+   LE REMPLISSAGE EST LE DÉGRADÉ DU FOND, EN MINIATURE. Le curseur
+   prenait la couleur d'un halo, qui se règle à part : on changeait les
+   teintes du fond dans « Apparence », ou l'on passait d'une ambiance à
+   l'autre, et il restait d'une autre famille que la page. Il lit
+   maintenant les mêmes variables que le décor (`--bg-1`, `--bg-3`,
+   `--bg-4` : le haut, le cœur et sa lumière), donc il suit tout seul
+   les ambiances toutes faites comme les teintes composées à la main,
+   à la seconde où on les règle. Le dégradé est défini une seule fois
+   dans `Curseur.tsx` et partagé par tous les dessins.
+
+   UNE TEINTE TROP CLAIRE EST ASSOMBRIE, ET ELLE SEULE. Une ambiance
+   composée en pastel donnerait sinon un curseur pâle, que son contour
+   blanc ne détacherait plus d'une photo claire. La luminosité est donc
+   plafonnée (`min(l, .56)` en OKLCH), sans toucher ni la teinte ni la
+   saturation : les ambiances sombres passent telles quelles, une
+   ambiance pastel garde sa couleur mais gagne du poids. Pour les
+   navigateurs qui ne savent pas encore dériver une couleur, deux
+   replis au-dessus : un mélange avec l'encre, puis la teinte brute. */
 .curseur-trait {
   fill: var(--color-ink);
+  fill: url(#curseur-degrade) var(--color-ink);
   stroke: #fff;
   stroke-linejoin: round;
   paint-order: stroke;
 }
-
-/* La main prend la teinte de l'ambiance choisie dans le compte,
-   ASSOMBRIE, comme la flèche le faisait avant elle sur un lien. La
-   forme dit qu'on peut cliquer, la couleur dit qu'on est chez nous.
-   L'accent brut est une couleur de décor, faite pour éclairer un fond
-   et pas pour être lue à dix-sept pixels : mélangé à l'encre du site,
-   il garde son identité et gagne le poids qui le rend net sur une
-   photo claire. Le contour blanc le détache d'une photo sombre.
-
-   `color-mix` n'est pas compris partout : la teinte brute reste écrite
-   au-dessus, elle sert de repli.
-
-   Seuls le danger et l'éteint ont leur couleur propre : la main rouge
-   sur un bouton de suppression. */
-html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="doigt"] .curseur-trait,
-html[data-curseur-etat="doigt"] .curseur-point > [data-glyphe="doigt"] .curseur-trait {
-  fill: rgb(var(--accent-3));
-  fill: color-mix(in srgb, rgb(var(--accent-3)) 45%, var(--color-ink));
+/* Le calque qui porte le dégradé : sans taille, mais pas en
+   `display: none`, sans quoi certains navigateurs ne le peignent plus
+   là où il est cité. */
+.curseur-degrade {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
+.curseur-arret-1 {
+  stop-color: var(--bg-1);
+  stop-color: color-mix(in srgb, var(--bg-1) 82%, var(--color-ink));
+  stop-color: oklch(from var(--bg-1) min(l, .56) c h);
+}
+.curseur-arret-2 {
+  stop-color: var(--bg-3);
+  stop-color: color-mix(in srgb, var(--bg-3) 82%, var(--color-ink));
+  stop-color: oklch(from var(--bg-3) min(l, .56) c h);
+}
+.curseur-arret-3 {
+  stop-color: var(--bg-4);
+  stop-color: color-mix(in srgb, var(--bg-4) 82%, var(--color-ink));
+  stop-color: oklch(from var(--bg-4) min(l, .56) c h);
+}
+
+/* Seuls le danger et l'éteint ont leur couleur propre : la main rouge
+   sur un bouton de suppression. */
 html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="doigt"] .curseur-trait {
   fill: #c2273f;
 }
