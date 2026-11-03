@@ -78,26 +78,36 @@ export default function MarqueDeLaSemaine({
     <div>
       {/* ---------- l'image ----------
           `group` pour les flèches du défilé et le léger zoom au survol,
-          comme sur une vignette de pièce. Le lien vers la fiche est posé
-          en calque SOUS les flèches : un bouton ne peut pas vivre dans
-          un lien. */}
-      <div className="cadre-nu group relative aspect-16/9 w-full overflow-hidden rounded-[4px] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7] shadow-[0_26px_60px_-24px_rgba(20,6,50,0.95)]">
-        {brand.cover_video_url ? (
-          <CouvertureAnimee
-            video={brand.cover_video_url}
-            affiche={vignette(brand.cover_url, 900)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <IllustrationMarque
-            source={visuel}
-            estUnLogo={estUnLogo}
-            slug={brand.slug}
-            nom={brand.name}
-          />
-        )}
+          comme sur une vignette de pièce.
 
+          LE LIEN VERS LA FICHE EST SOUS L'IMAGE, PAS DESSUS. Posé
+          par-dessus, il recouvrait aussi les flèches dès le survol : le
+          zoom de la vitrine (`scale`) en fait une couche à part, et son
+          `z-index` interne ne compte plus face au lien. Un clic sur une
+          flèche ouvrait donc la fiche au lieu de tourner l'image. L'image
+          passe maintenant devant, en laissant filer les clics vers le
+          lien (`pointer-events-none`), sauf sur les flèches, qui les
+          reprennent dans `globals.css`. C'est le montage des cartes de
+          l'annuaire. */}
+      <div className="cadre-nu group relative aspect-16/9 w-full overflow-hidden rounded-[4px] bg-linear-to-br from-[#efe6ff] to-[#d9c9f7] shadow-[0_26px_60px_-24px_rgba(20,6,50,0.95)]">
         <Link href={fiche} aria-label={brand.name} className="absolute inset-0 z-1" />
+
+        <div className="pointer-events-none absolute inset-0 z-2">
+          {brand.cover_video_url ? (
+            <CouvertureAnimee
+              video={brand.cover_video_url}
+              affiche={vignette(brand.cover_url, 900)}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <IllustrationMarque
+              source={visuel}
+              estUnLogo={estUnLogo}
+              slug={brand.slug}
+              nom={brand.name}
+            />
+          )}
+        </div>
       </div>
 
       {/* ---------- le texte, à même le fond ----------
