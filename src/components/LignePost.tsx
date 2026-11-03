@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BadgeMedia, couverture } from "./PostCard";
 import { IconArrow } from "./Icons";
+import ApercuFlou from "./ApercuFlou";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Post } from "@/lib/types";
 
@@ -101,19 +102,23 @@ export default function LignePost({
           768px : une colonne de 280px et un paragraphe côte à côte sur
           un téléphone ne laissent au titre que cinq caractères. */}
       <div
-        className={`${bloc} aspect-[16/10] overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)] md:aspect-[4/3]`}
+        className={`${bloc} relative aspect-[16/10] overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)] md:aspect-[4/3]`}
       >
         {cover ? (
           <>
+            {/* Du flou au net : voir `ApercuFlou`. */}
+            <ApercuFlou src={cover} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              data-progressif=""
+              suppressHydrationWarning
               src={vignette(cover, 360)}
               srcSet={jeuDeVignettes(cover, 360)}
               sizes="(max-width: 767px) 100vw, 280px"
               alt={post.image_alt || post.title}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+              className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
             <BadgeMedia post={post} />
           </>

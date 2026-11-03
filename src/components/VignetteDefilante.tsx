@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { jeuDeVignettes, vignette } from "@/lib/vignette";
+import { useRef, useState } from "react";
+import ApercuFlou from "./ApercuFlou";
+import { apercuFlou, jeuDeVignettes, vignette } from "@/lib/vignette";
 
 /**
  * Les photos d'une pièce, feuilletées sans quitter la grille.
@@ -52,15 +53,6 @@ export default function VignetteDefilante({
 }) {
   const [rang, setRang] = useState(0);
   const annoncees = useRef(new Set<number>());
-  const [chargee, setChargee] = useState(false);
-  const photo = useRef<HTMLImageElement | null>(null);
-
-  /* Une photo déjà en cache peut finir de charger avant que React ne
-     branche `onLoad` : on regarde aussi son état au montage. */
-  useEffect(() => {
-    const img = photo.current;
-    if (img?.complete && img.naturalWidth > 0) setChargee(true);
-  }, []);
 
   const total = images.length;
   const source = images[Math.min(rang, total - 1)];
@@ -99,6 +91,22 @@ export default function VignetteDefilante({
 
   return (
     <>
+      {/*
+        DU FLOU AU NET. L'aperçu flou de la première photo est posé
+        juste avant elle ; la photo naît transparente et apparaît en
+        fondu dès qu'elle est chargée (voir `ApercuFlou` et
+        `lib/image-progressive`). Quand l'hébergeur ne sait pas fournir
+        de miniature, c'est l'aplat qui respire qui fait l'attente, au
+        même endroit et retiré par la même règle.
+
+        `suppressHydrationWarning` : `data-charge` peut être posé par le
+        script du <head> avant que React n'ait repris la page.
+      */}
+      {apercuFlou(images[0]) ? (
+        <ApercuFlou src={images[0]} prioritaire={prioritaire} />
+      ) : (
+        <span aria-hidden="true" className="attente-visuel pointer-events-none absolute inset-0" />
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={vignette(source, 400)}
@@ -109,15 +117,10 @@ export default function VignetteDefilante({
         fetchPriority={prioritaire ? "high" : "auto"}
         decoding="async"
         onMouseEnter={() => preparer(1)}
-        ref={photo}
-        onLoad={() => setChargee(true)}
-        onError={() => setChargee(true)}
-        className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${className}`}
+        data-progressif={prioritaire ? "net" : ""}
+        suppressHydrationWarning
+        className={`relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${className}`}
       />
-
-      {/* Tant que la première photo n'est pas arrivée, un aplat qui
-          respire plutôt qu'une case vide. */}
-      {!chargee && <span aria-hidden="true" className="attente-visuel pointer-events-none absolute inset-0" />}
 
       {total > 1 && (
         <div className="defile">

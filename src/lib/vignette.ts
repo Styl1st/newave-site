@@ -306,3 +306,25 @@ export function jeuDeVignettes(
   // proposer plusieurs fois la même n'apporterait rien.
   return jeu.length > 1 ? jeu.join(", ") : undefined;
 }
+
+/**
+ * La photo en minuscule, pour l'aperçu flou qui précède l'image nette.
+ *
+ * Trente-deux pixels de large, quelques centaines d'octets : elle arrive
+ * presque en même temps que la page, et une fois étirée et floutée elle
+ * donne déjà les couleurs et la forme de la photo. C'est la technique
+ * du « flou qui devient net » : on voit tout de suite QUELQUE CHOSE de
+ * la pièce, au lieu d'un cadre vide puis d'une image qui tombe d'un coup.
+ *
+ * RIEN QUAND L'HÉBERGEUR NE SAIT PAS RÉDUIRE. Si l'adresse ne change
+ * pas avec la largeur demandée (adresse locale, hébergeur inconnu en
+ * mode images directes), la « miniature » serait la photo entière : on
+ * la téléchargerait deux fois pour rien. Dans ce cas, pas d'aperçu.
+ */
+export function apercuFlou(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  const petite = vignette(url, 32);
+  const grande = vignette(url, 400);
+  if (!petite || petite === grande || petite === url) return undefined;
+  return petite;
+}

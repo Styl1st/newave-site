@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import LikeButton from "../LikeButton";
+import ApercuFlou from "../ApercuFlou";
 import { enChiffres } from "../chiffres";
 import { enEtoiles } from "../Etoiles";
 import type { PlacePiece } from "./classement";
@@ -110,18 +111,24 @@ function Marche({ place, entree }: { place: number; entree: PlacePiece }) {
           }`}
         >
           {visuel ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
+            <>
+            {/* Du flou au net : voir `ApercuFlou`. */}
+            <ApercuFlou src={visuel} prioritaire />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              data-progressif="net"
+              suppressHydrationWarning
               src={vignette(visuel, premier ? 640 : 480)}
               srcSet={jeuDeVignettes(visuel, premier ? 640 : 480)}
               sizes={premier ? "(max-width: 640px) 40vw, 320px" : "(max-width: 640px) 32vw, 260px"}
               alt=""
               loading="eager"
               decoding="async"
-              className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${
+              className={`relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${
                 product.retired_at ? "opacity-70 grayscale-[.35]" : ""
               }`}
             />
+            </>
           ) : (
             <span className="grid h-full w-full place-items-center text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">
               Visuel à venir

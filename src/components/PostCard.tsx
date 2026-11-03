@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ApercuFlou from "./ApercuFlou";
 import { contientUneVideo, premiereImage } from "@/lib/medias";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Post } from "@/lib/types";
@@ -110,15 +111,19 @@ export default function PostCard({
         <div className="relative aspect-4/5 w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)]">
           {cover ? (
             <>
+              {/* Du flou au net : voir `ApercuFlou`. */}
+              <ApercuFlou src={cover} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                data-progressif=""
+                suppressHydrationWarning
                 src={vignette(cover, 480)}
                 srcSet={jeuDeVignettes(cover, 480)}
                 sizes="(max-width: 640px) 100vw, 360px"
                 alt={post.image_alt || post.title}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
               />
               <BadgeMedia post={post} />
             </>
@@ -160,15 +165,19 @@ export default function PostCard({
         <div className="relative aspect-4/5 w-full overflow-hidden bg-[#e6dcfb]">
           {cover ? (
             <>
+              {/* Du flou au net : voir `ApercuFlou`. */}
+              <ApercuFlou src={cover} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                data-progressif=""
+                suppressHydrationWarning
                 src={vignette(cover, 480)}
                 srcSet={jeuDeVignettes(cover, 480)}
                 sizes="(max-width: 640px) 100vw, 360px"
                 alt={post.image_alt || post.title}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
               />
               <BadgeMedia post={post} />
             </>

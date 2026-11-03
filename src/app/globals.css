@@ -1815,26 +1815,76 @@ html[data-menu="1"] > body > footer {
   -webkit-mask-composite: xor; mask-composite: exclude;
   opacity: .55;
   pointer-events: none;
-  animation: liseré calc(26s / var(--vit)) steps(48) infinite alternate;
 }
 
-/* Le chrome dérive lentement le long du contour : c'est ce qui le fait
+/* ---------- le chrome qui dérive, sans le processeur ----------
+
+   Le chrome dérive lentement le long du contour : c'est ce qui le fait
    ressembler à du métal plutôt qu'à un dégradé imprimé.
 
-   EN PALIERS, ET PAS EN CONTINU. `background-position` est la propriété
-   la plus chère à animer après `filter` : elle ne se compose pas, donc
-   chaque image demande une repeinte — ici d'un liseré masqué deux fois
-   (`mask-composite: exclude`), sur une barre collante présente à toutes
-   les pages.
+   IL DÉRIVAIT EN `background-position`, ET C'ÉTAIT LA PLUS GROSSE
+   DÉPENSE DU SITE AU REPOS. Mesuré le 3 novembre, téléphone simulé :
+   la seule barre du haut faisait recalculer la page soixante fois par
+   seconde, en permanence, même quand rien ne bougeait à l'écran. Les
+   paliers (`steps(48)`) ne changeaient rien : Chrome fait tourner une
+   animation non composée à chaque image, que la valeur change ou non.
+   Sur un téléphone, c'est la batterie qui fond et le défilement qui
+   accroche.
 
-   Or le mouvement est SOUS-PIXELLIQUE. La position parcourt 140 % de la
-   largeur en vingt-six secondes : sur une barre de mille pixels, cela
-   fait moins d'un pixel par image. Personne ne peut voir la différence
-   entre ce glissement et quarante-huit paliers, et on passe de mille
-   cinq cents repeintes par cycle à quarante-huit.
+   LE DÉGRADÉ GLISSE MAINTENANT PAR `transform`. Il vit dans un enfant
+   (`.anneau-chrome`), découpé en anneau par le masque de son parent, et
+   c'est lui qu'on translate : la carte graphique s'en charge seule, et
+   le processeur ne fait plus RIEN au repos (zéro image, contre trois
+   cents en cinq secondes). Le rendu est le même au pixel près.
 
-   `steps()` remplace l'assouplissement, qui ne se voyait pas non plus
-   sur une dérive aussi lente. */
+   Seule la barre du haut porte cet anneau mobile. Les autres barres
+   (pieds de liste, filtres) gardent leur liseré `::before`, immobile :
+   elles ne valaient pas un calque de plus chacune. */
+.barre-anneau::before { display: none; }
+
+.anneau-chrome {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .55;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+html[data-clair="1"] .anneau-chrome { opacity: .28; }
+
+.anneau-chrome::before {
+  content: '';
+  position: absolute;
+  top: -70%;
+  bottom: -70%;
+  left: 0;
+  width: 240%;
+  background: var(--chrome-edge);
+  animation: anneauChrome calc(26s / var(--vit)) linear infinite alternate;
+}
+
+/* 240 % de large : glisser de 58,33 % de sa propre largeur, c'est
+   parcourir exactement la même course que l'ancien `background-position`
+   de 0 à 100 %. */
+@keyframes anneauChrome {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-58.333%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) .anneau-chrome::before { animation: none; }
+}
+html[data-fige="1"] .anneau-chrome::before,
+html[data-allege] .anneau-chrome::before { animation: none; }
+html[data-reglage="1"] .anneau-chrome::before { animation-play-state: paused; }
+
+/* Toujours lue par le panneau d'aperçu et la confirmation, qui ne sont
+   à l'écran que le temps d'une ouverture. */
 @keyframes liseré {
   from { background-position: 0% 50%; }
   to   { background-position: 100% 50%; }
@@ -6087,3 +6137,63 @@ html[data-allege] :is(.podium-marche, .podium-piece) {
   color: transparent;
   -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-white) 80%, transparent);
 }
+
+/* ---------- les photos passent du flou au net ----------
+
+   Une photo marquée `data-progressif` naît transparente et apparaît en
+   fondu quand le script du <head> lui pose `data-charge` (voir
+   `lib/image-progressive`). Dessous, son aperçu flou : la même photo en
+   trente-deux pixels, étirée et floutée (voir `ApercuFlou`).
+
+   LE FLOU NE DURE QUE LE TEMPS DU CHARGEMENT. Un `filter: blur()`
+   coûte à chaque peinture ; une fois la photo nette arrivée et son
+   fondu terminé, l'aperçu passe en `visibility: hidden` et le
+   navigateur cesse de le peindre. Le site a déjà payé assez cher les
+   flous permanents (voir le décor). */
+img[data-progressif] {
+  opacity: 0;
+  /* Le zoom au survol des vignettes passe aussi par `transition` : on
+     le redonne ici, sans quoi cette règle, plus précise que la classe
+     de Tailwind, le ferait sauter d'un coup. */
+  transition: opacity .45s ease, transform .5s cubic-bezier(.4, 0, .2, 1);
+}
+img[data-progressif][data-charge] {
+  opacity: 1;
+}
+/* DANS LE PREMIER ÉCRAN, PAS DE FONDU. La photo qui fait la première
+   impression (et que les outils de mesure guettent) s'affiche dès
+   qu'elle arrive, par-dessus son aperçu flou : un fondu d'une demi-
+   seconde l'aurait retardée d'autant. Le passage du flou au net se voit
+   quand même, il est juste franc. */
+img[data-progressif="net"] {
+  opacity: 1;
+  transition: transform .5s cubic-bezier(.4, 0, .2, 1);
+}
+/* Une pièce retirée de sa boutique reste atténuée, fondu ou pas. */
+img[data-progressif][data-charge].opacity-70 {
+  opacity: .7;
+}
+
+.apercu-flou {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Huit pixels suffisent sur une miniature de trente-deux étirée :
+     mesuré, le chargement de /pieces coûte alors autant qu'avant
+     l'aperçu, quand douze pixels le rendaient sensiblement plus cher. */
+  filter: blur(8px);
+  transform: scale(1.1);
+  pointer-events: none;
+}
+.apercu-flou:has(+ img[data-charge]),
+.attente-visuel:has(+ img[data-charge]) {
+  visibility: hidden;
+  transition: visibility 0s linear .5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-anim-choisi="1"]) img[data-progressif] { transition: none; }
+}
+html[data-fige="1"] img[data-progressif] { transition: none; }

@@ -28,6 +28,9 @@ function Track({ seq, side }: { seq: string; side: "left" | "right" }) {
  * leur duree : la phase d'une animation est le temps ecoule modulo sa
  * duree, donc reculer toutes les horloges du meme temps les aligne.
  */
+/** La largeur d'affichage des chromes : voir `.c-tl` à `.c-br`. */
+const TAILLES_CHROME = "(max-width: 850px) 46vw, 380px";
+
 export default function Background({
   phase = 0,
   marque,
@@ -70,17 +73,24 @@ export default function Background({
       <Track seq={GLYPHS_L} side="left" />
       <Track seq={GLYPHS_R} side="right" />
 
+      {/*
+        LES QUATRE CHROMES PASSENT APRÈS LES PHOTOS. Ils sont décoratifs :
+        sur une connexion de téléphone, les charger en même temps que les
+        pièces retardait la première photo de la page. `fetchPriority`
+        les range en dernier, et un téléphone reçoit la version de 320
+        pixels, la moitié du poids, qui suffit à leur taille d'affichage.
+      */}
       <div className="chrome c-tl" aria-hidden="true">
-        <img src="/brand/chrome1.webp" alt="" />
+        <img src="/brand/chrome1.webp" srcSet="/brand/chrome1-320.webp 320w, /brand/chrome1.webp 560w" sizes={TAILLES_CHROME} alt="" decoding="async" fetchPriority="low" />
       </div>
       <div className="chrome c-tr" aria-hidden="true">
-        <img src="/brand/chrome2.webp" alt="" />
+        <img src="/brand/chrome2.webp" srcSet="/brand/chrome2-320.webp 320w, /brand/chrome2.webp 560w" sizes={TAILLES_CHROME} alt="" decoding="async" fetchPriority="low" />
       </div>
       <div className="chrome c-bl" aria-hidden="true">
-        <img src="/brand/chrome3.webp" alt="" />
+        <img src="/brand/chrome3.webp" srcSet="/brand/chrome3-320.webp 320w, /brand/chrome3.webp 560w" sizes={TAILLES_CHROME} alt="" decoding="async" fetchPriority="low" />
       </div>
       <div className="chrome c-br" aria-hidden="true">
-        <img src="/brand/chrome1.webp" alt="" />
+        <img src="/brand/chrome1.webp" srcSet="/brand/chrome1-320.webp 320w, /brand/chrome1.webp 560w" sizes={TAILLES_CHROME} alt="" decoding="async" fetchPriority="low" />
       </div>
 
       <div className="scrim" aria-hidden="true" />

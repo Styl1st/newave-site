@@ -215,8 +215,12 @@ export default function BandeauMarque({
           {/* Le remplissage : une photo de vêtement est verticale, un
               bandeau est très horizontal. Montrer la pièce entière
               laisserait deux grands vides sur les côtés. */}
+          {/* Le fond flouté n'a pas besoin de mille deux cents pixels :
+              flouté à 28 px, une miniature de 64 donne la même image,
+              arrive tout de suite et ne coûte presque rien à décoder.
+              Elle fait du même coup l'attente de la photo nette. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="bandeau-flou" src={vignette(photo, 1200)} alt="" aria-hidden />
+          <img className="bandeau-flou" src={vignette(photo, 64)} alt="" aria-hidden />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="bandeau-nette"

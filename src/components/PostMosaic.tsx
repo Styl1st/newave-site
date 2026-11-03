@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LignePost, { dateCourte } from "./LignePost";
+import ApercuFlou from "./ApercuFlou";
 import PostCard, { couverture, porteUneVideo } from "./PostCard";
 import { IconLoupe } from "./Icons";
 import Suggestions from "./recherche/Suggestions";
@@ -13,7 +14,7 @@ import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
-import { vignette } from "@/lib/vignette";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
 import { sansMarquage } from "./TexteRiche";
 import type { Post, Recherche } from "@/lib/types";
@@ -1095,13 +1096,23 @@ function ALaUne({ post }: { post: Post }) {
       <Link href={`/posts/${post.slug}`} className="group block">
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(var(--voile),0.5)] sm:aspect-[16/9] lg:aspect-[21/9]">
           {cover && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={vignette(cover, 1400)}
-              alt={post.image_alt || post.title}
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
-            />
+            <>
+              {/* Du flou au net : voir `ApercuFlou`. La une est la plus
+                  grande photo du site, c'est elle qui attendait le plus
+                  longtemps sur un cadre vide. */}
+              <ApercuFlou src={cover} prioritaire />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                data-progressif="net"
+                suppressHydrationWarning
+                src={vignette(cover, 1400)}
+                srcSet={jeuDeVignettes(cover, 800)}
+                sizes="(max-width: 1152px) 100vw, 1152px"
+                alt={post.image_alt || post.title}
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+              />
+            </>
           )}
 
           <div

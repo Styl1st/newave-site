@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import { estUneVideo } from "@/lib/medias";
+import ApercuFlou from "./ApercuFlou";
 
 /**
  * Carrousel à défilement natif.
@@ -174,10 +175,14 @@ export default function Carousel({
           ) : (
             <div
               key={src + i}
-              className="w-full shrink-0 snap-center bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
+              className="relative w-full shrink-0 snap-center overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
             >
+              {/* Du flou au net : voir `ApercuFlou`. */}
+              <ApercuFlou src={src} prioritaire={i === 0} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                data-progressif={i === 0 ? "net" : ""}
+                suppressHydrationWarning
                 src={vignette(src, 900)}
                 srcSet={jeuDeVignettes(src, 900)}
                 sizes="(max-width: 1024px) 100vw, 620px"
@@ -191,7 +196,7 @@ export default function Carousel({
                     setForme(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
                   }
                 }}
-                className="block h-full w-full object-cover"
+                className="relative block h-full w-full object-cover"
               />
             </div>
           )

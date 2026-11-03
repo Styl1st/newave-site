@@ -189,7 +189,11 @@ export default function BarreDuHaut({
         />
       )}
 
-      <div className="barre relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 py-2 pl-3 pr-2 sm:pl-4 sm:pr-2.5">
+      <div className="barre barre-anneau relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 py-2 pl-3 pr-2 sm:pl-4 sm:pr-2.5">
+        {/* Le liseré chromé qui dérive, porté par la carte graphique et
+            non plus par le processeur. Voir `.anneau-chrome`. */}
+        <span className="anneau-chrome" aria-hidden="true" />
+
         {/* `contents` plutôt qu'un vrai bloc : fermé, le logo reste
             exactement l'enfant qu'il était, sans boîte en plus. */}
         <span className={ouvert ? "hidden shrink-0 sm:block" : "contents"}>{logo}</span>
