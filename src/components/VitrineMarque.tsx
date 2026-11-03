@@ -241,7 +241,9 @@ export default function VitrineMarque({
   useEffect(() => {
     if (total < 2) return;
 
-    const carte = ancre.current?.closest(".card-light") as HTMLElement | null;
+    /* `.cadre-nu` : l'image de la marque de la semaine, posée sans
+       carte sur l'accueil. Même rôle, même écoute. */
+    const carte = ancre.current?.closest(".card-light, .cadre-nu") as HTMLElement | null;
     if (!carte) return;
 
     let depart: { x: number; y: number } | null = null;

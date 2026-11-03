@@ -54,8 +54,13 @@ export default function FavoriteButton({
    * de marque de l'annuaire, qui est une carte blanche et non une
    * photo. Le fond sombre y faisait une tache d'encre, et le cœur blanc
    * y était le seul élément à ne pas suivre le reste de la ligne.
+   *
+   * `trait` : le cœur seul, en trait fin, SANS PASTILLE, posé à même le
+   * fond à droite du nom. Le même que celui des pièces nues (voir
+   * `LikeButton`), un peu plus grand parce que le nom d'une marque mise
+   * en avant l'est aussi. Il se remplit quand on suit la marque.
    */
-  taille?: "normale" | "compacte" | "claire";
+  taille?: "normale" | "compacte" | "claire" | "trait";
   /** Nom de la marque, pour que le bouton reste compréhensible sans texte. */
   etiquette?: string;
   /**
@@ -96,6 +101,36 @@ export default function FavoriteButton({
       setNote(null);
       setFavorited(res.favorited);
     });
+  }
+
+  if (taille === "trait") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        aria-pressed={favorited}
+        aria-label={`Suivre ${etiquette ?? "cette marque"}`}
+        title={favorited ? "Tu suis cette marque" : "Suivre"}
+        /* La cible fait 40 px pour le doigt, le cœur vingt : c'est à
+           celui qui le pose de le recaler sur la ligne du nom. */
+        className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center transition active:scale-90 disabled:opacity-60 ${
+          favorited ? "text-white" : "text-white/55 hover:text-white"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-5 w-5"
+          fill={favorited ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        >
+          <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
+        </svg>
+      </button>
+    );
   }
 
   if (taille === "compacte" || taille === "claire") {
