@@ -3192,11 +3192,10 @@ html[data-reglage="1"] .ruban {
    n'était pas une affaire de style mais d'échelle. À quinze, elle dit
    la même chose sans se poser sur la page comme un objet.
 
-   IL Y AVAIT UN ANNEAU QUI LA SUIVAIT, ET IL EST PARTI. Il annonçait
-   ce qui est cliquable, en remplacement de la petite main du système
-   qu'on masque. C'est la flèche elle-même qui s'en charge : elle
-   s'ouvre au survol d'un lien, se resserre à l'appui. Une pièce au lieu
-   de deux, et plus rien à faire tourner en permanence.
+   SUR CE QUI SE CLIQUE, UNE MAIN. La flèche qui changeait de teinte
+   au survol d'un lien ne se voyait pas sur une photo : c'est la main
+   qui pointe, celle que tout le monde connaît, qui le dit maintenant.
+   Elle se resserre à l'appui, comme la flèche.
 
    Tout est conditionné à `html[data-curseur="1"]`, posé par le
    composant SEULEMENT s'il a trouvé un pointeur fin. Sur un écran
@@ -3244,8 +3243,9 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
 .curseur-point > [data-glyphe="main"],
 .curseur-point > [data-glyphe="poing"] { top: -10px; left: -10px; }
 /* La pointe de l'index tombe sur le pixel visé, pas le milieu de la
-   main : c'est tout l'intérêt de ce glyphe-là. */
-.curseur-point > [data-glyphe="doigt"] { top: -2px; left: -8px; }
+   main : c'est tout l'intérêt de ce glyphe-là. Elle est en (8,5 ; 1,5)
+   du dessin, soit (7,2 ; 1,3) une fois ramené à dix-sept pixels. */
+.curseur-point > [data-glyphe="doigt"] { top: -1px; left: -7px; }
 .curseur-point > [data-glyphe="regler"] { top: -7px; left: -12px; }
 .curseur-point > [data-glyphe="inactif"] { top: -9px; left: -9px; }
 
@@ -3254,6 +3254,7 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
    glyphes centrés, eux, grossissent depuis leur milieu, qui est déjà
    sur ce pixel. */
 .curseur-point > [data-glyphe="fleche"] > svg { transform-origin: 1px 1px; }
+.curseur-point > [data-glyphe="doigt"] > svg { transform-origin: 7.2px 1.3px; }
 
 /* ---------- la matière ----------
    Le contour blanc, et c'est lui qui détache la forme d'une photo
@@ -3272,31 +3273,20 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
   paint-order: stroke;
 }
 
-/* Sur un lien, la flèche prend la teinte de l'ambiance choisie dans le
-   compte, ASSOMBRIE. L'accent brut est une couleur de décor : il est
-   fait pour éclairer un fond, pas pour être lu à quinze pixels. Mélangé
-   à l'encre du site, il garde son identité et gagne le poids qui le
-   rend net sur une photo claire.
-
-   `color-mix` n'est pas compris partout : la teinte brute reste écrite
-   au-dessus, elle sert de repli.
-
-   Les autres glyphes restent à l'encre. Ce sont des formes, pas des
-   signaux de thème, et une main violet clair sur une photo claire
-   disparaîtrait. Seuls le danger et l'éteint ont leur couleur propre. */
-html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="fleche"] .curseur-trait {
-  fill: rgb(var(--accent-3));
-  fill: color-mix(in srgb, rgb(var(--accent-3)) 45%, var(--color-ink));
-}
-html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="fleche"] .curseur-trait {
+/* La main reste à l'encre, comme la flèche : c'est sa FORME qui dit
+   qu'on peut cliquer. Teintée de l'ambiance, elle se perdait sur une
+   photo violette. Seuls le danger et l'éteint ont leur couleur propre :
+   la main rouge sur un bouton de suppression. */
+html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="doigt"] .curseur-trait {
   fill: #c2273f;
 }
 
 /* ---------- qui se montre, et quand ---------- */
 html:not([data-curseur-etat]) .curseur-point > [data-glyphe="fleche"],
 html[data-curseur-etat=""] .curseur-point > [data-glyphe="fleche"],
-html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="fleche"],
-html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="fleche"],
+html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="doigt"],
+html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="doigt"],
+html[data-curseur-etat="doigt"] .curseur-point > [data-glyphe="doigt"],
 html[data-curseur-etat="zoom"] .curseur-point > [data-glyphe="zoom"],
 html[data-curseur-etat="regler"] .curseur-point > [data-glyphe="regler"],
 html[data-curseur-etat="inactif"] .curseur-point > [data-glyphe="inactif"],
@@ -3353,24 +3343,21 @@ html[data-curseur-etat="saisir"][data-curseur-appui="1"] .curseur-point > [data-
 
 html[data-curseur-etat="danger"] .curseur-mot { background: #c2273f; }
 
-/* Le curseur du système reste masqué sur ces vignettes : sans ça, on
-   verrait la main du système ET la nôtre. */
-html[data-curseur="1"] [data-saisissable],
-html[data-curseur="1"] [data-saisissable] * {
-  cursor: none;
+/* La main arrive par un petit rebond : passer de la flèche à la main
+   d'un coup sec se voit, mais un dixième de seconde de mouvement le
+   rend évident sans rien coûter. L'animation se rejoue d'elle-même à
+   chaque apparition, puisque le glyphe sort de `display: none`. */
+.curseur-point > [data-glyphe="doigt"] > svg {
+  animation: curseurMain .16s cubic-bezier(.2, .9, .25, 1.4);
+}
+@keyframes curseurMain {
+  from { transform: scale(.7); }
+  to { transform: none; }
 }
 
-/* Au survol d'un lien elle s'ouvre, à l'appui elle se resserre. C'est
-   ce qui remplace la petite main : sans aucun changement, on ne
-   saurait plus ce qui répond au clic.
-
-   Dix-huit pour cent et non vingt-deux : à quinze pixels, l'ancien
-   agrandissement se voyait trop. */
-html[data-curseur-etat="actif"] .curseur-point > [data-glyphe] > svg {
-  transform: scale(1.18);
-}
+/* À l'appui, tout glyphe se resserre : on sent le clic partir. */
 html[data-curseur-appui="1"] .curseur-point > [data-glyphe] > svg {
-  transform: scale(.88);
+  transform: scale(.86);
 }
 
 /* Dans un champ de saisie, on rend la main au système. Son trait
@@ -3378,31 +3365,38 @@ html[data-curseur-appui="1"] .curseur-point > [data-glyphe] > svg {
    dire, et personne n'a envie de taper à l'aveugle. */
 html[data-curseur-etat="saisie"] .curseur-point { opacity: 0; }
 
-/* Le curseur du système disparaît, sauf là où sa forme porte un sens. */
-html[data-curseur="1"] body,
-html[data-curseur="1"] a,
-html[data-curseur="1"] button,
-html[data-curseur="1"] [role="button"],
-html[data-curseur="1"] label,
-html[data-curseur="1"] summary,
-html[data-curseur="1"] [data-curseur-zone],
-html[data-curseur="1"] [data-curseur-zone] * {
-  cursor: none;
+/* LE CURSEUR DU SYSTÈME DISPARAÎT PARTOUT, SAUF DANS UN CHAMP DE SAISIE.
+
+   On le masquait élément par élément — le corps, les liens, les
+   boutons — et tout ce qui déclarait son propre `cursor: pointer` ou
+   `grab` passait à travers : une case à cocher, une liste déroulante,
+   un rail de prix, la bande des marques. On y voyait alors DEUX
+   curseurs, celui du système et le nôtre. Il est donc masqué d'un
+   coup, partout, et le nôtre se charge de tout dire.
+
+   `!important` parce que la règle doit gagner contre les classes
+   Tailwind et les styles écrits à la volée par un glisser-déposer.
+   Le second palier d'allègement (`data-allege="2"`) en est exclu :
+   c'est lui qui rend la main au système. */
+html[data-curseur="1"]:not([data-allege="2"]),
+html[data-curseur="1"]:not([data-allege="2"]) *,
+html[data-curseur="1"]:not([data-allege="2"]) *::before,
+html[data-curseur="1"]:not([data-allege="2"]) *::after {
+  cursor: none !important;
 }
-/* La poignée d'un curseur de prix est un `input`, mais on lui dessine
-   sa double flèche : elle sort donc de la liste, sans quoi les deux
-   curseurs se superposeraient. */
-html[data-curseur="1"] :is(input:not([type="range"]), textarea, select, [contenteditable="true"]) {
-  cursor: auto;
+/* Les champs de saisie gardent le trait vertical du système : la même
+   liste que `SAISIE` dans `Curseur.tsx`. */
+html[data-curseur="1"]:not([data-allege="2"]) :is(input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="number"], input[type="tel"], textarea, [contenteditable="true"], [contenteditable="true"] *) {
+  cursor: text !important;
 }
 
 /* Moins d'animations : la flèche reste, seul le passage d'une taille à
    l'autre devient instantané. C'est le mouvement qui gêne, pas
    l'information qu'il porte. */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-anim-choisi="1"]) .curseur-point > [data-glyphe] > svg { transition: none; }
+  html:not([data-anim-choisi="1"]) .curseur-point > [data-glyphe] > svg { transition: none; animation: none; }
 }
-[data-fige="1"] .curseur-point > [data-glyphe] > svg { transition: none; }
+[data-fige="1"] .curseur-point > [data-glyphe] > svg { transition: none; animation: none; }
 
 /* La vignette qu'on tient dans la main.
    Une ombre longue et une lumière au bord : c'est ce qui la décolle du
@@ -4259,6 +4253,11 @@ html[data-allege] .bg-lueur {
 html[data-allege="2"][data-curseur="1"],
 html[data-allege="2"][data-curseur="1"] * {
   cursor: auto;
+}
+/* Le système reprend la main, et avec elle la sienne sur ce qui se
+   clique : `auto` la retirait aux liens comme aux boutons. */
+html[data-allege="2"] :is(a[href], button:not(:disabled), summary, label[for], select, [role="button"], [data-calque], .cursor-pointer) {
+  cursor: pointer;
 }
 html[data-allege="2"] .curseur-point {
   display: none !important;

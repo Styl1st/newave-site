@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Le curseur du site : une flèche aux couleurs de l'ambiance, et six
- * autres dessins pour les endroits où une flèche ne dit pas assez.
+ * Le curseur du site : une flèche à l'encre du site, une main qui pointe
+ * sur tout ce qui se clique, et cinq autres dessins pour les endroits où
+ * ni l'une ni l'autre ne disent assez.
  *
  * POURQUOI UNE FLÈCHE ET NON UN POINT. Un point rond ne dit pas où il
  * pointe : son centre, sa pointe et son bord se valent, et l'on vise
@@ -24,12 +25,17 @@ import { useEffect, useRef, useState } from "react";
  * Le glyphe répond tout de suite ; l'étiquette nomme le verbe la
  * première fois, et seulement si la zone en porte un.
  *
- * IL Y AVAIT UN ANNEAU QUI LA SUIVAIT, ET IL EST PARTI. Il servait à
- * signaler ce qui est cliquable, puisqu'en masquant le curseur du
- * système on perd sa petite main. C'est la flèche elle-même qui s'en
- * charge maintenant : elle grossit un peu au survol d'un lien et se
- * resserre à l'appui. Une pièce au lieu de deux, et le geste reste
- * lisible.
+ * SUR CE QUI SE CLIQUE, LA FLÈCHE DEVIENT UNE MAIN. Masquer le curseur
+ * du système, c'était perdre sa petite main, et on l'avait remplacée
+ * par une flèche qui prenait la teinte de l'ambiance et grossissait un
+ * peu. Sur une photo, à quinze pixels, ce changement de couleur passait
+ * inaperçu : on ne savait plus ce qui répondait au clic. La main, tout
+ * le monde la lit sans y penser. Elle reprend donc sa place sur chaque
+ * lien, chaque bouton, chaque carte, et la flèche ne reste que sur ce
+ * qui ne se clique pas. Seules les zones qui ont déjà leur propre
+ * dessin y échappent : la loupe, la main ouverte de ce qu'on déplace,
+ * la double flèche des réglages, le rond barré de ce qui est éteint.
+ * Un bouton de suppression garde la main, mais en rouge.
  *
  * TROIS ENDROITS OÙ IL NE PARAÎT PAS.
  * Les écrans tactiles, où il n'y a pas de pointeur du tout. Les champs
@@ -38,9 +44,44 @@ import { useEffect, useRef, useState } from "react";
  * fenêtre, évidemment.
  */
 
-/** Ce qui mérite que la flèche s'ouvre. */
-const CLIQUABLE =
-  'a, button, [role="button"], summary, label[for], select, input[type="checkbox"], input[type="radio"], input[type="range"], [data-calque]';
+/**
+ * Ce qui se clique, donc ce qui reçoit la main.
+ *
+ * Les balises qui se cliquent par nature, les rôles qui en tiennent
+ * lieu, puis ce que le site a lui-même déclaré cliquable en écrivant
+ * `cursor: pointer` : la classe `cursor-pointer` de Tailwind (les
+ * lignes à case à cocher, les pastilles de teinte, les étoiles d'un
+ * avis) et les quelques classes de `globals.css` qui le font. Sans
+ * elles, ces endroits-là recevaient la flèche alors qu'ils répondent
+ * au clic, puisque le curseur du système, qui les signalait, est
+ * masqué partout.
+ */
+const CLIQUABLE = [
+  "a[href]",
+  "button",
+  "summary",
+  "label[for]",
+  "select",
+  'input:is([type="checkbox"], [type="radio"], [type="file"], [type="submit"], [type="button"], [type="color"])',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="tab"]',
+  '[role="menuitem"]',
+  '[role="option"]',
+  '[role="switch"]',
+  "[data-calque]",
+  ".cursor-pointer",
+  ".case",
+  ".progression-zone",
+].join(", ");
+
+/**
+ * Ce qui se fait glisser à la souris sans être une carte qu'on déplace :
+ * la bande des marques de l'accueil, qu'on tire de côté. La main
+ * ouverte entre les cartes, la main qui pointe sur les cartes elles-
+ * mêmes, puisqu'elles s'ouvrent au clic.
+ */
+const GLISSE = ".ruban";
 
 /**
  * Une zone qui nomme elle-même son état.
@@ -56,13 +97,11 @@ const ZONES = "[data-curseur-zone]";
 const SAISISSABLE = "[data-saisissable]";
 
 /**
- * Ce qu'on CHOISIT du doigt, et pas seulement ce qui se clique.
+ * Ce qu'on CHOISIT du doigt : les pastilles de couleur de l'apparence.
  *
- * La flèche reste la règle partout ailleurs : un bouton, un lien, un
- * repli se cliquent, et y poser un doigt tendu ne dirait rien de plus.
- * Ce qui mérite le doigt, c'est ce qu'on DÉSIGNE — les pastilles de
- * couleur de l'apparence, où l'on vise une teinte parmi d'autres et où
- * la pointe indique laquelle.
+ * Elles reçoivent la même main que tout ce qui se clique. L'attribut
+ * reste parce qu'il passe AVANT les rails dans l'ordre de résolution :
+ * une pastille posée dans une zone de réglage garde sa main.
  */
 const DOIGT = "[data-doigt]";
 
@@ -82,7 +121,7 @@ const ETEINT = '[disabled], [aria-disabled="true"]';
 
 /** Là où le trait du système en dit plus que notre flèche. */
 const SAISIE =
-  "input:not([type]), input[type='text'], input[type='email'], input[type='password'], input[type='search'], input[type='url'], input[type='number'], textarea, [contenteditable='true']";
+  "input:not([type]), input[type='text'], input[type='email'], input[type='password'], input[type='search'], input[type='url'], input[type='number'], input[type='tel'], textarea, [contenteditable='true']";
 
 /** La zone qui porte un verbe, et qu'on annonce en toutes lettres. */
 const MOT = "[data-curseur-mot]";
@@ -317,6 +356,7 @@ export default function Curseur() {
       if (cible.closest(DOIGT)) return "doigt";
       if (cible.closest(RAIL)) return "regler";
       if (cible.closest(CLIQUABLE)) return "actif";
+      if (cible.closest(GLISSE)) return "saisir";
       return "";
     };
 
@@ -523,27 +563,31 @@ export default function Curseur() {
         </svg>
       </span>
 
-      {/* La double flèche des poignées : ça se pousse à gauche et à
-          droite, et ça ne s'ouvre pas. */}
-      {/* L'index tendu : la pointe tombe sur ce qu'on vise. Il ne
-          remplace pas la flèche sur tout ce qui se clique — voir
-          `DOIGT` — il ne paraît que sur ce qu'on choisit du doigt. */}
+      {/*
+        LA MAIN QUI POINTE : sur tout ce qui se clique, et sur ce qu'on
+        choisit du doigt. La pointe de l'index tombe sur le pixel visé,
+        comme celle de la flèche. Redessinée dans un cadre qui la
+        contient en entier : l'ancienne débordait de son `viewBox` et
+        perdait le bout du petit doigt.
+      */}
       <span data-glyphe="doigt">
-        <svg viewBox="0 0 18 20" width="17" height="19">
+        <svg viewBox="0 0 20 22" width="17" height="19">
           <path
             className="curseur-trait"
             strokeWidth="2.4"
-            d="M6.4 10.5 V3.1 a1.5 1.5 0 0 1 3 0 v6.4
-               a1.4 1.4 0 0 1 2.8 0 v0.9
-               a1.4 1.4 0 0 1 2.8 0 v0.9
-               a1.35 1.35 0 0 1 2.6 0 v3
-               a4.5 4.5 0 0 1 -4.5 4.5 h-2.4
-               a4.5 4.5 0 0 1 -3.6 -1.8 L2.4 13.2
-               a1.5 1.5 0 0 1 2.2 -2 z"
+            d="M7 12.2 V3 a1.5 1.5 0 0 1 3 0 V8.6
+               a1.4 1.4 0 0 1 2.8 0 V9.6
+               a1.4 1.4 0 0 1 2.8 0 V10.8
+               a1.3 1.3 0 0 1 2.6 0 V15.5
+               a4.6 4.6 0 0 1 -4.6 4.6 H11.4
+               a4.6 4.6 0 0 1 -3.7 -1.9 L3.1 13.7
+               a1.55 1.55 0 0 1 2.3 -2.1 L7 13 Z"
           />
         </svg>
       </span>
 
+      {/* La double flèche des poignées : ça se pousse à gauche et à
+          droite, et ça ne s'ouvre pas. */}
       <span data-glyphe="regler">
         <svg viewBox="0 0 22 12" width="23" height="13">
           <path
