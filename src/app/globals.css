@@ -3273,10 +3273,24 @@ html[data-curseur-vu="1"] .curseur-point { opacity: 1; }
   paint-order: stroke;
 }
 
-/* La main reste à l'encre, comme la flèche : c'est sa FORME qui dit
-   qu'on peut cliquer. Teintée de l'ambiance, elle se perdait sur une
-   photo violette. Seuls le danger et l'éteint ont leur couleur propre :
-   la main rouge sur un bouton de suppression. */
+/* La main prend la teinte de l'ambiance choisie dans le compte,
+   ASSOMBRIE, comme la flèche le faisait avant elle sur un lien. La
+   forme dit qu'on peut cliquer, la couleur dit qu'on est chez nous.
+   L'accent brut est une couleur de décor, faite pour éclairer un fond
+   et pas pour être lue à dix-sept pixels : mélangé à l'encre du site,
+   il garde son identité et gagne le poids qui le rend net sur une
+   photo claire. Le contour blanc le détache d'une photo sombre.
+
+   `color-mix` n'est pas compris partout : la teinte brute reste écrite
+   au-dessus, elle sert de repli.
+
+   Seuls le danger et l'éteint ont leur couleur propre : la main rouge
+   sur un bouton de suppression. */
+html[data-curseur-etat="actif"] .curseur-point > [data-glyphe="doigt"] .curseur-trait,
+html[data-curseur-etat="doigt"] .curseur-point > [data-glyphe="doigt"] .curseur-trait {
+  fill: rgb(var(--accent-3));
+  fill: color-mix(in srgb, rgb(var(--accent-3)) 45%, var(--color-ink));
+}
 html[data-curseur-etat="danger"] .curseur-point > [data-glyphe="doigt"] .curseur-trait {
   fill: #c2273f;
 }
