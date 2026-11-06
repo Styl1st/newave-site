@@ -29,6 +29,31 @@ import { useEffect, useState } from "react";
 const CARTES = ".card-light";
 
 /**
+ * React a-t-il déjà repris cet élément en main ?
+ *
+ * ON NE TOUCHE PAS À UNE CARTE QUE REACT N'A PAS ENCORE HYDRATÉE. Ce
+ * composant vit dans la mise en page : il s'installe dès qu'elle est
+ * prête, alors que le contenu de la page, lui, s'hydrate morceau par
+ * morceau — et lentement en développement. Une souris qui passait sur
+ * une carte dans cet intervalle y écrivait `data-relief` et ses
+ * variables ; React trouvait ensuite des attributs que le serveur
+ * n'avait pas envoyés, et le signalait en erreur d'hydratation.
+ *
+ * React pose sur chaque nœud qu'il reprend une propriété
+ * `__reactFiber$…` : c'est elle qu'on cherche. Une carte pas encore
+ * reprise est simplement ignorée, elle s'inclinera au survol suivant.
+ *
+ * ⚠️ CE N'EST QU'UN FILET. React peut commencer à hydrater un morceau,
+ * s'interrompre — justement parce qu'un mouvement de souris lui demande
+ * de passer ce morceau en priorité — puis recommencer : la propriété est
+ * alors déjà posée sans que le travail soit fini. D'où la vraie garde,
+ * plus bas : l'effet ne s'arme qu'une fois la page chargée ET au repos.
+ */
+function estHydratee(el: Element): boolean {
+  return Object.keys(el).some((cle) => cle.startsWith("__reactFiber$"));
+}
+
+/**
  * L'inclinaison maximale, atteinte au coin de la carte.
  *
  * ELLE ÉTAIT DE CINQ DEGRÉS, ET C'ÉTAIT TROP. Sur une carte de marque,
@@ -113,6 +138,8 @@ export default function Relief() {
       el.style.removeProperty("--relief-angle");
       el.style.removeProperty("--relief-dx");
       delete el.dataset.relief;
+      /* Un `style=""` vide resterait sinon accroché à la carte. */
+      if (el.getAttribute("style") === "") el.removeAttribute("style");
     };
 
     const mesurer = (el: HTMLElement) => {
@@ -173,13 +200,45 @@ export default function Relief() {
      */
     let precedente: Element | null = null;
 
+    /*
+     * L'EFFET S'ARME QUAND LA PAGE EST AU REPOS, PAS AVANT.
+     *
+     * Le chargement fini, on attend encore que le navigateur n'ait plus
+     * rien à faire : c'est le signe que React a fini d'hydrater, puisque
+     * l'hydratation est une suite de tâches qui le tiennent occupé. Une
+     * carte survolée pendant ce temps reste simplement à plat — l'affaire
+     * de quelques centaines de millisecondes — au lieu d'être modifiée
+     * sous les pieds de React. Safari ne connaît pas `requestIdleCallback`
+     * : il attend deux dixièmes de seconde après le chargement.
+     */
+    let arme = false;
+    let attente = 0;
+    const armer = () => {
+      arme = true;
+    };
+    const auRepos = () => {
+      attente =
+        typeof window.requestIdleCallback === "function"
+          ? window.requestIdleCallback(armer, { timeout: 2500 })
+          : window.setTimeout(armer, 200);
+    };
+    if (document.readyState === "complete") auRepos();
+    else window.addEventListener("load", auRepos, { once: true });
+
     const surMouvement = (e: PointerEvent) => {
+      if (!arme) return;
       const cible = (e.target as Element | null) ?? null;
 
       if (cible !== precedente) {
         precedente = cible;
 
-        const dessus = (cible?.closest?.(CARTES) ?? null) as HTMLElement | null;
+        let dessus = (cible?.closest?.(CARTES) ?? null) as HTMLElement | null;
+        /* Pas encore hydratée : on la laisse, et on oublie la cible pour
+           la revérifier au prochain mouvement. Voir `estHydratee`. */
+        if (dessus && !estHydratee(dessus)) {
+          dessus = null;
+          precedente = null;
+        }
 
         if (dessus !== carte) {
           relacher(carte);
@@ -223,6 +282,9 @@ export default function Relief() {
     window.addEventListener("blur", surSortie);
 
     return () => {
+      window.removeEventListener("load", auRepos);
+      if (typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(attente);
+      window.clearTimeout(attente);
       if (image) cancelAnimationFrame(image);
       relacher(carte);
       window.removeEventListener("scroll", surSortie);
