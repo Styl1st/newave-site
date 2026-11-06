@@ -81,6 +81,36 @@ export function BadgeMedia({ post }: { post: Post }) {
   );
 }
 
+/**
+ * La même réponse que `BadgeMedia`, EN MOTS : « Vidéo », « 4 photos ».
+ *
+ * Pour les posts posés à même le fond, comme les pièces : rien sur la
+ * photo, ni pastille ni bouton. La pastille sombre dans l'angle était le
+ * dernier élément « à icône » de ces vignettes ; écrite dans la ligne de
+ * surtitre, l'information reste, sans rien coller sur l'image.
+ */
+export function mediaEnMots(post: Post): string | null {
+  if (porteUneVideo(post)) return "Vidéo";
+  const n = post.images?.length ?? 0;
+  return n > 1 ? `${n} photos` : null;
+}
+
+/**
+ * Le nom de la marque répète-t-il le titre ? « Pollen Fabrics » au-dessus
+ * de « Pollen Fabrics » se lit comme un bégaiement. Comparaison sans
+ * casse, sans accents ni ponctuation : « ENGINEERED BY ARYES » et
+ * « Engineered by aryes© » sont le même nom.
+ */
+function repeteLeTitre(nom: string, titre: string): boolean {
+  const net = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+  return net(nom) === net(titre);
+}
+
 export default function PostCard({
   post,
   accroche,
@@ -98,14 +128,20 @@ export default function PostCard({
   accroche?: string;
   /**
    * LE POST SANS SA CARTE, comme une pièce de la vitrine : la photo posée
-   * sur le fond en rayon 4, le texte dessous. Pour les pages qui sont
-   * déjà dans ce parti (la fiche d'une marque).
+   * sur le fond en rayon 4, le texte dessous, et rien sur la photo. Pour
+   * les pages qui sont dans ce parti : l'accueil, la fiche d'une marque.
    */
   nue?: boolean;
 }) {
   const cover = couverture(post);
 
   if (nue) {
+    /* Le surtitre : la marque (si elle ne répète pas le titre), puis ce
+       qu'il y a derrière l'image. */
+    const marque =
+      post.brand && !repeteLeTitre(post.brand.name, post.title) ? post.brand.name : null;
+    const surtitre = [marque, mediaEnMots(post)].filter(Boolean).join(" · ");
+
     return (
       <Link href={`/posts/${post.slug}`} className="group block">
         <div className="relative aspect-4/5 w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)]">
@@ -125,7 +161,6 @@ export default function PostCard({
                 decoding="async"
                 className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
               />
-              <BadgeMedia post={post} />
             </>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -136,13 +171,15 @@ export default function PostCard({
           )}
         </div>
 
-        <div className="mt-2.5">
-          {post.brand && (
+        <div className="mt-3">
+          {surtitre && (
             <p className="m-0 text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60">
-              {post.brand.name}
+              {surtitre}
             </p>
           )}
-          <h3 className="m-0 mt-1 text-[14.5px] font-bold leading-snug text-white">{post.title}</h3>
+          <h3 className="m-0 mt-1 text-[15px] font-bold leading-snug tracking-[-0.01em] text-white">
+            {post.title}
+          </h3>
           {accroche && (
             <p className="m-0 mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-white/72">
               {accroche}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeMedia, couverture } from "./PostCard";
+import { couverture, mediaEnMots } from "./PostCard";
 import { IconArrow } from "./Icons";
 import ApercuFlou from "./ApercuFlou";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
@@ -69,7 +69,9 @@ export default function LignePost({
 }) {
   const cover = couverture(post);
   const date = dateCourte(post.published_at);
-  const meta = [post.brand?.name, date].filter(Boolean).join(" · ");
+  /* « Vidéo » ou « 4 photos » s'écrit ici plutôt qu'en pastille sur la
+     vignette : voir `mediaEnMots`. */
+  const meta = [post.brand?.name, date, mediaEnMots(post)].filter(Boolean).join(" · ");
 
   /* Les blocs laissent passer le clic vers le lien étalé sous la ligne ;
      seul le renvoi vers la marque le reprend. Même procédé que
@@ -120,7 +122,6 @@ export default function LignePost({
               decoding="async"
               className="relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
-            <BadgeMedia post={post} />
           </>
         ) : (
           <div className="grid h-full w-full place-items-center">

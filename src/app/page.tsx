@@ -277,10 +277,16 @@ export default async function HomePage() {
 
               {/* Une seule colonne au téléphone : c'est la règle du
                   cahier des charges pour les posts, et c'est la même
-                  que celle de la mosaïque de `/posts`. */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                  que celle de la mosaïque de `/posts`.
+
+                  À MÊME LE FOND, COMME LES PIÈCES juste au-dessus : la
+                  photo en rayon 4, le texte dessous, sans carte claire ni
+                  pastille. Plus d'écart vertical que d'horizontal, parce
+                  que c'est le texte, et non un bord de carte, qui sépare
+                  maintenant deux posts au téléphone. */}
+              <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-y-7">
                 {derniers.map((p) => (
-                  <PostCard key={p.id} post={p} />
+                  <PostCard key={p.id} post={p} nue />
                 ))}
               </div>
             </section>
