@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { vignette } from "@/lib/vignette";
+import { chargerApercu, semerApercu, useApercuInitial } from "@/lib/apercus-client";
 
 /**
  * L'illustration d'une marque, puis ses pièces qui défilent derrière.
@@ -48,7 +49,6 @@ const TROP_PETITE = 340;
 /** En deçà, un geste horizontal n'est pas un balayage mais un tremblement. */
 const BALAYAGE = 45;
 
-type Reponse = { images?: string[] };
 
 export default function VitrineMarque({
   slug,
@@ -99,8 +99,13 @@ export default function VitrineMarque({
   const [pret, setPret] = useState(false);
   const premiere = useRef<HTMLImageElement | null>(null);
 
+  /* Les photos des premières cartes arrivent avec la page (voir
+     `ApercusInitiaux`) : rangées tout de suite, elles évitent l'appel. */
+  const initial = useApercuInitial(slug);
+
   // Charger, mais seulement quand la carte approche.
   useEffect(() => {
+    if (initial) semerApercu(slug, initial);
     const el = ancre.current;
     if (!el) return;
     let vivant = true;
@@ -110,11 +115,11 @@ export default function VitrineMarque({
         if (!entrees.some((e) => e.isIntersecting)) return;
         guetteur.disconnect();
 
-        // Le mode léger : rien que des adresses d'images, et une réponse
-        // gardée par le cache partagé. Voir la route.
-        fetch(`/api/marques/${slug}/pieces?images=1`)
-          .then((r) => (r.ok ? r.json() : Promise.reject()))
-          .then((json: Reponse) => {
+        // Le mode léger : rien que des adresses d'images, demandées une
+        // seule fois par visite et partagées avec la ligne de l'annuaire.
+        // Voir `chargerApercu`.
+        chargerApercu(slug)
+          .then((json) => {
             if (!vivant) return;
             /*
              * ON DÉDOUBLONNE, ET C'EST UNE CORRECTION DE BOGUE.
@@ -154,7 +159,7 @@ export default function VitrineMarque({
       vivant = false;
       guetteur.disconnect();
     };
-  }, [slug]);
+  }, [slug, initial]);
 
   /*
    * L'illustration compte comme une vue, sauf si elle est trop petite.

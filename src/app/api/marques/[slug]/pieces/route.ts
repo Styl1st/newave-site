@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getBrand, getProductsByBrand } from "@/lib/queries";
+import { apercuDeMarque, MarqueIntrouvable } from "@/lib/apercus";
 
 /**
  * Les pieces d'une marque, pour l'apercu au survol dans l'annuaire.
@@ -14,56 +15,42 @@ export async function GET(
 ) {
   const { slug } = await params;
 
+  /*
+   * LE MODE LÉGER, POUR LES LIGNES ET LES CARTES DE L'ANNUAIRE.
+   *
+   * Huit photos et un compte, lus à part : voir `apercuDeMarque`. Il
+   * passait avant par la lecture complète du catalogue, ce qui coûtait
+   * plusieurs mégaoctets pour les grosses marques.
+   *
+   * Cette réponse ne dépend de personne : ce sont des photos publiques.
+   * Elle est donc gardée par le cache PARTAGÉ (cinq minutes) et, une
+   * minute, par le navigateur lui-même.
+   *
+   * LE TOTAL, PARCE QU'ON N'ENVOIE QU'UN ÉCHANTILLON. La ligne de marque
+   * pose quatre vignettes et écrit « +8 » sur la dernière ; sans ce
+   * nombre, une marque à quarante pièces annonçait « +4 ».
+   */
+  if (new URL(request.url).searchParams.get("images") === "1") {
+    try {
+      const apercu = await apercuDeMarque(slug);
+      return NextResponse.json(apercu, {
+        headers: {
+          "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+        },
+      });
+    } catch (e) {
+      if (e instanceof MarqueIntrouvable) {
+        return NextResponse.json({ error: "Marque introuvable" }, { status: 404 });
+      }
+      console.error("[newave] aperçu de marque :", e);
+      return NextResponse.json({ error: "Aperçu indisponible" }, { status: 503 });
+    }
+  }
+
   const brand = await getBrand(slug);
   if (!brand) return NextResponse.json({ error: "Marque introuvable" }, { status: 404 });
 
   const products = await getProductsByBrand(brand.id);
-
-  /*
-   * LE MODE LÉGER, POUR LE DÉFILÉ DES CARTES.
-   *
-   * L'annuaire affiche vingt-quatre marques, et chacune veut désormais
-   * faire défiler ses pièces. Vingt-quatre appels qui renvoient prix,
-   * disponibilité et remises pour n'en garder que les adresses d'images,
-   * ce serait du gâchis à chaque affichage de la page.
-   *
-   * Surtout, cette réponse-là ne dépend de personne : ce sont des
-   * photos publiques. Elle peut donc être gardée par le cache PARTAGÉ,
-   * là où l'aperçu complet reste privé. Une marque n'interroge la base
-   * qu'une fois toutes les cinq minutes pour tout le monde, au lieu
-   * d'une fois par visiteur.
-   */
-  if (new URL(request.url).searchParams.get("images") === "1") {
-    const images = products
-      .map((p) => p.images?.[0] ?? p.image_url)
-      .filter((u): u is string => Boolean(u));
-
-    return NextResponse.json(
-      {
-        images: images.slice(0, 8),
-        /*
-         * LE TOTAL, PARCE QU'ON N'ENVOIE QU'UN ÉCHANTILLON.
-         *
-         * La ligne de marque de l'annuaire pose quatre vignettes et
-         * écrit « +8 » sur la dernière. Sans ce nombre, elle ne pouvait
-         * l'écrire qu'à partir des huit adresses reçues : une marque à
-         * quarante pièces annonçait « +4 », c'est-à-dire moins que la
-         * vérité, précisément là où le chiffre sert à donner envie
-         * d'ouvrir.
-         *
-         * On compte les pièces MONTRABLES et non toutes les pièces :
-         * c'est ce que le visiteur verra en cliquant, et promettre des
-         * pièces sans photo serait promettre des cases vides.
-         */
-        total: images.length,
-      },
-      {
-        headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
-        },
-      }
-    );
-  }
 
   return NextResponse.json(
     {

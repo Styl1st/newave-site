@@ -3,6 +3,7 @@ import BrandDirectory, { type AmorceAnnuaire } from "@/components/BrandDirectory
 import RaccourciAdmin from "@/components/RaccourciAdmin";
 import { getBrands } from "@/lib/queries";
 import { pourLAnnuaire } from "@/lib/fiche-annuaire";
+import { apercusDesPremieres } from "@/lib/apercus";
 import { ordonnerLAnnuaire } from "@/lib/melange";
 import { getMyFavorites } from "@/lib/favorites";
 import { getNotesMarques } from "@/lib/avis";
@@ -40,6 +41,11 @@ export const dynamic = "force-dynamic";
  */
 type Props = { searchParams: Promise<AmorceAnnuaire> };
 
+/** Les lignes de la liste dont les photos partent avec la page : un écran et demi. */
+const PREMIERES_LIGNES = 10;
+/** Les cartes de la grille, pour qui l'a choisie : sa première rangée et demie. */
+const PREMIERES_CARTES = 6;
+
 export default async function BrandsPage({ searchParams }: Props) {
   const { cat, q, f, lettre } = await searchParams;
 
@@ -70,7 +76,43 @@ export default async function BrandsPage({ searchParams }: Props) {
    * Lues EN MÊME TEMPS que les favoris : les deux ne dépendent que de la
    * liste des marques, et l'un attendait l'autre pour rien.
    */
-  const [favoris, notesBrutes] = await Promise.all([getMyFavorites(ids), getNotesMarques(ids)]);
+  /*
+   * LES PHOTOS DES PREMIÈRES LIGNES PARTENT AVEC LA PAGE.
+   *
+   * Chaque ligne demandait les siennes une fois arrivée à l'écran : il
+   * fallait attendre le JavaScript, puis l'appel, puis les images, et
+   * les quatre cases restaient vides entre-temps. Les premières marques
+   * sont lues ici, en même temps que le reste, dans le cache partagé de
+   * cinq minutes : elles arrivent dans le HTML. Les suivantes se
+   * chargent en approchant.
+   *
+   * LES PREMIÈRES DE CHAQUE MODE, PARCE QUE LES DEUX ORDRES DIFFÈRENT. La
+   * liste, mode par défaut, range de A à Z (voir `BrandGrid`) ; la
+   * grille garde l'ordre tiré pour la visite. Le serveur ne sait pas
+   * lequel la personne a choisi la dernière fois (c'est retenu dans son
+   * navigateur) : il prépare donc le haut des deux.
+   *
+   * Seulement sans filtre dans l'adresse : une recherche ou une
+   * catégorie montre d'autres marques en tête, et on lirait pour rien.
+   */
+  const filtre = Boolean(cat || q || f || lettre);
+  const enTete = filtre
+    ? []
+    : [
+        ...new Set(
+          [
+            ...[...brands]
+              .sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }))
+              .slice(0, PREMIERES_LIGNES),
+            ...brands.slice(0, PREMIERES_CARTES),
+          ].map((b) => b.slug)
+        ),
+      ];
+  const [favoris, notesBrutes, apercus] = await Promise.all([
+    getMyFavorites(ids),
+    getNotesMarques(ids),
+    enTete.length ? apercusDesPremieres(enTete) : Promise.resolve({}),
+  ]);
   const notes = Object.fromEntries(notesBrutes);
 
   return (
@@ -98,6 +140,7 @@ export default async function BrandsPage({ searchParams }: Props) {
         brands={brands.map(pourLAnnuaire)}
         favoris={Array.from(favoris)}
         notes={notes}
+        apercus={apercus}
         amorce={{ cat, q, f, lettre }}
       />
     </div>

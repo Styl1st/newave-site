@@ -8,6 +8,7 @@ import { enChiffres } from "./chiffres";
 import Notee from "./coeurs/Notee";
 import type { Elan } from "./coeurs/classement";
 import { vignette } from "@/lib/vignette";
+import { chargerApercu, semerApercu, useApercuInitial } from "@/lib/apercus-client";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 
@@ -58,8 +59,6 @@ import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
 
 /** Quatre : ça tient dans la ligne, et ça suffit à dire le style. */
 const CASES = 4;
-
-type Reponse = { images?: string[]; total?: number };
 
 /**
  * Le cœur plein, celui des compteurs.
@@ -127,16 +126,28 @@ export default function LigneMarque({
 }) {
   const halo = variante === "halo";
   const ancre = useRef<HTMLDivElement>(null);
-  const [pieces, setPieces] = useState<string[]>([]);
-  const [total, setTotal] = useState(0);
+  /*
+   * LES PREMIÈRES LIGNES ARRIVENT PLEINES. Leurs photos ont été lues
+   * avec la page (voir `ApercusInitiaux`) : elles sont dans le HTML, et
+   * la ligne n'a rien à demander. Les autres partent vides et se
+   * remplissent en approchant.
+   */
+  const initial = useApercuInitial(brand.slug);
+  const [pieces, setPieces] = useState<string[]>(() => initial?.images.slice(0, CASES) ?? []);
+  const [total, setTotal] = useState(initial?.total ?? 0);
   /*
    * « Pas encore de réponse » et « rien à montrer » ne sont pas la même
    * chose, et les confondre affiche « pas encore de pièces » sur une
    * marque qui en a quarante, le temps que la requête revienne.
    */
-  const [cherche, setCherche] = useState(true);
+  const [cherche, setCherche] = useState(!initial);
 
   useEffect(() => {
+    if (initial) {
+      /* Rangée pour les autres : la carte de la grille, la recherche. */
+      semerApercu(brand.slug, initial);
+      return;
+    }
     const el = ancre.current;
     if (!el) return;
     let vivant = true;
@@ -146,23 +157,27 @@ export default function LigneMarque({
         if (!entrees.some((e) => e.isIntersecting)) return;
         guetteur.disconnect();
 
-        fetch(`/api/marques/${brand.slug}/pieces?images=1`)
-          .then((r) => (r.ok ? r.json() : Promise.reject()))
-          .then((json: Reponse) => {
+        /* Une demande par marque et par visite, partagée avec les
+           autres composants : voir `chargerApercu`. Déjà dédoublonnée :
+           quatre fois la même photo dans une ligne de quatre, c'est une
+           ligne qui ne dit rien. */
+        chargerApercu(brand.slug)
+          .then(({ images, total: tout }) => {
             if (!vivant) return;
-            // Deux pièces partagent souvent la même photo — une taille,
-            // un coloris. Quatre fois la même dans une ligne de quatre,
-            // c'est une ligne qui ne dit rien.
-            const images = [...new Set(json.images ?? [])];
             setPieces(images.slice(0, CASES));
-            setTotal(json.total ?? images.length);
+            setTotal(tout);
             setCherche(false);
           })
           .catch(() => {
             if (vivant) setCherche(false);
           });
       },
-      { rootMargin: "300px" }
+      /*
+       * Huit cents pixels d'avance, et non trois cents : la réponse est
+       * devenue légère (huit adresses), on peut la demander deux ou
+       * trois lignes avant qu'elle ne serve, et la trouver prête.
+       */
+      { rootMargin: "800px" }
     );
 
     guetteur.observe(el);
@@ -170,7 +185,7 @@ export default function LigneMarque({
       vivant = false;
       guetteur.disconnect();
     };
-  }, [brand.slug]);
+  }, [brand.slug, initial]);
 
   /*
    * AU DOIGT, LA LUMIÈRE SUIT LE DÉFILEMENT.
@@ -463,6 +478,10 @@ export default function LigneMarque({
                   {source && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
+                      /* Elle arrive en fondu plutôt que d'un coup : voir
+                         `image-progressive`. */
+                      data-progressif=""
+                      suppressHydrationWarning
                       src={vignette(source, 160)}
                       alt=""
                       loading="lazy"

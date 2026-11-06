@@ -14,6 +14,7 @@ import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import type { Recherche } from "@/lib/types";
 import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
+import { ApercusInitiaux, type ApercuMarque } from "@/lib/apercus-client";
 import { enSlugDeCategorie } from "@/lib/taxonomy";
 import Raccourci from "@/components/Raccourci";
 
@@ -195,6 +196,7 @@ export default function BrandDirectory({
   brands,
   favoris,
   notes,
+  apercus,
   amorce,
 }: {
   /** Allégées pour le navigateur : voir `pourLAnnuaire`. */
@@ -203,6 +205,11 @@ export default function BrandDirectory({
   favoris?: string[];
   /** Les moyennes d'avis, par identifiant de marque. */
   notes?: Record<string, { moyenne: number; avis: number }>;
+  /**
+   * Les photos des premières marques, lues avec la page, par slug.
+   * Voir `ApercusInitiaux`.
+   */
+  apercus?: Record<string, ApercuMarque>;
   /** Ce que l'adresse demande. Voir « l'amorçage par l'adresse ». */
   amorce?: AmorceAnnuaire;
 }) {
@@ -781,7 +788,7 @@ export default function BrandDirectory({
   );
 
   return (
-    <>
+    <ApercusInitiaux.Provider value={apercus ?? AUCUN_APERCU}>
       {/* ---------------- la barre de requête ----------------
 
           PLUS AUCUN CAISSON, ET C'EST LE CŒUR DE LA REFONTE.
@@ -1012,6 +1019,10 @@ export default function BrandDirectory({
       >
         {contenuFiltres}
       </FeuilleFiltres>
-    </>
+    </ApercusInitiaux.Provider>
   );
 }
+
+/* Hors du composant : un objet neuf à chaque rendu relancerait tous les
+   lecteurs du contexte pour rien. */
+const AUCUN_APERCU: Record<string, ApercuMarque> = {};
