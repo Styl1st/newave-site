@@ -9,7 +9,6 @@ import { useConfirmationCle } from "@/lib/confirmation";
 import { obstacleAPublication, peutEtrePubliee, resumeDObstacle } from "@/lib/publication";
 import { conditionsDePublication } from "@/components/publication/conditions";
 import { doitAvoirDesPieces } from "@/lib/acces";
-import Portal from "@/components/Portal";
 import { StatusPill } from "./ListRow";
 import type { BrandAdmin } from "@/lib/admin-queries";
 
@@ -850,91 +849,6 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
         )}
       </div>
 
-      {/* ---------- barre d'action ----------
-          Elle n'apparaît qu'une fois quelque chose de coché. Une barre
-          de boutons désactivés en permanence n'apprend rien et occupe
-          la place où l'on cherche justement la liste. */}
-      {retenues.length > 0 && (
-        /*
-         * LA BARRE EST PASSÉE EN BAS, ET C'EST UNE CORRECTION D'USAGE.
-         *
-         * Elle était au-dessus de la liste. On coche donc en descendant,
-         * on arrive au bout, et les boutons sont trois écrans plus haut :
-         * il faut remonter pour agir, puis redescendre pour vérifier. En
-         * bas et flottante, elle est là où se trouve la main au moment où
-         * la sélection est finie.
-         *
-         * « sur N affichées » rend visible une règle que le code
-         * appliquait déjà en silence : la sélection ne porte JAMAIS sur
-         * des lignes masquées par un filtre.
-         */
-        /* `--pied` DÉGAGE LA BARRE D'ADMINISTRATION, qui flotte au même
-           endroit depuis qu'elle est passée sous le pouce. La variable
-           vaut zéro partout ailleurs, et zéro au grand écran : aucune
-           condition à écrire ici. Voir `BarreAdmin`. */
-        /*
-         * RENDUE DANS `<body>`, COMME `BarreAdmin`, ET POUR LA MÊME RAISON.
-         *
-         * `main` porte `relative z-10` : son `z-40` ne valait qu'à
-         * l'intérieur de `main`, et le pied de page, voisin de même
-         * z-index mais plus bas dans le document, passait devant. Quand
-         * la liste est courte (la vue « Publiables » avec une seule
-         * fiche), le pied remonte sous la barre : ses liens se dessinaient
-         * PAR-DESSUS les boutons et interceptaient le clic sur « Publier ».
-         */
-        <Portal>
-        <div className="fixed inset-x-0 bottom-[calc(16px_+_var(--pied,0px))] z-40 mx-auto flex w-[min(680px,calc(100%-2rem))] flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.72)] px-4 py-3 shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9)] backdrop-blur-[24px] sm:rounded-[999px] sm:px-5">
-          <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
-            {retenues.length} sélectionnée{retenues.length > 1 ? "s" : ""}
-            <span className="ml-1.5 font-semibold normal-case tracking-normal text-white/45">
-              sur {visibles.length} affichée{visibles.length > 1 ? "s" : ""}
-            </span>
-            {!toutCoche && (
-              <button
-                type="button"
-                onClick={() => setSelection(new Set(visibles.map((b) => b.id)))}
-                className="ml-2 font-bold normal-case tracking-normal text-white underline underline-offset-2 hover:text-white"
-              >
-                Tout cocher
-              </button>
-            )}
-          </span>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => agir("publish")}
-              className={`${bouton} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] hover:shadow-[0_8px_20px_rgba(var(--voile),0.4)]`}
-            >
-              {pending ? "…" : "Publier"}
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => agir("draft")}
-              className={`${bouton} border border-white/35 text-white hover:bg-white/12`}
-            >
-              Retirer
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => agir("delete")}
-              onBlur={desarmer}
-              className={
-                cle === "delete"
-                  ? `${bouton} border border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white`
-                  : `${bouton} border border-white/25 text-white/70 hover:border-white/50 hover:text-white`
-              }
-            >
-              {cle === "delete" ? "Confirmer" : "Supprimer"}
-            </button>
-          </div>
-        </div>
-        </Portal>
-      )}
-
       {note && <p className="glass m-0 mb-4 px-5 py-3 text-[13.5px] text-white">{note}</p>}
 
       {/* ---------- la liste ---------- */}
@@ -958,14 +872,7 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
             {toutCoche ? "Tout décocher" : `Cocher les ${visibles.length} affichées`}
           </button>
 
-          {/* La barre flotte au-dessus du bas de page : ce dégagement
-              évite qu'elle recouvre la dernière ligne, celle qu'on vient
-              justement de cocher. */}
-          <div
-            className={`flex flex-col gap-2.5 sm:gap-3 ${
-              retenues.length > 0 ? "pb-[calc(96px_+_var(--pied,0px))]" : ""
-            }`}
-          >
+          <div className="flex flex-col gap-2.5 sm:gap-3">
             {visibles.map((b) => {
               const coche = selection.has(b.id);
               const visuel = b.logo_url ?? b.cover_url;
@@ -1077,6 +984,95 @@ export default function BrandBulkList({ brands }: { brands: BrandAdmin[] }) {
               );
             })}
           </div>
+
+          {/* ---------- barre d'action ----------
+              Elle n'apparaît qu'une fois quelque chose de coché. Une barre
+              de boutons désactivés en permanence n'apprend rien et occupe
+              la place où l'on cherche justement la liste. */}
+          {retenues.length > 0 && (
+            /*
+             * LA BARRE EST PASSÉE EN BAS, ET C'EST UNE CORRECTION D'USAGE.
+             *
+             * Elle était au-dessus de la liste. On coche donc en descendant,
+             * on arrive au bout, et les boutons sont trois écrans plus haut :
+             * il faut remonter pour agir, puis redescendre pour vérifier. En
+             * bas et flottante, elle est là où se trouve la main au moment où
+             * la sélection est finie.
+             *
+             * « sur N affichées » rend visible une règle que le code
+             * appliquait déjà en silence : la sélection ne porte JAMAIS sur
+             * des lignes masquées par un filtre.
+             */
+            /* `--pied` DÉGAGE LA BARRE D'ADMINISTRATION, qui flotte au même
+               endroit depuis qu'elle est passée sous le pouce. La variable
+               vaut zéro partout ailleurs, et zéro au grand écran : aucune
+               condition à écrire ici. Voir `BarreAdmin`. */
+            /*
+             * COLLANTE, PLUS FIXE : ELLE S'ARRÊTE AU BOUT DE LA LISTE.
+             *
+             * En `fixed`, elle restait clouée au bas de l'écran quoi qu'il
+             * y ait dessous. Sur une liste courte (la vue « Publiables »
+             * avec une seule fiche), le pied de page remontait sous elle :
+             * d'abord ses liens volaient le clic sur « Publier », puis,
+             * une fois la barre passée devant, c'est elle qui cachait
+             * « Contact » et « Mentions légales ».
+             *
+             * En `sticky`, placée après la dernière ligne, elle suit le
+             * défilement tant qu'il reste de la liste sous l'écran, puis se
+             * pose juste sous la dernière fiche et ne descend jamais dans
+             * le pied. Plus besoin de `Portal` ni de marge réservée sous
+             * la liste : elle occupe sa propre place dans le flux.
+             */
+            <div className="sticky bottom-[calc(16px_+_var(--pied,0px))] z-40 mx-auto mt-4 flex w-[min(680px,100%)] flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/20 bg-[rgba(8,2,30,0.72)] px-4 py-3 shadow-[0_18px_44px_-16px_rgba(12,3,36,0.9)] backdrop-blur-[24px] sm:rounded-[999px] sm:px-5">
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-white/70">
+                {retenues.length} sélectionnée{retenues.length > 1 ? "s" : ""}
+                <span className="ml-1.5 font-semibold normal-case tracking-normal text-white/45">
+                  sur {visibles.length} affichée{visibles.length > 1 ? "s" : ""}
+                </span>
+                {!toutCoche && (
+                  <button
+                    type="button"
+                    onClick={() => setSelection(new Set(visibles.map((b) => b.id)))}
+                    className="ml-2 font-bold normal-case tracking-normal text-white underline underline-offset-2 hover:text-white"
+                  >
+                    Tout cocher
+                  </button>
+                )}
+              </span>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => agir("publish")}
+                  className={`${bouton} bg-white text-[var(--color-ink)] shadow-[0_4px_14px_rgba(var(--voile),0.3)] hover:shadow-[0_8px_20px_rgba(var(--voile),0.4)]`}
+                >
+                  {pending ? "…" : "Publier"}
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => agir("draft")}
+                  className={`${bouton} border border-white/35 text-white hover:bg-white/12`}
+                >
+                  Retirer
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => agir("delete")}
+                  onBlur={desarmer}
+                  className={
+                    cle === "delete"
+                      ? `${bouton} border border-[#ff9db0] bg-[rgba(194,39,63,0.35)] text-white`
+                      : `${bouton} border border-white/25 text-white/70 hover:border-white/50 hover:text-white`
+                  }
+                >
+                  {cle === "delete" ? "Confirmer" : "Supprimer"}
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>
