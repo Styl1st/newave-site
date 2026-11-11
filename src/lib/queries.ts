@@ -532,6 +532,17 @@ export async function lireUnePageDeVitrine(
   combien = 24
 ): Promise<PageDeVitrine | null> {
   const supabase = createPublicClient();
+  /* BANC */
+  if (!supabase && process.env.NEWAVE_BANC === "1") {
+    const q = filtres.q?.trim().toLowerCase();
+    const toutes = DEMO_PRODUCTS.filter((p) => p.image_url && (!q || p.name.toLowerCase().includes(q)));
+    const melange = toutes
+      .map((p, i) => ({ p, k: (i * 2654435761) % 9973 }))
+      .sort((a, b) => a.k - b.k)
+      .map((x) => x.p);
+    await new Promise((r) => setTimeout(r, 120));
+    return { total: melange.length, pieces: melange.slice(depuis, depuis + combien) };
+  }
   if (!supabase) return null;
 
   const { data, error } = await supabase.rpc("vitrine", {
@@ -687,11 +698,111 @@ export type CompteDuCatalogue = {
  * cookies, ce que Next interdit dans un cache. Même raison que pour
  * l'annuaire, un peu plus haut.
  */
+/** Ce que rend `comptes_du_catalogue` (migration 46). */
+type ComptesEnUnPassage = {
+  rayons: { rayon: string | null; total: number }[];
+  tags: { rayon: string | null; tag: string; total: number }[];
+  tailles: { rayon: string | null; taille: string; total: number }[];
+  bornes: {
+    prix_min: number | null;
+    prix_max: number | null;
+    a_des_ruptures: boolean | null;
+    a_des_promos: boolean | null;
+  } | null;
+  marques: { slug: string; nom: string; total: number }[];
+};
+
+/**
+ * La fonction n'existe pas encore dans la base : la migration n'est pas
+ * passée. PostgREST répond PGRST202 (absente de son schéma), Postgres
+ * 42883 s'il est interrogé directement.
+ */
+function fonctionAbsente(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST202" || error?.code === "42883";
+}
+
+/** Les comptes bruts, mis en forme pour le site. Commun aux deux lectures. */
+function mettreEnForme(
+  lignes: { rayon: string | null; total: number }[],
+  marquesListe: { slug: string; nom: string; total: number }[] | undefined,
+  marquesPubliees: number | null,
+  parTag: { rayon: string | null; tag: string; total: number }[] | undefined,
+  parTaille: { rayon: string | null; taille: string; total: number }[] | undefined,
+  brut: ComptesEnUnPassage["bornes"] | undefined
+): CompteDuCatalogue {
+  /* `rayon` vaut NULL pour une pièce qui ne porte aucun rayon connu.
+     Le nom « Autres » reste du côté du site : la base compte, elle ne
+     nomme pas. C'est aussi ce que fait `compterLesRayons`. */
+  const parRayon = new Map<string, number>();
+  for (const l of lignes) {
+    const cle = l.rayon ?? "Autres";
+    parRayon.set(cle, (parRayon.get(cle) ?? 0) + l.total);
+  }
+
+  const ordre = [...PRODUCT_CATEGORIES, "Autres"];
+
+  return {
+    pieces: lignes.reduce((n, l) => n + l.total, 0),
+    /* La longueur de la liste QUAND ON L'A, et le comptage direct
+       sinon. Les deux donnent le même nombre — `compter_les_marques`
+       rend toutes les marques publiées, zéro pièce compris — mais
+       passer par la liste garantit que l'en-tête et le filtre disent
+       exactement la même chose, sans qu'on ait à s'en souvenir. */
+    marques: marquesListe?.length ?? marquesPubliees ?? 0,
+    rayons: ordre
+      .filter((r) => parRayon.has(r))
+      .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
+    marquesListe,
+    tags: parTag,
+    tailles: parTaille,
+    prix:
+      brut && brut.prix_min !== null && brut.prix_max !== null && brut.prix_max > brut.prix_min
+        ? { min: brut.prix_min, max: brut.prix_max }
+        : undefined,
+    etats: brut
+      ? { ruptures: Boolean(brut.a_des_ruptures), promos: Boolean(brut.a_des_promos) }
+      : undefined,
+  };
+}
+
+/**
+ * LES CINQ COMPTES EN UNE SEULE LECTURE DE LA TABLE.
+ *
+ * Ils partaient en cinq requêtes simultanées, qui relisaient chacune
+ * toute la table `products` et se disputaient la base : 1,4 s en
+ * moyenne chacune, jusqu'à 2,99 s, et l'API coupe à trois. D'où le
+ * « canceling statement due to statement timeout » dans la console.
+ * Une seule fonction fait maintenant le travail en un passage (voir
+ * `migration-46.sql`, qui donne les mesures).
+ *
+ * `null` : la migration n'est pas passée, on prend l'ancien chemin.
+ * Toute AUTRE erreur remonte telle quelle : relancer alors les cinq
+ * comptages d'avant, c'est ajouter de la charge à une base qui vient
+ * justement de couper faute de temps.
+ */
+async function comptesEnUnPassage(
+  supabase: NonNullable<ReturnType<typeof createPublicClient>>
+): Promise<CompteDuCatalogue | null> {
+  const { data, error } = await supabase.rpc("comptes_du_catalogue", {
+    p_taxonomie: [...PRODUCT_CATEGORIES],
+  });
+  if (fonctionAbsente(error)) return null;
+  report("comptes du catalogue", error);
+  if (error || !data) throw new LectureRatee("comptes du catalogue");
+
+  const c = data as ComptesEnUnPassage;
+  return mettreEnForme(c.rayons ?? [], c.marques, null, c.tags, c.tailles, c.bornes);
+}
+
 const lireLesComptes = unstable_cache(
   async (): Promise<CompteDuCatalogue | null> => {
     const supabase = createPublicClient();
     if (!supabase) return null;
 
+    const enUn = await comptesEnUnPassage(supabase);
+    if (enUn) return enUn;
+
+    /* L'ANCIEN CHEMIN, tant que la migration 46 n'est pas passée. */
     const [rayons, marques, parMarque, bornes, tags, tailles] = await Promise.all([
       supabase.rpc("compter_les_rayons", { p_rayons: [...PRODUCT_CATEGORIES] }),
       supabase
@@ -739,17 +850,6 @@ const lireLesComptes = unstable_cache(
 
     const lignes = rayons.data as { rayon: string | null; total: number }[];
 
-    /* `rayon` vaut NULL pour une pièce qui ne porte aucun rayon connu.
-       Le nom « Autres » reste du côté du site : la base compte, elle ne
-       nomme pas. C'est aussi ce que fait `compterLesRayons`. */
-    const parRayon = new Map<string, number>();
-    for (const l of lignes) {
-      const cle = l.rayon ?? "Autres";
-      parRayon.set(cle, (parRayon.get(cle) ?? 0) + l.total);
-    }
-
-    const ordre = [...PRODUCT_CATEGORIES, "Autres"];
-
     /* Les tags fins. Si la migration 34 manque, on le note et la vitrine
        se passe simplement de la section « Type ». */
     report("comptes des tags", tags.error);
@@ -762,28 +862,7 @@ const lireLesComptes = unstable_cache(
       ? undefined
       : ((tailles.data as { rayon: string | null; taille: string; total: number }[] | null) ?? []);
 
-    return {
-      pieces: lignes.reduce((n, l) => n + l.total, 0),
-      /* La longueur de la liste QUAND ON L'A, et le comptage direct
-         sinon. Les deux donnent le même nombre — `compter_les_marques`
-         rend toutes les marques publiées, zéro pièce compris — mais
-         passer par la liste garantit que l'en-tête et le filtre disent
-         exactement la même chose, sans qu'on ait à s'en souvenir. */
-      marques: marquesListe?.length ?? marques.count ?? 0,
-      rayons: ordre
-        .filter((r) => parRayon.has(r))
-        .map((rayon) => ({ rayon, total: parRayon.get(rayon) ?? 0 })),
-      marquesListe,
-      tags: parTag,
-      tailles: parTaille,
-      prix:
-        brut && brut.prix_min !== null && brut.prix_max !== null && brut.prix_max > brut.prix_min
-          ? { min: brut.prix_min, max: brut.prix_max }
-          : undefined,
-      etats: brut
-        ? { ruptures: Boolean(brut.a_des_ruptures), promos: Boolean(brut.a_des_promos) }
-        : undefined,
-    };
+    return mettreEnForme(lignes, marquesListe, marques.count, parTag, parTaille, brut);
   },
   ["comptes-catalogue"],
   /* Cinq minutes : un catalogue ne bouge qu'à l'import, et ces trois

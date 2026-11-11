@@ -218,6 +218,29 @@ const VERSION = createHash("sha1")
   .slice(0, 16);
 
 /**
+ * Ce qu'on lève pour que `unstable_cache` ne range pas une réponse.
+ *
+ * CE N'EST PAS UNE PANNE, ET LE MESSAGE LE DIT. Quand une image rangée
+ * a plus d'un jour, Next la sert quand même et la refabrique en
+ * arrière-plan. Si la nouvelle n'est pas à garder (la boutique n'a pas
+ * répondu à temps, l'image est devenue trop lourde…), on lève, Next
+ * garde l'ancienne, et c'est exactement ce qu'on veut. Mais Next écrit
+ * alors ce qu'il a reçu dans la console, pile d'appels et extrait de
+ * code compris, comme pour un vrai plantage : on croyait la route
+ * cassée.
+ *
+ * Le message dit donc ce qui se passe, et la pile est retirée : il n'y
+ * a rien à aller chercher dans le code.
+ */
+class NonRangee extends Error {
+  constructor() {
+    super("image refabriquée mais pas rangée (source lente ou trop lourde) : l'ancienne reste servie, rien à faire");
+    this.name = "[newave] /api/img";
+    this.stack = `${this.name} : ${this.message}`;
+  }
+}
+
+/**
  * `servir`, avec une mémoire qui survit aux déploiements.
  *
  * Voir `lib/memoire-images` pour le pourquoi. Ici, le branchement :
@@ -262,7 +285,7 @@ async function servirAvecMemoire(requete: Request): Promise<Response> {
         }
         sortie.directe = reponse;
         // Lever empêche `unstable_cache` de ranger quoi que ce soit.
-        throw new Error("Réponse à ne pas garder");
+        throw new NonRangee();
       },
       ["api-img", VERSION, cle],
       { revalidate: GARDE }
