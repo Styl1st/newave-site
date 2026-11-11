@@ -73,6 +73,11 @@ export default function BrandSpaceList({ brands }: { brands: Brand[] }) {
                   {(b.logo_url ?? b.cover_url) && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
+                      /* `net` : visible d'emblée, et le script des photos
+                         note son arrivée, ce qui arrête le dégradé
+                         d'attente du cadre (voir `.visuel`). */
+                      data-progressif="net"
+                      suppressHydrationWarning
                       src={b.logo_url ?? b.cover_url ?? ""}
                       alt=""
                       loading="lazy"

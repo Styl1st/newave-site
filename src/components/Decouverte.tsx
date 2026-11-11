@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Brand } from "@/lib/types";
 import { melanger } from "@/lib/melange";
@@ -37,9 +38,11 @@ import { tailleOptique } from "@/lib/logo-blanc";
  * le mouvement », par exemple — figeait la bande pour de bon.
  *
  * C'est donc une vraie zone de défilement, que le navigateur gère
- * nativement. La dérive automatique n'est plus qu'un supplément : on
- * pousse le défilement d'un cheveu à chaque image. Elle s'interrompt
- * dès qu'on touche la bande et reprend quand on la lâche. Si elle
+ * nativement. La dérive automatique n'est qu'un supplément : tant que
+ * personne n'y touche, les deux copies glissent par une translation
+ * confiée à la carte graphique (voir l'effet de dérive, plus bas). Elle
+ * s'interrompt dès qu'on touche la bande, qui redevient alors une zone
+ * de défilement ordinaire, et reprend quand on la lâche. Si elle
  * échoue, on garde une bande qui défile ; l'inverse n'était pas vrai.
  *
  * L'ordre est tiré au sort. La mise en avant est éditoriale et assumée
@@ -107,7 +110,7 @@ function MarqueDuRuban({ brand, copie = false }: { brand: FicheDuRuban; copie?: 
   }, [lire]);
 
   return (
-    <Link
+    <LienPatient
       href={`/marques/${brand.slug}`}
       data-no-reveal
       aria-label={brand.name}
@@ -142,7 +145,7 @@ function MarqueDuRuban({ brand, copie = false }: { brand: FicheDuRuban; copie?: 
       ) : (
         <span className="nom-ruban">{brand.name}</span>
       )}
-    </Link>
+    </LienPatient>
   );
 }
 
@@ -176,8 +179,12 @@ export default function Decouverte({ brands }: { brands: FicheDuRuban[] }) {
    * le moindre mouvement de souris sur la bande le repousse, elle
    * reste bien à l'arrêt tant qu'on s'en occupe.
    */
+  /** Rend la bande à la main : posé par l'effet de dérive, plus bas. */
+  const rendreLaMain = useRef<() => void>(() => {});
+
   const suspendre = useCallback(() => {
     repriseA.current = performance.now() + REPRISE_MS;
+    rendreLaMain.current();
   }, []);
 
   /*
@@ -258,53 +265,193 @@ export default function Decouverte({ brands }: { brands: FicheDuRuban[] }) {
         ? VITESSE * 0.55
         : VITESSE;
 
-    let image = 0;
-    let precedent = performance.now();
+    /*
+     * LA DÉRIVE EST JOUÉE PAR LA CARTE GRAPHIQUE, ET PLUS PAR UNE BOUCLE.
+     *
+     * Elle poussait le défilement d'un cheveu à chaque image
+     * (`scrollLeft`). C'était juste, et c'était la seule dépense
+     * continue de l'accueil : écrire une position de défilement réveille
+     * tout le navigateur, soixante fois par seconde, tant que la bande
+     * est à l'écran. Mesuré sur un téléphone modeste (processeur bridé
+     * quatre fois) : un tiers du temps de calcul de la page, en
+     * permanence, sur le premier écran du site, c'est-à-dire pendant
+     * que la page finit de se charger et qu'on commence à défiler. Et
+     * comme la boucle passait par le même fil que tout le reste, la
+     * bande elle-même hachait dès que la page avait autre chose à faire.
+     *
+     * La bande reste une vraie zone de défilement : on la prend au
+     * doigt, à la souris, à la molette, exactement comme avant. Seule
+     * la dérive change de moteur. Tant que personne n'y touche, les deux
+     * copies glissent par une translation, que la carte graphique joue
+     * seule : plus rien ne passe par le JavaScript, et elle reste fluide
+     * même quand la page travaille.
+     *
+     * LE PASSAGE DE L'UNE À L'AUTRE NE SE VOIT PAS, et c'est le seul
+     * point délicat :
+     *
+     *   — au départ, on lit où en est le défilement, on le remet à zéro
+     *     et l'on fait démarrer la translation exactement à cet
+     *     endroit : la même image, au pixel près ;
+     *
+     *   — au moindre contact (`suspendre`), on fait l'inverse : on lit
+     *     où en est la translation, on l'annule, et l'on pose le
+     *     défilement à cet endroit. La bande s'arrête là où elle était,
+     *     et c'est de nouveau une zone de défilement ordinaire.
+     *
+     * LA TRANSLATION VAUT 100 % DE LA LARGEUR D'UNE COPIE. La bande
+     * contient deux copies identiques : arrivée au bout de la première,
+     * la translation reprend à zéro, et le contenu sous les yeux est le
+     * même au pixel près. C'est le retour invisible d'avant, sans rien à
+     * calculer. En pourcentage, elle reste juste quand un logo arrive et
+     * change la largeur de la bande.
+     */
+    const copies = Array.from(el.children) as HTMLElement[];
+    const saitAnimer = copies.length === 2 && typeof copies[0].animate === "function";
 
     /*
-     * La position est tenue à part, en nombre à virgule.
-     *
-     * C'est la correction de l'arrêt intempestif, et elle mérite une
-     * explication. Le code faisait `el.scrollLeft += vitesse * dt`.
-     * À soixante images par seconde, cela ajoute moins d'un demi-pixel
-     * à chaque passage — et selon le navigateur, le niveau de zoom et
-     * la densité de l'écran, la lecture de `scrollLeft` renvoie un
-     * entier. La fraction ajoutée était alors perdue à chaque tour, la
-     * somme restait indéfiniment à zéro, et la bande semblait figée
-     * sans raison apparente. D'où le « des fois ça s'arrête ».
-     *
-     * On tient donc le compte nous-mêmes, et on l'écrit d'un coup.
+     * LES DIMENSIONS SONT MESURÉES UNE FOIS, PAS À CHAQUE IMAGE. Elles
+     * ne changent que si la bande change de taille : on les relit à ce
+     * moment-là, et jamais entre deux.
      */
-    let position = el.scrollLeft;
+    let moitie = el.scrollWidth / 2;
+    let largeur = el.clientWidth;
 
-    const avancer = (maintenant: number) => {
-      const dt = Math.min(maintenant - precedent, 64) / 1000;
-      precedent = maintenant;
+    let derive: Animation[] = [];
+    let visible = true;
+    let minuteur = 0;
 
-      const moitie = el.scrollWidth / 2;
+    /** Le temps d'un tour complet, à la vitesse voulue. */
+    const tour = () => (moitie / vitesse) * 1000;
 
-      // Quelqu'un a fait glisser la bande : on repart d'où elle est,
-      // sinon elle sauterait à notre position au premier tour suivant.
-      if (Math.abs(el.scrollLeft - position) > 2) position = el.scrollLeft;
-
-      if (maintenant >= repriseA.current && moitie > 0) {
-        position += vitesse * dt;
-        /*
-         * Le retour invisible.
-         *
-         * La bande contient deux copies identiques. Passé la première,
-         * on recule d'exactement sa largeur : le contenu sous les yeux
-         * est le même au pixel près, personne ne voit la couture.
-         */
-        if (position >= moitie) position -= moitie;
-        el.scrollLeft = position;
-      }
-
-      image = requestAnimationFrame(avancer);
+    /** Où en est la translation, de 0 à 1. */
+    const part = () => {
+      const a = derive[0];
+      if (!a) return 0;
+      const duree = Number(a.effect?.getComputedTiming().duration) || 0;
+      const t = Number(a.currentTime) || 0;
+      return duree > 0 ? (t % duree) / duree : 0;
     };
 
-    image = requestAnimationFrame(avancer);
-    return () => cancelAnimationFrame(image);
+    const jouer = (depuis: number) => {
+      const duree = tour();
+      derive = copies.map((c) =>
+        c.animate(
+          [{ transform: "translate3d(0, 0, 0)" }, { transform: "translate3d(-100%, 0, 0)" }],
+          { duration: duree, iterations: Infinity, easing: "linear" }
+        )
+      );
+      for (const a of derive) a.currentTime = depuis * duree;
+    };
+
+    const annuler = () => {
+      for (const a of derive) a.cancel();
+      derive = [];
+    };
+
+    /** La dérive part, si rien ne s'y oppose. */
+    const lancer = () => {
+      if (derive.length || !saitAnimer || !visible) return;
+      /* Une bande plus courte que l'écran ne peut pas boucler : elle
+         reste où elle est, et se fait défiler à la main. */
+      if (moitie <= 0 || moitie <= largeur) return;
+      if (performance.now() < repriseA.current) return patienter();
+
+      /* On repart d'où la bande a été laissée. Passé la première copie,
+         on recule d'exactement sa largeur : même contenu sous les yeux. */
+      let depart = el.scrollLeft;
+      if (depart >= moitie) depart -= moitie;
+
+      jouer(depart / moitie);
+      el.scrollLeft = 0;
+    };
+
+    /** La bande redevient une zone de défilement, là où elle en était. */
+    const poser = () => {
+      if (!derive.length) return;
+      const ou = part() * moitie;
+      annuler();
+      el.scrollLeft = ou;
+    };
+
+    /*
+     * La reprise, après un contact. Un seul minuteur, qui se relit à
+     * l'échéance : survoler la bande repousse l'instant de reprise à
+     * chaque mouvement de souris, sans rien réarmer.
+     */
+    function patienter() {
+      if (minuteur) return;
+      const echeance = () => {
+        minuteur = 0;
+        const reste = repriseA.current - performance.now();
+        if (reste > 0) minuteur = window.setTimeout(echeance, reste + 16);
+        else lancer();
+      };
+      minuteur = window.setTimeout(echeance, Math.max(0, repriseA.current - performance.now()) + 16);
+    }
+
+    rendreLaMain.current = () => {
+      poser();
+      patienter();
+    };
+
+    const veilleTaille = new ResizeObserver(() => {
+      const avant = moitie;
+      moitie = el.scrollWidth / 2;
+      largeur = el.clientWidth;
+      if (!derive.length) {
+        /* Une bande restée trop courte au premier passage (les logos
+           n'étaient pas encore là) peut partir maintenant. */
+        lancer();
+        return;
+      }
+      if (moitie <= largeur) return poser();
+      /* La largeur a changé : la durée du tour aussi, pour que la
+         vitesse reste la même. On reprend à la même part du tour. */
+      if (Math.abs(moitie - avant) > 0.5) {
+        const ou = part();
+        const enPause = derive[0].playState === "paused";
+        annuler();
+        jouer(ou);
+        if (enPause) for (const a of derive) a.pause();
+      }
+    });
+    veilleTaille.observe(el);
+    if (el.firstElementChild) veilleTaille.observe(el.firstElementChild);
+
+    /*
+     * ET ELLE NE DÉRIVE QUE SI ON LA VOIT. Hors champ, la translation
+     * est mise en pause : la carte graphique n'a pas à recomposer une
+     * bande que personne ne regarde. Elle reprend où elle en était
+     * quand la bande revient.
+     */
+    const veilleEcran =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver((entrees) => {
+            const vue = entrees.some((e) => e.isIntersecting);
+            if (vue === visible) return;
+            visible = vue;
+            if (!vue) {
+              for (const a of derive) a.pause();
+            } else if (derive.length) {
+              for (const a of derive) a.play();
+            } else {
+              lancer();
+            }
+          });
+    veilleEcran?.observe(el);
+
+    lancer();
+
+    return () => {
+      /* On rend la bande telle qu'elle est à l'écran : un nouveau
+         tirage ne la fait pas sauter. */
+      poser();
+      if (minuteur) window.clearTimeout(minuteur);
+      rendreLaMain.current = () => {};
+      veilleTaille.disconnect();
+      veilleEcran?.disconnect();
+    };
   }, [tirage]);
 
   if (brands.length === 0) return null;

@@ -176,6 +176,12 @@ export default function RechercheAccueil() {
         onKeyDown={toucheDansLeChamp}
         placeholder="Chercher une marque, une pièce…"
         aria-label="Chercher une marque, une pièce"
+        /* Le clavier du téléphone : une touche « Rechercher », et ni
+           majuscule forcée ni correction sur un nom de marque. */
+        enterKeyHint="search"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         autoComplete="off"
         /* `champ` seule : la classe pose sa taille, son verre et son
            halo de mise au point hors de toute couche Tailwind, donc une

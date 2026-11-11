@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LienPatient from "../LienPatient";
 import {
   ilYA,
   libelleRemuneration,
@@ -53,7 +53,7 @@ export default function CarteAnnonce({
   return (
     <article className="group relative flex flex-col">
       {!apercu && (
-        <Link
+        <LienPatient
           href={lienAnnonce(a)}
           data-calque
           aria-label={a.titre}
@@ -98,12 +98,12 @@ export default function CarteAnnonce({
         <p className="m-0 mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-semibold text-white/55">
           {/* Au-dessus du calque, comme le vote : le nom mène à l'auteur. */}
           {versAuteur ? (
-            <Link
+            <LienPatient intention
               href={versAuteur}
               className="relative z-[4] font-bold text-white/85 underline-offset-4 transition hover:text-white hover:underline"
             >
               {signature(a)}
-            </Link>
+            </LienPatient>
           ) : (
             <span className="font-bold text-white/85">{signature(a)}</span>
           )}

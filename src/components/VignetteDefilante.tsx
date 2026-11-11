@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import ApercuFlou from "./ApercuFlou";
-import { apercuFlou, jeuDeVignettes, vignette } from "@/lib/vignette";
+import AttentePhoto from "./AttentePhoto";
+import { jeuDeVignettes, vignette } from "@/lib/vignette";
 
 /**
  * Les photos d'une pièce, feuilletées sans quitter la grille.
@@ -31,6 +31,40 @@ import { apercuFlou, jeuDeVignettes, vignette } from "@/lib/vignette";
  * besoin.
  */
 
+/** La largeur d'affichage d'une vignette de pièce, pour `sizes`. */
+const TAILLES_VIGNETTE = "(max-width: 640px) 45vw, 300px";
+
+/**
+ * Demander une vignette sans l'afficher.
+ *
+ * Le navigateur la range dans son cache : quand une balise la
+ * réclamera, elle sera déjà là, et l'image apparaîtra sans passer par
+ * un cadre vide.
+ *
+ * AVEC LE MÊME `srcset` ET LE MÊME `sizes` QUE LA BALISE, et c'est ce
+ * qui la rend utile. La demande d'avance se faisait sur la seule
+ * adresse de 400 pixels, alors que la balise laisse le navigateur
+ * choisir parmi trois largeurs : sur un écran dense (tous les
+ * téléphones, la plupart des portables) il prenait la 600 ou la 800,
+ * que personne n'avait préparée. On téléchargeait une image pour rien
+ * et l'on attendait quand même la bonne.
+ *
+ * Sert aussi au lot suivant de la vitrine, préparé avant qu'on clique
+ * sur « Charger de plus » (voir `PieceDirectory`).
+ */
+export function prechaufferVignette(url: string | null | undefined) {
+  if (!url || typeof Image === "undefined") return;
+  const adresse = vignette(url, 400);
+  if (!adresse) return;
+  const img = new Image();
+  img.decoding = "async";
+  // `sizes` avant `srcset` : c'est à la pose de `srcset` que le choix se fait.
+  img.sizes = TAILLES_VIGNETTE;
+  const jeu = jeuDeVignettes(url, 400);
+  if (jeu) img.srcset = jeu;
+  img.src = adresse;
+}
+
 export default function VignetteDefilante({
   images,
   alt,
@@ -57,20 +91,11 @@ export default function VignetteDefilante({
   const total = images.length;
   const source = images[Math.min(rang, total - 1)];
 
-  /**
-   * Demander une image sans l'afficher.
-   *
-   * Le navigateur la range dans son cache : quand la balise la
-   * réclamera, elle sera déjà là, et le changement se fera sans le
-   * clignotement blanc d'un chargement.
-   */
+  /** La photo suivante, demandée juste avant qu'on en ait besoin. */
   const preparer = (i: number) => {
     if (i < 0 || i >= total || annoncees.current.has(i)) return;
     annoncees.current.add(i);
-    const img = new Image();
-    img.decoding = "async";
-    const adresse = vignette(images[i], 400);
-    if (adresse) img.src = adresse;
+    prechaufferVignette(images[i]);
   };
 
   const aller = (pas: number) => (e: React.MouseEvent) => {
@@ -92,26 +117,21 @@ export default function VignetteDefilante({
   return (
     <>
       {/*
-        DU FLOU AU NET. L'aperçu flou de la première photo est posé
-        juste avant elle ; la photo naît transparente et apparaît en
-        fondu dès qu'elle est chargée (voir `ApercuFlou` et
-        `lib/image-progressive`). Quand l'hébergeur ne sait pas fournir
-        de miniature, c'est l'aplat qui respire qui fait l'attente, au
-        même endroit et retiré par la même règle.
+        PRÊTE AVANT D'ÊTRE VUE. La photo naît transparente sur l'aplat
+        d'attente ; le script du <head> la demande avant qu'elle n'entre
+        à l'écran et la révèle à l'arrivée, d'emblée si on ne l'a pas
+        attendue, en fondu court sinon (voir `lib/image-progressive` et
+        `AttentePhoto`).
 
-        `suppressHydrationWarning` : `data-charge` peut être posé par le
-        script du <head> avant que React n'ait repris la page.
+        `suppressHydrationWarning` : `data-charge` et `loading` peuvent
+        être touchés par ce script avant que React n'ait repris la page.
       */}
-      {apercuFlou(images[0]) ? (
-        <ApercuFlou src={images[0]} prioritaire={prioritaire} />
-      ) : (
-        <span aria-hidden="true" className="attente-visuel pointer-events-none absolute inset-0" />
-      )}
+      <AttentePhoto />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={vignette(source, 400)}
         srcSet={jeuDeVignettes(source, 400)}
-        sizes="(max-width: 640px) 45vw, 300px"
+        sizes={TAILLES_VIGNETTE}
         alt={alt}
         loading={prioritaire ? "eager" : "lazy"}
         fetchPriority={prioritaire ? "high" : "auto"}

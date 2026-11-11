@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import LienPatient from "../LienPatient";
 import { useEffect, useRef } from "react";
 import LikeButton from "../LikeButton";
 import { enChiffres } from "../chiffres";
@@ -112,7 +112,7 @@ export default function LignePiece({
    * vivre dans un <a>, et le cœur doit garder son propre clic.
    */
   const calque = interne ? (
-    <Link href={href} aria-label={product.name} data-calque="" className="absolute inset-0 z-2" />
+    <LienPatient href={href} aria-label={product.name} data-calque="" className="absolute inset-0 z-2" />
   ) : (
     <a
       href={href}

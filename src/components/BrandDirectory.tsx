@@ -845,6 +845,12 @@ export default function BrandDirectory({
               onKeyDown={toucheDansLeChamp}
               placeholder={jetons.length > 0 ? "Affiner…" : "Chercher une marque, un style…"}
               aria-label="Chercher une marque, une pièce"
+              /* Le clavier du téléphone : une touche « Rechercher », et ni
+                 majuscule forcée ni correction sur un nom de marque. */
+              enterKeyHint="search"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               autoComplete="off"
               className="requete-champ"
             />
@@ -910,7 +916,7 @@ export default function BrandDirectory({
                     key={c.cle}
                     type="button"
                     onClick={() => poser(c)}
-                    className="text-[13px] font-semibold text-white/85 transition hover:text-white"
+                    className="cible-doigt-ligne text-[13px] font-semibold text-white/85 transition hover:text-white"
                   >
                     {c.valeur}
                     <sup className="ml-[3px] text-[9px] font-bold text-white/50">{c.compte}</sup>
@@ -927,7 +933,7 @@ export default function BrandDirectory({
               onClick={() => setOuvert((v) => !v)}
               aria-expanded={ouvert}
               aria-controls="filtres"
-              className="text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
+              className="cible-doigt-ligne text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
             >
               Tous les critères
               {actifs > 0 && <span className="ml-1.5 text-white/50">({actifs})</span>}

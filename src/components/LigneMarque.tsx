@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { useEffect, useRef, useState } from "react";
 import FavoriteButton from "./FavoriteButton";
 import { IconEye } from "./Icons";
@@ -8,6 +9,7 @@ import { enChiffres } from "./chiffres";
 import Notee from "./coeurs/Notee";
 import type { Elan } from "./coeurs/classement";
 import { vignette } from "@/lib/vignette";
+import { MARGE_D_AVANCE } from "@/lib/image-progressive";
 import { chargerApercu, semerApercu, useApercuInitial } from "@/lib/apercus-client";
 import { ACCES_ETIQUETTE, unAcces } from "@/lib/acces";
 import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
@@ -78,6 +80,106 @@ export function CoeurPlein({ className }: { className?: string }) {
       <path d="M12 20.5 4.3 13a4.8 4.8 0 0 1 6.8-6.8l.9.9.9-.9A4.8 4.8 0 0 1 19.7 13Z" />
     </svg>
   );
+}
+
+/*
+ * LA LUMIÈRE NE COURT PAS APRÈS UN DÉFILEMENT LANCÉ.
+ *
+ * Au doigt, la ligne qui traverse le milieu de l'écran s'allume (voir
+ * plus bas). En lisant l'annuaire, c'est une ligne toutes les
+ * demi-secondes. En le faisant défiler d'un grand geste, c'en est dix
+ * par seconde : chacune s'allumait pour un dixième de seconde, le temps
+ * d'atteindre un cinquième de son éclat, puis s'éteignait. On ne voyait
+ * qu'un scintillement, et il coûtait cher : six transitions lancées
+ * puis annulées par ligne (le halo, les filets, les quatre vignettes
+ * qui se soulèvent), autant de calques créés et détruits, en plein
+ * défilement. Mesuré sur un téléphone modeste : la moitié des images
+ * sautées de l'annuaire venaient de là.
+ *
+ * On allume donc tout de suite la ligne qui arrive au centre, comme
+ * avant, SAUF si la page file à plus de neuf cents pixels par seconde :
+ * à cette allure personne ne lit, on passe. La ligne garde son tour, et
+ * s'allume dès que le défilement est retombé sous cette vitesse, si
+ * elle est encore au centre. À vitesse de lecture, rien ne change.
+ *
+ * C'EST LA VITESSE QU'ON MESURE, ET PAS L'ÉCART ENTRE DEUX LIGNES. Sur
+ * un téléphone qui peine, le navigateur prévient en retard et par
+ * paquets : deux lignes signalées à un tiers de seconde d'intervalle
+ * peuvent avoir défilé en un dixième. La distance parcourue entre deux
+ * signaux, elle, ne ment pas.
+ *
+ * L'état est commun à toutes les lignes de la page : c'est l'allure du
+ * défilement qu'on mesure, pas celle d'une ligne.
+ */
+
+/** En pixels par milliseconde. Au-delà, on fait défiler, on ne lit pas. */
+const ALLURE_DE_LECTURE = 0.9;
+/** Le temps laissé au défilement pour ralentir avant de revérifier. */
+const REPIT_DU_CENTRE = 110;
+
+let repereY = 0;
+let repereT = -Infinity;
+let enAttente: HTMLElement | null = null;
+let minuteurDuCentre = 0;
+
+/** L'allure de la page depuis le dernier relevé, en pixels par milliseconde. */
+function allure(): number {
+  const y = window.scrollY;
+  const t = performance.now();
+  const ecart = t - repereT;
+  /* Un relevé vieux de plus d'une demi-seconde ne dit rien de l'allure
+     actuelle : on repart de zéro, la ligne s'allume. */
+  const v = ecart > 500 ? 0 : Math.abs(y - repereY) / Math.max(ecart, 1);
+  repereY = y;
+  repereT = t;
+  return v;
+}
+
+function oublierLAttente() {
+  enAttente = null;
+  if (minuteurDuCentre) window.clearTimeout(minuteurDuCentre);
+  minuteurDuCentre = 0;
+}
+
+function revoirLAttente() {
+  minuteurDuCentre = 0;
+  const el = enAttente;
+  if (!el) return;
+
+  /* Encore au centre ? Même bande que le guetteur : de 46 à 54 % de la
+     hauteur de l'écran. */
+  const cadre = el.getBoundingClientRect();
+  const h = window.innerHeight;
+  if (cadre.bottom <= h * 0.46 || cadre.top >= h * 0.54) {
+    enAttente = null;
+    return;
+  }
+
+  if (allure() > ALLURE_DE_LECTURE) {
+    minuteurDuCentre = window.setTimeout(revoirLAttente, REPIT_DU_CENTRE);
+    return;
+  }
+  enAttente = null;
+  el.dataset.centre = "1";
+}
+
+function entrerAuCentre(el: HTMLElement) {
+  /* Une seule ligne attend à la fois : la dernière arrivée. */
+  oublierLAttente();
+
+  if (allure() <= ALLURE_DE_LECTURE) {
+    el.dataset.centre = "1";
+    return;
+  }
+  enAttente = el;
+  minuteurDuCentre = window.setTimeout(revoirLAttente, REPIT_DU_CENTRE);
+}
+
+function quitterLeCentre(el: HTMLElement) {
+  if (enAttente === el) oublierLAttente();
+  /* Rien à retirer d'une ligne qui ne s'est pas allumée : écrire un
+     attribut, même pour l'enlever, fait revérifier la ligne. */
+  if (el.dataset.centre) delete el.dataset.centre;
 }
 
 export default function LigneMarque({
@@ -173,11 +275,19 @@ export default function LigneMarque({
           });
       },
       /*
-       * Huit cents pixels d'avance, et non trois cents : la réponse est
-       * devenue légère (huit adresses), on peut la demander deux ou
-       * trois lignes avant qu'elle ne serve, et la trouver prête.
+       * LA MÊME AVANCE QUE LES PHOTOS : un écran au-dessus, deux et
+       * demi en dessous (voir `MARGE_D_AVANCE`).
+       *
+       * Huit cents pixels, c'était moins d'un écran de téléphone. Or
+       * une ligne a deux allers-retours à faire avant de montrer quoi
+       * que ce soit : cette demande-ci, puis ses quatre vignettes. En
+       * défilant un peu vite, on arrivait sur des cases vides, mesuré :
+       * une vignette sur deux attendue, une seconde et demie en
+       * moyenne. La réponse est légère (huit adresses) et gardée par
+       * le CDN : la demander plus tôt ne coûte rien de plus, et les
+       * vignettes partent dès qu'elle est là.
        */
-      { rootMargin: "800px" }
+      { rootMargin: MARGE_D_AVANCE }
     );
 
     guetteur.observe(el);
@@ -205,14 +315,17 @@ export default function LigneMarque({
     const guetteur = new IntersectionObserver(
       (entrees) => {
         for (const e of entrees) {
-          if (e.isIntersecting) el.dataset.centre = "1";
-          else delete el.dataset.centre;
+          if (e.isIntersecting) entrerAuCentre(el);
+          else quitterLeCentre(el);
         }
       },
       { rootMargin: "-46% 0px -46% 0px" }
     );
     guetteur.observe(el);
-    return () => guetteur.disconnect();
+    return () => {
+      guetteur.disconnect();
+      quitterLeCentre(el);
+    };
   }, [halo]);
 
   const visuel = brand.logo_url ?? brand.cover_url;
@@ -325,7 +438,7 @@ export default function LigneMarque({
        * pas vivre dans un <a> — le navigateur refuse cette imbrication —
        * et le cœur comme l'aperçu doivent garder leur propre clic.
        */}
-      <Link
+      <LienPatient
         href={`/marques/${brand.slug}`}
         aria-label={brand.name}
         data-calque=""
@@ -478,8 +591,8 @@ export default function LigneMarque({
                   {source && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      /* Elle arrive en fondu plutôt que d'un coup : voir
-                         `image-progressive`. */
+                      /* Demandée avant d'entrer à l'écran, révélée à
+                         l'arrivée : voir `image-progressive`. */
                       data-progressif=""
                       suppressHydrationWarning
                       src={vignette(source, 160)}
@@ -577,7 +690,7 @@ export default function LigneMarque({
            * vraiment. Ouvrir un panneau vide sur « Aperçu » est la
            * façon la plus sûre de faire croire à une page cassée.
            */
-          <Link
+          <Link prefetch={false}
             href={`/marques/${brand.slug}`}
             className={
               halo

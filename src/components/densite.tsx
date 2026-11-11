@@ -199,7 +199,7 @@ export function SelecteurDensite({
                pas, il n'est pas annoncé partout. */
             aria-label={LIBELLES[d].titre}
             title={LIBELLES[d].aide}
-            className={`grid min-h-[36px] min-w-[32px] place-items-center px-1 transition sm:min-h-[26px] sm:min-w-[27px] ${
+            className={`cible-doigt grid min-h-[36px] min-w-[32px] place-items-center px-1 transition sm:min-h-[26px] sm:min-w-[27px] ${
               densite === d ? "text-white" : "text-white/60 hover:text-white/85"
             }`}
           >

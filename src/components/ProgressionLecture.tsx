@@ -10,11 +10,22 @@ import { useEffect, useRef } from "react";
  * son catalogue, l'annuaire complet — on ne sait jamais s'il reste
  * trois écrans ou trente. Cette ligne le dit sans rien demander.
  *
- * TOUT PASSE PAR UNE SEULE VARIABLE, `--lecture`, posée sur <html> et
- * valant de 0 à 1. Le reste est du CSS : le remplissage est un
- * `scaleX`, la pointe une position calculée. Aucun style n'est écrit
- * élément par élément depuis le JavaScript, ce qui évite de refaire
- * travailler le navigateur à chaque image.
+ * LE REMPLISSAGE EST UN `scaleX`, LA POINTE UNE TRANSLATION : deux
+ * transformations que la carte graphique fait seule. Là où le
+ * navigateur sait lier une animation au défilement, c'est lui qui les
+ * pilote, sans une ligne de JavaScript (voir `seule`, plus bas).
+ * Ailleurs, tout passe par une seule variable, `--lecture`, valant de
+ * 0 à 1, écrite ici.
+ *
+ * ELLE EST POSÉE SUR LA LIGNE ELLE-MÊME, ET PLUS SUR <html>. C'était la
+ * plus grosse dépense du site pendant qu'on défile, sur toutes les
+ * pages. Une variable CSS s'hérite : la changer sur <html> oblige le
+ * navigateur à recalculer le style de CHAQUE élément de la page, et on
+ * la changeait à chaque image. Mesuré sur /pieces, processeur bridé
+ * quatre fois : 1,4 seconde de recalcul de style pour trois secondes
+ * de défilement, et une image sur deux qui sautait. Posée ici, elle ne
+ * concerne plus que les trois éléments qui la lisent : le même
+ * défilement coûte six fois moins et tient ses soixante images.
  *
  * La mesure est calée sur `requestAnimationFrame` : un évènement de
  * défilement peut se produire cent fois par seconde, l'écran ne se
@@ -24,9 +35,15 @@ import { useEffect, useRef } from "react";
 export default function ProgressionLecture() {
   const zone = useRef<HTMLDivElement>(null);
 
+  const ligne = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const racine = document.documentElement;
+    const trait = ligne.current;
+    if (!trait) return;
     let image = 0;
+    /* La dernière valeur écrite : inutile de réécrire la même. */
+    let ecrite = "";
 
     /*
      * LA HAUTEUR DE LA PAGE EST MISE EN CACHE, ET C'EST TOUT LE SUJET.
@@ -45,6 +62,34 @@ export default function ProgressionLecture() {
      */
     let hauteur = 0;
 
+    /*
+     * QUAND LE NAVIGATEUR SAIT LE FAIRE SEUL, ON NE CALCULE PLUS RIEN.
+     *
+     * Chrome, Edge et les Safari récents savent lier une animation au
+     * défilement (`animation-timeline: scroll()`). Le remplissage et la
+     * pointe sont alors deux transformations pilotées par la même
+     * position de page, dans le fil qui fait défiler : rien ne passe
+     * plus par ce composant pendant qu'on descend, et la ligne suit le
+     * doigt même quand la page est occupée ailleurs. Voir
+     * `.progression-remplie` dans globals.css.
+     *
+     * Mesuré sur la vitrine, processeur bridé quatre fois : écrire la
+     * variable à chaque image obligeait encore le navigateur à refaire
+     * le découpage en calques de toute la page (270 ms sur trois
+     * secondes de défilement). Liée au défilement, la ligne n'en coûte
+     * plus aucun.
+     *
+     * Ailleurs (Firefox, les Safari d'avant la version 26), la variable
+     * reste écrite ici, comme avant.
+     *
+     * Dans les deux cas, ce composant garde une chose : dire si la page
+     * est assez longue pour que la ligne serve (`data-lecture`).
+     */
+    const seule =
+      typeof CSS !== "undefined" &&
+      typeof CSS.supports === "function" &&
+      CSS.supports("animation-timeline: scroll()");
+
     const remesurerLaPage = () => {
       hauteur = document.body.scrollHeight - window.innerHeight;
     };
@@ -60,15 +105,26 @@ export default function ProgressionLecture() {
        */
       const utile = hauteur > 600;
       if (!utile) {
-        delete racine.dataset.lecture;
-        racine.style.setProperty("--lecture", "0");
+        if (racine.dataset.lecture) delete racine.dataset.lecture;
+        if (!seule && ecrite !== "0") {
+          ecrite = "0";
+          trait.style.setProperty("--lecture", "0");
+        }
         return;
       }
 
-      racine.dataset.lecture = "1";
+      /* Un attribut sur <html> ne se réécrit que s'il change : même à
+         valeur égale, le navigateur revérifie ce qui en dépend. */
+      if (racine.dataset.lecture !== "1") racine.dataset.lecture = "1";
 
-      const part = Math.min(1, Math.max(0, window.scrollY / hauteur));
-      racine.style.setProperty("--lecture", String(part));
+      if (seule) return;
+
+      /* Quatre décimales : au-delà, on réécrirait la variable pour un
+         déplacement plus petit qu'un pixel. */
+      const part = Math.min(1, Math.max(0, window.scrollY / hauteur)).toFixed(4);
+      if (part === ecrite) return;
+      ecrite = part;
+      trait.style.setProperty("--lecture", part);
     };
 
     const planifier = () => {
@@ -82,7 +138,9 @@ export default function ProgressionLecture() {
     };
 
     replanifier();
-    window.addEventListener("scroll", planifier, { passive: true });
+    /* Liée au défilement par le navigateur, la ligne n'a pas besoin
+       qu'on l'écoute défiler. */
+    if (!seule) window.addEventListener("scroll", planifier, { passive: true });
     window.addEventListener("resize", replanifier);
 
     /*
@@ -156,7 +214,7 @@ export default function ProgressionLecture() {
       onPointerDown={suivreLePointeur}
       role="presentation"
     >
-      <div className="progression-lecture" aria-hidden="true">
+      <div ref={ligne} className="progression-lecture" aria-hidden="true">
         <span className="progression-remplie" />
         <span className="progression-tete">
           {/* eslint-disable-next-line @next/next/no-img-element */}

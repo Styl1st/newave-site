@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { couverture } from "./PostCard";
 import Halo from "./Halo";
 import RoueDesMarques, { type FicheDeRoue } from "./RoueDesMarques";
@@ -59,7 +60,7 @@ export default function ColonneAccueil({
             {marques.map((b) => {
               const visuel = b.logo_url ?? b.cover_url;
               return (
-                <Link key={b.id} href={`/marques/${b.slug}`} className="bulle">
+                <LienPatient key={b.id} href={`/marques/${b.slug}`} className="bulle">
                   <span className="bulle-anneau">
                     <span className={`bulle-rond ${b.logo_url ? "" : "bulle-photo"}`}>
                       {visuel ? (
@@ -75,7 +76,7 @@ export default function ColonneAccueil({
                     </span>
                   </span>
                   <span className="bulle-nom">{b.name}</span>
-                </Link>
+                </LienPatient>
               );
             })}
 
@@ -128,7 +129,7 @@ export default function ColonneAccueil({
               const cover = couverture(p);
 
               return (
-                <Link key={p.id} href={`/posts/${p.slug}`} className="post-halo" data-halo="">
+                <LienPatient key={p.id} href={`/posts/${p.slug}`} className="post-halo" data-halo="">
                   <span className="post-halo-vignette">
                     {cover && (
                       /* eslint-disable-next-line @next/next/no-img-element */
@@ -139,7 +140,7 @@ export default function ColonneAccueil({
                     {p.brand && <span className="post-halo-marque">{p.brand.name}</span>}
                     <span className="post-halo-titre">{p.title}</span>
                   </span>
-                </Link>
+                </LienPatient>
               );
             })}
           </div>

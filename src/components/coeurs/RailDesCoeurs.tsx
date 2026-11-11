@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LienPatient from "../LienPatient";
 import { IconCoeur } from "../Icons";
 import { CoeurPlein } from "../LigneMarque";
 import { enChiffres } from "../chiffres";
@@ -102,7 +103,7 @@ export default function RailDesCoeurs({
 
               return (
                 <li key={`${brand.id}-${quand}`}>
-                  <Link
+                  <LienPatient
                     href={`/marques/${brand.slug}`}
                     className="group flex items-center gap-3 no-underline"
                   >
@@ -139,7 +140,7 @@ export default function RailDesCoeurs({
                     </span>
 
                     <CoeurPlein className="h-3.5 w-3.5 shrink-0 text-white/35" />
-                  </Link>
+                  </LienPatient>
                 </li>
               );
             })}

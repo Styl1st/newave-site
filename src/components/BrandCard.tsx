@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LienPatient from "./LienPatient";
 import FavoriteButton from "./FavoriteButton";
 import PastilleNote from "./PastilleNote";
 import CouvertureAnimee from "./CouvertureAnimee";
@@ -111,7 +111,7 @@ export default function BrandCard({
      * de remettre `h-full` ici et sur le bloc en dessous.
      */
     <div className="card-light group relative flex flex-col overflow-hidden">
-      <Link
+      <LienPatient
         href={`/marques/${brand.slug}`}
         aria-label={brand.name}
         data-calque=""

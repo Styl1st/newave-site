@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import LienPatient from "../LienPatient";
 import LikeButton from "../LikeButton";
-import ApercuFlou from "../ApercuFlou";
+import AttentePhoto from "../AttentePhoto";
 import { enChiffres } from "../chiffres";
 import { enEtoiles } from "../Etoiles";
 import type { PlacePiece } from "./classement";
@@ -112,8 +112,8 @@ function Marche({ place, entree }: { place: number; entree: PlacePiece }) {
         >
           {visuel ? (
             <>
-            {/* Du flou au net : voir `ApercuFlou`. */}
-            <ApercuFlou src={visuel} prioritaire />
+            {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
+            <AttentePhoto />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               data-progressif="net"
@@ -229,9 +229,9 @@ function LienPiece({
   children: React.ReactNode;
 }) {
   return interne ? (
-    <Link href={href} className={className} aria-label={label}>
+    <LienPatient href={href} className={className} aria-label={label}>
       {children}
-    </Link>
+    </LienPatient>
   ) : (
     <a href={href} target="_blank" rel="noopener noreferrer sponsored" className={className} aria-label={label}>
       {children}

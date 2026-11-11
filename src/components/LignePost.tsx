@@ -1,7 +1,7 @@
-import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { couverture, mediaEnMots } from "./PostCard";
 import { IconArrow } from "./Icons";
-import ApercuFlou from "./ApercuFlou";
+import AttentePhoto from "./AttentePhoto";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Post } from "@/lib/types";
 
@@ -93,7 +93,7 @@ export default function LignePost({
       {/* Le lien passe DERRIÈRE la ligne, en calque : « Voir la marque »
           est un lien lui aussi, et un <a> ne peut pas en contenir un
           autre. */}
-      <Link
+      <LienPatient
         href={`/posts/${post.slug}`}
         aria-label={post.title}
         data-calque=""
@@ -108,8 +108,8 @@ export default function LignePost({
       >
         {cover ? (
           <>
-            {/* Du flou au net : voir `ApercuFlou`. */}
-            <ApercuFlou src={cover} />
+            {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
+            <AttentePhoto />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               data-progressif=""
@@ -161,14 +161,14 @@ export default function LignePost({
            * n'affiche rien plutôt qu'un lien mort.
            */}
           {post.brand && (
-            <Link
+            <LienPatient intention
               href={`/marques/${post.brand.slug}`}
               className="pointer-events-auto ml-auto inline-flex shrink-0 items-center gap-1.5 py-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/75 underline-offset-4 transition hover:text-white hover:underline"
             >
               <span className="hidden sm:inline">Voir la marque</span>
               <span className="sm:hidden">La marque</span>
               <IconArrow className="h-3.5 w-3.5" />
-            </Link>
+            </LienPatient>
           )}
         </div>
       </div>

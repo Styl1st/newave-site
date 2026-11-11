@@ -1,5 +1,5 @@
-import Link from "next/link";
-import ApercuFlou from "./ApercuFlou";
+import LienPatient from "./LienPatient";
+import AttentePhoto from "./AttentePhoto";
 import { contientUneVideo, premiereImage } from "@/lib/medias";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import type { Post } from "@/lib/types";
@@ -143,12 +143,12 @@ export default function PostCard({
     const surtitre = [marque, mediaEnMots(post)].filter(Boolean).join(" · ");
 
     return (
-      <Link href={`/posts/${post.slug}`} className="group block">
+      <LienPatient href={`/posts/${post.slug}`} className="group block">
         <div className="relative aspect-4/5 w-full overflow-hidden rounded-[4px] bg-white/8 shadow-[0_18px_40px_-22px_rgba(20,6,50,0.9)]">
           {cover ? (
             <>
-              {/* Du flou au net : voir `ApercuFlou`. */}
-              <ApercuFlou src={cover} />
+              {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
+              <AttentePhoto />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 data-progressif=""
@@ -191,19 +191,19 @@ export default function PostCard({
             </p>
           )}
         </div>
-      </Link>
+      </LienPatient>
     );
   }
 
   return (
-    <Link href={`/posts/${post.slug}`} className="card-light group block overflow-hidden">
+    <LienPatient href={`/posts/${post.slug}`} className="card-light group block overflow-hidden">
       <div className="relative z-3">
         {/* Format 4:5, celui d'Instagram : tes visuels tombent juste. */}
         <div className="relative aspect-4/5 w-full overflow-hidden bg-[#e6dcfb]">
           {cover ? (
             <>
-              {/* Du flou au net : voir `ApercuFlou`. */}
-              <ApercuFlou src={cover} />
+              {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
+              <AttentePhoto />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 data-progressif=""
@@ -257,6 +257,6 @@ export default function PostCard({
           )}
         </div>
       </div>
-    </Link>
+    </LienPatient>
   );
 }

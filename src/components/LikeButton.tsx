@@ -122,9 +122,11 @@ export default function LikeButton({
         aria-pressed={liked}
         aria-label={liked ? "Retirer mon coup de cœur" : "Ajouter à mes coups de cœur"}
         title={liked ? "Mon coup de cœur" : "Coup de cœur"}
-        /* La cible fait 32 px pour le doigt, le cœur seize : c'est à
-           celui qui le pose de le recaler, voir `ProductCard`. */
-        className={`inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 px-1.5 text-[11px] font-bold transition active:scale-90 disabled:opacity-60 ${
+        /* Le bouton fait 32 px, le cœur seize : c'est à celui qui le
+           pose de le recaler, voir `ProductCard`. Au doigt, la zone
+           touchable déborde du bouton jusqu'à 44 px, sans rien changer
+           à ce qu'on voit : voir `.cible-doigt`. */
+        className={`cible-doigt inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 px-1.5 text-[11px] font-bold transition active:scale-90 disabled:opacity-60 ${
           liked ? "text-white" : "text-white/55 hover:text-white"
         }`}
       >

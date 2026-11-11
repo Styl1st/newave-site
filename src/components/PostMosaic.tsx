@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LignePost, { dateCourte } from "./LignePost";
-import ApercuFlou from "./ApercuFlou";
+import AttentePhoto from "./AttentePhoto";
 import PostCard, { couverture, porteUneVideo } from "./PostCard";
 import { IconLoupe } from "./Icons";
 import Suggestions from "./recherche/Suggestions";
@@ -854,6 +855,12 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
                 onKeyDown={toucheDansLeChamp}
                 placeholder={jetons.length > 0 ? "Affiner…" : "Chercher un post, une marque, un thème…"}
                 aria-label="Chercher un post"
+                /* Le clavier du téléphone : une touche « Rechercher », et ni
+                   majuscule forcée ni correction sur un nom de marque. */
+                enterKeyHint="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 autoComplete="off"
                 className="requete-champ"
               />
@@ -904,7 +911,7 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
                       key={c.cle}
                       type="button"
                       onClick={() => poser(c)}
-                      className="text-[13px] font-semibold text-white/85 transition hover:text-white"
+                      className="cible-doigt-ligne text-[13px] font-semibold text-white/85 transition hover:text-white"
                     >
                       {c.valeur}
                       <sup className="ml-[3px] text-[9px] font-bold text-white/50">{c.compte}</sup>
@@ -919,7 +926,7 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
                   onClick={() => setOuvert((v) => !v)}
                   aria-expanded={ouvert}
                   aria-controls="filtres-posts"
-                  className="text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
+                  className="cible-doigt-ligne text-[13px] font-bold text-white/70 underline underline-offset-[3px] transition hover:text-white"
                 >
                   Tous les critères
                   {actifs > 0 && <span className="ml-1.5 text-white/50">({actifs})</span>}
@@ -940,7 +947,7 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
                   type="button"
                   onClick={() => setTri(cle)}
                   aria-pressed={tri === cle}
-                  className={`py-1.5 text-[12.5px] font-bold transition ${
+                  className={`cible-doigt py-1.5 text-[12.5px] font-bold transition ${
                     tri === cle ? "text-white" : "text-white/60 hover:text-white"
                   }`}
                 >
@@ -1093,14 +1100,13 @@ function ALaUne({ post }: { post: Post }) {
        les deux modes. Sans lui, le mode clair le passait en encre, sur
        une photo assombrie, et la une devenait illisible. */
     <article className="hors-pivot rise rise-2 relative mb-2 overflow-hidden rounded-[4px] shadow-[0_24px_60px_-26px_rgba(20,6,50,0.9)]">
-      <Link href={`/posts/${post.slug}`} className="group block">
+      <LienPatient href={`/posts/${post.slug}`} className="group block">
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(var(--voile),0.5)] sm:aspect-[16/9] lg:aspect-[21/9]">
           {cover && (
             <>
-              {/* Du flou au net : voir `ApercuFlou`. La une est la plus
-                  grande photo du site, c'est elle qui attendait le plus
-                  longtemps sur un cadre vide. */}
-              <ApercuFlou src={cover} prioritaire />
+              {/* L'attente, retirée dès que la photo est là : voir
+                  `AttentePhoto`. */}
+              <AttentePhoto />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 data-progressif="net"
@@ -1150,7 +1156,7 @@ function ALaUne({ post }: { post: Post }) {
             </p>
           </div>
         </div>
-      </Link>
+      </LienPatient>
     </article>
   );
 }

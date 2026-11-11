@@ -7,6 +7,7 @@ import CurseurPrix from "./CurseurPrix";
 import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
 import ProductCard, { CADRES_VITRINE, DECALAGES_VITRINE } from "./ProductCard";
+import { prechaufferVignette } from "./VignetteDefilante";
 import { IconCheck, IconChevron, IconFiltre, IconLoupe } from "./Icons";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
@@ -17,6 +18,7 @@ import type { Critere } from "./recherche/Jeton";
 import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
+import { estUneVideo, premiereImage } from "@/lib/medias";
 import type { Product } from "@/lib/types";
 import type { CompteDuCatalogue } from "@/lib/queries";
 import Raccourci from "@/components/Raccourci";
@@ -908,10 +910,65 @@ export default function PieceDirectory({
    * revenu court. Et l'ordre ne bouge pas entre deux appels puisque la
    * graine ne bouge pas — c'est précisément à quoi elle sert.
    */
+  /*
+   * LE LOT SUIVANT EST PRÊT AVANT QU'ON LE DEMANDE.
+   *
+   * Cliquer sur « Charger 24 de plus » lançait la requête, puis, une
+   * fois les tuiles posées, le chargement de leurs photos : on
+   * regardait un bouton grisé, puis vingt-quatre cadres vides se
+   * remplir. Or on sait très bien ce qui va être demandé, et quand :
+   * la tranche suivante, dès que le pied de la grille approche.
+   *
+   * Quand il arrive à un écran et demi (voir `pied`, plus bas), on va
+   * donc chercher cette tranche en silence et l'on demande déjà ses
+   * premières photos. Au clic, les pièces sont là et leurs images
+   * aussi : la suite se pose d'un coup.
+   *
+   * La promesse est gardée avec SON adresse. Un filtre qui change entre
+   * temps change l'adresse, et la tranche préparée pour l'ancienne
+   * liste est simplement ignorée.
+   */
+  type Page = { pieces: Product[]; total: number };
+  const avance = useRef<{ url: string; page: Promise<Page> } | null>(null);
+
+  const preparerLaSuite = useCallback(() => {
+    if (enCours) return;
+    const url = adresse(lot.length);
+    if (avance.current?.url === url) return;
+
+    /* Sans reprise : c'est une avance, pas une demande. Si elle échoue,
+       le clic refera la requête normalement, avec ses reprises. */
+    const page = chercherAvecReprises<Page>(url, undefined, []);
+    avance.current = { url, page };
+    page
+      .then((recue) => {
+        if (avance.current?.url !== url) return;
+        /* Les douze premières : ce qu'on verra en arrivant sur la suite.
+           Les autres sont prises en charge par l'avance au défilement
+           (voir `lib/image-progressive`). */
+        for (const p of recue.pieces.slice(0, 12)) {
+          prechaufferVignette(
+            premiereImage(p.images) ?? (estUneVideo(p.image_url) ? null : p.image_url)
+          );
+        }
+      })
+      .catch(() => {
+        if (avance.current?.url === url) avance.current = null;
+      });
+  }, [adresse, enCours, lot.length]);
+
   const charger = useCallback(() => {
     if (enCours) return;
     setEnCours(true);
-    chercherAvecReprises<{ pieces: Product[]; total: number }>(adresse(lot.length))
+
+    const url = adresse(lot.length);
+    const prete = avance.current?.url === url ? avance.current.page : null;
+    avance.current = null;
+
+    (prete
+      ? prete.catch(() => chercherAvecReprises<Page>(url))
+      : chercherAvecReprises<Page>(url)
+    )
       .then((page) => {
         setLot((deja) => {
           /* Ceinture et bretelles : si deux clics passaient malgré le
@@ -1134,6 +1191,30 @@ export default function PieceDirectory({
      demandé. */
   const visibles = lot;
   const reste = Math.max(total - visibles.length, 0);
+
+  /*
+   * Le pied de la grille, guetté à un écran et demi : c'est lui qui
+   * déclenche la préparation du lot suivant (voir `preparerLaSuite`).
+   * Rien pour qui a demandé d'économiser ses données : on ne charge pas
+   * en avance ce qui ne sera peut-être jamais regardé.
+   */
+  const pied = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = pied.current;
+    if (!el || reste <= 0 || typeof IntersectionObserver === "undefined") return;
+
+    const lien = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (lien?.saveData) return;
+
+    const veille = new IntersectionObserver(
+      (entrees) => {
+        if (entrees.some((e) => e.isIntersecting)) preparerLaSuite();
+      },
+      { rootMargin: "0px 0px 150% 0px" }
+    );
+    veille.observe(el);
+    return () => veille.disconnect();
+  }, [preparerLaSuite, reste]);
 
   /*
    * LE PIED N'A PLUS QU'UN NOMBRE, ET C'EST LE BON.
@@ -1674,6 +1755,12 @@ export default function PieceDirectory({
               onFocus={ouvrirAuDoigt}
               placeholder="Chercher une pièce…"
               aria-label="Chercher une pièce, une marque"
+              /* Le clavier du téléphone : une touche « Rechercher », et ni
+                 majuscule forcée ni correction sur un nom de marque. */
+              enterKeyHint="search"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               autoComplete="off"
               className="champ champ-loupe w-full"
             />
@@ -1695,6 +1782,12 @@ export default function PieceDirectory({
                 onKeyDown={toucheDansLeChamp}
                 placeholder="Chercher une pièce, une marque…"
                 aria-label="Chercher une pièce, une marque"
+                /* Le clavier du téléphone : une touche « Rechercher », et ni
+                   majuscule forcée ni correction sur un nom de marque. */
+                enterKeyHint="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 autoComplete="off"
                 className="requete-champ"
               />
@@ -2150,7 +2243,10 @@ export default function PieceDirectory({
                   Un filtre posé, il devient le compte exact de ce que ce
                   filtre retient DANS LE CATALOGUE ENTIER. */}
               {reste > 0 ? (
-                <div className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
+                <div
+                  ref={pied}
+                  className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5"
+                >
                   <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
                     {enChiffres(visibles.length)} sur {enChiffres(total)} affichées
                   </p>

@@ -170,13 +170,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://cdn.shopify.com" />
         <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://cdn.shopify.com" />
-        {/* Le passage du flou au net, branché avant la première image :
-            aucune ne peut finir de charger sans qu'il le sache. Voir
+        {/* Les photos prêtes avant d'être vues, branché avant la
+            première image : aucune ne peut finir de charger sans qu'il
+            le sache, et il prend de l'avance sur le défilement. Voir
             `lib/image-progressive`. Sans JavaScript, les photos sont
             visibles d'emblée. */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_IMAGES_PROGRESSIVES }} />
         <noscript>
-          <style>{`img[data-progressif]{opacity:1!important}.apercu-flou{display:none}`}</style>
+          <style>{`img[data-progressif]{opacity:1!important}.attente-visuel{display:none}`}</style>
         </noscript>
         {/* Sans compte, on relit ce que ce navigateur avait retenu. */}
         {!apparence && <script dangerouslySetInnerHTML={{ __html: SCRIPT_ANTI_FLASH }} />}

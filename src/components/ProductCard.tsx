@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LienPatient from "./LienPatient";
 import { IconPencil } from "./Icons";
 import LikeButton from "./LikeButton";
 import Etoiles from "./Etoiles";
@@ -106,6 +107,7 @@ function ProductLink({
   external,
   className,
   children,
+  double = false,
   // Le lien posé en calque n'a pas de texte visible : son intitulé doit
   // donc lui être donné, sans quoi un lecteur d'écran annonce « lien »
   // et rien d'autre.
@@ -116,6 +118,12 @@ function ProductLink({
   className?: string;
   children: React.ReactNode;
   "aria-label"?: string;
+  /**
+   * Ce lien DOUBLE celui de la photo (le nom de la pièce, juste
+   * dessous) : même adresse, et c'est l'autre qui prépare la page. Le
+   * préparer ici aussi ne ferait que poser un second guetteur par tuile.
+   */
+  double?: boolean;
 }) {
   if (external) {
     return (
@@ -130,10 +138,19 @@ function ProductLink({
       </a>
     );
   }
+  if (double) {
+    return (
+      <Link href={href} prefetch={false} className={className} aria-label={etiquette}>
+        {children}
+      </Link>
+    );
+  }
+  /* La page d'une pièce ne se prépare que si l'on s'arrête sur sa
+     tuile : voir `LienPatient`. */
   return (
-    <Link href={href} className={className} aria-label={etiquette}>
+    <LienPatient href={href} className={className} aria-label={etiquette}>
       {children}
-    </Link>
+    </LienPatient>
   );
 }
 
@@ -282,15 +299,16 @@ export default function ProductCard({
         <div className="mt-2.5 flex items-start gap-2">
           <div className="min-w-0 flex-1">
             {showBrand && product.brand && (
-              <Link
+              <LienPatient
+                intention
                 href={`/marques/${product.brand.slug}`}
                 className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/60 transition hover:text-white"
               >
                 {product.brand.name}
-              </Link>
+              </LienPatient>
             )}
 
-            <ProductLink href={href} external={!internal}>
+            <ProductLink href={href} external={!internal} double>
               <h3 className="m-0 mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-white">
                 {product.name}
               </h3>
@@ -321,6 +339,7 @@ export default function ProductCard({
             {canManage && brandSlug && (
               <Link
                 href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
+                prefetch={false}
                 aria-label={`Modifier ${product.name}`}
                 className="mt-1.5 inline-block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/50 underline-offset-[3px] transition hover:text-white hover:underline"
               >
@@ -422,6 +441,7 @@ export default function ProductCard({
         {canManage && brandSlug && (
           <Link
             href={`/espace-marque/${brandSlug}/pieces/${product.id}`}
+            prefetch={false}
             aria-label={`Modifier ${product.name}`}
             title="Modifier cette pièce"
             className="absolute right-2.5 top-2.5 z-10 grid h-9 w-9 place-items-center rounded-full bg-[rgba(20,8,50,0.7)] text-white backdrop-blur-sm transition hover:bg-[rgba(20,8,50,0.95)] active:scale-95"
@@ -437,15 +457,16 @@ export default function ProductCard({
             Voir `Teinte` et `.pied-carte`. */}
         <div className="piece-infos pied-carte flex flex-1 flex-col p-4">
           {showBrand && product.brand && (
-            <Link
+            <LienPatient
+              intention
               href={`/marques/${product.brand.slug}`}
               className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#6a5a92] hover:text-[var(--color-ink)]"
             >
               {product.brand.name}
-            </Link>
+            </LienPatient>
           )}
 
-          <ProductLink href={href} external={!internal}>
+          <ProductLink href={href} external={!internal} double>
             <h3 className="m-0 mt-1 line-clamp-2 text-[14px] font-extrabold leading-snug tracking-[-0.01em] text-[var(--color-ink)]">
               {product.name}
             </h3>

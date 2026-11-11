@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 import { estUneVideo } from "@/lib/medias";
-import ApercuFlou from "./ApercuFlou";
+import AttentePhoto from "./AttentePhoto";
 
 /**
  * Carrousel à défilement natif.
@@ -177,8 +177,8 @@ export default function Carousel({
               key={src + i}
               className="relative w-full shrink-0 snap-center overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
             >
-              {/* Du flou au net : voir `ApercuFlou`. */}
-              <ApercuFlou src={src} prioritaire={i === 0} />
+              {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
+              <AttentePhoto />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 data-progressif={i === 0 ? "net" : ""}

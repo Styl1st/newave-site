@@ -1167,8 +1167,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 /* ---------- où l'on en est dans la page ----------
 
    Une ligne en bas de l'écran, et le sigle de la marque à sa pointe.
-   Tout dépend de `--lecture`, entre 0 et 1, posée sur <html> par le
-   composant ProgressionLecture. */
+   Tout dépend de `--lecture`, entre 0 et 1, posée sur la ligne
+   elle-même par le composant ProgressionLecture (et surtout pas sur
+   <html> : une variable s'hérite, et la page entière serait recalculée
+   à chaque image du défilement). */
 /* La zone qu'on peut attraper.
    ----------------------------
    Quatorze pixels de haut pour une ligne qui en fait trois : une cible
@@ -1243,33 +1245,77 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
   position: absolute;
   bottom: 7px;
   /* Bornée aux deux extrémités : sans les quatorze pixels, le sigle
-     serait à moitié hors de l'écran au départ et à l'arrivée. */
-  left: calc(14px + var(--lecture, 0) * (100% - 28px));
-  translate: -50% 0;
+     serait à moitié hors de l'écran au départ et à l'arrivée.
+
+     LA POINTE AVANCE PAR `transform`, ET PLUS PAR `left`. Ce cadre fait
+     toute la largeur utile de la ligne, et on le translate d'une part
+     de SA PROPRE largeur : c'est exactement la même course que
+     l'ancien `left: calc(14px + part × (100% − 28px))`, mais une
+     position se recalcule dans la mise en page à chaque image, alors
+     qu'une translation est confiée à la carte graphique. Le sigle, lui,
+     se recentre sur le bord gauche du cadre (voir plus bas). */
+  left: 14px;
+  right: 14px;
+  transform: translate3d(calc(var(--lecture, 0) * 100%), 0, 0);
   display: block;
+  pointer-events: none;
   transition: opacity .35s ease;
 }
 
-/* ---- une seule mécanique, et la plus sûre ----
+/* ---- liée au défilement, là où le navigateur sait le faire ----
 
-   J'avais ajouté ici un chemin « animation pilotée par le défilement »,
-   plus lisse en théorie. En pratique il pilotait le remplissage par une
-   échelle et la pointe par une translation, deux propriétés différentes
-   calculées sur deux bases différentes : quand l'une des deux ne
-   s'appliquait pas exactement comme prévu, la ligne se remplissait
-   entièrement pendant que le sigle restait au milieu. C'est le défaut
-   de calibrage constaté sur ordinateur.
+   UN PREMIER ESSAI AVAIT ÉTÉ RETIRÉ, ET IL FAUT DIRE POURQUOI CELUI-CI
+   TIENT. Il pilotait le remplissage par une échelle et la pointe par
+   une position, deux propriétés calculées sur deux bases différentes :
+   la ligne se remplissait entièrement pendant que le sigle restait au
+   milieu.
 
-   On revient donc à une seule source, la variable `--lecture` posée par
-   le JavaScript, qui alimente le remplissage ET la pointe. Les deux ne
-   peuvent plus diverger, puisqu'ils lisent le même nombre. La mesure
-   est calée sur le rafraîchissement de l'écran, ce qui suffit largement
-   pour une ligne de trois pixels. */
+   Ce défaut n'existe plus par construction. La pointe est maintenant un
+   cadre de la largeur utile de la ligne, translaté d'une part de SA
+   PROPRE largeur (voir `.progression-tete`) : remplissage et pointe
+   sont deux transformations, de 0 à 100 %, sur la MÊME ligne de temps,
+   celle du défilement de la page. Ils lisent la même position, dans la
+   même image.
+
+   Ce que ça change : plus rien ne passe par le JavaScript pendant
+   qu'on défile. Les deux transformations sont jouées par le fil qui
+   fait défiler la page, donc la ligne suit le doigt même quand la page
+   travaille, et le défilement ne réveille plus le reste du navigateur
+   (voir `ProgressionLecture`, qui donne la mesure).
+
+   `scroll(root)` et non `scroll()` : la zone est en position fixe, on
+   nomme la page plutôt que de laisser le navigateur chercher.
+
+   Sans cette fonction (Firefox, Safari avant 26), les deux règles
+   ci-dessus restent seules en jeu : la variable `--lecture`, écrite
+   par le JavaScript, alimente le remplissage ET la pointe. Sur une
+   page trop courte pour défiler, la ligne de temps est inactive et
+   l'on retombe aussi sur elles, c'est-à-dire sur zéro. */
+@supports (animation-timeline: scroll()) {
+  .progression-remplie {
+    animation: lectureRemplie linear both;
+    animation-timeline: scroll(root block);
+  }
+  .progression-tete {
+    animation: lecturePointe linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+@keyframes lectureRemplie {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes lecturePointe {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(100%, 0, 0); }
+}
 
 .progression-tete img {
   display: block;
   width: 22px;
   height: auto;
+  /* Centré sur le bord gauche de son cadre, qui est la pointe. */
+  margin-left: -11px;
   /* Le sigle est blanc : sur une carte claire il disparaîtrait. La
      première ombre le détache, la seconde reprend la couleur du thème
      et lui donne l'air d'avancer en éclairant devant lui. */
@@ -1375,20 +1421,65 @@ html[data-menu="1"] .progression-lecture { opacity: 0; }
   animation: none !important;
 }
 
-/* Une translation verticale, un très léger recul et un soupçon de
-   flou : c'est le flou qui donne la sensation d'un objet qui arrive
-   plutôt que d'un calque dont on monte l'opacité. */
+/* ---------- un décor immobile tient sur UN calque ----------
+
+   Le décor ne bougeait plus, mais il coûtait encore à chaque image.
+
+   `will-change: transform` prévient le navigateur qu'une couche va
+   bouger, et il lui réserve son propre calque graphique. C'est ce qu'il
+   faut quand le décor dérive. Quand il est fixe, ces calques restent
+   là, sans raison : le dégradé (deux écrans et quart de surface), la
+   lueur (deux écrans et demi), les quatre chromes, les deux rubans de
+   glyphes. Et un calque réservé oblige tout ce qui est peint au-dessus
+   de lui à avoir aussi le sien : le cadre, les nappes, le voile, un
+   écran entier chacun.
+
+   Mesuré sur l'accueil en 1366 × 768 : huit écrans de surface
+   translucide, empilés, que la carte graphique devait remélanger à
+   CHAQUE image dès que quelque chose changeait par-dessus, donc
+   pendant tout le défilement. Sur un téléphone à trois points par
+   pixel, ce sont aussi plus de soixante mégaoctets de mémoire vidéo,
+   pour une image qui ne change jamais.
+
+   Sans ces réservations, tout le décor est peint une fois dans un seul
+   calque opaque de la taille de l'écran. L'image est la même au pixel
+   près ; la carte graphique n'a plus qu'un rectangle à poser.
+
+   Les trois attributs qui immobilisent le décor sont visés : le fond
+   fixe (le cas par défaut), « figer les animations », et l'allègement
+   automatique des machines qui peinent (voir `Menagement`). Dès que le
+   décor redevient animé, les réservations reviennent : elles servent. */
+:is([data-fond="fixe"], [data-fige="1"], [data-allege]) :is(.bg-degrade, .bg-lueur, .chrome, .glyph-track) {
+  will-change: auto;
+}
+
+/* Une translation verticale et un très léger recul.
+
+   PLUS DE FLOU DANS CETTE ARRIVÉE, et c'est la même correction que pour
+   le panneau d'aperçu (`apercuEntree`).
+
+   Elle passait de six pixels de flou à zéro. Cette animation est le
+   repli des navigateurs sans animation liée au défilement : Safari
+   jusqu'à sa version 18, c'est-à-dire la plupart des iPhone, et
+   Firefox. Elle y joue sur CHAQUE carte, chaque tuile de pièce, chaque
+   panneau en verre. Or `filter` ne se compose pas : à chaque image, le
+   navigateur repeint la carte entière, photo comprise, puis lui repasse
+   le flou. Vingt-quatre tuiles qui arrivent ensemble, c'est vingt-quatre
+   photos refloutées soixante fois par seconde, sur les appareils les
+   moins bien armés pour ça. Et c'est ce flou-là, ajouté à celui des
+   aperçus d'images, qui donnait l'impression d'une page qui se met au
+   point par morceaux.
+
+   Il reste l'opacité et le déplacement, les deux seules choses que la
+   carte graphique anime sans repeindre. */
 @keyframes glisse {
   from {
     opacity: 0;
     transform: translate3d(0, 30px, 0) scale(.975);
-    filter: blur(6px);
   }
-  60% { filter: blur(0); }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0);
   }
 }
 
@@ -2236,6 +2327,23 @@ html[data-pied="forum"] { --pied: calc(58px + env(safe-area-inset-bottom, 0px));
     linear-gradient(115deg, #e6dcfb 0%, #f2ecff 45%, #ddd0f8 100%);
   background-size: 220% 100%;
   animation: attente 1.4s ease-in-out infinite;
+}
+/* LE DÉGRADÉ D'ATTENTE S'ARRÊTE QUAND LA PHOTO EST LÀ.
+
+   Il ne s'arrêtait jamais. L'animation fait glisser un fond
+   (`background-position`), ce que la carte graphique ne sait pas faire
+   seule : le navigateur repeint le cadre à chaque image. Sous une photo
+   chargée, qui le recouvre entièrement, il continuait donc de repeindre
+   soixante fois par seconde un dégradé que plus personne ne voit, pour
+   chaque carte de pièce à l'écran, tant que la page restait ouverte.
+   Quatre cartes visibles suffisaient à faire travailler le processeur
+   en continu sur une page immobile.
+
+   `data-charge` est posé par le script des photos à l'arrivée de
+   l'image (voir `lib/image-progressive`). Le fond reste, immobile :
+   une photo détourée garde le même aplat derrière elle. */
+.visuel:has(img[data-charge]) {
+  animation: none;
 }
 /*
    L'image se contente de recouvrir le dégradé d'attente.
@@ -6188,33 +6296,47 @@ html[data-allege] :is(.podium-marche, .podium-piece) {
   -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-white) 80%, transparent);
 }
 
-/* ---------- les photos passent du flou au net ----------
+/* ---------- les photos, prêtes avant d'être vues ----------
 
-   Une photo marquée `data-progressif` naît transparente et apparaît en
-   fondu quand le script du <head> lui pose `data-charge` (voir
-   `lib/image-progressive`). Dessous, son aperçu flou : la même photo en
-   trente-deux pixels, étirée et floutée (voir `ApercuFlou`).
+   Une photo marquée `data-progressif` naît transparente, posée sur le
+   fond de son cadre, et c'est le script du <head> qui la révèle en lui
+   posant `data-charge` (voir `lib/image-progressive`, qui raconte tout
+   le mécanisme et pourquoi l'aperçu flou est parti).
 
-   LE FLOU NE DURE QUE LE TEMPS DU CHARGEMENT. Un `filter: blur()`
-   coûte à chaque peinture ; une fois la photo nette arrivée et son
-   fondu terminé, l'aperçu passe en `visibility: hidden` et le
-   navigateur cesse de le peindre. Le site a déjà payé assez cher les
-   flous permanents (voir le décor). */
+   DEUX FAÇONS D'ARRIVER, ET C'EST LE SCRIPT QUI CHOISIT.
+
+   `direct` : la photo est là, sans transition. C'est le cas général
+   depuis que le script prend de l'avance sur le défilement : elle a
+   fini de charger hors champ, ou elle était en mémoire, ou elle est
+   arrivée avant qu'on ait eu le temps de voir le cadre vide. Un fondu
+   mettrait en scène un chargement que personne n'a vu.
+
+   `fondu` : on a vraiment regardé le cadre vide (connexion lente,
+   défilement très rapide). Elle monte alors en un quart de seconde,
+   déjà décodée. Plus court qu'avant (.45 s) : le fondu adoucit
+   l'arrivée, il ne doit pas la retarder.
+
+   LA TRANSITION D'OPACITÉ N'EXISTE QUE SUR `fondu`. Posée sur toutes
+   les photos, elle jouait aussi pour `direct`, et le navigateur
+   gardait un calque par vignette le temps du fondu : vingt-quatre
+   calques d'un coup à chaque lot de pièces. */
 img[data-progressif] {
   opacity: 0;
   /* Le zoom au survol des vignettes passe aussi par `transition` : on
      le redonne ici, sans quoi cette règle, plus précise que la classe
      de Tailwind, le ferait sauter d'un coup. */
-  transition: opacity .45s ease, transform .5s cubic-bezier(.4, 0, .2, 1);
+  transition: transform .5s cubic-bezier(.4, 0, .2, 1);
 }
 img[data-progressif][data-charge] {
   opacity: 1;
 }
-/* DANS LE PREMIER ÉCRAN, PAS DE FONDU. La photo qui fait la première
-   impression (et que les outils de mesure guettent) s'affiche dès
-   qu'elle arrive, par-dessus son aperçu flou : un fondu d'une demi-
-   seconde l'aurait retardée d'autant. Le passage du flou au net se voit
-   quand même, il est juste franc. */
+img[data-progressif][data-charge="fondu"] {
+  transition: opacity .26s ease-out, transform .5s cubic-bezier(.4, 0, .2, 1);
+}
+/* DANS LE PREMIER ÉCRAN, JAMAIS DE FONDU NI D'ATTENTE DU SCRIPT. La
+   photo qui fait la première impression (et que les outils de mesure
+   guettent) s'affiche dès qu'elle arrive, par-dessus le fond de son
+   cadre. */
 img[data-progressif="net"] {
   opacity: 1;
   transition: transform .5s cubic-bezier(.4, 0, .2, 1);
@@ -6224,26 +6346,75 @@ img[data-progressif][data-charge].opacity-70 {
   opacity: .7;
 }
 
-.apercu-flou {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Huit pixels suffisent sur une miniature de trente-deux étirée :
-     mesuré, le chargement de /pieces coûte alors autant qu'avant
-     l'aperçu, quand douze pixels le rendaient sensiblement plus cher. */
-  filter: blur(8px);
-  transform: scale(1.1);
-  pointer-events: none;
-}
-.apercu-flou:has(+ img[data-charge]),
+/* L'attente d'une photo (`AttentePhoto`) se retire dès que la photo est
+   là, et cesse de respirer : une animation qui tourne sous une image
+   opaque, c'est un calque payé pour rien. Le délai laisse le fondu se
+   terminer par-dessus elle plutôt que sur un cadre nu. */
 .attente-visuel:has(+ img[data-charge]) {
   visibility: hidden;
-  transition: visibility 0s linear .5s;
+  animation: none;
+  transition: visibility 0s linear .3s;
+}
+.attente-visuel:has(+ img[data-charge="direct"]) {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html:not([data-anim-choisi="1"]) img[data-progressif] { transition: none; }
 }
 html[data-fige="1"] img[data-progressif] { transition: none; }
+
+/* ---------- au doigt, une cible plus large que ce qu'on voit ----------
+
+   Plusieurs commandes sont dessinées petites, et c'est voulu : le cœur
+   d'une tuile, les chevrons d'une photo, les points du bandeau, les
+   critères suggérés. À la souris, on les vise sans peine. Au doigt, une
+   cible de vingt à trente-quatre pixels se rate une fois sur trois, et
+   à côté il y a presque toujours un lien : on voulait un coup de cœur,
+   on ouvre la fiche de la pièce.
+
+   On ne grossit rien. Un calque invisible déborde du bouton jusqu'à
+   quarante-quatre pixels, la taille qu'un pouce touche sans viser : le
+   dessin ne change pas d'un pixel, seule la zone qui répond s'élargit.
+
+   `pointer: coarse` : c'est le dispositif de pointage qui est
+   interrogé, pas la largeur de l'écran. Rien ne change à la souris, où
+   une zone sensible plus large que le bouton ferait réagir le survol
+   à côté de lui.
+
+   `.cible-doigt` se pose sur un bouton isolé. `.cible-doigt-ligne` sur
+   des mots qui se suivent et passent à la ligne : la zone y reste plus
+   basse, pour ne pas mordre sur la ligne voisine. */
+@media (pointer: coarse) {
+  .cible-doigt,
+  .cible-doigt-ligne {
+    position: relative;
+  }
+  .cible-doigt::after,
+  .cible-doigt-ligne::after,
+  .defile-fleche::after,
+  .bandeau-points button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    translate: -50% -50%;
+  }
+  .cible-doigt-ligne::after {
+    width: calc(100% + 10px);
+    height: max(100%, 34px);
+  }
+  /* Les points se suivent à six pixels : chacun garde sa colonne, et
+     c'est en hauteur que la zone grandit. */
+  .bandeau-points button { position: relative; }
+  .bandeau-points button::after {
+    width: calc(100% + 6px);
+  }
+  /* En grille serrée, deux chevrons de quarante-quatre pixels se
+     toucheraient au milieu d'une vignette de cent dix. */
+  .grille-serre .defile-fleche::after {
+    width: max(100%, 36px);
+  }
+}

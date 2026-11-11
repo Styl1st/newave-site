@@ -232,11 +232,16 @@ export default function BarreDuHaut({
               }}
               placeholder="Chercher une marque…"
               aria-label="Chercher une marque, une pièce"
+              /* Le clavier du téléphone : une touche « Rechercher », et ni
+                 majuscule forcée ni correction sur un nom de marque. */
+              enterKeyHint="search"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               role="combobox"
               aria-expanded={panneauGarni}
               aria-controls={PANNEAU}
               autoComplete="off"
-              enterKeyHint="search"
               className="min-w-0 flex-1 border-0 bg-transparent py-2 text-[15px] font-medium tracking-[-0.02em] text-white outline-none placeholder:text-white/50 sm:text-[19px]"
             />
 
