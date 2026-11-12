@@ -17,6 +17,11 @@
  *   — toutes mortes : la pièce est retirée de la vitrine (datée, comme
  *     le fait la relecture des catalogues, pas effacée). Si elle revient
  *     dans la boutique, la relecture suivante lève le retrait d'elle-même ;
+ *   — aucune photo ne s'affiche, sans preuve qu'elles sont mortes (un
+ *     hébergeur qui répond 403 à tout ce qui n'est pas un navigateur,
+ *     par exemple) : on regarde alors la PAGE de la pièce chez la marque.
+ *     Introuvable (404, 410) ou renvoyée vers l'accueil de la boutique,
+ *     la pièce n'est plus en vente : elle est retirée aussi ;
  *   — une pièce saisie à la main (sans `source_id`) n'est jamais retirée :
  *     aucune relecture ne la rétablirait.
  */
@@ -58,6 +63,29 @@ export type Piece = {
   source_id: string | null;
 };
 
+/** Ce que dit la page de la pièce chez la marque. */
+export type Page = "presente" | "disparue" | "inconnu";
+
+/**
+ * La page d'une pièce, d'après la réponse finale et l'adresse où l'ont
+ * menée les redirections. Une boutique qui a retiré une pièce répond
+ * 404, ou renvoie vers son accueil : Big Cartel, Shopify et WooCommerce
+ * font l'un ou l'autre.
+ */
+export function etatDeLaPage(statut: number, adresseFinale: string, adresseDemandee: string): Page {
+  if (statut === 404 || statut === 410) return "disparue";
+  if (statut < 200 || statut >= 300) return "inconnu";
+  try {
+    const fin = new URL(adresseFinale);
+    const debut = new URL(adresseDemandee);
+    const accueil = fin.pathname === "/" || fin.pathname === "";
+    if (accueil && debut.pathname !== "/" && debut.pathname !== "") return "disparue";
+  } catch {
+    return "inconnu";
+  }
+  return "presente";
+}
+
 export type Decision =
   | { action: "rien" }
   | { action: "nettoyer"; images: string[]; image_url: string | null }
@@ -75,9 +103,16 @@ export function photosDe(piece: Piece): string[] {
  * Un seul « inconnu » parmi les autres suffit à ne pas retirer la pièce :
  * on ne sait pas si cette photo-là s'affiche.
  */
-export function decider(piece: Piece, etats: Map<string, Etat>): Decision {
+export function decider(piece: Piece, etats: Map<string, Etat>, page: Page = "inconnu"): Decision {
   const photos = photosDe(piece);
   const mortes = photos.filter((a) => etats.get(a) === "morte");
+
+  /* Aucune photo ne s'affiche, et la boutique ne vend plus la pièce. */
+  const aucuneVivante = photos.length > 0 && photos.every((a) => etats.get(a) !== "vivante");
+  if (aucuneVivante && page === "disparue") {
+    return piece.source_id ? { action: "retirer" } : { action: "rien" };
+  }
+
   if (mortes.length === 0) return { action: "rien" };
 
   const restantes = photos.filter((a) => etats.get(a) !== "morte");

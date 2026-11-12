@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { adresseSure, decider, etatDuStatut, photosDe } from "../src/lib/photos-mortes.ts";
+import { adresseSure, decider, etatDeLaPage, etatDuStatut, photosDe } from "../src/lib/photos-mortes.ts";
 
 const A = "https://cdn.boutique.fr/a.jpg";
 const B = "https://cdn.boutique.fr/b.jpg";
@@ -57,4 +57,27 @@ test("quelques mortes : la galerie est nettoyée, la photo principale remplacée
 test("rien de mort : on ne touche à rien", () => {
   const p = { images: [A, B], image_url: A, source_id: "x" };
   assert.deepEqual(decider(p, etats({ [A]: "inconnu", [B]: "vivante" })), { action: "rien" });
+});
+
+test("la page de la pièce : introuvable ou renvoyée vers l'accueil, elle a disparu", () => {
+  const page = "https://www.boutique.fr/product/spider-bunny";
+  assert.equal(etatDeLaPage(404, page, page), "disparue");
+  assert.equal(etatDeLaPage(200, "https://www.boutique.fr/", page), "disparue");
+  assert.equal(etatDeLaPage(200, page, page), "presente");
+  assert.equal(etatDeLaPage(503, page, page), "inconnu");
+  assert.equal(etatDeLaPage(200, "https://www.boutique.fr/", "https://www.boutique.fr/"), "presente");
+});
+
+test("photos muettes et page disparue : la pièce importée est retirée", () => {
+  const p = { images: [A, B], image_url: A, source_id: "x" };
+  const e = etats({ [A]: "inconnu", [B]: "inconnu" });
+  assert.deepEqual(decider(p, e, "disparue"), { action: "retirer" });
+  assert.deepEqual(decider(p, e, "presente"), { action: "rien" });
+  assert.deepEqual(decider(p, e), { action: "rien" });
+  assert.deepEqual(decider({ ...p, source_id: null }, e, "disparue"), { action: "rien" });
+});
+
+test("une seule photo qui s'affiche suffit, même si la page a disparu", () => {
+  const p = { images: [A, B], image_url: A, source_id: "x" };
+  assert.equal(decider(p, etats({ [A]: "vivante", [B]: "inconnu" }), "disparue").action, "rien");
 });

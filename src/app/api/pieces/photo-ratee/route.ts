@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { connecterRobot } from "@/lib/robot";
-import { adresseSure, decider, etatDuStatut, photosDe, type Etat, type Piece } from "@/lib/photos-mortes";
+import {
+  adresseSure,
+  decider,
+  etatDeLaPage,
+  etatDuStatut,
+  photosDe,
+  type Etat,
+  type Page,
+  type Piece,
+} from "@/lib/photos-mortes";
 
 /**
  * UNE PHOTO DE PIÈCE N'A PAS PU S'AFFICHER CHEZ UN VISITEUR.
@@ -9,8 +18,9 @@ import { adresseSure, decider, etatDuStatut, photosDe, type Etat, type Piece } f
  * Le script du <head> envoie ici les identifiants des pièces dont une
  * photo a échoué (voir `lib/image-progressive`). Le serveur ne croit pas
  * le navigateur sur parole : il relit la pièce en base, va voir lui-même
- * chaque photo chez son hébergeur, et n'agit que sur une preuve, un 404
- * ou un 410. Voir `lib/photos-mortes` pour la règle.
+ * chaque photo chez son hébergeur, et n'agit que sur une preuve : un 404
+ * ou un 410 sur les photos, ou, si aucune ne s'affiche, la page de la
+ * pièce introuvable chez la marque. Voir `lib/photos-mortes`.
  *
  * Ce qu'un appel malveillant peut faire : nous faire relire des photos
  * déjà en base, à un rythme borné. Il ne choisit ni les adresses lues,
@@ -45,24 +55,35 @@ function aLeDroitDeLire(): boolean {
 }
 
 /**
- * L'état d'une photo chez son hébergeur. Les redirections sont suivies
- * à la main, trois au plus, et chaque étape doit rester une adresse
- * sûre. On ne lit que les en-têtes : le corps est abandonné aussitôt.
+ * On se présente comme un navigateur, comme `/api/img` : beaucoup de CDN
+ * de boutiques répondent 403 à tout ce qui n'en a pas l'air. C'est ce qui
+ * laissait Spider bunny en vitrine : son hébergeur refusait la question
+ * au lieu de dire que la photo n'existait plus.
  */
-async function etatDe(adresse: string): Promise<Etat> {
+const ENTETES = {
+  "user-agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+};
+
+/**
+ * Lit une adresse en suivant les redirections à la main, trois au plus,
+ * chaque étape devant rester une adresse sûre. On ne lit que les
+ * en-têtes : le corps est abandonné aussitôt. `null` : pas de réponse.
+ */
+async function lire(adresse: string, accept: string): Promise<{ statut: number; fin: string } | null> {
   let cible = adresseSure(adresse);
   for (let saut = 0; cible && saut < 4; saut++) {
-    if (!aLeDroitDeLire()) return "inconnu";
+    if (!aLeDroitDeLire()) return null;
     let r: Response;
     try {
       r = await fetch(cible, {
         redirect: "manual",
         signal: AbortSignal.timeout(6000),
-        headers: { accept: "image/*,*/*;q=0.5", "user-agent": "NewaveSphere/1.0 (+https://newavesphere.fr)" },
+        headers: { ...ENTETES, accept },
         cache: "no-store",
       });
     } catch {
-      return "inconnu";
+      return null;
     }
     void r.body?.cancel().catch(() => {});
     if (r.status >= 300 && r.status < 400) {
@@ -70,9 +91,20 @@ async function etatDe(adresse: string): Promise<Etat> {
       cible = suite ? adresseSure(new URL(suite, cible).toString()) : null;
       continue;
     }
-    return etatDuStatut(r.status);
+    return { statut: r.status, fin: cible.toString() };
   }
-  return "inconnu";
+  return null;
+}
+
+async function etatDe(adresse: string): Promise<Etat> {
+  const r = await lire(adresse, "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8");
+  return r ? etatDuStatut(r.statut) : "inconnu";
+}
+
+async function pageDe(adresse: string | null): Promise<Page> {
+  if (!adresse) return "inconnu";
+  const r = await lire(adresse, "text/html,*/*;q=0.8");
+  return r ? etatDeLaPage(r.statut, r.fin, adresse) : "inconnu";
 }
 
 function nettoyer(): void {
@@ -105,12 +137,12 @@ export async function POST(request: Request) {
 
   const { data } = await lecteur
     .from("products")
-    .select("id, brand_id, images, image_url, source_id")
+    .select("id, brand_id, images, image_url, source_id, shop_url")
     .in("id", ids)
     .eq("status", "published")
     .is("retired_at", null);
 
-  const pieces = (data ?? []) as (Piece & { id: string; brand_id: string })[];
+  const pieces = (data ?? []) as (Piece & { id: string; brand_id: string; shop_url: string | null })[];
   if (pieces.length === 0) return vide;
 
   let robot: Awaited<ReturnType<typeof connecterRobot>> | undefined;
@@ -121,7 +153,18 @@ export async function POST(request: Request) {
       etats.set(photo, await etatDe(photo));
     }
 
-    const decision = decider(piece, etats);
+    /* La page n'est lue que si aucune photo ne s'affiche sans qu'on ait
+       la preuve qu'elles sont mortes : c'est le seul cas où elle décide. */
+    const valeurs = [...etats.values()];
+    const page =
+      valeurs.length > 0 && valeurs.every((e) => e !== "vivante") && valeurs.some((e) => e === "inconnu")
+        ? await pageDe(piece.shop_url)
+        : "inconnu";
+
+    const decision = decider(piece, etats, page);
+    console.info(
+      `[newave] photo-ratee : ${piece.id} photos [${valeurs.join(", ")}], page ${page} → ${decision.action}`
+    );
     if (decision.action === "rien") continue;
 
     robot ??= await connecterRobot();
