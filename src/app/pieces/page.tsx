@@ -128,12 +128,14 @@ export default async function PiecesPage({ searchParams }: Props) {
    * annonçait 141 marques et le filtre « Toutes (133) », deux
    * centimètres plus bas.
    *
-   * Le repli garde l'ancien calcul : sans base, on compte ce qu'on a,
-   * ce qui vaut toujours mieux qu'un zéro.
+   * SANS LES COMPTES, ON TAIT LES MARQUES. Le repli comptait celles des
+   * vingt-quatre premières pièces : « 23 marques » s'affichait sur un
+   * site qui en porte cent soixante-huit, un chiffre faux qui se lisait
+   * comme vrai. Le total des pièces, lui, reste juste : la vitrine le
+   * donne avec sa première page.
    */
   const total = catalogue?.pieces ?? page.total;
-  const marques =
-    catalogue?.marques ?? new Set(page.pieces.map((p) => p.brand?.slug).filter(Boolean)).size;
+  const marques = catalogue?.marques ?? null;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-[var(--pad)] py-7 sm:py-11">
@@ -164,8 +166,13 @@ export default async function PiecesPage({ searchParams }: Props) {
 
         <p className="m-0 text-[12px] font-bold uppercase tracking-[0.16em] text-white/82">
           {enChiffres(total)} pièce{total > 1 ? "s" : ""}
-          {catalogue && " au catalogue"} · {enChiffres(marques)} marque
-          {marques > 1 ? "s" : ""}
+          {catalogue && " au catalogue"}
+          {marques !== null && (
+            <>
+              {" "}
+              · {enChiffres(marques)} marque{marques > 1 ? "s" : ""}
+            </>
+          )}
         </p>
       </header>
 
