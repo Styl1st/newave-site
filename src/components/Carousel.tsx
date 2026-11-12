@@ -175,7 +175,7 @@ export default function Carousel({
           ) : (
             <div
               key={src + i}
-              className="relative w-full shrink-0 snap-center overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
+              className="diapo-photo relative w-full shrink-0 snap-center overflow-hidden bg-linear-to-br from-[#efe6ff] to-[#d9c9f7]"
             >
               {/* L'attente, retirée dès que la photo est là : voir `AttentePhoto`. */}
               <AttentePhoto />

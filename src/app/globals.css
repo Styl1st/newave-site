@@ -6359,6 +6359,18 @@ img[data-progressif][data-charge].opacity-70 {
   transition: none;
 }
 
+/* ---------- une photo qui ne vient pas ----------
+   Marquée par le script du <head> (`lib/image-progressive`). On cache
+   l'icône cassée du navigateur et le texte de remplacement collé dans
+   le coin : il reste le fond du cadre. Dans le carrousel d'une pièce,
+   où le cadre est grand, une ligne dit ce qui manque. */
+img[data-ratee] { visibility: hidden; }
+.diapo-photo:has(> img[data-ratee])::after {
+  content: 'Photo indisponible chez la marque';
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;
+  font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #8a7bab;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html:not([data-anim-choisi="1"]) img[data-progressif] { transition: none; }
 }

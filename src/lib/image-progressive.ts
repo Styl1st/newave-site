@@ -63,9 +63,17 @@
  *
  * Les évènements `load` et `error` ne remontent pas le long de la page :
  * on les attrape à la descente (`true`, la phase de capture), un seul
- * écouteur pour toutes les images, présentes et à venir. Une image en
- * erreur est révélée aussi, pour qu'on voie son texte de remplacement
- * plutôt qu'un cadre vide éternel.
+ * écouteur pour toutes les images, présentes et à venir.
+ *
+ * UNE IMAGE EN ERREUR EST MARQUÉE `data-ratee`, et cette fois pour
+ * TOUTES les images de la page. On montrait son texte de remplacement,
+ * pensant mieux faire qu'un cadre vide : c'était l'icône d'image cassée
+ * du navigateur et un nom de pièce collé en haut à gauche d'un grand
+ * cadre lavande. Le CSS la cache maintenant, et le cadre dit
+ * sobrement que la photo manque. La marque garde rarement en ligne la
+ * photo d'une pièce qu'elle a retirée : c'est presque toujours ça.
+ * Une image rechargée avec succès (une autre taille du `srcset`) perd
+ * la marque.
  *
  * Sur un navigateur trop ancien pour les observateurs, il reste le
  * comportement d'avant, sans avance : la photo se révèle à l'arrivée.
@@ -113,7 +121,10 @@ export const SCRIPT_IMAGES_PROGRESSIVES = `
 
   function surImage(e){
     var t = e.target;
-    if (!t || t.tagName !== 'IMG' || !t.hasAttribute('data-progressif')) return;
+    if (!t || t.tagName !== 'IMG') return;
+    if (e.type === 'error') t.setAttribute('data-ratee', '');
+    else t.removeAttribute('data-ratee');
+    if (!t.hasAttribute('data-progressif')) return;
     if (e.type === 'error') reveler(t, false); else arrivee(t);
   }
   d.addEventListener('load', surImage, true);
