@@ -22,6 +22,7 @@ import { estUneVideo, premiereImage } from "@/lib/medias";
 import type { Product } from "@/lib/types";
 import type { CompteDuCatalogue } from "@/lib/queries";
 import Raccourci from "@/components/Raccourci";
+import SuiteDeListe, { FinDeListe } from "./SuiteDeListe";
 
 /**
  * La vitrine : on cherche une pièce, pas une marque.
@@ -1661,9 +1662,7 @@ export default function PieceDirectory({
                 ))}
               </Grille>
 
-              {/* Le pied reprend la pilule de la ligne de filtres de
-                  l'annuaire : c'est le même objet, à l'autre bout de la
-                  page.
+              {/* Le pied : un trait et un mot, voir `SuiteDeListe`.
 
                   LE NOMBRE DE DROITE EST CELUI DU CATALOGUE, et non plus
                   celui de l'échantillon descendu avec la page. C'est
@@ -1673,42 +1672,15 @@ export default function PieceDirectory({
                   Un filtre posé, il devient le compte exact de ce que ce
                   filtre retient DANS LE CATALOGUE ENTIER. */}
               {reste > 0 ? (
-                <div
+                <SuiteDeListe
                   ref={pied}
-                  className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5"
-                >
-                  <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                    {enChiffres(visibles.length)} sur {enChiffres(total)} affichées
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={charger}
-                    /* Deux clics pendant qu'une page voyage
-                       demanderaient deux fois la même tranche. */
-                    disabled={enCours}
-                    className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97] disabled:opacity-60"
-                  >
-                    {enCours
-                      ? "Chargement…"
-                      : `Charger ${Math.min(reste, LOT)} pièce${
-                          Math.min(reste, LOT) > 1 ? "s" : ""
-                        } de plus`}
-                  </button>
-
-                  {/* LA PANNE SE DIT LÀ OÙ ELLE SE PRODUIT. Le réseau
-                      peut refuser une tranche : sans rien, le bouton
-                      semblerait simplement ne pas marcher. */}
-                  <p
-                    className={`m-0 hidden text-[11.5px] font-semibold lg:block ${
-                      panne ? "text-[rgb(var(--accent-1))]" : "text-white/50"
-                    }`}
-                  >
-                    {panne
-                      ? "la suite n'a pas répondu, reclique pour réessayer"
-                      : <>ou tape <Raccourci colle /> pour chercher directement</>}
-                  </p>
-                </div>
+                  affiches={visibles.length}
+                  total={total}
+                  prochain={`${Math.min(reste, LOT)} pièce${Math.min(reste, LOT) > 1 ? "s" : ""}`}
+                  onCharger={charger}
+                  enCours={enCours}
+                  panne={panne}
+                />
               ) : (
                 total > LOT && (
                   /* AU BOUT DE LA LISTE, LA PAGE NE DISAIT PLUS RIEN.
@@ -1716,22 +1688,11 @@ export default function PieceDirectory({
                      sur du vide après la dernière rangée, sans savoir si
                      on avait tout vu ou si le chargement s'était arrêté
                      tout seul. */
-                  <div className="barre barre-pied mt-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
-                    <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                      {enChiffres(total)} pièce{total > 1 ? "s" : ""} · tu as tout vu
-                    </p>
-
-                    <Link
-                      href="/marques"
-                      className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97]"
-                    >
-                      Parcourir les marques
+                  <FinDeListe texte={`${enChiffres(total)} pièce${total > 1 ? "s" : ""}, tu as tout vu`}>
+                    <Link href="/marques" className="suite-bouton">
+                      <span className="suite-mot">Parcourir les marques</span>
                     </Link>
-
-                    <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
-                      ou tape <Raccourci colle /> pour chercher directement
-                    </p>
-                  </div>
+                  </FinDeListe>
                 )
               )}
             </>

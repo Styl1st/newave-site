@@ -8,7 +8,7 @@ import LigneMarque from "./LigneMarque";
 import Grille from "./Grille";
 import type { Densite } from "./densite";
 import type { FicheDAnnuaire } from "@/lib/fiche-annuaire";
-import Raccourci from "@/components/Raccourci";
+import SuiteDeListe from "./SuiteDeListe";
 import Halo from "./Halo";
 
 /**
@@ -393,31 +393,20 @@ export default function BrandGrid({
 
       {reste > 0 && (
         /*
-         * LE PIED REPREND LA MATIÈRE DE LA LIGNE DE FILTRES, et pas
-         * celle d'une carte. Un bouton en carte claire au bas d'une
+         * LE PIED N'EST NI UNE CARTE NI UNE PILULE : un trait et un mot,
+         * voir `SuiteDeListe`. Un bouton en carte claire au bas d'une
          * liste de cartes claires ressemblait à une entrée de plus, et
          * l'on cliquait dessus en croyant ouvrir une marque.
          *
          * Le compte D'ABORD, le bouton ensuite : « 24 sur 136 » est ce
          * qui décide de cliquer ou d'aller chercher autrement.
          */
-        <div
-          className="barre barre-pied mt-6 flex flex-col items-center gap-2.5 px-5 py-4 sm:flex-row sm:justify-center sm:gap-5"
-        >
-          <p className="m-0 text-[11.5px] font-bold uppercase tracking-[0.14em] text-white/55">
-            {Math.min(combien, brands.length)} sur {brands.length} affichées
-          </p>
-          <button
-            type="button"
-            onClick={() => setCombien((n) => n + LOT)}
-            className="rounded-full bg-white px-5 py-2 text-[13px] font-extrabold text-[var(--color-ink)] transition active:scale-95"
-          >
-            Charger {Math.min(reste, LOT)} marque{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
-          </button>
-          <p className="m-0 hidden text-[11.5px] font-semibold text-white/50 lg:block">
-            ou tape <Raccourci colle /> pour chercher directement
-          </p>
-        </div>
+        <SuiteDeListe
+          affiches={Math.min(combien, brands.length)}
+          total={brands.length}
+          prochain={`${Math.min(reste, LOT)} marque${Math.min(reste, LOT) > 1 ? "s" : ""}`}
+          onCharger={() => setCombien((n) => n + LOT)}
+        />
       )}
 
       {open && <BrandPreview slug={open} onClose={() => setOpen(null)} />}

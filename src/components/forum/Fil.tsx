@@ -6,6 +6,7 @@ import { LOT_FORUM, type Annonce, type FiltresForum as Filtres } from "@/lib/for
 import CarteAnnonce from "./CarteAnnonce";
 import FiltresForum from "./FiltresForum";
 import Mosaique from "./Mosaique";
+import SuiteDeListe from "../SuiteDeListe";
 
 /**
  * Le fil du forum : les filtres, la mosaïque, le défilement.
@@ -190,23 +191,16 @@ export default function Fil({
 
           <div ref={sentinelle} aria-hidden className="h-px" />
 
-          {/* Le pied de la vitrine des pièces : le compte d'abord, puis le
-              bouton. Une carte claire en bas d'un fil sans cartes aurait
-              été la seule de la page. */}
+          {/* Le même pied que la vitrine des pièces : voir `SuiteDeListe`. */}
           {reste > 0 && (
-            <div className="barre barre-pied mt-8 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
-              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                {annonces.length} sur {total} affichées
-              </p>
-              <button
-                type="button"
-                onClick={charger}
-                disabled={enCours}
-                className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97] disabled:opacity-60"
-              >
-                {enCours ? "Chargement…" : `Charger ${Math.min(reste, LOT_FORUM)} annonces de plus`}
-              </button>
-            </div>
+            <SuiteDeListe
+              affiches={annonces.length}
+              total={total}
+              prochain={`${Math.min(reste, LOT_FORUM)} annonce${Math.min(reste, LOT_FORUM) > 1 ? "s" : ""}`}
+              onCharger={charger}
+              enCours={enCours}
+              raccourci={false}
+            />
           )}
           {panne && annonces.length > 0 && (
             <p className="m-0 mt-4 text-center text-[13px] text-white/75">

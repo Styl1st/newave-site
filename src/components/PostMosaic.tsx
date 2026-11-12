@@ -20,6 +20,7 @@ import { enSlugDeCategorie } from "@/lib/taxonomy";
 import { sansMarquage } from "./TexteRiche";
 import type { Post, Recherche } from "@/lib/types";
 import Raccourci from "@/components/Raccourci";
+import SuiteDeListe from "./SuiteDeListe";
 import { surtitrePost } from "@/lib/surtitre-post";
 import { POSTS_POUR_FILTRER, filtresUtiles } from "@/lib/seuils";
 
@@ -1010,21 +1011,15 @@ function Fil({ posts, amorce }: { posts: Post[]; amorce?: AmorcePosts }) {
             ))}
           </div>
 
-          {/* Le pied de la vitrine des pièces : le compte d'abord, puis
-              le bouton. */}
+          {/* Le même pied que la vitrine des pièces : voir `SuiteDeListe`. */}
           {reste > 0 && (
-            <div className="barre barre-pied mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-3 sm:px-5">
-              <p className="m-0 text-[12px] font-bold uppercase tracking-[0.14em] text-white/55">
-                {visibles.length} sur {fil.length} affichés
-              </p>
-              <button
-                type="button"
-                onClick={() => setCombien((n) => n + LOT)}
-                className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[13px] font-extrabold text-[var(--color-ink)] transition hover:opacity-90 active:scale-[.97]"
-              >
-                Charger {Math.min(reste, LOT)} post{Math.min(reste, LOT) > 1 ? "s" : ""} de plus
-              </button>
-            </div>
+            <SuiteDeListe
+              affiches={visibles.length}
+              total={fil.length}
+              accord="affichés"
+              prochain={`${Math.min(reste, LOT)} post${Math.min(reste, LOT) > 1 ? "s" : ""}`}
+              onCharger={() => setCombien((n) => n + LOT)}
+            />
           )}
         </>
       )}
