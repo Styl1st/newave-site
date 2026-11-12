@@ -248,7 +248,7 @@ export default function ProductCard({
        * pouvoir mettre de côté celles qui sont sorties de l'écran.
        * Voir globals.css.
        */
-      <div className="carte-eco group">
+      <div className="carte-eco group" data-piece={product.id}>
         {/*
           PAS DE CLASSE `visuel` ICI, ET C'EST DÉLIBÉRÉ. Elle impose un
           rapport 4/5 hors couche CSS, c'est-à-dire plus fort que
@@ -373,7 +373,7 @@ export default function ProductCard({
      * qu'elle sort de l'écran. C'est ce qui permet d'en empiler des
      * centaines sans que l'onglet tombe. Voir globals.css.
      */
-    <div className="card-light carte-eco group flex h-full flex-col overflow-hidden">
+    <div className="card-light carte-eco group flex h-full flex-col overflow-hidden" data-piece={product.id}>
       {/* L'adresse d'origine : `Teinte` en réclame lui-même une version
           minuscule, qu'il ne sert à rien d'aller chercher en grand. */}
       <Teinte src={cover} />

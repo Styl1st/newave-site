@@ -157,6 +157,7 @@ export default async function PiecePage({ params }: Props) {
             d'après la première image : voir `Carousel`. */}
         <div
           data-no-reveal
+          data-piece={product.id}
           className="card-light rise self-start overflow-hidden lg:sticky lg:top-6"
         >
           <div className="relative z-3 h-full">

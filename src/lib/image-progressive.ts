@@ -75,6 +75,13 @@
  * Une image rechargée avec succès (une autre taille du `srcset`) perd
  * la marque.
  *
+ * ET LA PIÈCE EST SIGNALÉE. Si l'image appartient à une pièce (un cadre
+ * `data-piece` autour d'elle), son identifiant part vers
+ * `/api/pieces/photo-ratee`, regroupé avec les autres de la page en un
+ * seul envoi. Le serveur ne croit pas le navigateur sur parole : il va
+ * lui-même voir chez la marque, et ne retire la pièce de la vitrine que
+ * si ses photos y sont bel et bien introuvables.
+ *
  * Sur un navigateur trop ancien pour les observateurs, il reste le
  * comportement d'avant, sans avance : la photo se révèle à l'arrivée.
  * Sans JavaScript du tout, une règle `<noscript>` les rend visibles
@@ -119,10 +126,31 @@ export const SCRIPT_IMAGES_PROGRESSIVES = `
     else poser();
   }
 
+  var signalees = {}, aSignaler = [], minuterie = 0;
+  function envoyer(){
+    minuterie = 0;
+    var ids = aSignaler.splice(0, 24);
+    if (!ids.length) return;
+    var corps = JSON.stringify({ ids: ids });
+    try {
+      if (!(navigator.sendBeacon && navigator.sendBeacon('/api/pieces/photo-ratee', new Blob([corps], { type: 'application/json' }))))
+        fetch('/api/pieces/photo-ratee', { method: 'POST', body: corps, headers: { 'content-type': 'application/json' }, keepalive: true });
+    } catch (e) {}
+    if (aSignaler.length) minuterie = setTimeout(envoyer, 1500);
+  }
+  function signaler(img){
+    var c = img.closest && img.closest('[data-piece]');
+    var id = c && c.getAttribute('data-piece');
+    if (!id || signalees[id]) return;
+    signalees[id] = 1;
+    aSignaler.push(id);
+    if (!minuterie) minuterie = setTimeout(envoyer, 1500);
+  }
+
   function surImage(e){
     var t = e.target;
     if (!t || t.tagName !== 'IMG') return;
-    if (e.type === 'error') t.setAttribute('data-ratee', '');
+    if (e.type === 'error') { t.setAttribute('data-ratee', ''); signaler(t); }
     else t.removeAttribute('data-ratee');
     if (!t.hasAttribute('data-progressif')) return;
     if (e.type === 'error') reveler(t, false); else arrivee(t);
