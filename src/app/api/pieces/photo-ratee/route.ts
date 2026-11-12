@@ -26,7 +26,8 @@ import {
  * déjà en base, à un rythme borné. Il ne choisit ni les adresses lues,
  * ni ce qu'on écrit.
  *
- * La réponse est toujours vide : le navigateur n'en attend rien.
+ * La réponse est un compte rendu (voir `CompteRendu`) : le script ne le
+ * lit pas, mais il dit depuis la console pourquoi une pièce est restée.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,15 +97,18 @@ async function lire(adresse: string, accept: string): Promise<{ statut: number; 
   return null;
 }
 
-async function etatDe(adresse: string): Promise<Etat> {
+/** L'état d'une photo, avec le code reçu pour le compte rendu. */
+async function etatDe(adresse: string): Promise<{ etat: Etat; code: number | null }> {
   const r = await lire(adresse, "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8");
-  return r ? etatDuStatut(r.statut) : "inconnu";
+  return r ? { etat: etatDuStatut(r.statut), code: r.statut } : { etat: "inconnu", code: null };
 }
 
-async function pageDe(adresse: string | null): Promise<Page> {
-  if (!adresse) return "inconnu";
+async function pageDe(adresse: string | null): Promise<{ page: Page; code: number | null; fin: string | null }> {
+  if (!adresse) return { page: "inconnu", code: null, fin: null };
   const r = await lire(adresse, "text/html,*/*;q=0.8");
-  return r ? etatDeLaPage(r.statut, r.fin, adresse) : "inconnu";
+  return r
+    ? { page: etatDeLaPage(r.statut, r.fin, adresse), code: r.statut, fin: r.fin }
+    : { page: "inconnu", code: null, fin: null };
 }
 
 function nettoyer(): void {
@@ -113,9 +117,23 @@ function nettoyer(): void {
   for (const [id, quand] of REVUES) if (quand < limite) REVUES.delete(id);
 }
 
-export async function POST(request: Request) {
-  const vide = new NextResponse(null, { status: 204 });
+/**
+ * Le compte rendu, renvoyé au navigateur. Le script du <head> l'ignore ;
+ * il sert à comprendre, depuis la console, pourquoi une pièce est restée.
+ * Rien de secret : des codes de réponse d'adresses publiques.
+ */
+type CompteRendu = {
+  id: string;
+  deja?: true;
+  absente?: true;
+  photos?: (number | null)[];
+  page?: { code: number | null; fin: string | null; verdict: Page };
+  decision?: "rien" | "nettoyer" | "retirer";
+  ecrit?: boolean;
+  erreur?: string;
+};
 
+export async function POST(request: Request) {
   let ids: string[] = [];
   try {
     const corps = (await request.json()) as { ids?: unknown };
@@ -123,54 +141,74 @@ export async function POST(request: Request) {
       ids = corps.ids.filter((x): x is string => typeof x === "string" && UUID.test(x)).slice(0, 24);
     }
   } catch {
-    return vide;
+    return NextResponse.json({ pieces: [] }, { status: 400 });
   }
+
+  const rendu: CompteRendu[] = [];
+  const repondre = () => NextResponse.json({ pieces: rendu }, { headers: { "cache-control": "no-store" } });
 
   nettoyer();
   const maintenant = Date.now();
-  ids = [...new Set(ids)].filter((id) => maintenant - (REVUES.get(id) ?? 0) > ENTRE_DEUX_REVUES);
-  if (ids.length === 0) return vide;
-  for (const id of ids) REVUES.set(id, maintenant);
+  const aRevoir: string[] = [];
+  for (const id of new Set(ids)) {
+    if (maintenant - (REVUES.get(id) ?? 0) > ENTRE_DEUX_REVUES) aRevoir.push(id);
+    else rendu.push({ id, deja: true });
+  }
+  if (aRevoir.length === 0) return repondre();
+  for (const id of aRevoir) REVUES.set(id, maintenant);
 
   const lecteur = createPublicClient();
-  if (!lecteur) return vide;
+  if (!lecteur) return repondre();
 
   const { data } = await lecteur
     .from("products")
     .select("id, brand_id, images, image_url, source_id, shop_url")
-    .in("id", ids)
+    .in("id", aRevoir)
     .eq("status", "published")
     .is("retired_at", null);
 
   const pieces = (data ?? []) as (Piece & { id: string; brand_id: string; shop_url: string | null })[];
-  if (pieces.length === 0) return vide;
+  for (const id of aRevoir) if (!pieces.some((p) => p.id === id)) rendu.push({ id, absente: true });
 
   let robot: Awaited<ReturnType<typeof connecterRobot>> | undefined;
 
   for (const piece of pieces) {
     const etats = new Map<string, Etat>();
+    const codes: (number | null)[] = [];
     for (const photo of photosDe(piece)) {
-      etats.set(photo, await etatDe(photo));
+      const { etat, code } = await etatDe(photo);
+      etats.set(photo, etat);
+      codes.push(code);
     }
 
     /* La page n'est lue que si aucune photo ne s'affiche sans qu'on ait
        la preuve qu'elles sont mortes : c'est le seul cas où elle décide. */
     const valeurs = [...etats.values()];
-    const page =
+    const lecture =
       valeurs.length > 0 && valeurs.every((e) => e !== "vivante") && valeurs.some((e) => e === "inconnu")
         ? await pageDe(piece.shop_url)
-        : "inconnu";
+        : null;
 
-    const decision = decider(piece, etats, page);
+    const decision = decider(piece, etats, lecture?.page ?? "inconnu");
+    const ligne: CompteRendu = {
+      id: piece.id,
+      photos: codes,
+      ...(lecture ? { page: { code: lecture.code, fin: lecture.fin, verdict: lecture.page } } : {}),
+      decision: decision.action,
+    };
+    rendu.push(ligne);
     console.info(
-      `[newave] photo-ratee : ${piece.id} photos [${valeurs.join(", ")}], page ${page} → ${decision.action}`
+      `[newave] photo-ratee : ${piece.id} photos [${codes.join(", ")}]` +
+        (lecture ? `, page ${lecture.code} ${lecture.fin} (${lecture.page})` : "") +
+        ` → ${decision.action}`
     );
     if (decision.action === "rien") continue;
 
     robot ??= await connecterRobot();
     if (!robot) {
-      console.error("[newave] photo-ratee : le compte de l'automate n'a pas pu se connecter.");
-      return vide;
+      ligne.erreur = "le compte de l'automate n'a pas pu se connecter";
+      console.error(`[newave] photo-ratee : ${ligne.erreur}.`);
+      return repondre();
     }
 
     const changement =
@@ -178,21 +216,24 @@ export async function POST(request: Request) {
         ? { retired_at: new Date().toISOString(), available: false }
         : { images: decision.images, image_url: decision.image_url };
 
-    const { error } = await robot
+    /* `.select()` : sans lui, une écriture que les règles de la base
+       refusent passe sans erreur, sur zéro ligne, et l'on croirait la
+       pièce retirée. */
+    const { data: ecrites, error } = await robot
       .from("products")
       .update(changement)
       .eq("id", piece.id)
       .eq("brand_id", piece.brand_id)
-      .is("retired_at", null);
+      .is("retired_at", null)
+      .select("id");
 
-    if (error) {
-      console.error(`[newave] photo-ratee : ${piece.id} : ${error.message}`);
-    } else {
-      console.info(
-        `[newave] photo-ratee : ${piece.id} ${decision.action === "retirer" ? "retirée de la vitrine" : "galerie nettoyée"}.`
-      );
-    }
+    ligne.ecrit = !error && (ecrites?.length ?? 0) > 0;
+    if (error) ligne.erreur = error.message;
+    else if (!ligne.ecrit) ligne.erreur = "aucune ligne écrite (droits du compte de l'automate ?)";
+    console[ligne.ecrit ? "info" : "error"](
+      `[newave] photo-ratee : ${piece.id} ${ligne.ecrit ? (decision.action === "retirer" ? "retirée de la vitrine" : "galerie nettoyée") : ligne.erreur}.`
+    );
   }
 
-  return vide;
+  return repondre();
 }

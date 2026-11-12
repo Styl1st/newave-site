@@ -55,14 +55,27 @@ export default function MobileMenu({
   const [place, setPlace] = useState({ top: 0, left: 0, taille: 40 });
   const bouton = useRef<HTMLButtonElement>(null);
   const panneau = useRef<HTMLDivElement>(null);
+  const croix = useRef<HTMLButtonElement>(null);
   const chemin = usePathname();
 
   const fermer = useCallback(() => {
     setOuvert(false);
+    /* Le focus était dans le menu (la croix, un lien) : il revient au
+       bouton qui l'a ouvert, et non au début de la page. */
+    const dedans = !!panneau.current?.contains(document.activeElement);
     // On laisse le fondu se terminer avant de démonter, sinon le menu
     // disparaîtrait d'un coup au lieu de s'effacer.
-    setTimeout(() => setMonte(false), 320);
+    setTimeout(() => {
+      setMonte(false);
+      if (dedans) requestAnimationFrame(() => bouton.current?.focus({ preventScroll: true }));
+    }, 320);
   }, []);
+
+  /* À l'ouverture, le focus passe à la croix : le bouton d'origine
+     devient inerte, il ne peut pas le garder. */
+  useEffect(() => {
+    if (monte) croix.current?.focus({ preventScroll: true });
+  }, [monte]);
 
   function ouvrir() {
     const r = bouton.current?.getBoundingClientRect();
@@ -140,11 +153,14 @@ export default function MobileMenu({
           onClick={ouvrir}
           aria-label="Ouvrir le menu"
           aria-expanded={ouvert}
-          // Invisible pour les lecteurs d'écran tant que le menu porte
-          // sa propre croix : deux boutons identiques annoncés en même
-          // temps n'aideraient personne.
-          aria-hidden={monte || undefined}
-          tabIndex={monte ? -1 : undefined}
+          // Hors d'atteinte tant que le menu porte sa propre croix : deux
+          // boutons identiques annoncés en même temps n'aideraient
+          // personne. `inert` et non `aria-hidden` : ce bouton garde le
+          // focus du clic qui vient d'ouvrir le menu, et Chrome refuse
+          // de cacher aux lecteurs d'écran un élément qui a le focus
+          // (« Blocked aria-hidden on an element because its descendant
+          // retained focus »). `inert` retire le focus avec.
+          inert={monte || undefined}
           className="puce-barre grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
         >
           <Barres ouvert={false} />
@@ -185,6 +201,7 @@ export default function MobileMenu({
                 document : la liste passait donc DEVANT la croix, qui
                 restait visible mais ne recevait plus aucun appui. */}
             <button
+              ref={croix}
               type="button"
               onClick={fermer}
               aria-label="Fermer le menu"
