@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import CurseurPrix from "./CurseurPrix";
-import FeuilleFiltres from "./feuille/FeuilleFiltres";
 import Grille from "./Grille";
 import ProductCard, { CADRES_VITRINE, DECALAGES_VITRINE } from "./ProductCard";
 import { prechaufferVignette } from "./VignetteDefilante";
-import { IconCheck, IconChevron, IconFiltre, IconLoupe } from "./Icons";
+import { IconLoupe } from "./Icons";
+import FiltresPieces, { type EtatFiltres } from "./pieces/FiltresPieces";
 import { SelecteurDensite, useDensite } from "./densite";
 import { enChiffres } from "./chiffres";
 import { declarerChampLocal } from "./recherche/champLocal";
@@ -35,11 +34,12 @@ import Raccourci from "@/components/Raccourci";
  * LES MARQUES (voir `repartirParMarque`) : les premiers écrans montrent
  * une pièce de chacune plutôt que quarante de la plus fournie.
  *
- * CE QUI CHANGE AVEC LA REFONTE, ET POURQUOI. Les filtres étaient
- * repliés derrière un bouton, et l'on ne les rouvrait pas : sur une page
- * dont le seul intérêt est de fouiller, la colonne de gauche est
- * l'écran. Elle est donc posée à demeure, elle porte ses compteurs, et
- * la grille récupère tout le reste de la largeur.
+ * LES FILTRES NE SONT PLUS UNE COLONNE. La colonne de verre de gauche
+ * prenait deux cent vingt pixels à la grille pour un panneau qu'on ne
+ * regardait qu'une fois, et la feuille du téléphone cachait tout derrière
+ * un bouton. Les rayons s'écrivent maintenant en grand au-dessus de la
+ * grille, et les autres réglages tiennent sur une ligne qui se déplie
+ * sans boîte et suit le défilement — voir `pieces/FiltresPieces`.
  *
  * Et surtout : LES PIÈCES N'ONT PLUS DE CARTE. La photo est posée à même
  * le fond, le texte vit dessous, sans cadre. C'est le parti pris de cet
@@ -99,24 +99,11 @@ function sansAccent(s: string): string {
 /**
  * La hauteur de l'en-tête collant, en pixels.
  *
- * C'est le même nombre que le `top-[86px]` de la colonne de filtres :
- * quand on repose la page sur le haut des résultats, il faut la poser
- * SOUS la barre, pas dessous elle.
+ * C'est le même nombre que le `top: 86px` de la barre de filtres
+ * collante : quand on repose la page sur le haut des résultats, il faut
+ * la poser SOUS l'en-tête et sous la barre, pas dessous elles.
  */
 const ENTETE = 86;
-
-/**
- * Ce que la colonne de filtres a le droit d'occuper en hauteur.
- *
- * Les 86 px de l'en-tête collant, plus 18 px de respiration en pied.
- * C'est LE MÊME NOMBRE que le `calc(100dvh - 104px)` de
- * `.colonne-filtres--deborde` dans `globals.css` : au-delà, la colonne
- * ne tient plus dans l'écran et on lui rend son ascenseur. Les deux
- * valeurs doivent bouger ensemble, sinon la mesure et la borne se
- * contredisent — la colonne se croirait à l'aise dans une hauteur
- * qu'elle dépasse, ou l'inverse.
- */
-const PLACE_COLONNE = 104;
 
 /**
  * Corriger le défilement doit se faire AVANT que la page soit peinte,
@@ -402,127 +389,10 @@ export default function PieceDirectory({
    * `RAYONS_HABILLES`. « Bijoux + M » ne voudrait rien dire.
    */
   const [taille, setTaille] = useState<string | null>(null);
-  /* Taille, prix et disponibilité se replient ; une seule ouverte à la fois. */
-  const [section, setSection] = useState<"taille" | "prix" | "dispo" | null>(null);
-  const basculerSection = (s: "taille" | "prix" | "dispo") => setSection((v) => (v === s ? null : s));
   const [marque, setMarque] = useState<string | null>(null);
   const [stock, setStock] = useState(false);
   const [promo, setPromo] = useState(false);
   const [tri, setTri] = useState<"hasard" | "croissant" | "decroissant">("hasard");
-  const [ouvert, setOuvert] = useState(false);
-
-  /*
-   * SOUS `lg`, LA COLONNE DEVIENT UNE FEUILLE QUI MONTE.
-   *
-   * Le tiroir dépliait les filtres AU-DESSUS de la grille : on ouvrait,
-   * on cochait, et la liste qu'on venait de réduire était repoussée deux
-   * écrans plus bas — il fallait refermer, puis redescendre, pour voir ce
-   * qu'on avait fait. La feuille se pose par-dessus, la page reste où
-   * elle est, et son pied dit combien de pièces attendent derrière.
-   *
-   * On MESURE la largeur au lieu de tout rendre deux fois : la feuille et
-   * la colonne portent le même contenu, et deux exemplaires dans la page
-   * doubleraient les champs pour les lecteurs d'écran.
-   */
-  const [auDoigt, setAuDoigt] = useState(false);
-  useEffect(() => {
-    const petit = window.matchMedia("(max-width: 1023px)");
-    const mesurer = () => setAuDoigt(petit.matches);
-    mesurer();
-    petit.addEventListener("change", mesurer);
-    return () => petit.removeEventListener("change", mesurer);
-  }, []);
-
-  /* En passant au grand écran, la colonne redevient visible d'elle-même :
-     laisser la feuille ouverte la ferait flotter en travers. */
-  useEffect(() => {
-    if (!auDoigt) setOuvert(false);
-  }, [auDoigt]);
-
-  /*
-   * LA COLONNE RESTE COLLÉE, TOUJOURS. C'EST CE QUI CHANGE ICI.
-   *
-   * Elle ne l'était que tant qu'elle tenait dans l'écran : au-delà, on
-   * la rendait à la page, et elle partait vers le haut au premier
-   * défilement. Sur un portable ordinaire — 1366 × 768, donc six cent
-   * cinquante pixels de fenêtre — c'était le cas par défaut : on
-   * descendait de trois rangées et il n'y avait plus de filtres nulle
-   * part. Or l'envie d'affiner arrive au milieu de la grille, jamais en
-   * haut. Une colonne de filtres qu'il faut aller rechercher en
-   * remontant est une colonne qu'on n'utilise pas.
-   *
-   * L'autre remède qu'on s'était donné était de SERRER la colonne à
-   * mesure que l'écran baissait — les paliers de `globals.css`. Trois
-   * pixels de rembourrage et des lignes collées les unes aux autres :
-   * elle tenait, mais elle avait l'air écrasée, et c'est le reproche
-   * qu'on lui fait.
-   *
-   * On revient donc à l'ascenseur intérieur, avec ce qui lui manquait la
-   * première fois : un dégradé au bas de la colonne qui DIT qu'il reste
-   * quelque chose dessous. Le défaut d'alors n'était pas l'ascenseur,
-   * c'était qu'il était invisible.
-   *
-   * On mesure quand même, parce que la barre de défilement et le
-   * dégradé n'ont aucune raison d'exister quand tout tient : ils ne
-   * s'allument que lorsque le contenu dépasse.
-   */
-  const colonne = useRef<HTMLElement>(null);
-  const [colonneDeborde, setColonneDeborde] = useState(false);
-  /*
-   * ARRIVÉ EN BAS, LE DÉGRADÉ DE PIED S'EFFACE.
-   *
-   * Il annonce « il reste quelque chose dessous ». Il restait posé une
-   * fois tout en bas, sur le dernier champ : le sélecteur de marque en
-   * paraissait carré, ses coins arrondis noyés sous une bande sombre,
-   * et son texte assombri. Il n'a plus rien à dire quand il n'y a plus
-   * rien dessous.
-   */
-  const [colonneAuBout, setColonneAuBout] = useState(false);
-
-  useEffect(() => {
-    if (auDoigt) return;
-    const el = colonne.current;
-    if (!el) return;
-
-    /* `scrollHeight` : la hauteur que la colonne DEMANDE, y compris la
-       part qui passe sous son propre bord une fois l'ascenseur posé.
-       `offsetHeight` ne dirait plus que la hauteur permise, et la mesure
-       se mordrait la queue — déborde, donc on borne, donc ça ne déborde
-       plus, donc on débourne. */
-    const auBout = () =>
-      setColonneAuBout(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
-
-    const mesurer = () => {
-      setColonneDeborde(el.scrollHeight > window.innerHeight - PLACE_COLONNE + 1);
-      auBout();
-    };
-
-    mesurer();
-    el.addEventListener("scroll", auBout, { passive: true });
-
-    /* Le contenu bouge tout seul : les rayons et les marques
-       disponibles se réduisent à mesure qu'on filtre. */
-    const observateur = new ResizeObserver(mesurer);
-    observateur.observe(el);
-    window.addEventListener("resize", mesurer);
-    return () => {
-      observateur.disconnect();
-      window.removeEventListener("resize", mesurer);
-      el.removeEventListener("scroll", auBout);
-    };
-  }, [auDoigt]);
-
-  /* Déplier un rayon allonge la colonne sans forcément changer sa taille
-     (elle est déjà bornée à l'écran) : on remesure le bas à chaque
-     changement de ce qui est déroulé. */
-  useEffect(() => {
-    const el = colonne.current;
-    if (!el) return;
-    setColonneAuBout(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
-  }, [rayon, section]);
-
-  /* Le glissement, la poignée, le voile et le verrou de défilement
-     vivent dans `FeuilleFiltres`, partagée avec l'annuaire. */
 
   /*
    * LES BORNES DU PRIX SE CALCULENT SUR LE CATALOGUE ENTIER, PAS SUR CE
@@ -1112,6 +982,8 @@ export default function PieceDirectory({
    * c'est justement le cas du replacement de l'étape 2.
    */
   const zone = useRef<HTMLDivElement>(null);
+  const collant = useRef<HTMLDivElement>(null);
+  const calme = useRef(0);
   const avant = useRef(0);
   const liberer = useRef<(() => void) | null>(null);
 
@@ -1137,7 +1009,13 @@ export default function PieceDirectory({
     liberer.current?.();
 
     const depart = avant.current;
-    const haut = Math.max(0, bloc.getBoundingClientRect().top + window.scrollY - ENTETE);
+    /* Sur ordinateur, la barre de filtres colle sous l'en-tête : la
+       première rangée doit tomber sous elle, pas derrière son voile. Au
+       téléphone, elle reste dans la page et ne cache rien. */
+    const barre = window.matchMedia("(min-width: 640px)").matches
+      ? (collant.current?.offsetHeight ?? 0)
+      : 0;
+    const haut = Math.max(0, bloc.getBoundingClientRect().top + window.scrollY - ENTETE - barre);
 
     /* Déjà au-dessus des résultats : rien à remonter. Cliquer un filtre
        ne doit pas déplacer une page qu'on regarde par le haut. */
@@ -1152,7 +1030,10 @@ export default function PieceDirectory({
       window.scrollTo({ top: depart, behavior: "instant" as ScrollBehavior });
     }
 
-    // 3. la remontée.
+    // 3. la remontée. Ce défilement-là n'est pas celui de la main : il
+    //    ne doit pas refermer le volet de filtre qu'on est en train
+    //    d'utiliser.
+    calme.current = Date.now() + 1600;
     const brusque = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: haut, behavior: brusque ? "auto" : "smooth" });
     avant.current = haut;
@@ -1171,19 +1052,8 @@ export default function PieceDirectory({
   }, []);
 
   useEffetDePose(() => {
-    /* La feuille verrouille le défilement du fond : mesurer là-dedans
-       ne donnerait que la hauteur de l'écran. On corrige à sa
-       fermeture, dans l'effet qui suit. */
-    if (ouvert) return;
     recaler();
-  }, [signature, ouvert, recaler]);
-
-  /* À la fermeture de la feuille, le verrou est levé par `FeuilleFiltres`
-     — un effet d'enfant, donc joué avant celui-ci. La page a retrouvé sa
-     hauteur : c'est le moment de la reposer. */
-  useEffect(() => {
-    if (!ouvert) recaler();
-  }, [ouvert, recaler]);
+  }, [signature, recaler]);
 
   /* Ce qu'on a sous la main, et ce que la base dit qu'il reste. `reste`
      ne se déduit plus d'une liste complète tenue en mémoire : il est la
@@ -1396,324 +1266,49 @@ export default function PieceDirectory({
      de la grille : « 24 sur 312 affichées ». */
 
   /*
-   * LES FILTRES POSÉS, AU-DESSUS DE LA GRILLE.
-   *
-   * ILS ÉTAIENT SUR L'ACCENT, ET C'ÉTAIT ILLISIBLE DANS CERTAINES
-   * AMBIANCES. Un aplat d'accent avec l'encre dessus : sur l'accent rose
-   * par défaut, ça passait ; sur une ambiance dont l'accent est sombre,
-   * c'était du bleu nuit sur du noir. Ils prennent donc le dessin du
-   * jeton de l'annuaire (`.jeton-filtre`, voir `globals.css`) : fond
-   * blanc, encre, croix violette. Lisible quelle que soit l'ambiance,
-   * et c'est le même objet d'une page à l'autre.
+   * CE QUE LA BARRE DE FILTRES REÇOIT. Elle ne tient aucun filtre : elle
+   * dessine ceux-ci et renvoie les gestes. La requête, l'adresse et le
+   * recalage de la page restent ici.
    */
-  const pastille = "jeton-filtre";
-
-  /*
-   * Le contenu des filtres, écrit une fois pour ses deux logements :
-   * la colonne collante de l'ordinateur et la feuille du téléphone.
-   * Une seule des deux est montée à la fois — voir `auDoigt`.
-   */
-  const contenuFiltres = (
-    <>
-        <div className="flex items-center justify-between gap-2">
-          {/* Dans la feuille, « Filtres » est le titre de l'écran et se
-              lit comme tel ; dans la colonne, ce n'est qu'un intitulé de
-              plus au-dessus d'une liste, et l'œil-de-bœuf suffit. */}
-          {auDoigt ? (
-            <h2 className="m-0 text-[19px] font-extrabold leading-none tracking-[-0.02em] text-white">
-              Filtres
-            </h2>
-          ) : (
-            <p className="eyebrow m-0">Filtres</p>
-          )}
-          {actifs > 0 && (
-            <button
-              type="button"
-              onClick={reinitialiser}
-              className={`font-bold text-white/75 underline underline-offset-2 transition hover:text-white ${
-                auDoigt ? "text-[13px]" : "text-[11px]"
-              }`}
-            >
-              Effacer
-            </button>
-          )}
-        </div>
-
-        {/* La colonne attend ses comptes : elle le montre, plutôt que
-            d'avoir l'air finie avec un intitulé et rien dessous. */}
-        {catalogueManquant && !filtresEnPanne && (
-          <div role="status" aria-label="Chargement des filtres" className="mt-5 flex flex-col gap-3">
-            {[72, 50, 64, 44, 58, 40, 54].map((largeur, i) => (
-              <div key={i} className="skeleton h-3 rounded-full" style={{ width: `${largeur}%` }} />
-            ))}
-          </div>
-        )}
-        {catalogueManquant && filtresEnPanne && (
-          <div className="mt-4">
-            <p className="m-0 text-[12px] leading-relaxed text-white/60">
-              Les filtres n&apos;ont pas répondu.
-            </p>
-            <button
-              type="button"
-              onClick={() => setEssaiFiltres((n) => n + 1)}
-              className="mt-1.5 text-[11.5px] font-bold text-white/80 underline underline-offset-2 transition hover:text-white"
-            >
-              Réessayer
-            </button>
-          </div>
-        )}
-
-        {/* LE TRI EST ICI, ET SEULEMENT AU DOIGT, EN TÊTE DE FEUILLE.
-
-            Il vivait à côté du compte, dans une pilule collante qui
-            prenait cent pixels de haut pour trois mots : sa place est
-            avec les filtres. Il était rangé en dernier, sous le choix de
-            marque, il fallait faire défiler la feuille pour le trouver.
-            Sur plus de trente mille pièces présentées au hasard, trier
-            par prix est souvent le premier réglage qu'on cherche : il
-            passe en tête. */}
-        {auDoigt && (
-          <Section titre="Tri">
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["hasard", "Au hasard"],
-                  ["croissant", "Prix croissant"],
-                  ["decroissant", "Prix décroissant"],
-                ] as const
-              ).map(([cle, label]) => (
-                <button
-                  key={cle}
-                  type="button"
-                  onClick={() => setTri(cle)}
-                  aria-pressed={tri === cle}
-                  className={`inline-flex min-h-[44px] items-center rounded-[13px] px-3.5 text-[12.5px] font-bold transition active:scale-[.97] ${
-                    tri === cle
-                      ? "bg-white text-[var(--color-ink)]"
-                      : "bg-white/8 text-white/84 hover:bg-white/14"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {rayonsDisponibles.length > 1 && (
-          <Section titre="Type de pièce">
-            {auDoigt ? (
-              <>
-                {/* Deux colonnes au doigt : neuf rayons empilés poussent le
-                    prix et la marque hors de la feuille. La pastille pose le
-                    rayon et le déroule à la fois ; ses types s'affichent
-                    dessous, en pastilles. */}
-                <div className="grid grid-cols-2 gap-2">
-                  <LigneRayon
-                    libelle="Tout voir"
-                    total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
-                    actif={rayon === null}
-                    onClick={() => {
-                      setRayon(null);
-                      setTags([]);
-                    }}
-                    pastille
-                  />
-                  {rayonsDisponibles.map(({ rayon: r, total }) => (
-                    <LigneRayon
-                      key={r}
-                      libelle={r}
-                      total={total}
-                      actif={rayon === r}
-                      ouvert={rayon === r}
-                      onClick={() => basculer(r)}
-                      pastille
-                    />
-                  ))}
-                </div>
-
-                {rayon && typesDuRayon.length > 0 && (
-                  <div className="mt-3">
-                    <p className="m-0 mb-2 text-[10.5px] font-black uppercase tracking-[0.14em] text-white/55">
-                      Types · {rayon}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {typesDuRayon.map((t) => (
-                        <button
-                          key={t.tag}
-                          type="button"
-                          onClick={() => basculerTag(t.tag)}
-                          aria-pressed={tags.includes(t.tag)}
-                          className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[12px] font-bold transition active:scale-[.97] ${
-                            tags.includes(t.tag)
-                              ? "bg-white text-[var(--color-ink)]"
-                              : "bg-white/8 text-white/88 hover:bg-white/14"
-                          }`}
-                        >
-                          {t.tag}
-                          <span className="text-[11px] tabular-nums opacity-55">
-                            {enChiffres(t.total)}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              /*
-               * UN SEUL MENU : LA LIGNE ENTIÈRE EST LE BOUTON.
-               *
-               * Le nom du rayon cochait et une flèche à part dépliait :
-               * deux cibles pour une seule idée. Le chevron passe à gauche
-               * du nom, dans la même ligne, et un clic fait tout : il pose
-               * le rayon et le déroule, replie celui qui était ouvert, ou
-               * referme le rayon ouvert et revient à tout.
-               */
-              <div className="flex flex-col gap-0.5">
-                <LigneRayon
-                  libelle="Tout voir"
-                  total={rayonsDisponibles.reduce((n, r) => n + r.total, 0)}
-                  actif={false}
-                  retrait
-                  onClick={() => {
-                    setRayon(null);
-                    setTags([]);
-                  }}
-                />
-                {rayonsDisponibles.map(({ rayon: r, total }) => {
-                  const ouvert = rayon === r;
-                  const types = ouvert ? typesDuRayon : [];
-                  return (
-                    <div key={r}>
-                      <LigneRayon
-                        libelle={r}
-                        total={total}
-                        actif={ouvert}
-                        ouvert={ouvert}
-                        onClick={() => basculer(r)}
-                      />
-                      {types.length > 0 && (
-                        <div className="mb-1 ml-[17px] mt-1 flex flex-col gap-0.5 border-l border-white/15 pl-2">
-                          {types.map((t) => (
-                            <LigneRayon
-                              key={t.tag}
-                              libelle={t.tag}
-                              total={t.total}
-                              actif={tags.includes(t.tag)}
-                              onClick={() => basculerTag(t.tag)}
-                              sous
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Section>
-        )}
-
-        {/*
-          TAILLE, PRIX ET DISPONIBILITÉ, REPLIÉS.
-
-          Ils prenaient leur hauteur en permanence, même quand on ne s'en
-          servait pas. Ils se replient maintenant sur leur titre, une seule
-          section ouverte à la fois, et la valeur posée reste lisible sur
-          la ligne du titre quand la section est fermée.
-        */}
-        {taillesDisponibles.length > 0 && (
-          <Section
-            titre="Taille"
-            ouverte={section === "taille"}
-            onBasculer={() => basculerSection("taille")}
-            valeur={taille}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {taillesDisponibles.map(({ taille: t, total }) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTaille((v) => (v === t ? null : t))}
-                  aria-pressed={taille === t}
-                  title={`${enChiffres(total)} pièce${total > 1 ? "s" : ""}`}
-                  className={`inline-flex min-w-[44px] items-center justify-center rounded-full px-3 text-[12.5px] font-bold tabular-nums transition active:scale-[.97] ${
-                    auDoigt ? "min-h-[40px]" : "min-h-[32px]"
-                  } ${
-                    taille === t
-                      ? "bg-white text-[var(--color-ink)]"
-                      : "bg-white/10 text-white/88 hover:bg-white/16"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {bornes && (
-          <Section
-            titre="Prix"
-            ouverte={section === "prix"}
-            onBasculer={() => basculerSection("prix")}
-            /* Fermée, la plage posée remonte sur la ligne du titre.
-               Ouverte, les deux champs sous le rail la disent déjà. */
-            valeur={
-              prixActif && section !== "prix" ? `${euros(prix[0])} — ${euros(prix[1])}` : null
-            }
-          >
-            <CurseurPrix
-              min={bornes.min}
-              max={bornes.max}
-              pas={bornes.pas}
-              valeur={prix}
-              onChange={setPrix}
-              format={euros}
-              tactile={auDoigt}
-            />
-          </Section>
-        )}
-
-        {(etatsUtiles.stock || stock || etatsUtiles.promo || promo) && (
-          <Section
-            titre="Disponibilité"
-            ouverte={section === "dispo"}
-            onBasculer={() => basculerSection("dispo")}
-            valeur={[stock && "En stock", promo && "En promo"].filter(Boolean).join(" · ") || null}
-          >
-            <div className={auDoigt ? "flex flex-wrap gap-2" : "flex flex-col gap-0.5"}>
-              {(etatsUtiles.stock || stock) && (
-                <Case libelle="En stock" coche={stock} onChange={setStock} pastille={auDoigt} />
-              )}
-              {(etatsUtiles.promo || promo) && (
-                <Case libelle="En promo" coche={promo} onChange={setPromo} pastille={auDoigt} />
-              )}
-            </div>
-          </Section>
-        )}
-
-        {marquesDisponibles.length > 1 && (
-          <Section titre="Marque">
-            <select
-              value={marque ?? ""}
-              onChange={(e) => setMarque(e.target.value || null)}
-              aria-label="Filtrer par marque"
-              className="champ champ-petit min-h-[44px] lg:min-h-0"
-            >
-              <option value="">Toutes ({marquesDisponibles.length})</option>
-              {marquesDisponibles.map((m) => (
-                <option key={m.slug} value={m.slug}>
-                  {m.nom} ({m.total})
-                </option>
-              ))}
-            </select>
-          </Section>
-        )}
-
-    </>
-  );
+  const etat: EtatFiltres = {
+    total,
+    enCours,
+    chargement: !catalogueManquant ? "pret" : filtresEnPanne ? "panne" : "attente",
+    reessayer: () => setEssaiFiltres((n) => n + 1),
+    rayons: rayonsDisponibles,
+    rayon,
+    choisirRayon: (r) => {
+      if (r === null) {
+        setRayon(null);
+        setTags([]);
+      } else basculer(r);
+    },
+    types: typesDuRayon,
+    tags,
+    basculerTag,
+    tailles: taillesDisponibles,
+    taille,
+    choisirTaille: setTaille,
+    bornes,
+    prix,
+    choisirPrix: setPrix,
+    prixActif,
+    euros,
+    marques: marquesDisponibles,
+    marque,
+    nomDeLaMarque,
+    choisirMarque: setMarque,
+    etats: etatsUtiles,
+    stock,
+    setStock,
+    promo,
+    setPromo,
+    tri,
+    setTri,
+    actifs,
+    reinitialiser,
+    densite: <SelecteurDensite densite={densite} choisir={choisirDensite} offertes={offertes} />,
+  };
 
   return (
     <>
@@ -1845,123 +1440,6 @@ export default function PieceDirectory({
           </div>
         )}
 
-        {/*
-          SOUS LA RECHERCHE : LES FILTRES POSÉS À GAUCHE, L'AFFICHAGE À DROITE.
-
-          Au doigt, le rail de densité vivait dans la feuille de filtres,
-          sous le tri : pour passer d'une colonne à deux, il fallait ouvrir
-          les filtres. C'est pourtant un réglage de la GRILLE, pas de ce
-          qu'on cherche. Il remonte donc ici, à droite, sous le champ, à
-          portée de pouce et visible d'un coup d'œil. Sur grand écran, il
-          reste dans la ligne du tri, au-dessus de la grille.
-        */}
-        {(actifs > 0 || auDoigt) && (
-          <div className="mt-3 flex items-start justify-between gap-3">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              {actifs > 0 && (
-                <>
-                  {/* Le rayon seul tant qu'aucun type n'est coché ; ensuite un
-                      jeton par type, « Hauts · Chemises », et celui du rayon
-                      seul disparaît. Retirer le dernier type le fait revenir. */}
-                  {rayon && tags.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={() => basculer(rayon)}
-                      aria-label={`Retirer le filtre ${rayon}`}
-                      className={pastille}
-                    >
-                      {rayon}
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  {tags.map((t) => (
-                    <button
-                      key={`type-${t}`}
-                      type="button"
-                      onClick={() => basculerTag(t)}
-                      aria-label={`Retirer le filtre ${t}`}
-                      className={pastille}
-                    >
-                      {rayon ? `${rayon} · ${t}` : t}
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  ))}
-                  {taille && (
-                    <button
-                      type="button"
-                      onClick={() => setTaille(null)}
-                      aria-label="Retirer le filtre de taille"
-                      className={pastille}
-                    >
-                      Taille {taille}
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  {marque && nomDeLaMarque && (
-                    <button
-                      type="button"
-                      onClick={() => setMarque(null)}
-                      aria-label="Retirer le filtre de marque"
-                      className={pastille}
-                    >
-                      {nomDeLaMarque}
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  {prixActif && bornes && (
-                    <button
-                      type="button"
-                      onClick={() => setPrix([bornes.min, bornes.max])}
-                      aria-label="Retirer le filtre de prix"
-                      className={pastille}
-                    >
-                      {euros(prix[0])} – {euros(prix[1])}
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  {stock && (
-                    <button
-                      type="button"
-                      onClick={() => setStock(false)}
-                      aria-label="Retirer le filtre en stock"
-                      className={pastille}
-                    >
-                      En stock
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  {promo && (
-                    <button
-                      type="button"
-                      onClick={() => setPromo(false)}
-                      aria-label="Retirer le filtre en promo"
-                      className={pastille}
-                    >
-                      En promo
-                      <span aria-hidden="true" className="jeton-filtre-x">×</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={reinitialiser}
-                    className="text-[12px] font-bold text-white/70 underline underline-offset-2 hover:text-white"
-                  >
-                    Tout effacer
-                  </button>
-                </>
-              )}
-            </div>
-            {auDoigt && (
-              <SelecteurDensite
-                densite={densite}
-                choisir={choisirDensite}
-                offertes={offertes}
-                className="min-h-[40px]"
-              />
-            )}
-          </div>
-        )}
-
         {/* ---------------- le panneau ----------------
 
             IL FLOTTE AU-DESSUS DE LA GRILLE, contrairement à celui de
@@ -2009,59 +1487,14 @@ export default function PieceDirectory({
         )}
       </div>
 
-      <div
-        ref={zone}
-        className="grid items-start gap-4 pb-20 lg:grid-cols-[222px_minmax(0,1fr)] lg:gap-[26px] lg:pb-0"
-      >
-        {/* ---------------- la colonne de filtres ----------------
+      {/* ---------------- les filtres, puis la grille ----------------
 
-            SOUS `lg`, ELLE DEVIENT UN TIROIR, PAS UNE RANGÉE DE
-            PASTILLES QUI DÉFILE. Trois raisons, dans l'ordre :
-
-            1. Ce qu'il y a dedans ne tient pas en pastilles. Un double
-               curseur de prix et des cases à cocher n'ont pas de forme
-               ronde ; il faudrait les reléguer ailleurs, et l'on se
-               retrouverait avec deux endroits pour filtrer une même
-               page.
-            2. Une rangée qui défile à l'horizontale cache la moitié de
-               ses entrées hors de l'écran, sans rien pour dire qu'elles
-               existent. Sur six rayons ce serait supportable ; avec la
-               marque et le prix en plus, non.
-            3. Le geste existe déjà, à l'identique, sur l'annuaire et sur
-               les posts. Une troisième façon de filtrer sur le même site
-               est une façon de trop.
-
-            Ce que le tiroir coûte — les filtres actifs deviennent
-            invisibles une fois refermé — est réglé par les pastilles
-            au-dessus, qui n'apparaissent que là.
-
-            Sur grand écran elle reste COLLANTE : l'envie d'affiner arrive
-            au milieu de la grille, pas en haut, et il fallait sinon
-            remonter, donc perdre l'endroit où l'on en était. */}
-        {/* ---------------- les filtres ----------------
-
-            Ils s'écrivent UNE FOIS et se posent à deux endroits selon la
-            largeur : la colonne collante sur grand écran, la feuille qui
-            monte au doigt. Les rendre deux fois donnerait deux jeux de
-            champs dans la page — le lecteur d'écran les annoncerait tous,
-            et la moitié seraient invisibles. */}
-        {!auDoigt && (
-          <aside
-            ref={colonne}
-            /* Collée en toutes circonstances. Quand le contenu dépasse
-               la hauteur de l'écran, `colonne-filtres--deborde` lui rend
-               son ascenseur ET le dégradé qui l'annonce — voir
-               `colonneDeborde` et `globals.css`. */
-            className={`glass colonne-filtres p-5 sticky top-[86px] ${
-              colonneDeborde ? "colonne-filtres--deborde" : ""
-            } ${colonneAuBout ? "colonne-filtres--au-bout" : ""}`}
-          >
-            {contenuFiltres}
-          </aside>
-        )}
-
+          La grille vit DANS la section des filtres : la barre collante
+          ne colle que dans son parent, et s'arrêterait sinon au bout des
+          filtres, avant la première pièce. */}
+      <FiltresPieces f={etat} collant={collant} calme={calme}>
         {/* ---------------- la grille ---------------- */}
-        <div className="min-w-0">
+        <div ref={zone} className="mt-6 min-w-0 pb-24 sm:mt-8 sm:pb-0">
           {total === 0 && !enCours ? (
             <div className="glass p-8 text-center">
               {/*
@@ -2125,66 +1558,6 @@ export default function PieceDirectory({
             </div>
           ) : (
             <>
-              {/* AU DOIGT, IL NE RESTE QUE LE COMPTE.
-
-                  La pilule collante qui portait le tri et la densité
-                  faisait cent pixels de haut pour trois mots : elle
-                  mangeait le premier tiers de l'écran, et le tri
-                  s'utilise deux fois par visite, pas deux fois par
-                  rangée. Le tri a rejoint la feuille de filtres, et la
-                  densité la ligne sous la recherche, à droite.
-
-                  Sur grand écran ils restent ici : la colonne de filtres
-                  y est déjà dépliée en permanence, et le tri n'a aucune
-                  raison d'aller se cacher. */}
-              {!auDoigt && (
-                <div className="mb-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-                  {/*
-                   * Le tri en texte souligné, pas en pastilles : la
-                   * colonne de gauche en est déjà pleine, et deux
-                   * familles de pastilles sur un même écran ne se
-                   * distinguent plus l'une de l'autre.
-                   *
-                   * Le rembourrage du bouton donne au doigt de quoi
-                   * viser ; le soulignement, lui, reste porté par le
-                   * texte, sinon il flotterait huit pixels plus bas et
-                   * ne désignerait plus rien.
-                   */}
-                  {(
-                    [
-                      ["hasard", "Au hasard"],
-                      ["croissant", "Prix croissant"],
-                      ["decroissant", "Prix décroissant"],
-                    ] as const
-                  ).map(([cle, label]) => (
-                    <button
-                      key={cle}
-                      type="button"
-                      onClick={() => setTri(cle)}
-                      aria-pressed={tri === cle}
-                      /* « Au hasard » saute au doigt, sauf s'il est le
-                         tri courant : trois tris et le rail de densité ne
-                         tiennent pas sur quatre cents pixels, et c'est
-                         celui dont on se passe le mieux — la page arrive
-                         déjà dans cet ordre. */
-                      className={`py-2 text-[12.5px] font-bold transition ${
-                        cle === "hasard" && tri !== "hasard" ? "hidden sm:block" : ""
-                      } ${tri === cle ? "text-white" : "text-white/60 hover:text-white"}`}
-                    >
-                      <span className={tri === cle ? "border-b-[1.5px] border-white pb-[3px]" : ""}>
-                        {label}
-                      </span>
-                    </button>
-                  ))}
-
-                  <SelecteurDensite
-                    densite={densite}
-                    choisir={choisirDensite}
-                    offertes={offertes}
-                  />
-                </div>
-              )}
-
               <Grille
                 variante="pieces"
                 memoire="vitrine"
@@ -2307,32 +1680,7 @@ export default function PieceDirectory({
             </>
           )}
         </div>
-      </div>
-
-      {/* ---------------- au doigt : le bouton, puis la feuille ----------------
-
-          LE BOUTON EST EN BAS, ET C'EST LE POINT DE L'ÉCRAN. Filtrer est
-          le seul geste qu'on refait dix fois sur cette page ; il doit
-          être là où le pouce se trouve déjà, pas en haut d'un défilement
-          de six rangées. Il porte son compte, donc il dit aussi combien
-          de filtres sont posés — ce qu'un tiroir refermé ne disait plus. */}
-      {auDoigt && !ouvert && total > 0 && (
-        <button
-          type="button"
-          onClick={() => setOuvert(true)}
-          aria-haspopup="dialog"
-          className="fixed bottom-5 left-1/2 z-40 inline-flex min-h-[44px] -translate-x-1/2 items-center gap-2 rounded-full bg-white px-5 text-[13px] font-black text-[var(--color-ink)] shadow-[0_14px_34px_-10px_rgba(12,3,36,0.9)] transition active:scale-[.97]"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
-        >
-          <IconFiltre className="h-4 w-4" />
-          Filtres
-          {actifs > 0 && (
-            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--color-ink)] px-1 text-[10.5px] font-black text-white">
-              {actifs}
-            </span>
-          )}
-        </button>
-      )}
+      </FiltresPieces>
 
       {/* ---------------- au doigt : la recherche prend l'écran ----------------
 
@@ -2356,257 +1704,6 @@ export default function PieceDirectory({
         uniteCompte="pièces"
       />
 
-      <FeuilleFiltres
-        ouvert={auDoigt && ouvert}
-        onFermer={() => setOuvert(false)}
-        id="filtres-pieces"
-        pied={
-          <button
-            type="button"
-            onClick={() => setOuvert(false)}
-            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-white px-5 text-[13.5px] font-black text-[var(--color-ink)] transition active:scale-[.98]"
-          >
-            Voir {total > 1 ? "les" : "la"} {enChiffres(total)} pièce
-            {total > 1 ? "s" : ""}
-          </button>
-        }
-      >
-        {contenuFiltres}
-      </FeuilleFiltres>
     </>
-  );
-}
-
-/**
- * Une section de la colonne, séparée de la précédente par un trait.
- *
- * Le trait plutôt qu'un simple écart : quatre familles de filtres
- * empilées sans rien entre elles se lisent comme une seule longue liste,
- * et l'on cherche alors le prix parmi les rayons.
- *
- * REPLIABLE quand on lui donne `onBasculer` : le titre devient le
- * bouton, la valeur posée s'affiche à droite (lisible même fermée),
- * puis `+` ou `−`. C'est ce qui garde la colonne à la hauteur de
- * l'écran : la taille et le prix ne prennent leur place que quand on
- * les ouvre.
- */
-function Section({
-  titre,
-  apres,
-  children,
-  ouverte = false,
-  onBasculer,
-  valeur,
-}: {
-  titre: string;
-  /** Posé à droite du titre. */
-  apres?: React.ReactNode;
-  children: React.ReactNode;
-  /** Pour une section repliable : ouverte ou non. */
-  ouverte?: boolean;
-  /** Rend la section repliable, le titre devient le bouton. */
-  onBasculer?: () => void;
-  /** Ce qui est posé, lisible sur la ligne du titre : « M », « 50 € — 120 € ». */
-  valeur?: string | null;
-}) {
-  if (onBasculer) {
-    return (
-      <div className="section-filtre mt-4 border-t border-white/15 pt-1.5">
-        <button
-          type="button"
-          onClick={onBasculer}
-          aria-expanded={ouverte}
-          className="flex min-h-[44px] w-full items-center justify-between gap-3 text-left lg:min-h-[34px]"
-        >
-          <span className="eyebrow m-0">{titre}</span>
-          <span className="flex min-w-0 items-center gap-2.5">
-            {valeur && (
-              <span className="truncate text-[12.5px] font-extrabold tabular-nums text-white">
-                {valeur}
-              </span>
-            )}
-            <span aria-hidden="true" className="w-3 text-center text-[16px] font-bold leading-none text-white/70">
-              {ouverte ? "\u2212" : "+"}
-            </span>
-          </span>
-        </button>
-        {ouverte && <div className="pb-1 pt-2">{children}</div>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="section-filtre mt-4 border-t border-white/15 pt-4">
-      <div className="mb-2.5 flex items-baseline justify-between gap-3">
-        <p className="eyebrow m-0">{titre}</p>
-        {apres}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/**
- * Une ligne du menu des pièces : le nom à gauche, ce qu'il contient à
- * droite.
- *
- * Le compteur avant le clic, et c'est tout l'intérêt de la forme en
- * lignes : on choisit en sachant si l'on va tomber sur cent quarante
- * pièces ou sur trois.
- *
- * Trois formes, un seul dessin :
- *   - un RAYON (`ouvert` renseigné) : le chevron à gauche du nom, vers
- *     la droite quand il est fermé, vers le bas quand il est déroulé, et
- *     la ligne entière est le bouton ;
- *   - un TYPE (`sous`), rangé sous son rayon : un cran plus petit, avec
- *     sa case à cocher dessinée ;
- *   - « Tout voir » (`retrait`) : aligné sur le texte des rayons.
- */
-function LigneRayon({
-  libelle,
-  total,
-  actif,
-  onClick,
-  pastille = false,
-  sous = false,
-  ouvert,
-  retrait = false,
-  indice,
-}: {
-  libelle: string;
-  total: number;
-  actif: boolean;
-  onClick: () => void;
-  /** Un type, rangé sous son rayon : un cran plus petit, avec sa case à cocher. */
-  sous?: boolean;
-  /** Un rayon du menu : déroulé ou non. Absent pour ce qui ne se déroule pas. */
-  ouvert?: boolean;
-  /** Décale le texte de la largeur du chevron, pour s'aligner sur les rayons. */
-  retrait?: boolean;
-  /** Ce qui est coché à l'intérieur quand le menu est replié : « +2 ». */
-  indice?: string;
-  /**
-   * La forme de la feuille : un bloc plein, posé dans une grille de deux.
-   *
-   * Dans la colonne, les rayons sont une LISTE — on les lit de haut en
-   * bas, et un fond sur chacun ferait six pavés là où il n'y a qu'un
-   * choix à faire. Dans la feuille ils sont côte à côte : sans fond, on
-   * ne sait plus où finit « Bijoux » et où commence son compte.
-   */
-  pastille?: boolean;
-}) {
-  const estRayon = ouvert !== undefined;
-  const chevron = estRayon && !pastille;
-  /* Un type coché se voit à sa case, pas à un aplat : sous un rayon
-     déjà foncé, un second aplat ferait un pavé dans un pavé. */
-  const aplat = actif && !sous;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      /* Un rayon DÉROULE : on annonce qu'il est ouvert. Un type ou une
-         pastille se COCHE : on annonce qu'il est enfoncé. */
-      aria-expanded={estRayon ? ouvert : undefined}
-      aria-pressed={estRayon ? undefined : actif}
-      /* La cible fait 44 px au doigt et se resserre à la souris : la
-         feuille de téléphone est justement l'endroit où l'on vise mal. */
-      className={`ligne-filtre flex min-h-[44px] w-full items-center justify-between gap-2 text-left transition lg:min-h-0 ${
-        sous ? "lg:py-1.5" : "lg:py-2"
-      } ${
-        pastille ? "rounded-[13px] px-3.5" : sous ? "rounded-[8px] px-2" : "rounded-[11px] px-[11px]"
-      } ${
-        aplat
-          ? pastille
-            ? "bg-white text-[var(--color-ink)]"
-            : "bg-[var(--color-ink)] text-white"
-          : pastille
-            ? "bg-white/8 text-white/88 hover:bg-white/14"
-            : actif
-              ? "text-white hover:bg-white/10"
-              : "text-white/84 hover:bg-white/12 hover:text-white"
-      }`}
-    >
-      <span className="flex min-w-0 items-center gap-[7px]">
-        {chevron && (
-          <IconChevron
-            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${ouvert ? "" : "-rotate-90"}`}
-          />
-        )}
-        {retrait && !pastille && <span aria-hidden="true" className="w-3.5 shrink-0" />}
-        {sous && (
-          <span
-            aria-hidden="true"
-            className={`grid h-[14px] w-[14px] shrink-0 place-items-center rounded-[4px] transition ${
-              actif ? "bg-white text-[var(--color-ink)]" : "border-[1.5px] border-white/45"
-            }`}
-          >
-            {actif && <IconCheck className="h-2.5 w-2.5" />}
-          </span>
-        )}
-        <span
-          className={`min-w-0 truncate ${
-            sous ? "text-[12.5px] font-bold" : ouvert ? "text-[13px] font-extrabold" : "text-[12.5px] font-bold"
-          }`}
-        >
-          {libelle}
-          {indice && (
-            <span className="ml-1.5 text-[10.5px] font-black text-[rgb(var(--accent-1))]">{indice}</span>
-          )}
-        </span>
-      </span>
-      <span
-        className={`shrink-0 font-bold tabular-nums ${sous ? "text-[11px]" : "text-[11.5px]"} ${actif ? "opacity-70" : "opacity-55"}`}
-      >
-        {enChiffres(total)}
-      </span>
-    </button>
-  );
-}
-
-/**
- * Une case à cocher, dessinée.
- *
- * La case du navigateur reste sous le doigt et garde le clavier : elle
- * est simplement rendue invisible, et le carré qu'on voit la suit. On ne
- * refait donc ni le focus, ni la barre d'espace, ni l'annonce par un
- * lecteur d'écran.
- */
-function Case({
-  libelle,
-  coche,
-  onChange,
-  pastille = false,
-}: {
-  libelle: string;
-  coche: boolean;
-  onChange: (v: boolean) => void;
-  /** Même raison que pour `LigneRayon` : côte à côte, il faut un contour. */
-  pastille?: boolean;
-}) {
-  return (
-    <label
-      className={`ligne-filtre flex min-h-[44px] cursor-pointer items-center gap-2.5 transition lg:min-h-0 lg:py-2 ${
-        pastille
-          ? `rounded-[13px] px-3.5 ${coche ? "bg-white/14" : "bg-white/6 hover:bg-white/12"}`
-          : "rounded-[11px] px-[11px] hover:bg-white/8"
-      }`}
-    >
-      <input
-        type="checkbox"
-        checked={coche}
-        onChange={(e) => onChange(e.target.checked)}
-        className="peer sr-only"
-      />
-      <span
-        aria-hidden="true"
-        className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[6px] transition peer-focus-visible:ring-2 peer-focus-visible:ring-white/70 ${
-          coche ? "bg-white text-[var(--color-ink)]" : "border-[1.5px] border-white/40"
-        }`}
-      >
-        {coche && <IconCheck className="h-3 w-3" />}
-      </span>
-      <span className="text-[12.5px] font-bold text-white/84">{libelle}</span>
-    </label>
   );
 }
