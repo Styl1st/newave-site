@@ -144,6 +144,12 @@ function crantDe(etendue: number): number {
  * Les rayons qui s'habillent, les seuls où la taille a un sens. Une
  * bague en M ou une casquette en XL ne veulent rien dire.
  */
+/** Le bout du rail de prix, en centimes : trois cents euros. Voir `bornes`. */
+const PLAFOND_RAIL = 30000;
+
+/** Les barres au-dessus du rail : vingt-quatre tranches, plus « et plus ». */
+const TRANCHES_PRIX = 24;
+
 const RAYONS_HABILLES = ["Hauts", "Bas", "Vestes", "Maille", "Robes"];
 
 /** Dans cet ordre-là, et pas dans l'ordre des comptes : on lit une échelle. */
@@ -407,13 +413,24 @@ export default function PieceDirectory({
     const { min: bas, max: haut } = bornesDuCatalogue;
     if (haut <= bas) return null;
 
-    /* Arrondi au cran, pour que les deux extrémités du rail tombent sur
-       des nombres ronds et que la poignée ait de quoi s'arrêter. */
-    const pas = crantDe(haut - bas);
+    /*
+     * LE RAIL PART DE ZÉRO ET S'ARRÊTE À `PLAFOND_RAIL`.
+     *
+     * Gradué jusqu'à la pièce la plus chère du site (près de neuf cents
+     * euros), il tassait l'essentiel du catalogue — la moitié des pièces
+     * sous soixante euros — dans le premier quart du trait, et ses
+     * barres de prix n'étaient qu'un pic contre le bord. La poignée
+     * haute posée au bout veut donc dire « et plus » : elle ne retient
+     * aucune borne haute (voir `adresse`).
+     */
+    const max = Math.min(haut, PLAFOND_RAIL);
+    const pas = crantDe(max);
     return {
-      min: Math.floor(bas / pas) * pas,
-      max: Math.ceil(haut / pas) * pas,
+      min: 0,
+      max: Math.ceil(max / pas) * pas,
       pas,
+      /** Des pièces coûtent plus que le bout du rail. */
+      auDela: haut > PLAFOND_RAIL,
     };
   }, [bornesDuCatalogue]);
 
@@ -661,9 +678,11 @@ export default function PieceDirectory({
       for (const t of tags) p.append("tag", t);
       if (taille) p.set("taille", taille);
       if (marque) p.set("marque", marque);
-      if (prixDemande) {
-        p.set("prixMin", String(prixDiffere[0]));
-        p.set("prixMax", String(prixDiffere[1]));
+      /* Chaque borne seulement si elle retient quelque chose : la
+         poignée haute au bout du rail veut dire « et plus ». */
+      if (prixDemande && bornes) {
+        if (prixDiffere[0] > bornes.min) p.set("prixMin", String(prixDiffere[0]));
+        if (prixDiffere[1] < bornes.max) p.set("prixMax", String(prixDiffere[1]));
       }
       if (stock) p.set("stock", "1");
       if (promo) p.set("promo", "1");
@@ -673,6 +692,27 @@ export default function PieceDirectory({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [graineDeLaVisite, signature]
   );
+
+  /*
+   * LES BARRES DU RAIL DE PRIX : les filtres posés, SAUF le prix. Elles
+   * montrent la forme de ce qu'on découpe ; se découper avec elle ne
+   * dirait plus rien. Voir `/api/pieces/prix`.
+   */
+  const adresseDesPrix = useMemo(() => {
+    if (!bornes) return null;
+    const p = new URLSearchParams();
+    if (qDifferee.trim()) p.set("q", qDifferee.trim());
+    for (const r of rayons) p.append("rayon", r);
+    for (const t of tags) p.append("tag", t);
+    if (taille) p.set("taille", taille);
+    if (marque) p.set("marque", marque);
+    if (stock) p.set("stock", "1");
+    if (promo) p.set("promo", "1");
+    p.set("bas", String(bornes.min));
+    p.set("pas", String(Math.round((bornes.max - bornes.min) / TRANCHES_PRIX)));
+    p.set("tranches", String(TRANCHES_PRIX));
+    return `/api/pieces/prix?${p}`;
+  }, [bornes, qDifferee, rayons, tags, taille, marque, stock, promo]);
 
   const [lot, setLot] = useState<Product[]>(premierLot);
   const [total, setTotal] = useState(totalDuPremierLot);
@@ -1293,6 +1333,7 @@ export default function PieceDirectory({
     prix,
     choisirPrix: setPrix,
     prixActif,
+    adresseDesPrix,
     euros,
     marques: marquesDisponibles,
     marque,
@@ -1337,10 +1378,13 @@ export default function PieceDirectory({
           /* Un champ, et le toucher ouvre la feuille : le panneau
              « sous le champ » n'aurait que deux lignes utiles une fois
              le clavier monté. */
-          <div className="relative">
-            {/* La loupe est dessinée, pas suggérée : `champ-loupe` ne
-                fait que réserver les quarante pixels à sa gauche. */}
-            <IconLoupe className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55" />
+          /* LA MÊME LIGNE QUE SUR ORDINATEUR : une loupe, le texte en
+             grand, un trait dessous. Le champ en pastille faisait de la
+             page du téléphone une autre page ; seul le geste change, le
+             toucher ouvre la feuille de recherche. */
+          <>
+            <div className="flex items-start gap-3">
+            <IconLoupe className="mt-[13px] h-[18px] w-[18px] shrink-0 text-white/85" />
             <input
               ref={champ}
               type="text"
@@ -1357,9 +1401,14 @@ export default function PieceDirectory({
               autoCorrect="off"
               spellCheck={false}
               autoComplete="off"
-              className="champ champ-loupe w-full"
+              className="requete-champ"
             />
-          </div>
+            </div>
+            <div
+              className="requete-trait mt-1"
+              style={{ "--remplissage": `${remplissage}%` } as React.CSSProperties}
+            />
+          </>
         ) : (
           <>
             <div className="flex items-start gap-3">

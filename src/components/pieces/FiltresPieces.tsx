@@ -37,6 +37,8 @@ const TRIS: [Tri, string][] = [
   ["decroissant", "prix décroissant"],
 ];
 
+type Bornes = { min: number; max: number; pas: number; auDela?: boolean };
+
 export type EtatFiltres = {
   total: number;
   enCours: boolean;
@@ -56,10 +58,13 @@ export type EtatFiltres = {
   taille: string | null;
   choisirTaille: (t: string | null) => void;
 
-  bornes: { min: number; max: number; pas: number } | null;
+  /** Le rail. `auDela` : des pièces coûtent plus que son bout, qui veut alors dire « et plus ». */
+  bornes: Bornes | null;
   prix: [number, number];
   choisirPrix: (p: [number, number]) => void;
   prixActif: boolean;
+  /** D'où viennent les barres au-dessus du rail. `null` : pas de barres. */
+  adresseDesPrix: string | null;
   euros: (centimes: number) => string;
 
   marques: { slug: string; nom: string; total: number }[];
@@ -481,7 +486,7 @@ function Barre({
       {f.bornes && (
         <Depli id={id("prix")} ouvert={volet === "prix"}>
           <div className="pb-5 pt-5">
-            <RailPrix f={f} bornes={f.bornes} />
+            <RailPrix f={f} bornes={f.bornes} ouvert={volet === "prix"} />
           </div>
         </Depli>
       )}
@@ -658,6 +663,42 @@ function plat(s: string): string {
 
 /* ------------------------------------------------------------------ */
 
+/**
+ * Les barres du rail, gardées le temps de la visite : rouvrir le volet
+ * ou revenir à un filtre déjà vu ne redemande rien.
+ */
+const formesConnues = new Map<string, Promise<number[] | null>>();
+
+function chargerFormes(url: string): Promise<number[] | null> {
+  let promesse = formesConnues.get(url);
+  if (!promesse) {
+    promesse = fetch(url)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { tranches?: number[] } | null) => (Array.isArray(d?.tranches) ? d.tranches : null))
+      .catch(() => null);
+    formesConnues.set(url, promesse);
+    /* Un raté ne reste pas en mémoire : la fois suivante retentera. */
+    promesse.then((v) => {
+      if (v === null) formesConnues.delete(url);
+    });
+  }
+  return promesse;
+}
+
+/** Où tombe le quantile `q` (0 à 1), en centimes, d'après les tranches. */
+function quantile(tranches: number[], q: number, bas: number, pas: number): number {
+  const total = tranches.reduce((n, x) => n + x, 0);
+  const vise = total * q;
+  let cumul = 0;
+  for (let k = 0; k < tranches.length; k++) {
+    if (cumul + tranches[k] >= vise && tranches[k] > 0) {
+      return bas + (k + (vise - cumul) / tranches[k]) * pas;
+    }
+    cumul += tranches[k];
+  }
+  return bas + tranches.length * pas;
+}
+
 /** Les fourchettes toutes faites, en centimes. */
 const FOURCHETTES: [string, number | null, number | null][] = [
   ["Moins de 30 €", null, 3000],
@@ -667,21 +708,66 @@ const FOURCHETTES: [string, number | null, number | null][] = [
 ];
 
 /**
- * LE RAIL DE PRIX, AMINCI.
+ * LE RAIL DE PRIX, AMINCI, ET LA FORME DU CATALOGUE AU-DESSUS.
  *
- * Toujours deux `input[type=range]` natifs superposés — le clavier, le
- * doigt et les lecteurs d'écran viennent avec, voir l'ancien
- * `CurseurPrix` — mais sans piste creusée ni pastilles de champ : un
- * trait d'un pixel et demi, deux poignées blanches, et les deux prix
- * écrits sous elles. Le prix exact se tape à droite, sur un simple
- * soulignement.
+ * Toujours deux `input[type=range]` natifs superposés : le clavier, le
+ * doigt et les lecteurs d'écran viennent avec. Mais sans piste creusée
+ * ni pastilles de champ : un trait d'un pixel et demi, deux poignées
+ * blanches, les deux prix écrits sous elles.
+ *
+ * AU-DESSUS, LES BARRES : combien de pièces à chaque prix, pour les
+ * filtres posés. Celles qui tombent entre les poignées s'allument. On
+ * voit où est le gros du catalogue avant de couper, et ce qu'on laisse
+ * en dehors. Elles montent une à une quand le volet s'ouvre : le seul
+ * mouvement orchestré de la barre, et il dit quelque chose.
+ *
+ * Sans la migration 47, pas de barres : le rail reste, seul.
  */
-function RailPrix({ f, bornes }: { f: EtatFiltres; bornes: { min: number; max: number; pas: number } }) {
+function RailPrix({ f, bornes, ouvert }: { f: EtatFiltres; bornes: Bornes; ouvert: boolean }) {
   const { min, max, pas } = bornes;
   const [bas, haut] = f.prix;
   const etendue = max - min || 1;
   const a = ((bas - min) / etendue) * 100;
   const b = ((haut - min) / etendue) * 100;
+  const etPlus = Boolean(bornes.auDela) && haut >= max;
+
+  /* Les barres ne sont demandées qu'une fois le volet ouvert : la
+     plupart des visites ne touchent jamais au prix. */
+  const [formes, setFormes] = useState<{ url: string; tranches: number[] } | null>(null);
+  const [demande, setDemande] = useState(false);
+  useEffect(() => {
+    if (ouvert) setDemande(true);
+  }, [ouvert]);
+  useEffect(() => {
+    const url = f.adresseDesPrix;
+    if (!demande || !url) return;
+    let vivant = true;
+    chargerFormes(url).then((t) => {
+      if (vivant && t && t.length > 1) setFormes({ url, tranches: t });
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [demande, f.adresseDesPrix]);
+
+  const tranches = formes?.tranches ?? null;
+  const dansLeRail = tranches ? tranches.slice(0, -1) : [];
+  const auDelaCompte = tranches ? tranches[tranches.length - 1] : 0;
+  const tranche = dansLeRail.length ? etendue / dansLeRail.length : 0;
+  const plusHaute = Math.max(1, ...dansLeRail);
+
+  /* « La moitié de ces pièces coûtent entre 25 et 63 € » : le premier et
+     le troisième quart, lus sur les barres. */
+  let moitie: string | null = null;
+  if (tranches && tranches.reduce((n, x) => n + x, 0) >= 8) {
+    const q1 = quantile(tranches, 0.25, min, tranche);
+    const q3 = quantile(tranches, 0.75, min, tranche);
+    const arrondi = (c: number) => Math.max(1, Math.round(c / 100));
+    moitie =
+      q3 >= max && bornes.auDela
+        ? `entre ${arrondi(q1)} € et plus de ${arrondi(max)} €`
+        : `entre ${arrondi(q1)} et ${arrondi(q3)} €`;
+  }
 
   /* Le navigateur promène le CENTRE de la poignée d'une demi-poignée à la
      largeur moins une demi-poignée. `--p` dit la largeur de la poignée,
@@ -693,13 +779,28 @@ function RailPrix({ f, bornes }: { f: EtatFiltres; bornes: { min: number; max: n
   const saisirBas = (v: number) => f.choisirPrix([Math.max(min, Math.min(v, haut)), haut]);
   const saisirHaut = (v: number) => f.choisirPrix([bas, Math.min(max, Math.max(v, bas))]);
 
-  /* Les deux prix sous les poignées : trop proches, ils se chevauchent,
-     et l'on n'en écrit plus qu'un, « 20 – 25 € », au milieu. */
-  const proches = b - a < 22;
+  const libelleHaut = etPlus ? `${f.euros(haut)} et plus` : f.euros(haut);
+  /* Trop proches, les deux prix se chevauchent : on n'en écrit qu'un. */
+  const proches = b - a < 24;
 
   return (
     <div className="grid gap-x-12 gap-y-5 sm:grid-cols-[minmax(0,560px)_1fr]">
       <div className="bf-rail">
+        {tranches && (
+          <div className="bf-histo" aria-hidden="true">
+            {dansLeRail.map((n, k) => {
+              const debut = min + k * tranche;
+              const dedans = debut + tranche > bas && (debut < haut || etPlus);
+              return (
+                <span
+                  key={k}
+                  data-dedans={dedans ? "" : undefined}
+                  style={{ height: `${n ? Math.max(6, (n / plusHaute) * 100) : 2}%`, "--i": k } as React.CSSProperties}
+                />
+              );
+            })}
+          </div>
+        )}
         <div className="bf-rail-piste">
           <span aria-hidden="true" className="bf-rail-plein" style={{ left: ou(a), right: `calc(100% - ${ou(b)})` }} />
           <input
@@ -722,7 +823,7 @@ function RailPrix({ f, bornes }: { f: EtatFiltres; bornes: { min: number; max: n
             value={haut}
             onChange={(e) => bougerHaut(Number(e.target.value))}
             aria-label="Prix maximum"
-            aria-valuetext={f.euros(haut)}
+            aria-valuetext={libelleHaut}
             data-curseur-zone="regler"
             data-curseur-mot="Ajuster"
           />
@@ -730,28 +831,29 @@ function RailPrix({ f, bornes }: { f: EtatFiltres; bornes: { min: number; max: n
         <div className="bf-rail-prix" aria-hidden="true">
           {proches ? (
             <span style={{ left: ou((a + b) / 2), transform: `translateX(-${(a + b) / 2}%)` }}>
-              {sansEuro(f.euros(bas))} – {f.euros(haut)}
+              {sansEuro(f.euros(bas))} – {libelleHaut}
             </span>
           ) : (
             <>
               <span style={{ left: ou(a), transform: `translateX(-${a}%)` }}>{f.euros(bas)}</span>
-              <span style={{ left: ou(b), transform: `translateX(-${b}%)` }}>{f.euros(haut)}</span>
+              <span style={{ left: ou(b), transform: `translateX(-${b}%)` }}>{libelleHaut}</span>
             </>
           )}
         </div>
+        {bornes.auDela && auDelaCompte > 0 && !etPlus && (
+          <p className="m-0 mt-1 text-right text-[12px] font-semibold text-white/50">
+            {enChiffres(auDelaCompte)} pièce{auDelaCompte > 1 ? "s" : ""} au-delà de {f.euros(max)}
+          </p>
+        )}
       </div>
 
       <div className="bf-prix-texte">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          De <ChampPrix libelle="Prix minimum, en euros" valeur={bas} onValider={saisirBas} /> à{" "}
-          <ChampPrix libelle="Prix maximum, en euros" valeur={haut} onValider={saisirHaut} /> €
-          {f.prixActif && (
-            <span className="ml-2 text-white/60">
-              · <b className="text-white">{enChiffres(f.total)}</b> pièce{f.total > 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-5">
+        {moitie && (
+          <p className="m-0">
+            La moitié de ces pièces coûtent <b>{moitie}</b>.
+          </p>
+        )}
+        <div className="mt-1 flex flex-wrap gap-x-5">
           {FOURCHETTES.map(([libelle, de, a2]) => {
             const v: [number, number] = [Math.max(min, de ?? min), Math.min(max, a2 ?? max)];
             if (v[0] >= v[1]) return null;
@@ -768,6 +870,11 @@ function RailPrix({ f, bornes }: { f: EtatFiltres; bornes: { min: number; max: n
               </button>
             );
           })}
+        </div>
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[13px]">
+          Au prix près : de <ChampPrix libelle="Prix minimum, en euros" valeur={bas} onValider={saisirBas} /> à{" "}
+          <ChampPrix libelle="Prix maximum, en euros" valeur={haut} onValider={saisirHaut} /> €
+          {etPlus && " et plus"}
         </div>
       </div>
     </div>

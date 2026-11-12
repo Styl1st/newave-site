@@ -698,6 +698,47 @@ export type CompteDuCatalogue = {
  * cookies, ce que Next interdit dans un cache. Même raison que pour
  * l'annuaire, un peu plus haut.
  */
+/**
+ * LA FORME DES PRIX, POUR LE RAIL DE LA VITRINE.
+ *
+ * Le nombre de pièces par tranche de prix, pour les filtres posés SAUF
+ * le prix : c'est le catalogue qu'on découpe, il ne doit pas se
+ * découper avec. `tranches + 1` cases, la dernière comptant tout ce
+ * qui dépasse le rail. Voir `histogramme_vitrine`, migration 47.
+ *
+ * `null` quand la base ne répond pas ou que la migration n'est pas
+ * passée : le volet montre alors son rail sans les barres.
+ */
+export async function lireHistogrammeDeVitrine(
+  filtres: Omit<FiltresVitrine, "prixMin" | "prixMax" | "tri">,
+  bas: number,
+  pas: number,
+  tranches: number
+): Promise<number[] | null> {
+  const supabase = createPublicClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("histogramme_vitrine", {
+    p_taxonomie: [...PRODUCT_CATEGORIES],
+    p_rayons: filtres.rayons?.length ? filtres.rayons : null,
+    p_tags: filtres.tags?.length ? filtres.tags : null,
+    p_tailles: filtres.tailles?.length ? filtres.tailles : null,
+    p_marque: filtres.marque ?? null,
+    p_stock: Boolean(filtres.stock),
+    p_promo: Boolean(filtres.promo),
+    p_q: filtres.q?.trim() || null,
+    p_bas: bas,
+    p_pas: pas,
+    p_tranches: tranches,
+  });
+
+  if (error || !Array.isArray(data)) {
+    if (error) console.error("[newave] histogramme de la vitrine :", error.message);
+    return null;
+  }
+  return (data as unknown[]).map((n) => Number(n) || 0);
+}
+
 /** Ce que rend `comptes_du_catalogue` (migration 46). */
 type ComptesEnUnPassage = {
   rayons: { rayon: string | null; total: number }[];
