@@ -46,7 +46,11 @@ export type EtatFiltres = {
   chargement: "pret" | "attente" | "panne";
   reessayer: () => void;
 
-  rayons: { rayon: string; total: number }[];
+  /**
+   * `total` vaut `null` tant que les comptes ne sont pas arrivés : les
+   * mots s'affichent tout de suite, leur chiffre les rejoint ensuite.
+   */
+  rayons: { rayon: string; total: number | null }[];
   rayon: string | null;
   /** `null` revient à tout ; le rayon déjà posé se retire. */
   choisirRayon: (r: string | null) => void;
@@ -189,17 +193,16 @@ export default function FiltresPieces({
   const [tousLesTypes, setTousLesTypes] = useState(false);
   useEffect(() => setTousLesTypes(false), [f.rayon]);
 
-  const toutCompte = f.rayons.reduce((n, r) => n + r.total, 0);
+  const toutCompte = f.rayons.every((r) => r.total !== null)
+    ? f.rayons.reduce((n, r) => n + (r.total ?? 0), 0)
+    : null;
 
   return (
     <section aria-label="Filtres" className="relative">
-      {f.chargement === "attente" && (
-        <div role="status" aria-label="Chargement des filtres" className="bf-attente">
-          {[92, 64, 118, 84, 70, 136, 96].map((l, i) => (
-            <span key={i} className="skeleton" style={{ width: l }} />
-          ))}
-        </div>
-      )}
+      {/* LES MOTS N'ATTENDENT PLUS LES COMPTES. Les noms des rayons sont
+          connus d'avance ; seuls leurs chiffres viennent de la base. Ils
+          s'affichaient en barres grises le temps qu'elle réponde, et
+          c'était tout le haut de la page qui avait l'air de charger. */}
       {f.chargement === "panne" && (
         <p className="m-0 text-[13px] text-white/70">
           Les filtres n&apos;ont pas répondu.{" "}
@@ -219,7 +222,8 @@ export default function FiltresPieces({
             aria-pressed={f.rayon === null}
             onClick={() => f.choisirRayon(null)}
           >
-            Tout<sup>{enChiffres(toutCompte)}</sup>
+            Tout
+            <Compte n={toutCompte} />
           </button>
           {f.rayons.map(({ rayon: r, total }) => (
             <button
@@ -230,7 +234,7 @@ export default function FiltresPieces({
               onClick={() => f.choisirRayon(r)}
             >
               {r}
-              <sup>{enChiffres(total)}</sup>
+              <Compte n={total} />
             </button>
           ))}
         </div>
@@ -271,6 +275,11 @@ export default function FiltresPieces({
 }
 
 /* ------------------------------------------------------------------ */
+
+/** Le compte d'un mot, en exposant ; il arrive en fondu s'il était attendu. */
+function Compte({ n }: { n: number | null }) {
+  return n === null ? null : <sup className="bf-compte-mot">{enChiffres(n)}</sup>;
+}
 
 /** Un volet sans boîte : il se déplie dans la page, il ne s'y pose pas. */
 function Depli({ id, ouvert, children }: { id: string; ouvert: boolean; children: React.ReactNode }) {
@@ -452,7 +461,7 @@ function Barre({
                 style={{ "--i": k + 1 } as React.CSSProperties}
               >
                 {r}
-                <sup>{enChiffres(total)}</sup>
+                <Compte n={total} />
               </button>
             ))}
           </div>

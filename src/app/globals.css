@@ -6473,9 +6473,9 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .bf-depli .bf-entre { opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .4s cubic-bezier(.22, .9, .24, 1), color .25s ease; }
 .bf-depli[data-ouvert] .bf-entre { opacity: 1; transform: none; transition-delay: calc(var(--i) * 30ms + 100ms), calc(var(--i) * 30ms + 100ms), 0s; }
 
-/* Les comptes attendus : la place des mots, en barres. */
-.bf-attente { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-bottom: 6px; }
-.bf-attente > span { height: 26px; border-radius: 8px; }
+/* Le compte d'un rayon, arrivé après le mot. */
+.bf-compte-mot { animation: bfCompte .4s ease both; }
+@keyframes bfCompte { from { opacity: 0; } }
 
 /* ---------- les types, les tris ---------- */
 .bf-types { display: flex; flex-wrap: wrap; gap: 2px 22px; }

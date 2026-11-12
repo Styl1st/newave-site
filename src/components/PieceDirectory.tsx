@@ -17,6 +17,7 @@ import type { Critere } from "./recherche/Jeton";
 import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
+import { PRODUCT_CATEGORIES } from "@/lib/taxonomy";
 import { estUneVideo, premiereImage } from "@/lib/medias";
 import type { Product } from "@/lib/types";
 import type { CompteDuCatalogue } from "@/lib/queries";
@@ -144,6 +145,13 @@ function crantDe(etendue: number): number {
  * Les rayons qui s'habillent, les seuls où la taille a un sens. Une
  * bague en M ou une casquette en XL ne veulent rien dire.
  */
+/**
+ * Les rayons montrés avant que la base ait répondu : leurs noms, sans
+ * chiffre. Ceux de la base les remplacent dès qu'ils arrivent (ils
+ * peuvent en compter un de plus, « Autres »).
+ */
+const RAYONS_EN_ATTENDANT = PRODUCT_CATEGORIES.map((rayon) => ({ rayon, total: null }));
+
 /** Le bout du rail de prix, en centimes : trois cents euros. Voir `bornes`. */
 const PLAFOND_RAIL = 30000;
 
@@ -1315,7 +1323,7 @@ export default function PieceDirectory({
     enCours,
     chargement: !catalogueManquant ? "pret" : filtresEnPanne ? "panne" : "attente",
     reessayer: () => setEssaiFiltres((n) => n + 1),
-    rayons: rayonsDisponibles,
+    rayons: rayonsDisponibles.length > 0 ? rayonsDisponibles : RAYONS_EN_ATTENDANT,
     rayon,
     choisirRayon: (r) => {
       if (r === null) {
