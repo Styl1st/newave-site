@@ -1,0 +1,22 @@
+-- ============================================================
+-- MIGRATION 48 — les comptes du catalogue ne débordent plus sur le disque
+-- ============================================================
+--
+-- À lancer dans le SQL Editor. Rejouable. Ne change aucun chiffre.
+--
+-- LE SYMPTÔME, revenu malgré la migration 46 :
+--   [newave] comptes du catalogue : canceling statement due to statement timeout
+--
+-- POURQUOI. `comptes_du_catalogue` garde ses 34 000 pièces en mémoire le
+-- temps d'en tirer cinq comptes. Avec les tags et les tailles, ça pèse
+-- une quinzaine de mégaoctets, et la mémoire de travail de la base est
+-- réglée à 2 Mo : le reste part dans des fichiers temporaires, relus
+-- cinq fois. Mesuré le 12 novembre : de 1,7 à 5,4 s, au-delà des trois
+-- secondes qu'on laisse à un visiteur sans compte.
+--
+-- CE QUI CHANGE. Cette fonction-là, et elle seule, reçoit 32 Mo de
+-- mémoire de travail. Mesuré sur la même requête : 560 ms, plus rien sur
+-- le disque. Le réglage ne vaut que pendant son appel ; le reste de la
+-- base garde ses 2 Mo.
+
+alter function public.comptes_du_catalogue(text[]) set work_mem = '32MB';
