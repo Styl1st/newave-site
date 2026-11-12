@@ -4703,8 +4703,12 @@ html[data-allege] .bandeau-flou {
  * atteindrait le bout promettrait une fin qui n'existe pas, on peut
  * toujours ajouter un critère.
  */
+/* `<length-percentage>` et non `<percentage>` : le minifieur de la mise
+   en ligne réécrit `0%` en `0`, que `<percentage>` refuse. Chrome
+   ignorait alors toute la règle (« Ignored @property rule ») et le
+   trait ne s'animait plus. Un zéro sans unité est une longueur valide. */
 @property --remplissage {
-  syntax: "<percentage>";
+  syntax: "<length-percentage>";
   inherits: false;
   initial-value: 0%;
 }
