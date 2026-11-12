@@ -6600,7 +6600,7 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .bf-collant { position: sticky; top: 86px; z-index: 15; isolation: isolate; }
 .bf-collant::before {
   content: ''; position: absolute; z-index: -1; pointer-events: none;
-  left: 50%; width: 100vw; margin-left: -50vw; top: -96px; bottom: -92px;
+  left: 50%; width: 100vw; margin-left: -50vw; top: -150px; bottom: -92px;
   /* Clair plutôt que sombre : la teinte du fond de page, à peine
      assombrie, et un flou franc. Les photos passent dessous en taches
      de couleur, la ligne reste lisible sans faire de bande noire. */
@@ -6609,12 +6609,21 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   /* Plein jusqu'au bas de la ligne (ou du volet ouvert), puis un fondu
      sur les quatre-vingt-douze pixels qui suivent. En longueur et non
      en pourcentage : un volet déplié allonge le voile, et un fondu en
-     pourcentage commencerait alors au milieu de la liste des marques. */
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 92px), transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 92px), transparent 100%);
-  opacity: 0; transition: opacity .5s ease;
+     pourcentage commencerait alors au milieu de la liste des marques.
+
+     LE HAUT SE FOND AUSSI. Collée, la barre cache son bord haut sous
+     l'en-tête et l'on ne le voit jamais. Mais en remontant vite, le voile
+     met un instant à s'éteindre pendant que la barre redescend à sa
+     place : son bord haut passait alors en travers de la page, en une
+     ligne sombre bien nette. Il démarre maintenant cinquante pixels plus
+     haut, dans un fondu de soixante : plus de bord à voir. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 60px, #000 calc(100% - 92px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 60px, #000 calc(100% - 92px), transparent 100%);
+  opacity: 0; transition: opacity .22s ease;
 }
-.bf-collant[data-colle]::before { opacity: 1; }
+/* Il s'allume doucement, il s'éteint vite : en remontant, la barre
+   retrouve sa place sans traîner son voile avec elle. */
+.bf-collant[data-colle]::before { opacity: 1; transition-duration: .5s; }
 .bf-collant[data-colle] .bf-outils { border-color: transparent; animation: bfArrive .55s cubic-bezier(.22, .9, .24, 1); }
 @keyframes bfArrive { from { opacity: .2; transform: translateY(-10px); } }
 /* Sur ordinateur, le rayon n'entre dans la barre qu'une fois collée (les
