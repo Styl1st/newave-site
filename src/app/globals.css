@@ -6369,6 +6369,12 @@ img[data-progressif][data-charge].opacity-70 {
    le coin : il reste le fond du cadre. Dans le carrousel d'une pièce,
    où le cadre est grand, une ligne dit ce qui manque. */
 img[data-ratee] { visibility: hidden; }
+/* DANS UNE GRILLE DE PIÈCES, UNE TUILE DONT LA PHOTO EST MORTE S'EFFACE.
+   C'est presque toujours une pièce que la marque a retirée : la montrer
+   en carré vide n'apprend rien à personne, et le lien mène à une 404.
+   Elle est signalée en même temps (`photo-ratee`), et la relecture de la
+   nuit la retire pour de bon. */
+[data-reveal]:has(> .carte-eco img[data-ratee]) { display: none; }
 .diapo-photo:has(> img[data-ratee])::after {
   content: 'Photo indisponible chez la marque';
   position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { connecterRobot } from "@/lib/robot";
 import { lireLaBoutique } from "@/lib/lecture";
 import { boutiqueLisible, plateformeDeVente } from "@/lib/boutiques";
@@ -6,36 +7,43 @@ import { synchroniserCatalogue } from "@/lib/catalogue-sync";
 import { rafraichirLesTaux } from "@/lib/devises";
 
 /**
- * Relecture quotidienne des catalogues, vers midi.
+ * LA RELECTURE DES CATALOGUES, TOUTES LES MARQUES, CHAQUE NUIT.
  *
- * Une marque change ses prix, épuise une taille, sort une pièce. Sans
- * cette tâche, sa fiche chez nous vieillit doucement jusqu'à mentir.
- * Elle passe donc chaque jour remettre tout le monde à jour.
+ * Une marque change ses prix, épuise une taille, retire une pièce. Sans
+ * cette tâche, sa fiche chez nous vieillit jusqu'à mentir : une pièce
+ * retirée chez elle restait ici, avec une photo qui n'existe plus et un
+ * lien qui mène à une page 404.
  *
- * L'heure est réglée dans vercel.json, et elle y est écrite en UTC :
- * « 0 10 * * * » vaut midi à Paris de fin mars à fin octobre, et onze
- * heures le reste de l'année. Vercel ne connaît pas l'heure d'été, et
- * la suivre demanderait de changer cette ligne deux fois par an pour
- * une différence que personne ne remarque.
+ * QUI L'APPELLE. Supabase, toutes les cinq minutes entre 2 h et 4 h UTC
+ * (pg_cron et pg_net, migration 52). Vercel ne sait lancer une tâche
+ * qu'une fois par jour, et une fonction n'y vit qu'une minute : on ne
+ * relit pas cent soixante boutiques en une minute. Chaque appel prend
+ * donc les marques qui n'ont pas été relues depuis dix-huit heures, en
+ * commençant par les plus anciennes, en lit quatre à la fois, et
+ * s'arrête avant d'être coupé. L'appel suivant reprend là. Quand tout
+ * le monde est à jour, les appels restants ne font rien et répondent
+ * tout de suite.
+ *
+ * La tâche de Vercel (vercel.json) reste en filet de sécurité : elle
+ * passe en journée et ne trouve normalement plus rien à faire.
  *
  * Les nouvelles pièces sont publiées directement. C'est un choix
  * assumé : demander une relecture à chaque nouveauté reviendrait à
  * n'en publier aucune, et ce qui est en ligne chez la marque est déjà
  * public de toute façon.
- *
- * Elle ne traite qu'un petit lot par passage, en commençant par les
- * marques vues il y a le plus longtemps. Vercel coupe une fonction au
- * bout d'une minute, et lire un plan de site prend une dizaine de
- * secondes : vouloir tout faire d'un coup, c'est se garantir une
- * exécution coupée en plein milieu. En quelques jours, tout le monde
- * est passé.
  */
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** De quoi tenir dans la minute allouée, même sur des boutiques lentes. */
-const PAR_PASSAGE = 6;
+/** Combien de boutiques se lisent en même temps. */
+const EN_PARALLELE = 4;
+
+/** Après ce délai, on ne commence plus de nouvelle boutique. */
+const DERNIER_DEPART_MS = 32_000;
+
+/** Une marque relue depuis moins longtemps est à jour. */
+const FRAICHEUR_H = 18;
 
 type Marque = {
   id: string;
@@ -46,10 +54,57 @@ type Marque = {
   acces: string | null;
 };
 
+async function relire(supabase: SupabaseClient, marque: Marque): Promise<string> {
+  const adresse = marque.shop_url ?? marque.website_url;
+  let note: string;
+  let fermeture: string | null = null;
+
+  if (!adresse) {
+    note = "Aucune adresse de boutique renseignée.";
+  } else if (!boutiqueLisible(adresse)) {
+    note = `Vend sur ${plateformeDeVente(adresse)?.nom ?? "une plateforme"} : rien à lire depuis l'extérieur.`;
+  } else {
+    const lecture = await lireLaBoutique(adresse);
+    /* Une boutique fermée ou en pause : on le note, et la fiche le dit.
+       On ne retire rien sur la foi d'une boutique qui ne répond pas. */
+    fermeture = !lecture.ok ? (lecture.fermeture ?? null) : null;
+
+    if (!lecture.ok) {
+      note = lecture.error;
+    } else if (lecture.items.length === 0) {
+      note = "La boutique répond, mais son catalogue est vide.";
+    } else {
+      const bilan = await synchroniserCatalogue(supabase, marque.id, lecture.items, {
+        statutDesNouvelles: "published",
+        marquerLesAbsentes: true,
+      });
+      note = bilan.erreur
+        ? bilan.erreur
+        : `${bilan.creees} nouvelle${bilan.creees > 1 ? "s" : ""}, ${bilan.majs} mise${
+            bilan.majs > 1 ? "s" : ""
+          } à jour, ${bilan.retirees} retirée${bilan.retirees > 1 ? "s" : ""}.`;
+    }
+  }
+
+  await supabase
+    .from("brands")
+    .update({
+      catalogue_sync_at: new Date().toISOString(),
+      catalogue_sync_note: note,
+      catalogue_verrouille: fermeture !== null,
+      // Ne verrouille la fiche que si personne ne l'a déjà réglée.
+      ...(fermeture && (marque.acces ?? "ouvert") === "ouvert" ? { acces: fermeture } : {}),
+    })
+    .eq("id", marque.id);
+
+  return note;
+}
+
 export async function GET(request: Request) {
   /*
-   * Vercel ajoute cet en-tête aux tâches planifiées dès qu'on définit
-   * CRON_SECRET. Sans cette vérification, l'adresse serait publique et
+   * Vercel ajoute cet en-tête à ses tâches dès qu'on définit CRON_SECRET,
+   * et Supabase l'envoie avec le même secret (rangé dans son coffre,
+   * migration 52). Sans cette vérification, l'adresse serait publique et
    * n'importe qui pourrait déclencher des dizaines de lectures de
    * boutiques à la seconde.
    */
@@ -61,117 +116,56 @@ export async function GET(request: Request) {
     return NextResponse.json({ erreur: "Accès refusé." }, { status: 401 });
   }
 
+  const debut = Date.now();
   const supabase = await connecterRobot();
   if (!supabase) {
     return NextResponse.json(
-      { erreur: "Le compte de l'automate n'a pas pu se connecter." },
+      { erreur: "Le compte de l'automate n'a pas pu se connecter (ROBOT_EMAIL, ROBOT_MOT_DE_PASSE)." },
       { status: 500 }
     );
   }
 
-  /*
-   * Les taux de change, avant les catalogues.
-   *
-   * L'ordre compte : la lecture d'un catalogue calcule au passage
-   * l'équivalent en euros de chaque prix. Rafraîchir les taux après
-   * coup les laisserait vieux d'un jour à chaque fois.
-   *
-   * Un échec ici n'arrête rien : on se contentera des taux de la
-   * veille, ce qui est très largement suffisant.
-   */
-  const taux = await rafraichirLesTaux(supabase);
-
+  const avant = new Date(Date.now() - FRAICHEUR_H * 3600_000).toISOString();
   const { data, error } = await supabase
     .from("brands")
     .select("id, name, slug, shop_url, website_url, acces")
     .eq("status", "published")
     .eq("catalogue_auto", true)
+    .or(`catalogue_sync_at.is.null,catalogue_sync_at.lt.${avant}`)
     .order("catalogue_sync_at", { ascending: true, nullsFirst: true })
-    // Départage les ex æquo — et il y en a : toutes les fiches jamais
-    // lues ont la même valeur vide. Sans ce second critère, deux
-    // exécutions peuvent choisir les mêmes six marques et en laisser
-    // d'autres de côté indéfiniment.
     .order("id", { ascending: true })
-    .limit(PAR_PASSAGE);
+    .limit(40);
 
   if (error) {
     return NextResponse.json({ erreur: error.message }, { status: 500 });
   }
 
-  const marques = (data as Marque[] | null) ?? [];
-  const journal: Record<string, string>[] = [];
+  const file = (data as Marque[] | null) ?? [];
+  if (file.length === 0) {
+    return NextResponse.json({ traitees: 0, note: "Toutes les marques sont à jour." });
+  }
 
-  /*
-   * LA MINUTE EST UNE LIMITE DURE. Depuis que la lecture d'une boutique
-   * comprend aussi ses collections (les tags, voir `lib/tags`), une
-   * marque peut prendre une quinzaine de secondes. Plutôt que de risquer
-   * d'être coupé au milieu d'une écriture, on s'arrête à temps : les
-   * marques non traitées gardent leur date de passage la plus ancienne,
-   * et passent donc en tête demain.
-   */
-  const debut = Date.now();
+  // Les taux du jour, une fois par appel : les prix étrangers en dépendent.
+  const taux = await rafraichirLesTaux(supabase);
 
-  for (const marque of marques) {
-    if (journal.length > 0 && Date.now() - debut > 40_000) break;
-    const adresse = marque.shop_url ?? marque.website_url;
-    let note: string;
-
-    let fermeture: string | null = null;
-
-    if (!adresse) {
-      note = "Aucune adresse de boutique renseignée.";
-    } else if (!boutiqueLisible(adresse)) {
-      // Depop, Instagram, une page de liens : rien n'y est exposé.
-      // Insister à chaque passage ne produirait qu'une requête perdue
-      // et une ligne d'échec, tous les jours, pour toujours.
-      note = `Vend sur ${plateformeDeVente(adresse)?.nom ?? "une plateforme"} : rien à lire depuis l'extérieur.`;
-    } else {
-      const lecture = await lireLaBoutique(adresse);
-      // Fermée pour un drop : ce n'est pas un échec de lecture, et la
-      // fiche doit pouvoir le dire à ses visiteurs.
-      fermeture = !lecture.ok ? (lecture.fermeture ?? null) : null;
-
-      if (!lecture.ok) {
-        note = lecture.error;
-      } else if (lecture.items.length === 0) {
-        note = "La boutique répond, mais son catalogue est vide.";
-      } else {
-        const bilan = await synchroniserCatalogue(supabase, marque.id, lecture.items, {
-          statutDesNouvelles: "published",
-          marquerLesAbsentes: true,
-        });
-        note = bilan.erreur
-          ? bilan.erreur
-          : `${bilan.creees} nouvelle${bilan.creees > 1 ? "s" : ""}, ${bilan.majs} mise${
-              bilan.majs > 1 ? "s" : ""
-            } à jour, ${bilan.retirees} retirée${bilan.retirees > 1 ? "s" : ""}.`;
+  const journal: { marque: string; resultat: string }[] = [];
+  let suivante = 0;
+  const ouvrier = async () => {
+    while (suivante < file.length && Date.now() - debut < DERNIER_DEPART_MS) {
+      const marque = file[suivante++];
+      try {
+        journal.push({ marque: marque.slug, resultat: await relire(supabase, marque) });
+      } catch (e) {
+        journal.push({ marque: marque.slug, resultat: `Échec : ${(e as Error)?.message ?? e}` });
       }
     }
-
-    // On note toujours la date, même après un échec : sinon une
-    // boutique en panne monopoliserait tous les passages suivants et
-    // les autres marques ne seraient plus jamais relues.
-    await supabase
-      .from("brands")
-      .update({
-        catalogue_sync_at: new Date().toISOString(),
-        catalogue_sync_note: note,
-        catalogue_verrouille: fermeture !== null,
-        // Trouvée fermée : la fiche le dira d'elle-même, et de la bonne
-        // façon. Seulement si personne n'a choisi autre chose : une
-        // déduction n'a pas à écraser une décision prise à la main.
-        ...(fermeture && (marque.acces ?? "ouvert") === "ouvert"
-          ? { acces: fermeture }
-          : {}),
-      })
-      .eq("id", marque.id);
-
-    journal.push({ marque: marque.slug, resultat: note });
-  }
+  };
+  await Promise.all(Array.from({ length: EN_PARALLELE }, ouvrier));
 
   return NextResponse.json({
     taux: taux.ok ? `${taux.devises} devises` : (taux.erreur ?? "échec"),
-    traitees: marques.length,
+    traitees: journal.length,
+    restantes: file.length - journal.length,
     journal,
   });
 }
