@@ -6501,6 +6501,35 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .bf-type[aria-pressed="true"] { color: var(--color-white); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .bf-type-reste { color: color-mix(in srgb, var(--color-white) 55%, transparent); display: none; }
 
+/* ---------- la grille qui se recharge ----------
+   Un filtre change : la grille d'avant s'estompe et un anneau tourne au
+   milieu de l'écran, collé pendant qu'on défile. Il n'apparaît qu'après
+   un temps : une réponse rapide ne fait rien clignoter. Seul un
+   `transform` s'anime, ce qui ne coûte rien même sur un vieux téléphone. */
+.vitrine-zone { position: relative; }
+.vitrine-zone > :not(.vitrine-attente) { transition: opacity .25s ease; }
+.vitrine-zone[data-rafraichit] > :not(.vitrine-attente) { opacity: .28; pointer-events: none; transition-delay: .12s; }
+.vitrine-attente {
+  position: sticky; top: 42vh; z-index: 5; height: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: vitrineAttente .25s ease .15s both;
+}
+/* `flex: none` : le conteneur fait zéro de haut, sans ça l'anneau s'y
+   écrasait en un trait. */
+.vitrine-attente > * { flex: none; }
+.vitrine-anneau {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--color-white) 22%, transparent);
+  border-top-color: var(--color-white);
+  animation: vitrineTourne .75s linear infinite;
+}
+.vitrine-attente-mot { font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--color-white); }
+@keyframes vitrineTourne { to { transform: rotate(360deg); } }
+@keyframes vitrineAttente { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .vitrine-anneau { animation-duration: 2s; }
+}
+
 /* ---------- le nuancier ----------
    La pastille EST la couleur : pas de case, pas de cadre. Celle qu'on a
    cochée prend un anneau de la couleur du texte, détaché du fond par un

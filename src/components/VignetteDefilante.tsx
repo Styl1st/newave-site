@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AttentePhoto from "./AttentePhoto";
 import { jeuDeVignettes, vignette } from "@/lib/vignette";
 
@@ -98,6 +98,35 @@ export default function VignetteDefilante({
     prechaufferVignette(images[i]);
   };
 
+  /*
+   * LA SUIVANTE ET LA PRÉCÉDENTE PARTENT DÈS QU'ON ENTRE SUR LA PHOTO.
+   *
+   * La demande d'avance était posée sur la balise <img> elle-même. Or la
+   * photo est recouverte par le lien de la fiche : la souris n'arrivait
+   * jamais jusqu'à elle, l'événement ne partait pas, et chaque clic sur
+   * une flèche lançait le téléchargement à ce moment-là. D'où l'attente
+   * avant de voir la photo suivante. On écoute maintenant le cadre entier,
+   * lien compris, une seule fois.
+   */
+  const cadre = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const zone = cadre.current?.parentElement;
+    if (!zone || images.length < 2) return;
+    const avancer = () => {
+      for (const i of [1, images.length - 1]) {
+        if (annoncees.current.has(i)) continue;
+        annoncees.current.add(i);
+        prechaufferVignette(images[i]);
+      }
+    };
+    zone.addEventListener("pointerenter", avancer, { once: true });
+    zone.addEventListener("focusin", avancer, { once: true });
+    return () => {
+      zone.removeEventListener("pointerenter", avancer);
+      zone.removeEventListener("focusin", avancer);
+    };
+  }, [images]);
+
   const aller = (pas: number) => (e: React.MouseEvent) => {
     /*
      * La photo est recouverte d'un lien vers la fiche. Sans ces deux
@@ -136,7 +165,7 @@ export default function VignetteDefilante({
         loading={prioritaire ? "eager" : "lazy"}
         fetchPriority={prioritaire ? "high" : "auto"}
         decoding="async"
-        onMouseEnter={() => preparer(1)}
+        ref={cadre}
         data-progressif={prioritaire ? "net" : ""}
         suppressHydrationWarning
         className={`relative h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${className}`}

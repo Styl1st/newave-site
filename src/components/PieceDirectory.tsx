@@ -747,6 +747,15 @@ export default function PieceDirectory({
   const [lot, setLot] = useState<Product[]>(premierLot);
   const [total, setTotal] = useState(totalDuPremierLot);
   const [enCours, setEnCours] = useState(false);
+  /*
+   * UN FILTRE QUI CHANGE N'EST PAS UNE SUITE QU'ON CHARGE. La suite a son
+   * propre signe, en bas (« Ça arrive… »). Un filtre, lui, remplace toute
+   * la grille : tant que la réponse n'est pas là, l'ancienne grille restait
+   * affichée telle quelle et la page avait l'air de ne pas avoir entendu
+   * le clic. Elle s'estompe maintenant, avec un anneau qui tourne là où
+   * les pièces vont arriver.
+   */
+  const [rafraichit, setRafraichit] = useState(false);
   const [panne, setPanne] = useState(false);
 
   /*
@@ -820,6 +829,7 @@ export default function PieceDirectory({
 
     const halte = new AbortController();
     setEnCours(true);
+    setRafraichit(true);
 
     chercherAvecReprises<{ pieces: Product[]; total: number }>(adresse(0), halte.signal)
       .then((page) => {
@@ -836,7 +846,10 @@ export default function PieceDirectory({
         setPanne(true);
       })
       .finally(() => {
-        if (!halte.signal.aborted) setEnCours(false);
+        if (!halte.signal.aborted) {
+          setEnCours(false);
+          setRafraichit(false);
+        }
       });
 
     return () => halte.abort();
@@ -1596,7 +1609,18 @@ export default function PieceDirectory({
           filtres, avant la première pièce. */}
       <FiltresPieces f={etat} collant={collant} calme={calme}>
         {/* ---------------- la grille ---------------- */}
-        <div ref={zone} className="mt-6 min-w-0 pb-24 sm:mt-8 sm:pb-0">
+        <div
+          ref={zone}
+          className="vitrine-zone mt-6 min-w-0 pb-24 sm:mt-8 sm:pb-0"
+          data-rafraichit={rafraichit ? "" : undefined}
+          aria-busy={rafraichit}
+        >
+          {rafraichit && (
+            <div className="vitrine-attente" role="status">
+              <span className="vitrine-anneau" aria-hidden="true" />
+              <span className="vitrine-attente-mot">Ça arrive…</span>
+            </div>
+          )}
           {total === 0 && !enCours ? (
             <div className="glass p-8 text-center">
               {/*
