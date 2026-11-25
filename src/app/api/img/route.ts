@@ -709,7 +709,7 @@ const DESSIN_CERTAIN = 44;
  * arrivée. Un fond blanc n'a jamais cassé personne.
  */
 async function detourer(
-  sharp: typeof import("sharp"),
+  sharp: typeof import("sharp").default,
   image: import("sharp").Sharp
 ): Promise<import("sharp").Sharp> {
   try {
@@ -828,7 +828,7 @@ async function detourer(
  * passe à `b=2` et tous les caches repartent de zéro.
  */
 async function servirEnBlanc(
-  sharp: typeof import("sharp"),
+  sharp: typeof import("sharp").default,
   octets: Buffer,
   type: string,
   entetes: Record<string, string>
