@@ -32,7 +32,10 @@ import { vignette } from "./vignette";
 const PAR_TOUR = 400;
 
 /** Combien de photos se lisent en même temps. */
-const EN_PARALLELE = 8;
+const EN_PARALLELE = 6;
+
+/** Autant de refus d'affilée, et l'on arrête le passage : le CDN freine. */
+const REFUS_AVANT_PAUSE = 25;
 
 /** Le côté de la vignette décodée. Assez pour la forme, pas plus. */
 const COTE = 40;
@@ -84,7 +87,18 @@ async function telecharger(url: string, signal: AbortSignal): Promise<Buffer | n
       cible = suite ? adresseSure(new URL(suite, cible).toString()) : null;
       continue;
     }
-    if (!r.ok) return null;
+    /*
+     * UNE PHOTO ABSENTE N'EST PAS UNE PHOTO REFUSÉE. 404 et 410 disent
+     * qu'elle n'existe plus : la pièce est lue, sans couleur. Tout le
+     * reste (429, 403, 5xx) dit surtout que le CDN nous trouve trop
+     * pressés : on lève, et la pièce reste en file pour plus tard. Le
+     * premier rattrapage avait écrit « sans réponse » sur des milliers de
+     * pièces dont la photo se portait très bien.
+     */
+    if (!r.ok) {
+      if (r.status === 404 || r.status === 410) return null;
+      throw new Error(`HTTP ${r.status}`);
+    }
     const type = (r.headers.get("content-type") ?? "").toLowerCase();
     if (!type.startsWith("image/")) return null;
     const annonce = Number(r.headers.get("content-length") ?? 0);
@@ -192,19 +206,22 @@ export async function lireUnLotDeCouleurs(
     /* 2. La photo, à plusieurs, jusqu'à l'heure. */
     const parLaPhoto: Ligne[] = [];
     let suivant = 0;
+    let refusDAffilee = 0;
     const ouvrier = async () => {
-      while (suivant < aRegarder.length && Date.now() < fin - 2500) {
+      while (suivant < aRegarder.length && Date.now() < fin - 2500 && refusDAffilee < REFUS_AVANT_PAUSE) {
         const p = aRegarder[suivant++];
         const delai = AbortSignal.timeout(Math.min(6000, Math.max(500, fin - Date.now() - 2000)));
         let lu: Awaited<ReturnType<typeof lireLaPhoto>> = null;
         try {
           if (sharp && p.image_url) lu = await lireLaPhoto(sharp, p.image_url, delai);
         } catch {
-          // Le réseau ou le délai : rien n'est écrit, la pièce reste en file
-          // pour le passage suivant.
+          // Le réseau, le délai ou un refus : rien n'est écrit, la pièce
+          // reste en file pour le passage suivant.
           differees.add(p.id);
+          refusDAffilee++;
           continue;
         }
+        refusDAffilee = 0;
 
         if (lu && lu.couleurs.length > 0) {
           parLaPhoto.push({ id: p.id, couleurs: lu.couleurs, teinte: lu.teinte ?? teinteDe(lu.couleurs[0]) });
@@ -225,8 +242,8 @@ export async function lireUnLotDeCouleurs(
       if (!(await ecrire(parLaPhoto.slice(i, i + 200)))) return bilan;
     }
 
-    // Plus rien n'avance dans ce passage : on rend la main.
-    if (parLeNom.length === 0 && parLaPhoto.length === 0) break;
+    // Plus rien n'avance, ou le CDN freine : on rend la main.
+    if ((parLeNom.length === 0 && parLaPhoto.length === 0) || refusDAffilee >= REFUS_AVANT_PAUSE) break;
   }
 
   const { count } = await supabase
