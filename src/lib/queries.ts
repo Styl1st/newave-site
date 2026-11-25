@@ -1160,16 +1160,11 @@ export async function rechercher(brut: string): Promise<Recherche> {
       .eq("status", "published")
       .ilike("name", motif)
       .limit(6),
-    supabase
-      .from("products")
-      /* Le compte exact seulement à partir de trois lettres : l'index
-         trigramme (migration 53) ne sait rien faire de deux, et compter
-         « ho » parcourait toute la table, deux secondes par frappe. */
-      .select(`id,slug,name,image_url,images, ${BRAND_REF}`, q.length >= 3 ? { count: "exact" } : {})
-      .eq("status", "published")
-      .is("retired_at", null)
-      .ilike("name", motif)
-      .limit(PIECES_MONTREES),
+    /* Par une fonction et non par la table : lue en visiteur, la table
+       passe ses règles d'accès pièce par pièce, et la recherche prenait
+       huit secondes. La fonction ne rend que ce qui est public, et ne
+       compte qu'à partir de trois lettres. Voir migrations 53 et 54. */
+    supabase.rpc("rechercher_pieces", { p_q: q, p_limite: PIECES_MONTREES }),
     /*
      * LES POSTS NE SONT DEMANDÉS QUE POUR LE POP-UP DE LA BARRE, et ils
      * ne coûtent presque rien : le journal compte quelques dizaines
@@ -1204,9 +1199,10 @@ export async function rechercher(brut: string): Promise<Recherche> {
     slug: string | null;
     name: string;
     image_url: string | null;
-    images: string[] | null;
-    brand: { slug: string; name: string } | null;
+    image: string | null;
+    marque: string | null;
   };
+  const brutPieces = (reponsePieces.data ?? null) as { total: number | null; pieces: LignePiece[] } | null;
 
   const marques = ((reponseMarques.data ?? []) as LigneMarque[]).map((b) => ({
     slug: b.slug,
@@ -1216,15 +1212,15 @@ export async function rechercher(brut: string): Promise<Recherche> {
     visuel: b.logo_url ?? b.cover_url,
   }));
 
-  const pieces = ((reponsePieces.data ?? []) as unknown as LignePiece[])
+  const pieces = (brutPieces?.pieces ?? [])
     /* Une pièce dont on ne connaît plus la marque n'a pas d'adresse :
        l'afficher mènerait à une page qui n'existe pas. */
-    .filter((p) => p.brand?.slug)
+    .filter((p) => p.marque)
     .map((p) => ({
       id: p.id,
-      adresse: `/marques/${p.brand!.slug}/${p.slug ?? p.id}`,
+      adresse: `/marques/${p.marque}/${p.slug ?? p.id}`,
       name: p.name,
-      image: p.images?.[0] ?? p.image_url,
+      image: p.image ?? p.image_url,
     }));
 
   const posts = ((reponsePosts.data ?? []) as { slug: string; title: string }[]).map((p) => ({
@@ -1236,6 +1232,6 @@ export async function rechercher(brut: string): Promise<Recherche> {
     marques,
     pieces,
     posts,
-    totalPieces: reponsePieces.count ?? pieces.length,
+    totalPieces: brutPieces?.total ?? pieces.length,
   };
 }
