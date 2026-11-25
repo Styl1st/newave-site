@@ -1572,7 +1572,7 @@ export default function PieceDirectory({
             au-dessus, et un second serait annoncé comme une deuxième
             recherche par un lecteur d'écran. */}
         {!petit && panneau && garni && suggestions && (
-          <div className="absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain rounded-[16px] border border-white/20 bg-[var(--surface-sombre)] p-3.5 shadow-[0_30px_70px_rgba(8,2,20,0.6)]">
+          <div className="panneau-suggestions absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain">
             <Suggestions
               intertitres
               suggestions={suggestions}
@@ -1588,11 +1588,11 @@ export default function PieceDirectory({
             {/* La même sortie qu'au-dessus, à portée de la main quand on
                 est descendu dans le panneau. */}
             {query.trim().length >= MINIMUM && (
-              <div className="mt-3 flex justify-end border-t border-white/12 pt-2.5">
+              <div className="mt-2 flex justify-end border-t border-white/8 px-2.5 pt-2.5">
                 <Link
                   href={`/marques?q=${encodeURIComponent(query.trim())}`}
                   onClick={() => noterRecherche(query.trim())}
-                  className="text-[11.5px] font-bold text-[rgb(var(--accent-1))] underline underline-offset-4 transition hover:text-white"
+                  className="bf-lien"
                 >
                   Voir les marques qui en ont
                 </Link>

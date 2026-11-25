@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { Recherche } from "@/lib/types";
+import { useEffect, useMemo, useState } from "react";
+import type { MarqueTrouvee, Recherche } from "@/lib/types";
 import type { Critere } from "./Jeton";
 
 /**
@@ -32,7 +32,64 @@ import type { Critere } from "./Jeton";
 export const MINIMUM = 2;
 
 /** Le temps qu'on laisse aux doigts avant d'aller interroger la base. */
-const REPOS = 180;
+const REPOS = 140;
+
+/** Combien de marques le panneau propose. */
+const MARQUES_PROPOSEES = 6;
+
+/*
+ * LES MARQUES SE CHERCHENT SUR PLACE.
+ *
+ * Elles attendaient la base à chaque frappe, et la base mettait trois
+ * secondes : le panneau apparaissait longtemps après qu'on avait fini de
+ * taper. La liste entière (une quinzaine de kilo-octets) descend une fois,
+ * à la première lettre, partagée par tous les champs de la page ; les
+ * marques s'affichent ensuite à la frappe. Voir `/api/recherche/marques`.
+ */
+let indexDesMarques: Promise<MarqueTrouvee[]> | null = null;
+
+function chargerLesMarques(): Promise<MarqueTrouvee[]> {
+  indexDesMarques ??= fetch("/api/recherche/marques")
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((j: { marques?: MarqueTrouvee[] }) => j.marques ?? [])
+    .catch(() => {
+      // Un raté ne reste pas : la frappe suivante retentera.
+      indexDesMarques = null;
+      return [];
+    });
+  return indexDesMarques;
+}
+
+/** Minuscules, sans accents ni ponctuation : « Supermade® » se trouve en tapant « supermade ». */
+function aplatir(texte: string): string {
+  return texte
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Les marques qui portent le mot, les plus évidentes d'abord : celles dont
+ * le nom COMMENCE par lui, puis celles dont un mot commence par lui, puis
+ * le reste.
+ */
+function marquesQuiPortent(index: MarqueTrouvee[], q: string): MarqueTrouvee[] {
+  const mot = aplatir(q);
+  if (!mot) return [];
+  const classees: { m: MarqueTrouvee; rang: number }[] = [];
+  for (const m of index) {
+    const nom = aplatir(m.name);
+    const ou = nom.indexOf(mot);
+    if (ou === -1) continue;
+    classees.push({ m, rang: ou === 0 ? 0 : nom[ou - 1] === " " ? 1 : 2 });
+  }
+  return classees
+    .sort((a, b) => a.rang - b.rang || a.m.name.localeCompare(b.m.name, "fr"))
+    .slice(0, MARQUES_PROPOSEES)
+    .map((x) => x.m);
+}
 
 export function useRecherche(query: string, criteres: Critere[] = []) {
   const [suggestions, setSuggestions] = useState<Recherche | null>(null);
@@ -46,6 +103,19 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
    * ou cassée. `enCours` permet de dire qu'elle cherche.
    */
   const [enCours, setEnCours] = useState(false);
+  const [index, setIndex] = useState<MarqueTrouvee[] | null>(null);
+
+  // Dès la première lettre : la liste est là avant la deuxième.
+  useEffect(() => {
+    if (index || query.trim().length === 0) return;
+    let vivant = true;
+    chargerLesMarques().then((liste) => {
+      if (vivant && liste.length > 0) setIndex(liste);
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [query, index]);
 
   useEffect(() => {
     const q = query.trim();
@@ -79,7 +149,26 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
     };
   }, [query]);
 
-  const marques = suggestions?.marques ?? [];
+  /*
+   * CE QUE LE PANNEAU MONTRE : les marques trouvées sur place, tout de
+   * suite, et les pièces de la base quand elles arrivent. Tant que la
+   * liste des marques n'est pas descendue, on garde celles de la base.
+   */
+  const q = query.trim();
+  const locales = useMemo(() => (index ? marquesQuiPortent(index, q) : null), [index, q]);
+  const fusion: Recherche | null =
+    q.length < MINIMUM
+      ? null
+      : locales
+        ? {
+            marques: locales,
+            pieces: suggestions?.pieces ?? [],
+            posts: suggestions?.posts ?? [],
+            totalPieces: suggestions?.totalPieces ?? 0,
+          }
+        : suggestions;
+
+  const marques = fusion?.marques ?? [];
 
   /*
    * Les critères d'abord, les marques ensuite : c'est l'ordre de la
@@ -98,9 +187,9 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
   /** Y a-t-il de quoi ouvrir un panneau, ou n'est-ce encore que du vide ? */
   const garni =
     criteres.length > 0 ||
-    (query.trim().length >= MINIMUM &&
-      Boolean(suggestions) &&
-      (marques.length > 0 || (suggestions?.pieces.length ?? 0) > 0));
+    (q.length >= MINIMUM &&
+      Boolean(fusion) &&
+      (marques.length > 0 || (fusion?.pieces.length ?? 0) > 0));
 
   /**
    * Les flèches et Entrée, partagées elles aussi.
@@ -143,5 +232,5 @@ export function useRecherche(query: string, criteres: Critere[] = []) {
     return false;
   }
 
-  return { suggestions, marques, surligne, setSurligne, garni, auClavier, enCours };
+  return { suggestions: fusion, marques, surligne, setSurligne, garni, auClavier, enCours };
 }

@@ -85,8 +85,8 @@ export default function Suggestions({
   const mot = query.trim();
 
   const ligne = feuille
-    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 text-left transition"
-    : "flex items-center gap-3 rounded-[10px] px-2 py-[7px] text-left transition";
+    ? "suggestion-ligne flex items-center gap-3 rounded-[13px] px-3 py-3 text-left"
+    : "suggestion-ligne flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-left";
 
   return (
     <>
@@ -99,7 +99,8 @@ export default function Suggestions({
               type="button"
               onMouseEnter={() => onSurligne(i)}
               onClick={() => onPoser?.(c)}
-              className={`${ligne} ${i === surligne ? "bg-white/14" : "hover:bg-white/8"}`}
+              className={ligne}
+              data-actif={i === surligne ? "" : undefined}
             >
               <span className="badge-type badge-critere">{c.famille}</span>
 
@@ -115,7 +116,7 @@ export default function Suggestions({
                 </span>
               )}
 
-              {i === surligne && <span className="requete-touche">Entrée</span>}
+              {i === surligne && <span className="suggestion-entree" aria-hidden="true">↵</span>}
             </button>
           ))}
         </div>
@@ -212,15 +213,16 @@ export function LigneMarque({
   onOuvrir: () => void;
 }) {
   const ligne = feuille
-    ? "flex items-center gap-3 rounded-[13px] px-3 py-3 text-left transition"
-    : "flex items-center gap-3 rounded-[10px] px-2 py-[7px] text-left transition";
+    ? "suggestion-ligne flex items-center gap-3 rounded-[13px] px-3 py-3 text-left"
+    : "suggestion-ligne flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-left";
 
   return (
     <Link
       href={`/marques/${marque.slug}`}
       onMouseEnter={onSurvol}
       onClick={onOuvrir}
-      className={`${ligne} ${actif ? "bg-white/14" : "hover:bg-white/8"}`}
+      className={ligne}
+      data-actif={actif ? "" : undefined}
     >
       {feuille ? (
         <span className="grid h-[34px] w-[34px] shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white/10">
@@ -257,7 +259,7 @@ export function LigneMarque({
             Entrée ↵
           </span>
         ) : (
-          <span className="requete-touche hidden lg:inline-block">Entrée</span>
+          <span className="suggestion-entree hidden lg:inline-block" aria-hidden="true">↵</span>
         ))}
     </Link>
   );

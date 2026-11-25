@@ -1162,7 +1162,10 @@ export async function rechercher(brut: string): Promise<Recherche> {
       .limit(6),
     supabase
       .from("products")
-      .select(`id,slug,name,image_url,images, ${BRAND_REF}`, { count: "exact" })
+      /* Le compte exact seulement à partir de trois lettres : l'index
+         trigramme (migration 53) ne sait rien faire de deux, et compter
+         « ho » parcourait toute la table, deux secondes par frappe. */
+      .select(`id,slug,name,image_url,images, ${BRAND_REF}`, q.length >= 3 ? { count: "exact" } : {})
       .eq("status", "published")
       .is("retired_at", null)
       .ilike("name", motif)

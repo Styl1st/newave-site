@@ -4779,30 +4779,50 @@ html[data-allege] .bandeau-flou {
   outline-offset: 1px;
 }
 
-/* ---------- les badges de la liste de suggestions ----------
-   Un aplat d'accent dit « ceci deviendra un jeton », un simple contour
-   dit « ceci est une marque, et cliquer l'ouvre ». C'est la seule
-   couleur pleine de toute la barre : elle ne sert qu'à ça. */
+/* ---------- les étiquettes de la liste de suggestions ----------
+   PLUS DE PASTILLES. Le « MARQUE » encadré et le « TYPE » en aplat
+   faisaient deux boutons de plus sur chaque ligne. Ce n'est plus qu'un
+   petit mot en capitales, aligné en colonne : l'accent pour ce qui se
+   pose en filtre, le blanc éteint pour ce qui s'ouvre. */
 .badge-type {
-  display: inline-grid;
-  place-items: center;
-  border-radius: 5px;
-  padding: 4px 6px 5px;
+  display: inline-block;
+  min-width: 52px;
   font-family: var(--font-sans);
-  font-weight: 900;
-  font-size: 8.5px;
+  font-weight: 800;
+  font-size: 9px;
   line-height: 1;
-  letter-spacing: .1em;
+  letter-spacing: .14em;
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge-critere {
-  background: rgb(var(--accent-1));
-  color: var(--color-ink);
+.badge-critere { color: rgb(var(--accent-1)); }
+.badge-marque { color: color-mix(in srgb, var(--color-white) 45%, transparent); }
+
+/* ---------- le panneau de suggestions ----------
+   Il arrive d'un geste court (un fondu et six pixels), sans cadre
+   épais : un liseré à peine visible et une ombre qui le détache de la
+   grille. Il reste opaque : posé sur des photos, un fond qui laisse
+   transparaître ne se lit pas. */
+.panneau-suggestions {
+  padding: 8px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--color-white) 10%, transparent);
+  background: color-mix(in oklab, var(--surface-sombre) 88%, #000);
+  box-shadow: 0 26px 60px -22px rgba(8, 2, 20, .75);
+  transform-origin: top center;
+  animation: suggestionsEntre .2s cubic-bezier(.22, .9, .24, 1);
 }
-.badge-marque {
-  border: 1px solid color-mix(in srgb, var(--color-white) 30%, transparent);
-  color: color-mix(in srgb, var(--color-white) 72%, transparent);
+@keyframes suggestionsEntre { from { opacity: 0; transform: translateY(-6px) scale(.99); } }
+.panneau-suggestions .eyebrow { padding-left: 10px; }
+
+/* Une ligne : rien au repos, un voile léger au survol et au clavier. */
+.suggestion-ligne { transition: background-color .15s ease; }
+@media (hover: hover) { .suggestion-ligne:hover { background: color-mix(in srgb, var(--color-white) 5%, transparent); } }
+.suggestion-ligne[data-actif] { background: color-mix(in srgb, var(--color-white) 9%, transparent); }
+.suggestion-entree { flex-shrink: 0; font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--color-white) 40%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .panneau-suggestions { animation: none; }
 }
 
 /* La portion tapée, soulignée et non surlignée : dans une liste où une
