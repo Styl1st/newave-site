@@ -6866,3 +6866,69 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   .suite-trait::after, .suite-mot, .suite-fleche { transition: none; }
   .suite[data-en-cours] .suite-trait::after, .suite-bouton:disabled .suite-fleche { animation: none; }
 }
+
+/* =====================================================================
+   À PROPOS
+
+   La page parle comme la vitrine : grands mots en lettres creuses, un
+   seul plein pour finir la phrase, des traits fins à la place des
+   caissons. Rien ne bouge en continu : l'entrée se fait au chargement
+   (`rise`) et au défilement (`data-reveal`), puis la page se tient
+   tranquille.
+   ===================================================================== */
+.ap-manifeste {
+  display: flex; flex-direction: column;
+  font-size: clamp(44px, 11vw, 112px); font-weight: 900; letter-spacing: -.05em; line-height: .95;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--color-white) 80%, transparent);
+}
+.ap-plein {
+  color: var(--color-white); -webkit-text-stroke: 0;
+  text-shadow: 0 0 28px rgba(var(--accent-1), .55);
+}
+
+.ap-chiffres {
+  margin: 48px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
+}
+.ap-chiffres > div { padding: 18px 0; display: flex; flex-direction: column-reverse; gap: 6px; }
+.ap-chiffres > div + div { padding-left: clamp(14px, 3vw, 32px); border-left: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent); }
+.ap-chiffres dd {
+  margin: 0; font-size: clamp(26px, 6vw, 48px); font-weight: 900; letter-spacing: -.04em; line-height: 1;
+  color: var(--color-white); font-variant-numeric: tabular-nums;
+}
+.ap-chiffres dt {
+  font-size: clamp(9.5px, 2.4vw, 11px); font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-white) 70%, transparent);
+}
+
+.ap-colonnes {
+  margin-top: 40px; display: grid; gap: 18px 48px;
+  font-size: 15.5px; line-height: 1.75; color: color-mix(in srgb, var(--color-white) 88%, transparent);
+}
+@media (min-width: 768px) { .ap-colonnes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.ap-principes { list-style: none; margin: 18px 0 0; padding: 0; display: grid; }
+@media (min-width: 768px) { .ap-principes { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; } }
+.ap-principes > li {
+  display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: start;
+  padding: 26px 0; border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
+}
+.ap-numero {
+  font-size: clamp(34px, 6vw, 46px); font-weight: 900; letter-spacing: -.05em; line-height: .9;
+  color: transparent; -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-white) 70%, transparent);
+  font-variant-numeric: tabular-nums; min-width: 1.6em;
+}
+
+.ap-contact {
+  margin-top: 64px; padding-top: 48px;
+  border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
+}
+@media (min-width: 640px) { .ap-contact { margin-top: 96px; } }
+.ap-question {
+  max-width: 14ch;
+  font-size: clamp(32px, 7.5vw, 72px); font-weight: 900; letter-spacing: -.045em; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1.3px color-mix(in srgb, var(--color-white) 80%, transparent);
+}
+
