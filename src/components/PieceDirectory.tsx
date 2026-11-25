@@ -14,7 +14,7 @@ import { declarerChampLocal } from "./recherche/champLocal";
 import FeuilleRecherche from "./recherche/FeuilleRecherche";
 import Suggestions from "./recherche/Suggestions";
 import type { Critere } from "./recherche/Jeton";
-import { MINIMUM, useRecherche } from "./recherche/useRecherche";
+import { useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
 import { PRODUCT_CATEGORIES } from "@/lib/taxonomy";
@@ -1517,6 +1517,32 @@ export default function PieceDirectory({
           </>
         )}
 
+        {/* ---------------- le panneau ----------------
+
+            COMME CELUI DE L'ANNUAIRE. Il flottait au-dessus de la grille
+            dans une boîte sombre ; il se déplie maintenant sous le champ,
+            à même le fond, et pousse la page d'un cran. Mêmes lignes,
+            même liseré dessous : on cherche une pièce comme on cherche
+            une marque.
+
+            Il ne porte PAS de champ : celui de la page est juste
+            au-dessus, et un second serait annoncé comme une deuxième
+            recherche par un lecteur d'écran. */}
+        {!petit && panneau && garni && suggestions && (
+          <div className="panneau-deplie max-h-[320px] overflow-y-auto overscroll-contain border-b border-white/14 py-2">
+            <Suggestions
+              suggestions={suggestions}
+              query={query}
+              surligne={surligne}
+              onSurligne={setSurligne}
+              onOuvrir={noterRecherche}
+              criteres={criteresProposes}
+              onPoser={poser}
+              uniteCompte="pièces"
+            />
+          </div>
+        )}
+
         {/* ---------------- la ligne qui compte ----------------
 
             À GAUCHE CE QU'ON VOIT, À DROITE CE QUI EXISTE. La vitrine
@@ -1555,51 +1581,6 @@ export default function PieceDirectory({
           </div>
         )}
 
-        {/* ---------------- le panneau ----------------
-
-            IL FLOTTE AU-DESSUS DE LA GRILLE, contrairement à celui de
-            l'annuaire qui pousse le contenu vers le bas. Deux écrans,
-            deux raisons : l'annuaire déplie ses suggestions au-dessus
-            d'une liste de lignes, qu'on retrouve en refermant ; ici il
-            faudrait pousser une grille de photos de trois cents pixels
-            de haut, et la page entière sauterait à chaque frappe.
-
-            SON FOND EST OPAQUE, et ce n'est pas une préférence. Une
-            liste de résultats posée en verre sur une grille de pièces
-            qui transparaît ne se lit tout simplement pas.
-
-            Il ne porte PAS de champ : celui de la page est juste
-            au-dessus, et un second serait annoncé comme une deuxième
-            recherche par un lecteur d'écran. */}
-        {!petit && panneau && garni && suggestions && (
-          <div className="panneau-suggestions absolute left-0 right-0 top-full z-30 mt-3 max-h-[min(62vh,430px)] overflow-y-auto overscroll-contain">
-            <Suggestions
-              intertitres
-              suggestions={suggestions}
-              query={query}
-              surligne={surligne}
-              onSurligne={setSurligne}
-              onOuvrir={noterRecherche}
-              criteres={criteresProposes}
-              onPoser={poser}
-              uniteCompte="pièces"
-            />
-
-            {/* La même sortie qu'au-dessus, à portée de la main quand on
-                est descendu dans le panneau. */}
-            {query.trim().length >= MINIMUM && (
-              <div className="mt-2 flex justify-end border-t border-white/8 px-2.5 pt-2.5">
-                <Link
-                  href={`/marques?q=${encodeURIComponent(query.trim())}`}
-                  onClick={() => noterRecherche(query.trim())}
-                  className="bf-lien"
-                >
-                  Voir les marques qui en ont
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ---------------- les filtres, puis la grille ----------------

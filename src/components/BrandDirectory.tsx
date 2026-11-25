@@ -878,7 +878,7 @@ export default function BrandDirectory({
             plein écran du téléphone : deux copies auraient fini par ne
             plus répondre pareil au même mot. */}
         {panneau && garni && (
-          <div className="max-h-[320px] overflow-y-auto overscroll-contain border-b border-white/14 py-2">
+          <div className="panneau-deplie max-h-[320px] overflow-y-auto overscroll-contain border-b border-white/14 py-2">
             <Suggestions
               suggestions={suggestions ?? RIEN}
               query={query}

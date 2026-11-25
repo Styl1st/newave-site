@@ -4813,6 +4813,9 @@ html[data-allege] .bandeau-flou {
   animation: suggestionsEntre .2s cubic-bezier(.22, .9, .24, 1);
 }
 @keyframes suggestionsEntre { from { opacity: 0; transform: translateY(-6px) scale(.99); } }
+/* Le même panneau, déplié dans la page (vitrine, annuaire) : il arrive en fondu. */
+.panneau-deplie { animation: suggestionsDeplie .2s ease; }
+@keyframes suggestionsDeplie { from { opacity: 0; transform: translateY(-4px); } }
 .panneau-suggestions .eyebrow { padding-left: 10px; }
 
 /* Une ligne : rien au repos, un voile léger au survol et au clavier. */
@@ -4822,7 +4825,7 @@ html[data-allege] .bandeau-flou {
 .suggestion-entree { flex-shrink: 0; font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--color-white) 40%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
-  .panneau-suggestions { animation: none; }
+  .panneau-suggestions, .panneau-deplie { animation: none; }
 }
 
 /* La portion tapée, soulignée et non surlignée : dans une liste où une
