@@ -6563,7 +6563,9 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
    La pastille EST la couleur : pas de case, pas de cadre. Celle qu'on a
    cochée prend un anneau de la couleur du texte, détaché du fond par un
    liseré de la couleur du voile. */
-.bf-teintes { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+/* Un peu d'air autour : le volet coupe ce qui dépasse (`overflow: hidden`
+   pour se déplier), et l'anneau de la couleur choisie dépasse de 4 px. */
+.bf-teintes { display: flex; flex-wrap: wrap; gap: 6px 24px; padding: 5px 6px; }
 .bf-teinte {
   white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
   font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--color-white) 72%, transparent);
