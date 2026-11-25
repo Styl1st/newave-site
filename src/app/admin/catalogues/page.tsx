@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BackLink from "@/components/BackLink";
+import LectureCouleurs from "@/components/admin/LectureCouleurs";
 import MiseAJourCatalogues from "@/components/admin/MiseAJourCatalogues";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -38,6 +39,7 @@ export default async function CataloguesPage() {
       </header>
 
       <MiseAJourCatalogues total={count ?? 0} />
+      <LectureCouleurs />
     </>
   );
 }

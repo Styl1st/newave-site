@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { lireUnePageDeVitrine, type FiltresVitrine } from "@/lib/queries";
+import { CLES_COULEURS } from "@/lib/couleurs";
 
 /**
  * Une page de la vitrine, à la demande.
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
     tags: p.getAll("tag").map((t) => t.slice(0, 60)).slice(0, 24),
     // Une taille, et seulement une de l'échelle : le reste est ignoré.
     tailles: TAILLES.includes(p.get("taille") ?? "") ? [p.get("taille") as string] : [],
+    couleurs: p.getAll("couleur").filter((c) => CLES_COULEURS.includes(c)).slice(0, 4),
     marque: p.get("marque"),
     prixMin: p.has("prixMin") ? entier(p.get("prixMin"), 0) : null,
     prixMax: p.has("prixMax") ? entier(p.get("prixMax"), 0) : null,

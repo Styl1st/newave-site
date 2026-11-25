@@ -29,7 +29,7 @@ import { enChiffres } from "../chiffres";
  */
 
 export type Tri = "hasard" | "croissant" | "decroissant";
-type Volet = "rayon" | "taille" | "prix" | "marque" | "tri" | "plus";
+type Volet = "rayon" | "taille" | "couleur" | "prix" | "marque" | "tri" | "plus";
 
 const TRIS: [Tri, string][] = [
   ["hasard", "au hasard"],
@@ -61,6 +61,12 @@ export type EtatFiltres = {
   tailles: { taille: string; total: number }[];
   taille: string | null;
   choisirTaille: (t: string | null) => void;
+
+  /** Le nuancier : les couleurs qui ont des pièces, dans son ordre. Vide avant la migration 51. */
+  couleurs: { cle: string; nom: string; hex: string; reflet?: string; total: number }[];
+  couleursPosees: string[];
+  basculerCouleur: (c: string) => void;
+  viderCouleurs: () => void;
 
   /** Le rail. `auDela` : des pièces coûtent plus que son bout, qui veut alors dire « et plus ». */
   bornes: Bornes | null;
@@ -384,6 +390,30 @@ function Barre({
             <span className={f.taille ? "bf-etiquette" : ""}>Taille</span> {f.taille && <b>{f.taille}</b>}
           </>
         )}
+      {f.couleurs.length > 0 &&
+        outil(
+          "couleur",
+          <>
+            <span className={f.couleursPosees.length ? "bf-etiquette" : ""}>Couleur</span>
+            {f.couleursPosees.length > 0 && (
+              <span className="bf-mini" aria-hidden="true">
+                {f.couleursPosees.slice(0, 3).map((c) => {
+                  const t = f.couleurs.find((x) => x.cle === c);
+                  return <i key={c} style={{ "--teinte": t?.reflet ?? t?.hex } as React.CSSProperties} />;
+                })}
+              </span>
+            )}
+            {f.couleursPosees.length === 1 && (
+              <b>{f.couleurs.find((x) => x.cle === f.couleursPosees[0])?.nom}</b>
+            )}
+            {f.couleursPosees.length > 1 && (
+              <b className="bf-nombre">
+                {f.couleursPosees.length}
+                <span className="sr-only"> couleurs</span>
+              </b>
+            )}
+          </>
+        )}
       {f.bornes &&
         outil(
           "prix",
@@ -492,6 +522,12 @@ function Barre({
         </div>
       </Depli>
 
+      <Depli id={id("couleur")} ouvert={volet === "couleur"}>
+        <div className="pb-4 pt-5">
+          <Nuancier f={f} />
+        </div>
+      </Depli>
+
       {f.bornes && (
         <Depli id={id("prix")} ouvert={volet === "prix"}>
           <div className="pb-5 pt-5">
@@ -554,6 +590,47 @@ function Barre({
       {ligne}
       {plis}
     </>
+  );
+}
+
+/**
+ * LE NUANCIER. Une pastille et un mot par couleur, le compte en petit.
+ * Les couleurs se cochent à plusieurs : « noir ou marine ».
+ *
+ * Pas de boîte, comme le reste de la barre : la pastille EST la couleur,
+ * et celle qu'on a choisie prend un anneau.
+ */
+function Nuancier({ f }: { f: EtatFiltres }) {
+  return (
+    <div>
+      <div className="bf-teintes" role="group" aria-label="Couleur">
+        {f.couleurs.map(({ cle, nom, hex, reflet, total }, k) => (
+          <button
+            key={cle}
+            type="button"
+            className="bf-teinte bf-entre"
+            aria-pressed={f.couleursPosees.includes(cle)}
+            onClick={() => f.basculerCouleur(cle)}
+            style={{ "--i": k, "--teinte": reflet ?? hex } as React.CSSProperties}
+          >
+            <span className="bf-pastille" aria-hidden="true" />
+            {nom}
+            <small>{enChiffres(total)}</small>
+          </button>
+        ))}
+      </div>
+      <p className="bf-teintes-note">
+        Lue sur le nom de la pièce ou sur sa photo : une approximation, pas une promesse.
+        {f.couleursPosees.length > 0 && (
+          <>
+            {" "}
+            <button type="button" className="bf-lien" onClick={f.viderCouleurs}>
+              Toutes les couleurs
+            </button>
+          </>
+        )}
+      </p>
+    </div>
   );
 }
 

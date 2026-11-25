@@ -18,6 +18,7 @@ import { MINIMUM, useRecherche } from "./recherche/useRecherche";
 import { noterRecherche } from "./recherche/historique";
 import { formatPrice } from "@/lib/types";
 import { PRODUCT_CATEGORIES } from "@/lib/taxonomy";
+import { COULEURS } from "@/lib/couleurs";
 import { estUneVideo, premiereImage } from "@/lib/medias";
 import type { Product } from "@/lib/types";
 import type { CompteDuCatalogue } from "@/lib/queries";
@@ -219,6 +220,7 @@ export default function PieceDirectory({
   rayonsDuCatalogue: rayonsServeur,
   tagsDuCatalogue: tagsServeur,
   taillesDuCatalogue: taillesServeur,
+  couleursDuCatalogue: couleursServeur,
   marquesDuCatalogue: marquesServeur,
   bornesDuCatalogue: bornesServeur,
   etatsDuCatalogue: etatsServeur,
@@ -297,6 +299,12 @@ export default function PieceDirectory({
    */
   taillesDuCatalogue?: { rayon: string | null; taille: string; total: number }[];
   /**
+   * LES COULEURS LUES, par rayon (migration 51, voir `lib/couleurs`).
+   * Absentes tant qu'aucune pièce n'est lue : la section « Couleur » ne
+   * s'affiche pas.
+   */
+  couleursDuCatalogue?: { rayon: string | null; couleur: string; total: number }[];
+  /**
    * LES MARQUES DU SITE, ET NON CELLES DE L'ÉCHANTILLON.
    *
    * Même correction que pour les rayons, un cran plus loin. Le filtre
@@ -374,6 +382,7 @@ export default function PieceDirectory({
   const rayonsDuCatalogue = rayonsServeur ?? rattrape?.rayons;
   const tagsDuCatalogue = tagsServeur ?? rattrape?.tags;
   const taillesDuCatalogue = taillesServeur ?? rattrape?.tailles;
+  const couleursDuCatalogue = couleursServeur ?? rattrape?.couleurs;
   const marquesDuCatalogue = marquesServeur ?? rattrape?.marquesListe;
   const bornesDuCatalogue = bornesServeur ?? rattrape?.prix;
   const etatsDuCatalogue = etatsServeur ?? rattrape?.etats;
@@ -404,6 +413,13 @@ export default function PieceDirectory({
    * `RAYONS_HABILLES`. « Bijoux + M » ne voudrait rien dire.
    */
   const [taille, setTaille] = useState<string | null>(null);
+  /*
+   * LES COULEURS, à plusieurs : « noir ou marine ». Une pièce passe si
+   * elle porte l'une d'elles.
+   */
+  const [couleurs, setCouleurs] = useState<string[]>([]);
+  const basculerCouleur = (c: string) =>
+    setCouleurs((liste) => (liste.includes(c) ? liste.filter((x) => x !== c) : [...liste, c]));
   const [marque, setMarque] = useState<string | null>(null);
   const [stock, setStock] = useState(false);
   const [promo, setPromo] = useState(false);
@@ -481,6 +497,7 @@ export default function PieceDirectory({
   const actifs =
     (tags.length > 0 ? tags.length : rayon ? 1 : 0) +
     (taille ? 1 : 0) +
+    couleurs.length +
     (marque ? 1 : 0) +
     (stock ? 1 : 0) +
     (promo ? 1 : 0) +
@@ -490,6 +507,7 @@ export default function PieceDirectory({
     setRayon(null);
     setTags([]);
     setTaille(null);
+    setCouleurs([]);
     setMarque(null);
     setStock(false);
     setPromo(false);
@@ -655,6 +673,7 @@ export default function PieceDirectory({
     rayons: [...rayons].sort(),
     tags: [...tags].sort(),
     taille,
+    couleurs: [...couleurs].sort(),
     marque,
     prix: prixDemande ? prixDiffere : null,
     stock,
@@ -686,6 +705,7 @@ export default function PieceDirectory({
       for (const r of rayons) p.append("rayon", r);
       for (const t of tags) p.append("tag", t);
       if (taille) p.set("taille", taille);
+      for (const c of couleurs) p.append("couleur", c);
       if (marque) p.set("marque", marque);
       /* Chaque borne seulement si elle retient quelque chose : la
          poignée haute au bout du rail veut dire « et plus ». */
@@ -714,6 +734,7 @@ export default function PieceDirectory({
     for (const r of rayons) p.append("rayon", r);
     for (const t of tags) p.append("tag", t);
     if (taille) p.set("taille", taille);
+    for (const c of [...couleurs].sort()) p.append("couleur", c);
     if (marque) p.set("marque", marque);
     if (stock) p.set("stock", "1");
     if (promo) p.set("promo", "1");
@@ -721,7 +742,7 @@ export default function PieceDirectory({
     p.set("pas", String(Math.round((bornes.max - bornes.min) / TRANCHES_PRIX)));
     p.set("tranches", String(TRANCHES_PRIX));
     return `/api/pieces/prix?${p}`;
-  }, [bornes, qDifferee, rayons, tags, taille, marque, stock, promo]);
+  }, [bornes, qDifferee, rayons, tags, taille, couleurs, marque, stock, promo]);
 
   const [lot, setLot] = useState<Product[]>(premierLot);
   const [total, setTotal] = useState(totalDuPremierLot);
@@ -990,6 +1011,25 @@ export default function PieceDirectory({
   useEffect(() => {
     if (taille && !taillesDisponibles.some((t) => t.taille === taille)) setTaille(null);
   }, [taille, taillesDisponibles]);
+
+  /*
+   * LES COULEURS QU'ON PROPOSE : celles qui ont des pièces dans le rayon
+   * posé, ou dans tout le catalogue, dans l'ordre du nuancier. Une
+   * couleur cochée reste proposée même si le rayon n'en a plus : on doit
+   * pouvoir la décocher.
+   */
+  const couleursDisponibles = useMemo(() => {
+    if (!couleursDuCatalogue) return [];
+    const compte = new Map<string, number>();
+    for (const l of couleursDuCatalogue) {
+      if (rayon && (l.rayon ?? "Autres") !== rayon) continue;
+      compte.set(l.couleur, (compte.get(l.couleur) ?? 0) + l.total);
+    }
+    return COULEURS.filter((c) => (compte.get(c.cle) ?? 0) > 0 || couleurs.includes(c.cle)).map((c) => ({
+      ...c,
+      total: compte.get(c.cle) ?? 0,
+    }));
+  }, [couleursDuCatalogue, rayon, couleurs]);
 
   const marquesDisponibles = useMemo(
     () => (marquesDuCatalogue ?? []).slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
@@ -1338,6 +1378,10 @@ export default function PieceDirectory({
     tailles: taillesDisponibles,
     taille,
     choisirTaille: setTaille,
+    couleurs: couleursDisponibles,
+    couleursPosees: couleurs,
+    basculerCouleur,
+    viderCouleurs: () => setCouleurs([]),
     bornes,
     prix,
     choisirPrix: setPrix,

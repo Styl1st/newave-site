@@ -159,7 +159,7 @@ export default async function PiecesPage({ searchParams }: Props) {
           */}
           <p className="m-0 mt-4 max-w-2xl text-[15px] leading-relaxed text-white/84">
             Tout le catalogue, toutes marques confondues, dans un ordre qui change à
-            chaque visite. Filtre par type de pièce, par taille et par prix, et clique pour
+            chaque visite. Filtre par type de pièce, par couleur, par taille et par prix, et clique pour
             arriver chez la marque.
           </p>
         </div>
@@ -187,6 +187,7 @@ export default async function PiecesPage({ searchParams }: Props) {
         rayonsDuCatalogue={catalogue?.rayons}
         tagsDuCatalogue={catalogue?.tags}
         taillesDuCatalogue={catalogue?.tailles}
+        couleursDuCatalogue={catalogue?.couleurs}
         marquesDuCatalogue={catalogue?.marquesListe}
         bornesDuCatalogue={catalogue?.prix}
         etatsDuCatalogue={catalogue?.etats}

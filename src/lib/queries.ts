@@ -484,6 +484,8 @@ export type FiltresVitrine = {
   tags?: string[];
   /** La taille, XS à XXL, ramenée par `taille_normalisee` (migration 35). */
   tailles?: string[];
+  /** Les couleurs cochées, en clés de `lib/couleurs` (migration 51). Une suffit. */
+  couleurs?: string[];
   marque?: string | null;
   /** En centimes d'euro. `null` de chaque côté tant qu'on n'a rien bougé. */
   prixMin?: number | null;
@@ -558,6 +560,9 @@ export async function lireUnePageDeVitrine(
     ...(filtres.tags?.length ? { p_tags: filtres.tags } : {}),
     // Même raison, pour la migration 35.
     ...(filtres.tailles?.length ? { p_tailles: filtres.tailles } : {}),
+    // Même raison, pour la migration 51 : sans couleur cochée, la base
+    // d'avant répond comme avant.
+    ...(filtres.couleurs?.length ? { p_couleurs: filtres.couleurs } : {}),
     p_marque: filtres.marque ?? null,
     p_prix_min: filtres.prixMin ?? null,
     p_prix_max: filtres.prixMax ?? null,
@@ -662,6 +667,12 @@ export type CompteDuCatalogue = {
    */
   marquesListe?: { slug: string; nom: string; total: number }[];
   /**
+   * Les couleurs, par rayon (migration 51). Absentes tant que la
+   * migration n'est pas passée ou que rien n'est lu : le filtre ne
+   * s'affiche pas.
+   */
+  couleurs?: { rayon: string | null; couleur: string; total: number }[];
+  /**
    * De quoi graduer le rail de prix et décider des deux cases d'état.
    *
    * Ils se calculaient sur les pièces descendues avec la page. Depuis
@@ -723,6 +734,7 @@ export async function lireHistogrammeDeVitrine(
     p_rayons: filtres.rayons?.length ? filtres.rayons : null,
     p_tags: filtres.tags?.length ? filtres.tags : null,
     p_tailles: filtres.tailles?.length ? filtres.tailles : null,
+    ...(filtres.couleurs?.length ? { p_couleurs: filtres.couleurs } : {}),
     p_marque: filtres.marque ?? null,
     p_stock: Boolean(filtres.stock),
     p_promo: Boolean(filtres.promo),
@@ -744,6 +756,7 @@ type ComptesEnUnPassage = {
   rayons: { rayon: string | null; total: number }[];
   tags: { rayon: string | null; tag: string; total: number }[];
   tailles: { rayon: string | null; taille: string; total: number }[];
+  couleurs?: { rayon: string | null; couleur: string; total: number }[];
   bornes: {
     prix_min: number | null;
     prix_max: number | null;
@@ -832,7 +845,10 @@ async function comptesEnUnPassage(
   if (error || !data) throw new LectureRatee("comptes du catalogue");
 
   const c = data as ComptesEnUnPassage;
-  return mettreEnForme(c.rayons ?? [], c.marques, null, c.tags, c.tailles, c.bornes);
+  return {
+    ...mettreEnForme(c.rayons ?? [], c.marques, null, c.tags, c.tailles, c.bornes),
+    couleurs: c.couleurs,
+  };
 }
 
 const lireLesComptes = unstable_cache(

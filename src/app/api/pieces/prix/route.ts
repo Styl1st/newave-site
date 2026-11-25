@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { lireHistogrammeDeVitrine } from "@/lib/queries";
+import { CLES_COULEURS } from "@/lib/couleurs";
 
 /**
  * La forme des prix de la vitrine : combien de pièces par tranche, pour
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
       rayons: p.getAll("rayon").slice(0, 1),
       tags: p.getAll("tag").map((t) => t.slice(0, 60)).slice(0, 24),
       tailles: TAILLES.includes(p.get("taille") ?? "") ? [p.get("taille") as string] : [],
+      couleurs: p.getAll("couleur").filter((c) => CLES_COULEURS.includes(c)).slice(0, 4),
       marque: p.get("marque"),
       stock: p.get("stock") === "1",
       promo: p.get("promo") === "1",

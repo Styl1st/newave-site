@@ -6501,6 +6501,37 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .bf-type[aria-pressed="true"] { color: var(--color-white); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 .bf-type-reste { color: color-mix(in srgb, var(--color-white) 55%, transparent); display: none; }
 
+/* ---------- le nuancier ----------
+   La pastille EST la couleur : pas de case, pas de cadre. Celle qu'on a
+   cochée prend un anneau de la couleur du texte, détaché du fond par un
+   liseré de la couleur du voile. */
+.bf-teintes { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+.bf-teinte {
+  white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
+  font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--color-white) 72%, transparent);
+  transition: color .2s;
+}
+.bf-teinte small { font-size: 11px; font-weight: 600; margin-left: -3px; color: color-mix(in srgb, var(--color-white) 45%, transparent); font-variant-numeric: tabular-nums; }
+.bf-pastille {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--teinte);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 30%, transparent);
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+@media (hover: hover) {
+  .bf-teinte:hover { color: var(--color-white); }
+  .bf-teinte:hover .bf-pastille { transform: scale(1.08); }
+}
+.bf-teinte[aria-pressed="true"] { color: var(--color-white); }
+.bf-teinte[aria-pressed="true"] .bf-pastille {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-white) 30%, transparent), 0 0 0 2px rgb(var(--voile)), 0 0 0 4px var(--color-white);
+}
+.bf-teinte:focus-visible { outline: 2px solid color-mix(in srgb, var(--color-white) 70%, transparent); outline-offset: 4px; border-radius: 6px; }
+.bf-teintes-note { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: color-mix(in srgb, var(--color-white) 55%, transparent); }
+/* Les couleurs posées, en petit dans la barre. */
+.bf-mini { display: inline-flex; }
+.bf-mini > i { width: 12px; height: 12px; border-radius: 50%; background: var(--teinte); box-shadow: 0 0 0 1.5px rgb(var(--voile)); }
+.bf-mini > i + i { margin-left: -4px; }
+
 /* ---------- la ligne d'outils ---------- */
 .bf-outils {
   display: flex; align-items: center; gap: 4px 26px; flex-wrap: wrap; min-height: 54px;
@@ -6681,6 +6712,11 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   .bf-mots-plies { --taille-mot: 22px; }
   .bf-mots-tailles { --taille-mot: 24px; gap: 8px 22px; }
   .bf-mots-tailles sup { display: none; }
+  .bf-teintes { justify-content: center; gap: 2px 18px; }
+  .bf-teinte { font-size: 13.5px; gap: 7px; }
+  .bf-teinte small { display: none; }
+  .bf-pastille { width: 22px; height: 22px; }
+  .bf-teintes-note { text-align: center; }
   .bf-collant { position: relative; top: auto; }
   .bf-collant::before { display: none; }
   .bf-collant[data-colle] .bf-outils { animation: none; border-color: color-mix(in srgb, var(--color-white) 16%, transparent); }
