@@ -6892,7 +6892,10 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
 }
-.ap-chiffres > div { padding: 18px 0; display: flex; flex-direction: column-reverse; gap: 6px; }
+/* `column-reverse` met le nombre au-dessus de son libellé (le libellé
+   reste lu d'abord) ; `flex-end` les cale en haut, sinon un libellé sur
+   deux lignes descendait son nombre plus bas que ses voisins. */
+.ap-chiffres > div { padding: 18px 0; display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 6px; }
 .ap-chiffres > div + div { padding-left: clamp(14px, 3vw, 32px); border-left: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent); }
 .ap-chiffres dd {
   margin: 0; font-size: clamp(26px, 6vw, 48px); font-weight: 900; letter-spacing: -.04em; line-height: 1;
