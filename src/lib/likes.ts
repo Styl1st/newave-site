@@ -256,3 +256,40 @@ export async function getRangDeLaPiece(
   }
   return null;
 }
+
+/**
+ * Poser ou retirer SON cœur, sans bascule.
+ *
+ * `toggleLike` inverse l'état : cliquer deux fois retire le cœur. Le swipe
+ * a besoin du contraire, un geste sûr : « Je garde » POSE le cœur (ou le
+ * rafraîchit s'il était déjà là, la semaine repart de zéro), et
+ * « Annuler » le reprend. Un « Je garde » sur une pièce déjà aimée ne doit
+ * jamais la désaimer.
+ *
+ * Pas de `revalidatePath` : appelé à chaque carte, il ferait redemander la
+ * page du swipe au serveur à chaque geste. `/populaires` est rendue à la
+ * demande, elle voit le cœur au prochain passage.
+ */
+export async function poserMonCoeur(
+  productId: string,
+  oui: boolean
+): Promise<{ ok: boolean; reason?: "non-connecte" | "erreur" }> {
+  const supabase = await createClient();
+  if (!supabase) return { ok: false, reason: "erreur" };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: "non-connecte" };
+
+  const { error } = oui
+    ? await supabase
+        .from("product_likes")
+        .upsert(
+          { user_id: user.id, product_id: productId, created_at: new Date().toISOString() },
+          { onConflict: "user_id,product_id" }
+        )
+    : await supabase.from("product_likes").delete().eq("user_id", user.id).eq("product_id", productId);
+
+  return error ? { ok: false, reason: "erreur" } : { ok: true };
+}

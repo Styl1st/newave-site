@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { COULEURS } from "@/lib/couleurs";
+import { poserMonCoeur } from "@/lib/likes";
 import { formatPrice } from "@/lib/types";
 import { vignette } from "@/lib/vignette";
 import { PROFIL_VIDE, apprendre, traitsDuProfil, type Carte, type Profil } from "@/lib/swipe";
@@ -14,10 +15,13 @@ import { PROFIL_VIDE, apprendre, traitsDuProfil, type Carte, type Profil } from 
  * la souris ou aux flèches du clavier. Chaque geste nourrit le profil
  * (`lib/swipe`), et la pile suivante en tient compte.
  *
- * TOUT RESTE DANS LE NAVIGATEUR. Le profil, la sélection et les pièces
- * déjà vues sont rangés dans le stockage local : pas besoin de compte,
- * et rien de ce qu'on aime ne part ailleurs que dans la demande de la
- * pile suivante.
+ * « JE GARDE » EST UN COUP DE CŒUR. Connecté, le geste pose le cœur de
+ * la pièce, comme le bouton des fiches (`poserMonCoeur`), et « Annuler »
+ * le reprend. Sans compte, le swipe marche pareil et le dit : le profil
+ * apprend, mais rien n'est enregistré.
+ *
+ * LE PROFIL RESTE DANS LE NAVIGATEUR, avec les pièces déjà vues : il ne
+ * part ailleurs que dans la demande de la pile suivante.
  *
  * LA CARTE BOUGE SANS QUE REACT NE REDESSINE. Pendant le glissé, seul un
  * `transform` est écrit sur l'élément, à chaque image : c'est ce qui
@@ -30,9 +34,7 @@ const VUS_MAX = 300;
 const SEUIL_PX = 110;
 const NOMS_COULEURS = Object.fromEntries(COULEURS.map((c) => [c.cle, c.nom]));
 
-type Gardee = Pick<Carte, "id" | "slug" | "nom" | "image" | "prix" | "devise" | "marque" | "marqueNom">;
-
-type Memoire = { profil: Profil; selection: Gardee[]; vus: string[] };
+type Memoire = { profil: Profil; vus: string[] };
 
 function lire(): Memoire {
   try {
@@ -40,14 +42,13 @@ function lire(): Memoire {
     if (brut && typeof brut === "object") {
       return {
         profil: { ...PROFIL_VIDE, ...brut.profil },
-        selection: Array.isArray(brut.selection) ? brut.selection.slice(0, 200) : [],
         vus: Array.isArray(brut.vus) ? brut.vus.slice(-VUS_MAX) : [],
       };
     }
   } catch {
     // Stockage indisponible (navigation privée stricte) : on repart de zéro.
   }
-  return { profil: PROFIL_VIDE, selection: [], vus: [] };
+  return { profil: PROFIL_VIDE, vus: [] };
 }
 
 function ecrire(m: Memoire) {
@@ -61,8 +62,9 @@ function ecrire(m: Memoire) {
 const adresse = (c: Pick<Carte, "marque" | "slug" | "id">) => `/marques/${c.marque}/${c.slug ?? c.id}`;
 const photo = (url: string | null) => (url ? vignette(url, 720) : undefined);
 
-export default function Swipe() {
-  const [memoire, setMemoire] = useState<Memoire>({ profil: PROFIL_VIDE, selection: [], vus: [] });
+export default function Swipe({ connecte }: { connecte: boolean }) {
+  const [memoire, setMemoire] = useState<Memoire>({ profil: PROFIL_VIDE, vus: [] });
+  const [coeurs, setCoeurs] = useState(0);
   const [pile, setPile] = useState<Carte[]>([]);
   const [rang, setRang] = useState(0);
   const [chargement, setChargement] = useState<"attente" | "pret" | "panne">("attente");
@@ -147,26 +149,16 @@ export default function Swipe() {
       const c = pile[rang];
       if (!c || sortie) return;
       setSortie(garde ? "droite" : "gauche");
+      // Le cœur part tout de suite, sans attendre l'animation.
+      if (garde && connecte) {
+        poserMonCoeur(c.id, true).then((r) => {
+          if (r.ok) setCoeurs((n) => n + 1);
+        });
+      }
       window.setTimeout(() => {
         const avant = memoireRef.current;
-        const selection = garde
-          ? [
-              {
-                id: c.id,
-                slug: c.slug,
-                nom: c.nom,
-                image: c.image,
-                prix: c.prix,
-                devise: c.devise,
-                marque: c.marque,
-                marqueNom: c.marqueNom,
-              },
-              ...avant.selection.filter((g) => g.id !== c.id),
-            ].slice(0, 200)
-          : avant.selection;
         memoriser({
           profil: apprendre(avant.profil, c, garde),
-          selection,
           vus: [...avant.vus.filter((id) => id !== c.id), c.id].slice(-VUS_MAX),
         });
         setDernier({ carte: c, garde, avant });
@@ -174,11 +166,16 @@ export default function Swipe() {
         setSortie(null);
       }, 220);
     },
-    [pile, rang, sortie, memoriser]
+    [pile, rang, sortie, memoriser, connecte]
   );
 
   const annuler = () => {
     if (!dernier || sortie) return;
+    if (dernier.garde && connecte) {
+      poserMonCoeur(dernier.carte.id, false).then((r) => {
+        if (r.ok) setCoeurs((n) => Math.max(0, n - 1));
+      });
+    }
     memoriser(dernier.avant);
     setRang((r) => Math.max(0, r - 1));
     setDernier(null);
@@ -342,39 +339,37 @@ export default function Swipe() {
         </p>
       )}
 
-      {/* ---------- la sélection ---------- */}
-      <section className="sw-selection" aria-label="Ta sélection">
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="eyebrow m-0">Ta sélection · {memoire.selection.length}</p>
-          {(memoire.selection.length > 0 || memoire.profil.gardees + memoire.profil.passees > 0) && (
-            <button
-              type="button"
-              className="bf-lien"
-              onClick={() => {
-                memoriser({ profil: PROFIL_VIDE, selection: [], vus: [] });
-                setDernier(null);
-              }}
-            >
-              Repartir de zéro
-            </button>
-          )}
-        </div>
-        {memoire.selection.length === 0 ? (
-          <p className="m-0 mt-3 text-[13.5px] text-white/65">
-            Ce que tu gardes s&apos;affiche ici, et reste dans ce navigateur.
-          </p>
+      {/* ---------- les cœurs ---------- */}
+      <p className="sw-coeurs">
+        {connecte ? (
+          <>
+            Chaque « Je garde » devient un coup de cœur
+            {coeurs > 0 && <> · <b>{coeurs} aujourd&apos;hui</b></>}.{" "}
+            <Link href="/populaires" className="bf-lien">
+              Les coups de cœur
+            </Link>
+          </>
         ) : (
-          <div className="sw-grille">
-            {memoire.selection.map((g) => (
-              <Link key={g.id} href={adresse(g)} className="sw-tuile" title={`${g.nom} · ${g.marqueNom}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={g.image ? vignette(g.image, 240) : undefined} alt={g.nom} loading="lazy" decoding="async" />
-                <span>{g.marqueNom}</span>
-              </Link>
-            ))}
-          </div>
+          <>
+            Connecte-toi pour que tes « Je garde » deviennent des coups de cœur.{" "}
+            <Link href="/connexion?suite=/swipe" className="bf-lien">
+              Se connecter
+            </Link>
+          </>
+        )}{" "}
+        {memoire.profil.gardees + memoire.profil.passees > 0 && (
+          <button
+            type="button"
+            className="bf-lien"
+            onClick={() => {
+              memoriser({ profil: PROFIL_VIDE, vus: [] });
+              setDernier(null);
+            }}
+          >
+            Repartir de zéro
+          </button>
         )}
-      </section>
+      </p>
     </div>
   );
 }

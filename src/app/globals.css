@@ -6990,7 +6990,8 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
    la distance (`--garde`, `--passe`). Au lâcher, la carte part d'un
    seul mouvement, puis la suivante, déjà posée dessous, prend sa place.
    ===================================================================== */
-.sw-titre { font-size: clamp(34px, 7vw, 64px); }
+.sw-entete { text-align: center; }
+.sw-titre { font-size: clamp(32px, 6vw, 52px); }
 .sw { display: grid; justify-items: center; }
 /*
  * LA CARTE TIENT DANS L'ÉCRAN, en largeur comme en hauteur. Sa largeur
@@ -7001,11 +7002,11 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
  */
 .sw-scene {
   position: relative; aspect-ratio: 4 / 5.9;
-  width: min(100%, 440px, calc((100svh - 250px) * 0.678));
+  width: min(100%, 440px, calc((100svh - 370px) * 0.678));
   min-width: min(100%, 260px);
   touch-action: pan-y;
 }
-.sw-gestes, .sw-aide { width: min(100%, 440px, max(260px, calc((100svh - 250px) * 0.678))); }
+.sw-gestes, .sw-aide { width: min(100%, 440px, max(260px, calc((100svh - 370px) * 0.678))); }
 .sw-vide {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   margin: 0; text-align: center; font-size: 14px; color: color-mix(in srgb, var(--color-white) 80%, transparent);
@@ -7067,23 +7068,8 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .sw-profil { margin: 22px 0 0; max-width: 460px; text-align: center; font-size: 13.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-white) 80%, transparent); }
 .sw-profil b { color: var(--color-white); }
 
-.sw-selection {
-  margin-top: 48px; width: 100%; padding-top: 22px;
-  border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
-}
-.sw-grille { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 12px; }
-.sw-tuile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; }
-.sw-tuile img { aspect-ratio: 4 / 5; width: 100%; object-fit: cover; border-radius: 10px; background: color-mix(in srgb, var(--color-white) 8%, transparent); transition: transform .2s; }
-@media (hover: hover) { .sw-tuile:hover img { transform: translateY(-2px); } }
-.sw-tuile span { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--color-white) 65%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Sur un grand écran, l'en-tête à gauche et la pile à droite : tout le
-   premier écran sert au swipe, plus rien ne passe sous le menu. */
-.sw-page { display: grid; gap: 28px; }
-@media (min-width: 1024px) {
-  .sw-page { grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 56px; }
-  .sw-page > header { position: sticky; top: calc(var(--haut-entete) + 40px); padding-top: 12px; }
-}
+.sw-coeurs { margin: 14px 0 0; max-width: 460px; text-align: center; font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--color-white) 65%, transparent); }
+.sw-coeurs b { color: var(--color-white); }
 
 @media (prefers-reduced-motion: reduce) {
   .sw-carte { transition-duration: .01s; animation: none; }
