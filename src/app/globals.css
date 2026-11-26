@@ -6980,3 +6980,89 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--color-white) 55%, transparent);
 }
 @media (max-width: 639px) { .pj-partie .ap-numero { font-size: 28px; } }
+
+/* =====================================================================
+   LE SWIPE (`components/swipe/Swipe`)
+
+   Une carte = la photo et son texte, qui bougent ensemble. Pendant le
+   glissé, seul `transform` change (posé par le script, image par image) ;
+   les verdicts « Je garde » / « Pas pour moi » montent en opacité avec
+   la distance (`--garde`, `--passe`). Au lâcher, la carte part d'un
+   seul mouvement, puis la suivante, déjà posée dessous, prend sa place.
+   ===================================================================== */
+.sw-titre { font-size: clamp(40px, 9vw, 80px); }
+.sw { display: grid; justify-items: center; }
+.sw-scene {
+  position: relative; width: min(100%, 420px); aspect-ratio: 4 / 5.9;
+  touch-action: pan-y;
+}
+.sw-vide {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  margin: 0; text-align: center; font-size: 14px; color: color-mix(in srgb, var(--color-white) 80%, transparent);
+}
+.sw-carte {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y;
+  transition: transform .3s cubic-bezier(.22, .9, .24, 1), opacity .3s ease;
+  will-change: transform;
+}
+.sw-carte[data-glisse] { cursor: grabbing; transition: none; }
+.sw-carte[data-sortie="droite"] { transform: translate3d(130%, -2%, 0) rotate(14deg) !important; opacity: 0; transition-duration: .24s; }
+.sw-carte[data-sortie="gauche"] { transform: translate3d(-130%, -2%, 0) rotate(-14deg) !important; opacity: 0; transition-duration: .24s; }
+.sw-dessous { transform: translate3d(0, 14px, 0) scale(.95); opacity: .55; pointer-events: none; cursor: default; }
+.sw-photo {
+  position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 22px;
+  background: color-mix(in srgb, var(--color-white) 8%, transparent);
+  box-shadow: 0 24px 50px -24px rgba(20, 6, 50, .85);
+}
+.sw-photo img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.sw-verdict {
+  position: absolute; top: 18px; padding: 6px 12px 7px; border-radius: 10px;
+  font-size: 15px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; border: 2px solid #fff; background: rgba(20, 6, 50, .25);
+  opacity: 0; pointer-events: none;
+}
+.sw-verdict-garde { left: 18px; transform: rotate(-8deg); opacity: var(--garde, 0); }
+.sw-verdict-passe { right: 18px; transform: rotate(8deg); opacity: var(--passe, 0); }
+.sw-carte[data-sortie="droite"] .sw-verdict-garde, .sw-carte[data-sortie="gauche"] .sw-verdict-passe { opacity: 1; }
+.sw-ailleurs {
+  position: absolute; left: 14px; bottom: 14px; padding: 5px 10px 6px; border-radius: 999px;
+  font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--color-ink); background: rgba(255, 255, 255, .88);
+}
+.sw-texte { padding: 14px 4px 0; }
+.sw-texte p { margin: 0; }
+.sw-marque { font-size: 10.5px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: color-mix(in srgb, var(--color-white) 70%, transparent); }
+.sw-nom { margin-top: 4px !important; font-size: 18px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; color: var(--color-white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-prix { margin-top: 6px !important; display: flex; align-items: baseline; gap: 14px; font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--color-white) 88%, transparent); }
+.sw-voir { margin-left: auto; }
+
+.sw-gestes { margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: min(100%, 420px); }
+.sw-bouton {
+  min-height: 54px; border-radius: 18px; font-size: 15px; font-weight: 800;
+  color: var(--color-white); border: 1px solid color-mix(in srgb, var(--color-white) 40%, transparent);
+  background: color-mix(in srgb, var(--color-white) 6%, transparent);
+  transition: background-color .2s, transform .15s;
+}
+@media (hover: hover) { .sw-bouton:hover { background: color-mix(in srgb, var(--color-white) 14%, transparent); } }
+.sw-bouton:active { transform: scale(.97); }
+.sw-bouton:disabled { opacity: .5; }
+.sw-bouton-garde { border-color: transparent; background: #fff; color: #170a33; }
+@media (hover: hover) { .sw-bouton-garde:hover { background: #f2ecff; } }
+.sw-aide { margin: 12px 0 0; text-align: center; font-size: 12.5px; color: color-mix(in srgb, var(--color-white) 60%, transparent); }
+.sw-profil { margin: 22px 0 0; max-width: 460px; text-align: center; font-size: 13.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-white) 80%, transparent); }
+.sw-profil b { color: var(--color-white); }
+
+.sw-selection {
+  margin-top: 48px; width: 100%; padding-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--color-white) 16%, transparent);
+}
+.sw-grille { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 12px; }
+.sw-tuile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; }
+.sw-tuile img { aspect-ratio: 4 / 5; width: 100%; object-fit: cover; border-radius: 10px; background: color-mix(in srgb, var(--color-white) 8%, transparent); transition: transform .2s; }
+@media (hover: hover) { .sw-tuile:hover img { transform: translateY(-2px); } }
+.sw-tuile span { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--color-white) 65%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-carte { transition-duration: .01s; }
+}

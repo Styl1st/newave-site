@@ -16,6 +16,7 @@ const NAV = [
   // Juste après l'annuaire : c'est le même contenu pris par l'autre
   // bout, et les deux se répondent.
   { href: "/pieces", label: "Pièces" },
+  { href: "/swipe", label: "Swipe" },
   { href: "/posts", label: "Posts" },
   { href: "/populaires", label: "Coups de cœur" },
   { href: "/forum", label: "Forum" },
