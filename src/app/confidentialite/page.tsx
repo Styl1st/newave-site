@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PageJuridique, { enParagraphes } from "@/components/PageJuridique";
 
 export const metadata: Metadata = {
   title: "Confidentialité",
@@ -81,53 +82,20 @@ const SECTIONS = [
   },
 ];
 
-/** Met en gras les segments entre doubles astérisques. */
-function riche(texte: string) {
-  return texte.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
-      <strong key={i} className="font-extrabold text-white">
-        {part.slice(2, -2)}
-      </strong>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
-}
-
 export default function ConfidentialitePage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-7 sm:py-11">
-      <header className="rise">
-        <p className="eyebrow m-0">Données personnelles</p>
-        <h1 className="m-0 mt-2 text-[clamp(22px,5.1vw,34px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
-          Confidentialité
-        </h1>
-        <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/82">
-          En clair, sans jargon : ce qu&apos;on sait de toi, pourquoi, et comment
-          l&apos;effacer.
-        </p>
-      </header>
-
-      <div className="glass rise rise-1 mt-8 flex flex-col gap-8 p-4 sm:p-7">
-        {SECTIONS.map((s) => (
-          <section key={s.titre}>
-            <h2 className="m-0 text-[16.5px] font-extrabold text-white">{s.titre}</h2>
-            <div className="mt-3 flex flex-col gap-2.5">
-              {s.contenu.map((c, i) => (
-                <p key={i} className="m-0 text-[14.5px] leading-relaxed text-white/85">
-                  {riche(c)}
-                </p>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-
-      <p className="m-0 mt-6 text-[12.5px] leading-relaxed text-white/50">
-        Ce texte décrit fidèlement le fonctionnement du site. Il ne remplace pas
-        l&apos;avis d&apos;un juriste : fais-le relire avant l&apos;ouverture au public,
-        et complète les mentions légales avec ton statut et ton numéro d&apos;immatriculation.
-      </p>
-    </div>
+    <PageJuridique
+      surtitre="Données personnelles"
+      titre="Confidentialité"
+      intro="En clair, sans jargon : ce qu'on sait de toi, pourquoi, et comment l'effacer."
+      parties={SECTIONS.map((s) => ({ titre: s.titre, contenu: enParagraphes(s.contenu) }))}
+      pied={
+        <>
+          Ce texte décrit fidèlement le fonctionnement du site. Il ne remplace pas l&apos;avis
+          d&apos;un juriste : fais-le relire avant l&apos;ouverture au public, et complète les
+          mentions légales avec ton statut et ton numéro d&apos;immatriculation.
+        </>
+      }
+    />
   );
 }

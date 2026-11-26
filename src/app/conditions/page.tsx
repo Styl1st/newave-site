@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import PageJuridique, { enParagraphes } from "@/components/PageJuridique";
 
 export const metadata: Metadata = {
   title: "Conditions d'utilisation",
@@ -98,59 +99,27 @@ const SECTIONS: Bloc[] = [
   },
 ];
 
-/** Met en gras les segments entre doubles astérisques. */
-function riche(texte: string) {
-  return texte.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith("**") && part.endsWith("**") ? (
-      <strong key={i} className="font-extrabold text-white">
-        {part.slice(2, -2)}
-      </strong>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
-}
-
 export default function ConditionsPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-[var(--pad)] py-7 sm:py-11">
-      <header className="rise">
-        <p className="eyebrow m-0">Le cadre</p>
-        <h1 className="m-0 mt-2 text-[clamp(22px,5.1vw,34px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-white">
-          Conditions d&apos;utilisation
-        </h1>
-        <p className="m-0 mt-4 text-[15px] leading-relaxed text-white/82">
-          Ce que tu peux faire ici, ce qui est interdit, et ce qui se passe en cas
-          d&apos;abus. Écrit pour être lu en cinq minutes.
-        </p>
-      </header>
-
-      <div className="glass rise rise-1 mt-8 flex flex-col gap-8 p-4 sm:p-7">
-        {SECTIONS.map((s) => (
-          <section key={s.titre}>
-            <h2 className="m-0 text-[16.5px] font-extrabold text-white">{s.titre}</h2>
-            <div className="mt-3 flex flex-col gap-2.5">
-              {s.paragraphes.map((p, i) => (
-                <p key={i} className="m-0 text-[14.5px] leading-relaxed text-white/85">
-                  {riche(p)}
-                </p>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-
-      <p className="rise rise-2 mx-auto mt-6 max-w-lg text-center text-[12.5px] leading-relaxed text-white/45">
-        Dernière mise à jour : août 2026. Voir aussi la{" "}
-        <Link href="/confidentialite" className="underline underline-offset-4 hover:text-white/70">
-          page confidentialité
-        </Link>{" "}
-        et les{" "}
-        <Link href="/mentions-legales" className="underline underline-offset-4 hover:text-white/70">
-          mentions légales
-        </Link>
-        .
-      </p>
-    </div>
+    <PageJuridique
+      surtitre="Le cadre"
+      titre="Conditions"
+      plein="d'utilisation"
+      intro="Ce que tu peux faire ici, ce qui est interdit, et ce qui se passe en cas d'abus. Écrit pour être lu en cinq minutes."
+      parties={SECTIONS.map((s) => ({ titre: s.titre, contenu: enParagraphes(s.paragraphes) }))}
+      pied={
+        <>
+          Dernière mise à jour : août 2026. Voir aussi la{" "}
+          <Link href="/confidentialite" className="bf-lien">
+            page confidentialité
+          </Link>{" "}
+          et les{" "}
+          <Link href="/mentions-legales" className="bf-lien">
+            mentions légales
+          </Link>
+          .
+        </>
+      }
+    />
   );
 }
