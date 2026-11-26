@@ -140,7 +140,6 @@ export default function Swipe() {
   }, [pile, rang]);
 
   const carte = pile[rang];
-  const suivante = pile[rang + 1];
 
   /* ---------- décider ---------- */
   const decider = useCallback(
@@ -276,14 +275,10 @@ export default function Swipe() {
           </div>
         )}
 
-        {suivante && (
-          <div className="sw-carte sw-dessous" aria-hidden="true">
-            <div className="sw-photo">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo(suivante.image)} alt="" decoding="async" />
-            </div>
-          </div>
-        )}
+        {/* LA SUIVANTE N'EST PLUS POSÉE DESSOUS. Une photo détourée
+            (fond transparent) la laissait voir à travers la carte. Elle
+            est seulement préchargée, et arrive en fondu une fois la
+            carte partie (voir `.sw-carte`, animation d'entrée). */}
 
         {carte && (
           <div

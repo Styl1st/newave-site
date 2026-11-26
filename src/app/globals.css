@@ -6990,12 +6990,22 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
    la distance (`--garde`, `--passe`). Au lâcher, la carte part d'un
    seul mouvement, puis la suivante, déjà posée dessous, prend sa place.
    ===================================================================== */
-.sw-titre { font-size: clamp(40px, 9vw, 80px); }
+.sw-titre { font-size: clamp(34px, 7vw, 64px); }
 .sw { display: grid; justify-items: center; }
+/*
+ * LA CARTE TIENT DANS L'ÉCRAN, en largeur comme en hauteur. Sa largeur
+ * est la plus petite de trois : l'écran, 440 px, et ce que permet la
+ * hauteur (l'écran moins l'en-tête, les boutons et l'aide, ramené au
+ * rapport de la carte). Sur un portable de 900 px de haut, elle ne
+ * déborde plus sous les boutons.
+ */
 .sw-scene {
-  position: relative; width: min(100%, 420px); aspect-ratio: 4 / 5.9;
+  position: relative; aspect-ratio: 4 / 5.9;
+  width: min(100%, 440px, calc((100svh - 250px) * 0.678));
+  min-width: min(100%, 260px);
   touch-action: pan-y;
 }
+.sw-gestes, .sw-aide { width: min(100%, 440px, max(260px, calc((100svh - 250px) * 0.678))); }
 .sw-vide {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   margin: 0; text-align: center; font-size: 14px; color: color-mix(in srgb, var(--color-white) 80%, transparent);
@@ -7005,14 +7015,18 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y;
   transition: transform .3s cubic-bezier(.22, .9, .24, 1), opacity .3s ease;
   will-change: transform;
+  /* La suivante arrive en fondu, juste après le départ de la précédente. */
+  animation: swEntre .28s cubic-bezier(.22, .9, .24, 1) both;
 }
+@keyframes swEntre { from { opacity: 0; transform: scale(.96); } }
 .sw-carte[data-glisse] { cursor: grabbing; transition: none; }
 .sw-carte[data-sortie="droite"] { transform: translate3d(130%, -2%, 0) rotate(14deg) !important; opacity: 0; transition-duration: .24s; }
 .sw-carte[data-sortie="gauche"] { transform: translate3d(-130%, -2%, 0) rotate(-14deg) !important; opacity: 0; transition-duration: .24s; }
-.sw-dessous { transform: translate3d(0, 14px, 0) scale(.95); opacity: .55; pointer-events: none; cursor: default; }
+/* Un fond PLEIN derrière la photo : une pièce détourée reste lisible, et
+   rien ne transparaît à travers elle. */
 .sw-photo {
   position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: 22px;
-  background: color-mix(in srgb, var(--color-white) 8%, transparent);
+  background: linear-gradient(160deg, #fff 0%, #f4efff 55%, #e6dcfb 100%);
   box-shadow: 0 24px 50px -24px rgba(20, 6, 50, .85);
 }
 .sw-photo img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
@@ -7037,7 +7051,7 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .sw-prix { margin-top: 6px !important; display: flex; align-items: baseline; gap: 14px; font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--color-white) 88%, transparent); }
 .sw-voir { margin-left: auto; }
 
-.sw-gestes { margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: min(100%, 420px); }
+.sw-gestes { margin-top: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .sw-bouton {
   min-height: 54px; border-radius: 18px; font-size: 15px; font-weight: 800;
   color: var(--color-white); border: 1px solid color-mix(in srgb, var(--color-white) 40%, transparent);
@@ -7049,7 +7063,7 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .sw-bouton:disabled { opacity: .5; }
 .sw-bouton-garde { border-color: transparent; background: #fff; color: #170a33; }
 @media (hover: hover) { .sw-bouton-garde:hover { background: #f2ecff; } }
-.sw-aide { margin: 12px 0 0; text-align: center; font-size: 12.5px; color: color-mix(in srgb, var(--color-white) 60%, transparent); }
+.sw-aide { margin: 10px 0 0; text-align: center; font-size: 12.5px; color: color-mix(in srgb, var(--color-white) 60%, transparent); }
 .sw-profil { margin: 22px 0 0; max-width: 460px; text-align: center; font-size: 13.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-white) 80%, transparent); }
 .sw-profil b { color: var(--color-white); }
 
@@ -7063,6 +7077,14 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 @media (hover: hover) { .sw-tuile:hover img { transform: translateY(-2px); } }
 .sw-tuile span { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--color-white) 65%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Sur un grand écran, l'en-tête à gauche et la pile à droite : tout le
+   premier écran sert au swipe, plus rien ne passe sous le menu. */
+.sw-page { display: grid; gap: 28px; }
+@media (min-width: 1024px) {
+  .sw-page { grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 56px; }
+  .sw-page > header { position: sticky; top: calc(var(--haut-entete) + 40px); padding-top: 12px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .sw-carte { transition-duration: .01s; }
+  .sw-carte { transition-duration: .01s; animation: none; }
 }
