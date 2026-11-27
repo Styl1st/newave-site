@@ -7006,7 +7006,7 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
   min-width: min(100%, 260px);
   touch-action: pan-y;
 }
-.sw-gestes, .sw-aide { width: min(100%, 440px, max(260px, calc((100svh - 370px) * 0.678))); }
+.sw-aide { width: min(100%, 440px, max(260px, calc((100svh - 370px) * 0.678))); }
 .sw-vide {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   margin: 0; text-align: center; font-size: 14px; color: color-mix(in srgb, var(--color-white) 80%, transparent);
@@ -7052,18 +7052,48 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 .sw-prix { margin-top: 6px !important; display: flex; align-items: baseline; gap: 14px; font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--color-white) 88%, transparent); }
 .sw-voir { margin-left: auto; }
 
-.sw-gestes { margin-top: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.sw-bouton {
-  min-height: 54px; border-radius: 18px; font-size: 15px; font-weight: 800;
-  color: var(--color-white); border: 1px solid color-mix(in srgb, var(--color-white) 40%, transparent);
-  background: color-mix(in srgb, var(--color-white) 6%, transparent);
-  transition: background-color .2s, transform .15s;
+/* ---------- les gestes : croix, retour, cœur ----------
+   Des ronds, comme sur les applis de rencontre : on les vise du pouce sans
+   lire. La croix en contour, le cœur en plein (c'est le geste qu'on
+   espère), le retour plus petit entre les deux. Ils rebondissent un peu
+   à la pression, et celui du côté où part la carte grossit pendant le
+   glissé (`scale`, séparé de `transform` pour ne pas se gêner). */
+.sw-gestes { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: clamp(18px, 6vw, 30px); }
+.sw-rond {
+  flex: none; display: grid; place-items: center; width: 66px; height: 66px; border-radius: 50%;
+  transition: transform .22s cubic-bezier(.3, 1.6, .5, 1), background-color .2s, border-color .2s, box-shadow .25s, opacity .2s;
+  -webkit-tap-highlight-color: transparent;
 }
-@media (hover: hover) { .sw-bouton:hover { background: color-mix(in srgb, var(--color-white) 14%, transparent); } }
-.sw-bouton:active { transform: scale(.97); }
-.sw-bouton:disabled { opacity: .5; }
-.sw-bouton-garde { border-color: transparent; background: #fff; color: #170a33; }
-@media (hover: hover) { .sw-bouton-garde:hover { background: #f2ecff; } }
+.sw-rond svg { width: 30px; height: 30px; }
+@media (hover: hover) { .sw-rond:not(:disabled):hover { transform: translateY(-2px) scale(1.06); } }
+.sw-rond:not(:disabled):active { transform: scale(.88); transition-duration: .08s; }
+.sw-rond:disabled { opacity: .35; }
+.sw-rond:focus-visible { outline: 2px solid var(--color-white); outline-offset: 4px; }
+
+.sw-non {
+  color: #ff8fab; scale: calc(1 + var(--passe, 0) * .14);
+  background: color-mix(in srgb, var(--color-white) 7%, transparent);
+  border: 2px solid color-mix(in srgb, #ff8fab 70%, transparent);
+  box-shadow: 0 0 calc(var(--passe, 0) * 28px) rgba(255, 143, 171, .55);
+}
+@media (hover: hover) { .sw-non:not(:disabled):hover { background: rgba(255, 143, 171, .16); border-color: #ff8fab; } }
+
+.sw-oui {
+  color: #b23fd6; scale: calc(1 + var(--garde, 0) * .14);
+  background: linear-gradient(150deg, #fff 0%, #f4efff 60%, #ecdcff 100%);
+  box-shadow: 0 12px 28px -10px rgba(var(--accent-1), .75), 0 0 calc(var(--garde, 0) * 30px) rgba(var(--accent-1), .6);
+}
+.sw-oui svg { width: 32px; height: 32px; }
+@media (hover: hover) { .sw-oui:not(:disabled):hover { box-shadow: 0 16px 34px -10px rgba(var(--accent-1), .9); } }
+
+.sw-retour {
+  width: 46px; height: 46px; color: color-mix(in srgb, var(--color-white) 85%, transparent);
+  background: color-mix(in srgb, var(--color-white) 7%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-white) 30%, transparent);
+}
+.sw-retour svg { width: 20px; height: 20px; }
+@media (hover: hover) { .sw-retour:not(:disabled):hover { background: color-mix(in srgb, var(--color-white) 15%, transparent); } }
+
 .sw-aide { margin: 10px 0 0; text-align: center; font-size: 12.5px; color: color-mix(in srgb, var(--color-white) 60%, transparent); }
 .sw-profil { margin: 22px 0 0; max-width: 460px; text-align: center; font-size: 13.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-white) 80%, transparent); }
 .sw-profil b { color: var(--color-white); }

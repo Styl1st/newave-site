@@ -195,14 +195,17 @@ export default function Swipe({ connecte }: { connecte: boolean }) {
 
   /* ---------- le glissé ---------- */
   const carteRef = useRef<HTMLDivElement>(null);
+  const racine = useRef<HTMLDivElement>(null);
   const glisse = useRef<{ x0: number; y0: number; t0: number; dx: number; image: number } | null>(null);
 
   const poser = (dx: number) => {
     const el = carteRef.current;
     if (!el) return;
     el.style.transform = `translate3d(${dx}px, 0, 0) rotate(${dx / 22}deg)`;
-    el.style.setProperty("--garde", String(Math.max(0, Math.min(1, dx / SEUIL_PX))));
-    el.style.setProperty("--passe", String(Math.max(0, Math.min(1, -dx / SEUIL_PX))));
+    // Sur la racine : la carte ET les boutons s'en servent.
+    const r = racine.current ?? el;
+    r.style.setProperty("--garde", String(Math.max(0, Math.min(1, dx / SEUIL_PX))));
+    r.style.setProperty("--passe", String(Math.max(0, Math.min(1, -dx / SEUIL_PX))));
   };
 
   const auPose = (e: React.PointerEvent) => {
@@ -244,17 +247,15 @@ export default function Swipe({ connecte }: { connecte: boolean }) {
   // Une nouvelle carte part toujours d'aplomb.
   useEffect(() => {
     const el = carteRef.current;
-    if (el) {
-      el.style.transform = "";
-      el.style.removeProperty("--garde");
-      el.style.removeProperty("--passe");
-    }
+    if (el) el.style.transform = "";
+    racine.current?.style.removeProperty("--garde");
+    racine.current?.style.removeProperty("--passe");
   }, [rang]);
 
   const traits = traitsDuProfil(memoire.profil, NOMS_COULEURS);
 
   return (
-    <div className="sw">
+    <div className="sw" ref={racine}>
       {/* ---------- la pile ---------- */}
       <div className="sw-scene">
         {chargement === "panne" && !carte && (
@@ -311,25 +312,50 @@ export default function Swipe({ connecte }: { connecte: boolean }) {
       </div>
 
       {/* ---------- les gestes ---------- */}
+      {/* LES GESTES, À LA TINDER : la croix à gauche, le cœur à droite,
+          dans le sens où part la carte, et le retour en arrière entre
+          les deux. Pendant le glissé, le bouton du côté visé grossit
+          avec la distance (`--garde`, `--passe`, posés sur `.sw`). */}
       <div className="sw-gestes">
-        <button type="button" className="sw-bouton" onClick={() => decider(false)} disabled={!carte || !!sortie}>
-          Pas pour moi
+        <button
+          type="button"
+          className="sw-rond sw-non"
+          onClick={() => decider(false)}
+          disabled={!carte || !!sortie}
+          aria-label="Pas pour moi"
+          title="Pas pour moi (←)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+          </svg>
         </button>
-        <button type="button" className="sw-bouton sw-bouton-garde" onClick={() => decider(true)} disabled={!carte || !!sortie}>
-          Je garde
+        <button
+          type="button"
+          className="sw-rond sw-retour"
+          onClick={annuler}
+          disabled={!dernier || !!sortie}
+          aria-label={dernier ? `Annuler « ${dernier.garde ? "je garde" : "pas pour moi"} »` : "Rien à annuler"}
+          title="Revenir à la carte d'avant"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 7H4V2" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M4.6 7a8 8 0 1 1-1.1 6.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="sw-rond sw-oui"
+          onClick={() => decider(true)}
+          disabled={!carte || !!sortie}
+          aria-label="Je garde"
+          title="Je garde (→)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20.6s-7.6-4.6-9.4-9.3C1.4 8 3.4 4.6 6.9 4.6c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.5 0 5.5 3.4 4.3 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" />
+          </svg>
         </button>
       </div>
-      <p className="sw-aide">
-        Glisse la carte, ou utilise les flèches ← →.
-        {dernier && (
-          <>
-            {" "}
-            <button type="button" className="bf-lien" onClick={annuler}>
-              Annuler « {dernier.garde ? "je garde" : "pas pour moi"} »
-            </button>
-          </>
-        )}
-      </p>
+      <p className="sw-aide">Glisse la carte, ou utilise les flèches ← →.</p>
 
       {/* ---------- ce qu'on a compris ---------- */}
       {traits.length > 0 && (
