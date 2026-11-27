@@ -350,9 +350,8 @@ export default function Swipe({ connecte }: { connecte: boolean }) {
           aria-label="Je garde"
           title="Je garde (→)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 20.6s-7.6-4.6-9.4-9.3C1.4 8 3.4 4.6 6.9 4.6c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.5 0 5.5 3.4 4.3 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="currentColor" />
-          </svg>
+          {/* Le cœur prend le dégradé du fond choisi (voir `.sw-coeur`). */}
+          <span className="sw-coeur" aria-hidden="true" />
         </button>
       </div>
       <p className="sw-aide">Glisse la carte, ou utilise les flèches ← →.</p>

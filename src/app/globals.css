@@ -7079,12 +7079,23 @@ html[data-fige="1"] img[data-progressif] { transition: none; }
 @media (hover: hover) { .sw-non:not(:disabled):hover { background: rgba(255, 143, 171, .16); border-color: #ff8fab; } }
 
 .sw-oui {
-  color: #b23fd6; scale: calc(1 + var(--garde, 0) * .14);
-  background: linear-gradient(150deg, #fff 0%, #f4efff 60%, #ecdcff 100%);
-  box-shadow: 0 12px 28px -10px rgba(var(--accent-1), .75), 0 0 calc(var(--garde, 0) * 30px) rgba(var(--accent-1), .6);
+  scale: calc(1 + var(--garde, 0) * .14);
+  background: linear-gradient(150deg, #fff 0%, color-mix(in srgb, var(--bg-3) 8%, #fff) 60%, color-mix(in srgb, var(--bg-3) 16%, #fff) 100%);
+  box-shadow: 0 12px 28px -10px color-mix(in srgb, var(--bg-3) 75%, transparent), 0 0 calc(var(--garde, 0) * 30px) color-mix(in srgb, var(--bg-3) 60%, transparent);
 }
-.sw-oui svg { width: 32px; height: 32px; }
-@media (hover: hover) { .sw-oui:not(:disabled):hover { box-shadow: 0 16px 34px -10px rgba(var(--accent-1), .9); } }
+/* Le cœur est peint avec les couleurs du fond choisi (les mêmes `--bg-*`
+   que le curseur), découpé par un masque en forme de cœur : il change
+   avec l'ambiance, sans JavaScript. */
+.sw-coeur {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--bg-1) 82%, var(--color-ink)) 0%,
+    color-mix(in srgb, var(--bg-3) 82%, var(--color-ink)) 55%,
+    color-mix(in srgb, var(--bg-4) 82%, var(--color-ink)) 100%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20.6s-7.6-4.6-9.4-9.3C1.4 8 3.4 4.6 6.9 4.6c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.5 0 5.5 3.4 4.3 6.7-1.8 4.7-9.4 9.3-9.4 9.3z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20.6s-7.6-4.6-9.4-9.3C1.4 8 3.4 4.6 6.9 4.6c2.1 0 3.5 1.1 5.1 3 1.6-1.9 3-3 5.1-3 3.5 0 5.5 3.4 4.3 6.7-1.8 4.7-9.4 9.3-9.4 9.3z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+@media (hover: hover) { .sw-oui:not(:disabled):hover { box-shadow: 0 16px 34px -10px color-mix(in srgb, var(--bg-3) 90%, transparent); } }
 
 .sw-retour {
   width: 46px; height: 46px; color: color-mix(in srgb, var(--color-white) 85%, transparent);
